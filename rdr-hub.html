@@ -1640,8 +1640,11 @@ function pintarSecuenciaLocal() {
   actualizarValidador();
 }
 
-function pintarOrden() {
-  tempOrden = (E.ordenPase || []).map(o => ({ elemento: o.elemento, som: o.som }));
+// Pinta solo el <select> de códigos. Es la función que hay que llamar cuando
+// cambia el código de un componente, para que el dropdown lo refleje sin tocar
+// la lista de pasos en construcción (tempOrden).
+function pintarSelectorCods() {
+  const container = $('container-sel-add-cod'); if (!container) return;
   const cods = new Set();
   (E.proyectos || []).forEach(p => (p.componentes || []).forEach(c => {
     if (c.codigo && c.codigo.trim() !== "" && c.codigo.trim() !== "-") cods.add(c.codigo.trim());
@@ -1650,31 +1653,51 @@ function pintarOrden() {
   let html = '<select id="sel-add-cod" onchange="addPasoCod()"><option value="">+ Selecciona un componente (cód)…</option>';
   cods.forEach(c => html += '<option value="' + esc("Instalar Componente: " + c) + '">' + esc(c) + '</option>');
   html += '</select>';
-  const container = $('container-sel-add-cod'); if (container) container.innerHTML = html;
-  pintarSecuenciaLocal();
+  container.innerHTML = html;
+}
 
-  const hEjec = $('lista-orden-ejecucion');
-  if (hEjec) {
-    hEjec.innerHTML = "";
-    if ((E.ordenPase || []).length === 0) {
-      hEjec.innerHTML = '<div class="orden-empty">El orden de implantación no se definió en la preparación.</div>';
-      return;
-    }
-    const frag = document.createDocumentFragment();
-    E.ordenPase.forEach((o, idx) => {
-      const elUpper = o.elemento.toUpperCase();
-      const isSys = elUpper.includes("PARADA") || elUpper.includes("ARRANQUE") || elUpper.includes("REINICIO");
-      const step = document.createElement('div');
-      step.className = 'orden-step';
-      step.innerHTML =
-        '<input type="checkbox" ' + (o.implantado ? 'checked' : '') + ' data-act="chkOrden" data-fila="' + o.fila + '">' +
-        '<div class="orden-step__num">' + (idx + 1) + '</div>' +
-        '<div class="orden-step__text">' + esc(o.elemento) + '</div>' +
-        (isSys ? '<input type="text" class="orden-step__som" placeholder="SOM-…" value="' + esc(o.som) + '" data-act="somEjec" data-fila="' + o.fila + '">' : '');
-      frag.appendChild(step);
-    });
-    hEjec.appendChild(frag);
+// Pinta solo la lista de ejecución (pestaña 4).
+function pintarOrdenEjecucion() {
+  const hEjec = $('lista-orden-ejecucion'); if (!hEjec) return;
+  hEjec.innerHTML = "";
+  if ((E.ordenPase || []).length === 0) {
+    hEjec.innerHTML = '<div class="orden-empty">El orden de implantación no se definió en la preparación.</div>';
+    return;
   }
+  const frag = document.createDocumentFragment();
+  E.ordenPase.forEach((o, idx) => {
+    const elUpper = o.elemento.toUpperCase();
+    const isSys = elUpper.includes("PARADA") || elUpper.includes("ARRANQUE") || elUpper.includes("REINICIO");
+    const step = document.createElement('div');
+    step.className = 'orden-step';
+    step.innerHTML =
+      '<input type="checkbox" ' + (o.implantado ? 'checked' : '') + ' data-act="chkOrden" data-fila="' + o.fila + '">' +
+      '<div class="orden-step__num">' + (idx + 1) + '</div>' +
+      '<div class="orden-step__text">' + esc(o.elemento) + '</div>' +
+      (isSys ? '<input type="text" class="orden-step__som" placeholder="SOM-…" value="' + esc(o.som) + '" data-act="somEjec" data-fila="' + o.fila + '">' : '');
+    frag.appendChild(step);
+  });
+  hEjec.appendChild(frag);
+}
+
+// pintarOrden = render completo de la pestaña. Solo se llama desde refrescarUI
+// y procesarNuevoEstado (cambios estructurales). NO debe llamarse desde autosave
+// de componentes, porque machacaría tempOrden si el usuario está construyendo.
+function pintarOrden() {
+  // Reconciliar tempOrden con el estado del backend SOLO si los dos están desincronizados
+  // por más que un swap local en curso (típicamente: primer render o cambio de fecha).
+  // Heurística: si tempOrden está vacío o si su contenido difiere claramente del backend
+  // (distinto length), recargamos. Si no, respetamos el orden en curso.
+  const backendOrden = (E.ordenPase || []).map(o => ({ elemento: o.elemento, som: o.som }));
+  const mismaLongitud = tempOrden && tempOrden.length === backendOrden.length;
+  const mismosElems = mismaLongitud && tempOrden.every((t, i) => t.elemento === backendOrden[i].elemento);
+  if (!tempOrden || tempOrden.length === 0 || !mismosElems) {
+    tempOrden = backendOrden;
+  }
+
+  pintarSelectorCods();
+  pintarSecuenciaLocal();
+  pintarOrdenEjecucion();
   actualizarValidador();
 }
 
@@ -1826,6 +1849,11 @@ async function updComp(fila) {
     await llamarBackend("editarComponente", { fila, ...nuevo, releaseCheck: nuevo.release });
     limpiarDirty(fila);
     cacheSet(E.fechaSeleccionada, E);
+    // El código del componente puede haber cambiado → refrescar el dropdown
+    // del Orden del Pase. También refresca la lista de mergeos (que filtra por
+    // códigos DP-KYTL). Ambas operaciones son baratas y no tocan tempOrden.
+    pintarSelectorCods();
+    pintarMergeos();
   } catch (e) {
     if (prevComp) E.proyectos.forEach(p => p.componentes.forEach(c => { if (c.fila === fila) Object.assign(c, prevComp); }));
     pintarProyectos();
