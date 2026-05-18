@@ -419,6 +419,16 @@ button { cursor: pointer; }
 .comp-item:hover { background: rgba(133, 200, 255, 0.06); }
 .comp-item.is-dirty { background: rgba(255, 231, 97, 0.20); }
 .comp-item.is-saving { background: rgba(133, 200, 255, 0.15); }
+.comp-item.is-invalid { background: rgba(255, 181, 107, 0.18); }
+
+/* Input con error de validación (schema, etc.) */
+.inline-input.is-invalid,
+.inline-input.is-invalid:hover,
+.inline-input.is-invalid:focus {
+  border-color: var(--bbva-mandarin);
+  background: rgba(255, 181, 107, 0.10);
+  box-shadow: 0 0 0 3px rgba(255, 181, 107, 0.25);
+}
 
 .inline-input {
   width: 100%;
@@ -856,7 +866,7 @@ button { cursor: pointer; }
         <h4>Añadir nuevo proyecto</h4>
         <div class="form-add__grid">
           <div class="field"><label>Nombre proyecto</label><input type="text" id="add-p-nom" placeholder="Ej: Integración de emisiones…"></div>
-          <div class="field"><label>Feature</label><input type="text" id="add-p-feat" placeholder="Ej: CIBRDR-1234"></div>
+          <div class="field"><label>Feature</label><input type="text" id="add-p-feat" placeholder="CIBRDR-…" data-autofill="cibrdr"></div>
           <div class="field"><label>Resp. BBVA</label><select id="add-p-resp"></select></div>
           <button class="btn btn-primary" type="button" onclick="addProyecto()">+ Añadir proyecto</button>
         </div>
@@ -1012,6 +1022,26 @@ const ICONS = {
   check:   '<svg class="v-icon ok" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>',
   cross:   '<svg class="v-icon ko" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>',
 };
+
+// Prefijo fijo para Historias de usuario y Feature de proyecto.
+const CIBRDR_PREFIX = "CIBRDR-";
+
+// Devuelve el schema esperado para una fila de componente, según su tipo de subida.
+// Devuelve "" si no hay schema parametrizado.
+function getSchemaForFila(fila) {
+  const subEl = $('s-' + fila); if (!subEl) return "";
+  const sub = (subEl.value || "").trim();
+  return (E.schemaPorSubida && E.schemaPorSubida[sub]) || "";
+}
+
+// Valida un código contra un schema. Devuelve null si OK o mensaje de error.
+function validarCodVsSchema(cod, schema) {
+  if (!cod || cod.trim() === "" || cod.trim() === "-") return null;
+  if (!schema) return null;
+  return cod.trim().toUpperCase().indexOf(schema.toUpperCase()) === 0
+    ? null
+    : 'El código no cumple el schema. Debe empezar por "' + schema + '".';
+}
 
 // ════ Toasts (con dedup) ══════════════════════════════════
 const toastByKey = new Map();
@@ -1369,12 +1399,10 @@ function pintarHeader() {
 }
 
 function updatePlaceholderInline(fila) {
-  const rawVal = $('s-' + fila)?.value || "";
-  const ts = rawVal.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  // Placeholder del campo Cod. basado en el Schema parametrizado.
   const inp = $('c-' + fila); if (!inp) return;
-  if (ts.includes("REMEDY")) inp.placeholder = "REQ…";
-  else if (ts.includes("APERIODICO") || ts.includes("SERVICE") || ts.includes("JIRA")) inp.placeholder = "SS-…";
-  else inp.placeholder = "DP-KYTL-…";
+  const schema = getSchemaForFila(fila);
+  inp.placeholder = schema ? schema + "…" : "Sin schema";
 }
 
 // ════ Pintar proyectos (DocumentFragment) ═════════════════
@@ -1424,11 +1452,9 @@ function pintarProyectos() {
     tableWrap.appendChild(headerRow);
 
     (p.componentes || []).forEach(c => {
-      const subRaw = c.subida || "";
-      const sub = subRaw.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      let placeCod = "DP-KYTL-…";
-      if (sub.includes("REMEDY")) placeCod = "REQ…";
-      else if (sub.includes("APERIODICO") || sub.includes("SERVICE") || sub.includes("JIRA")) placeCod = "SS-…";
+      // Placeholder de Cod. basado en el Schema parametrizado de su Tipo de Subida.
+      const schemaCod = (E.schemaPorSubida && E.schemaPorSubida[c.subida]) || "";
+      const placeCod = schemaCod ? schemaCod + "…" : "Sin schema";
 
       const tiposOpts  = (E.tiposComp   || []).map(x => '<option value="' + esc(x) + '"' + (x === c.tipo   ? ' selected' : '') + '>' + esc(x) + '</option>').join('');
       const subidaOpts = (E.tiposSubida || []).map(x => '<option value="' + esc(x) + '"' + (x === c.subida ? ' selected' : '') + '>' + esc(x) + '</option>').join('');
@@ -1441,8 +1467,8 @@ function pintarProyectos() {
         '<input type="text" id="n-' + c.fila + '" value="' + esc(c.nombre) + '" class="inline-input" placeholder="Nombre…" data-act="editComp" data-fila="' + c.fila + '">' +
         '<select id="t-' + c.fila + '" class="inline-input" data-act="editComp" data-fila="' + c.fila + '"><option value=""></option>' + tiposOpts + '</select>' +
         '<select id="s-' + c.fila + '" class="inline-input" data-act="editComp" data-fila="' + c.fila + '" data-changeph="1"><option value=""></option>' + subidaOpts + '</select>' +
-        '<input type="text" id="c-' + c.fila + '" value="' + esc(c.codigo) + '" class="inline-input" placeholder="' + placeCod + '" data-act="editComp" data-fila="' + c.fila + '">' +
-        '<input type="text" id="u-' + c.fila + '" value="' + esc(c.us) + '" class="inline-input" placeholder="Ej: CIBRDR-12, CIBRDR-34" data-act="editComp" data-fila="' + c.fila + '">' +
+        '<input type="text" id="c-' + c.fila + '" value="' + esc(c.codigo) + '" class="inline-input" placeholder="' + placeCod + '" data-act="editComp" data-fila="' + c.fila + '" data-autofill="schema">' +
+        '<input type="text" id="u-' + c.fila + '" value="' + esc(c.us) + '" class="inline-input" placeholder="CIBRDR-…" data-act="editComp" data-fila="' + c.fila + '" data-autofill="cibrdr">' +
         '<select id="r-' + c.fila + '" class="inline-input" data-act="editComp" data-fila="' + c.fila + '"><option value=""></option>' + equipoOpts + '</select>' +
         '<div style="text-align:center;"><input type="checkbox" id="rel-' + c.fila + '" ' + (c.release ? 'checked' : '') + ' data-act="editComp" data-fila="' + c.fila + '"></div>' +
         '<input type="text" id="com-' + c.fila + '" value="' + esc(c.comentarios) + '" class="inline-input" placeholder="Comentarios…" data-act="editComp" data-fila="' + c.fila + '">' +
@@ -1468,6 +1494,11 @@ function pintarProyectos() {
   });
 
   root.appendChild(frag);
+
+  // Validación inicial: marca como inválidos los Cod. ya guardados que no cumplan
+  // el schema actual (puede pasar si se cambió la parametrización a posteriori).
+  (E.proyectos || []).forEach(p => (p.componentes || []).forEach(c => revalidarCodFila(c.fila)));
+
   actualizarValidador();
 }
 
@@ -1491,6 +1522,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (t.dataset.act === 'editComp') {
       const fila = parseInt(t.dataset.fila);
       if (t.dataset.changeph === "1") updatePlaceholderInline(fila);
+      revalidarCodFila(fila);
       marcarDirty(fila);
       programarAutosaveComp(fila);
       actualizarValidador();
@@ -1499,8 +1531,37 @@ document.addEventListener('DOMContentLoaded', () => {
   cont.addEventListener('input', (ev) => {
     const t = ev.target.closest('input[type="text"][data-act="editComp"]'); if (!t) return;
     const fila = parseInt(t.dataset.fila);
+    revalidarCodFila(fila);
     marcarDirty(fila);
     programarAutosaveComp(fila);
+  });
+
+  // Autocompletado de prefijos al hacer foco (si el campo está vacío).
+  // - data-autofill="schema" → toma el schema según el Tipo de Subida de esa fila.
+  // - data-autofill="cibrdr" → siempre CIBRDR-.
+  // Listener global porque también cubre el formulario "Añadir proyecto".
+  document.addEventListener('focusin', (ev) => {
+    const t = ev.target;
+    if (!t.matches || !t.matches('input[type="text"][data-autofill]')) return;
+    if (t.value && t.value.trim() !== "") return; // ya tiene contenido: no tocamos
+
+    const kind = t.dataset.autofill;
+    let prefix = "";
+    if (kind === "cibrdr") {
+      prefix = CIBRDR_PREFIX;
+    } else if (kind === "schema") {
+      const fila = parseInt(t.dataset.fila);
+      prefix = getSchemaForFila(fila);
+    }
+    if (!prefix) return;
+
+    t.value = prefix;
+    // Coloca el cursor al final del prefijo para que el usuario siga escribiendo.
+    // setTimeout: algunos navegadores resetean la selección en el focusin.
+    setTimeout(() => {
+      try { t.setSelectionRange(prefix.length, prefix.length); } catch (_) {}
+    }, 0);
+    // No marcamos dirty aún: el cambio real vendrá cuando el usuario teclee.
   });
 
   // Delegación para listas de orden y mergeos (existen siempre en el DOM).
@@ -1530,6 +1591,22 @@ function marcarDirty(fila) {
 function limpiarDirty(fila) {
   const row = document.querySelector('.comp-item[data-fila="' + fila + '"]');
   if (row) { row.classList.remove('is-dirty'); row.classList.remove('is-saving'); }
+}
+
+// Marca visualmente el Cod. como inválido si no cumple el schema actual de su subida.
+// Se llama en cada input/change para feedback inmediato (no espera al autosave).
+function revalidarCodFila(fila) {
+  const codEl = $('c-' + fila); if (!codEl) return;
+  const schema = getSchemaForFila(fila);
+  const err = validarCodVsSchema(codEl.value, schema);
+  const row = document.querySelector('.comp-item[data-fila="' + fila + '"]');
+  if (err) {
+    codEl.classList.add('is-invalid');
+    if (row) row.classList.add('is-invalid');
+  } else {
+    codEl.classList.remove('is-invalid');
+    if (row) row.classList.remove('is-invalid');
+  }
 }
 
 // ════ Pintar orden ════════════════════════════════════════
@@ -1716,8 +1793,24 @@ async function updComp(fila) {
     com:     $('com-' + fila).value,
   };
 
-  // Marca visual de "guardando"
+  // ─── Validación de Schema (bloqueante en cliente) ───
+  // Recupera el schema correspondiente al Tipo de Subida y comprueba el prefijo del Cod.
+  const schema = (E.schemaPorSubida && E.schemaPorSubida[(nuevo.subida || "").trim()]) || "";
+  const errSchema = validarCodVsSchema(nuevo.cod, schema);
+  const codInput = $('c-' + fila);
   const row = document.querySelector('.comp-item[data-fila="' + fila + '"]');
+  if (errSchema) {
+    // Marca el input y la fila como inválidos, aborta el guardado.
+    if (codInput) codInput.classList.add('is-invalid');
+    if (row) { row.classList.remove('is-saving'); row.classList.add('is-invalid'); }
+    showToast(errSchema, "error", 4500);
+    return; // ¡no enviamos al backend!
+  } else {
+    if (codInput) codInput.classList.remove('is-invalid');
+    if (row) row.classList.remove('is-invalid');
+  }
+
+  // Marca visual de "guardando"
   if (row) { row.classList.remove('is-dirty'); row.classList.add('is-saving'); }
 
   // Aplica al estado en memoria
