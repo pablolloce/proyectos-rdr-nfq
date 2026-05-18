@@ -671,6 +671,11 @@ button { cursor: pointer; }
 .state-card {
   text-align: center;
   padding: var(--s-7) var(--s-4);
+}
+/* Solo cuando el panel está activo aplicamos el layout flex. Si no, .panel
+   (display: none) gana. Antes el flex pisaba al display:none de .panel y
+   se veían todos los state-card a la vez. */
+.panel.state-card.active {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -679,7 +684,6 @@ button { cursor: pointer; }
 .state-card > * { margin: 0; }
 .state-card h2 { font-size: 28px; }
 .state-card .btn { padding: 14px 28px; font-size: 16px; }
-/* Encuesta tiene dos botones que sí queremos uno al lado del otro. */
 .state-card .btn + .btn { margin-left: var(--s-1); }
 .calendar-icon {
   display: inline-block;
