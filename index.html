@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>RDR · BBVA × NFQ</title>
-  <meta name="description" content="Hub de documentación RDR: Welcome Pack, Formación, Pases Calendados y Retrospectiva.">
+  <meta name="description" content="Hub de documentación RDR: Welcome Pack, Formación, Pases Calendados, Retrospectiva, Vacaciones y Portal NFQ-BBVA CIB.">
 
   <!-- Fuentes oficiales BBVA -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -153,7 +153,11 @@
       margin-top: var(--space-4);
     }
 
-    @media (max-width: 1100px) {
+    @media (max-width: 1280px) {
+      .cards { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 900px) {
       .cards { grid-template-columns: repeat(2, 1fr); }
     }
 
@@ -188,16 +192,9 @@
     .card--2 { background: var(--lime); }
     .card--3 { background: var(--canary); }
     .card--4 { background: var(--mandarin); }
-
-    .card--disabled {
-      cursor: not-allowed;
-      opacity: 0.55;
-    }
-
-    .card--disabled:hover {
-      transform: none;
-      box-shadow: none;
-    }
+    .card--5 { background: var(--aqua); }
+    .card--6 { background: var(--purple); }
+    .card--7 { background: var(--sand); }
 
     .card__phase {
       font-size: var(--fs-caption);
@@ -254,18 +251,38 @@
       transform: translateX(4px);
     }
 
-    .card__badge {
-      position: absolute;
-      top: var(--space-3);
-      right: var(--space-3);
-      background: rgba(0, 19, 145, 0.12);
+    /* Botón <button> dentro de card (para copia) — mismo aspecto que <a> */
+    button.card {
+      border: none;
+      font: inherit;
+      text-align: left;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    /* Toast de feedback al copiar */
+    .toast {
+      position: fixed;
+      bottom: var(--space-5);
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--sand);
       color: var(--electric);
-      font-size: var(--fs-label);
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 4px 10px;
+      padding: var(--space-2) var(--space-4);
       border-radius: 999px;
+      font-size: var(--fs-caption);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      z-index: 1000;
+    }
+
+    .toast--visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
 
     /* ===========================================================
@@ -376,7 +393,6 @@
       </a>
 
       <a class="card card--4" href="retro.html">
-        <span class="card__badge">Próximamente</span>
         <p class="card__phase">Mejora continua</p>
         <p class="card__num">04</p>
         <h2 class="card__title">Retrospectiva RDR</h2>
@@ -389,6 +405,50 @@
         </div>
       </a>
 
+      <a class="card card--5" href="vacaciones.html">
+        <p class="card__phase">Equipo</p>
+        <p class="card__num">05</p>
+        <h2 class="card__title">Vacaciones RDR</h2>
+        <p class="card__desc">
+          Política de vacaciones, calendario del equipo y normas de coordinación para garantizar la continuidad del servicio.
+        </p>
+        <div class="card__action">
+          <span>Abrir documento</span>
+          <span class="card__arrow" aria-hidden="true">→</span>
+        </div>
+      </a>
+
+      <a class="card card--6"
+         href="PEGAR_AQUI_URL_FORMULARIO"
+         target="_blank"
+         rel="noopener noreferrer">
+        <p class="card__phase">Equipo · Formulario</p>
+        <p class="card__num">06</p>
+        <h2 class="card__title">Solicitud de Vacaciones</h2>
+        <p class="card__desc">
+          Formulario oficial para tramitar la solicitud de días de vacaciones del equipo RDR.
+        </p>
+        <div class="card__action">
+          <span>Abrir formulario</span>
+          <span class="card__arrow" aria-hidden="true">↗</span>
+        </div>
+      </a>
+
+      <button type="button"
+              class="card card--7"
+              data-copy-url="PEGAR_AQUI_URL_PORTAL_NFQ_BBVA_CIB">
+        <p class="card__phase">Portal interno</p>
+        <p class="card__num">07</p>
+        <h2 class="card__title">Portal NFQ-BBVA CIB</h2>
+        <p class="card__desc">
+          Acceso al portal interno del equipo NFQ-BBVA CIB. Pulsa para copiar el enlace al portapapeles.
+        </p>
+        <div class="card__action">
+          <span>Copiar enlace</span>
+          <span class="card__arrow" aria-hidden="true">⧉</span>
+        </div>
+      </button>
+
     </section>
 
     <footer class="footer">
@@ -400,5 +460,63 @@
     </footer>
 
   </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite">
+    Enlace copiado al portapapeles
+  </div>
+
+  <script>
+    (function () {
+      var toast = document.getElementById('toast');
+      var toastTimer;
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add('toast--visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () {
+          toast.classList.remove('toast--visible');
+        }, 2200);
+      }
+
+      function copyToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+          return navigator.clipboard.writeText(text);
+        }
+        // Fallback para http o navegadores antiguos
+        return new Promise(function (resolve, reject) {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          try {
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            resolve();
+          } catch (err) {
+            document.body.removeChild(ta);
+            reject(err);
+          }
+        });
+      }
+
+      document.querySelectorAll('[data-copy-url]').forEach(function (el) {
+        el.addEventListener('click', function () {
+          var url = el.getAttribute('data-copy-url');
+          if (!url || url.indexOf('PEGAR_AQUI') === 0) {
+            showToast('Falta pegar el enlace');
+            return;
+          }
+          copyToClipboard(url).then(function () {
+            showToast('Enlace copiado al portapapeles');
+          }).catch(function () {
+            showToast('No se pudo copiar el enlace');
+          });
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
