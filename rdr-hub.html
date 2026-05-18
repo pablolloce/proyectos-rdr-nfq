@@ -274,6 +274,23 @@
       throw error;
     }
   }
+  
+  async function cargarCompleto(f) {
+    toggleLoader(true);
+    try {
+      E = await llamarBackend("obtenerDatosDashboard", { fecha: f });
+      
+      // NUEVO: Captura explícita de errores devueltos por el backend
+      if (E && E.error) throw new Error(E.error);
+      
+      pintarHeader(); 
+      refrescarUI(); 
+      toggleLoader(false);
+    } catch(err) {
+      console.error(err); // Ahora sí saldrá en consola
+      document.getElementById('loader-msg').innerHTML = `<span style="color:#ff5252">Error Backend: ${err.message}</span><br><button onclick="cargarCompleto(null)" style="margin-top:15px; padding:10px; color:black; cursor:pointer;">Reintentar</button>`;
+    }
+  }
 
   // ========================================================
   // 3. UI, LOADERS Y TOASTS
