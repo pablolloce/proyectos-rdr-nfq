@@ -395,6 +395,33 @@ button { cursor: pointer; }
 .project-ok:hover { border-color: var(--bbva-serene-blue); }
 .project-ok input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--bbva-lime); cursor: pointer; }
 
+.project-id {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bbva-white);
+  padding: 4px 10px;
+  border: 1px solid var(--bbva-gray-2);
+  border-radius: var(--r-sm);
+  transition: border-color .15s;
+}
+.project-id:hover { border-color: var(--bbva-serene-blue); }
+.project-id__label {
+  font-size: 10px; letter-spacing: 0.06em;
+  text-transform: uppercase; font-weight: 700;
+  color: var(--bbva-gray-4);
+}
+.project-id__input {
+  border: none; background: transparent;
+  font-family: var(--bbva-font-body); font-weight: 700;
+  font-size: 13px; color: var(--bbva-electric-blue);
+  width: 100px; padding: 4px 0;
+}
+.project-id__input:focus { outline: none; }
+.project-id.is-invalid {
+  border-color: var(--bbva-mandarin);
+  background: rgba(255, 181, 107, 0.10);
+  box-shadow: 0 0 0 2px rgba(255, 181, 107, 0.20);
+}
+
 .comp-grid {
   display: grid;
   grid-template-columns: 1.6fr 1fr 1fr 1.2fr 1.8fr 1.2fr 70px 1.5fr 80px;
@@ -641,9 +668,19 @@ button { cursor: pointer; }
 /* ===========================================================
    Estados (Pendiente / Encuesta / Descanso / Completado)
    =========================================================== */
-.state-card { text-align: center; padding: var(--s-7) var(--s-4); }
-.state-card h2 { font-size: 28px; margin-bottom: var(--s-3); }
-.state-card .btn { padding: 14px 28px; font-size: 16px; margin: var(--s-1); }
+.state-card {
+  text-align: center;
+  padding: var(--s-7) var(--s-4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-3);
+}
+.state-card > * { margin: 0; }
+.state-card h2 { font-size: 28px; }
+.state-card .btn { padding: 14px 28px; font-size: 16px; }
+/* Encuesta tiene dos botones que sí queremos uno al lado del otro. */
+.state-card .btn + .btn { margin-left: var(--s-1); }
 .calendar-icon {
   display: inline-block;
   width: 140px;
@@ -838,9 +875,11 @@ button { cursor: pointer; }
 
   <section id="panel-ENCUESTA" class="panel card state-card">
     <h2>¿Tenemos subida en este pase?</h2>
-    <p style="color: var(--bbva-gray-4); margin-bottom: var(--s-3);">Confirma si vuestros proyectos se incluyen en el pase calendado.</p>
-    <button class="btn btn-success" onclick="responderEncuesta('SI')">Sí, adelante</button>
-    <button class="btn btn-danger"  onclick="responderEncuesta('NO')">No hay subida</button>
+    <p style="color: var(--bbva-gray-4);">Confirma si vuestros proyectos se incluyen en el pase calendado.</p>
+    <div style="display: flex; gap: var(--s-2);">
+      <button class="btn btn-success" onclick="responderEncuesta('SI')">Sí, adelante</button>
+      <button class="btn btn-danger"  onclick="responderEncuesta('NO')">No hay subida</button>
+    </div>
   </section>
 
   <section id="panel-DESCANSO" class="panel card state-card">
@@ -925,12 +964,12 @@ button { cursor: pointer; }
         <label id="lbl-docPruebas" for="chk-docPruebas">Documento de pruebas post-implantación creado</label>
         <input type="checkbox" id="chk-docPruebas" onchange="guardarPre()">
       </div>
-      <div class="check-row" id="row-traspaso">
-        <select id="sel-traspaso" onchange="toggleCheckUI('traspaso'); guardarPre();"><option value="APLICA">Aplica</option><option value="NA">No aplica</option></select>
-        <label id="lbl-traspaso" for="chk-traspaso">Correo de traspaso al ANS enviado</label>
-        <input type="checkbox" id="chk-traspaso" onchange="guardarPre()">
-      </div>
     </div>
+
+    <h4 style="margin-top: var(--s-4); color: var(--bbva-electric-blue); font-family: var(--bbva-font-body); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;">Correos ANS por proyecto</h4>
+    <p style="color: var(--bbva-gray-4); font-size: 13px;">Marca cada proyecto cuando se haya enviado el correo de traspaso al ANS con su ID.</p>
+    <div id="lista-checks-ans" class="check-list"></div>
+
     <button id="btn-cerrar-pre" class="btn btn-success btn-block" onclick="validarYAvanzarPre()" style="margin-top: var(--s-3);">Todo listo · Pasar al sábado</button>
   </section>
 
@@ -1277,6 +1316,7 @@ function refrescarUI() {
   pintarProyectos();
   pintarOrden();
   pintarMergeos();
+  pintarChecksPre();
 }
 
 function verTab(id) {
@@ -1301,14 +1341,40 @@ function actualizarValidador() {
   const pOk   = proyOk && !E.proyectos.some(p => !isT(p.ok));
   const relOk = compOk && !E.proyectos.some(p => p.componentes.some(c => !isT(c.release)));
 
-  let hasRdrRules = false, hasStreetref = false;
+  // ─── ID Traspaso: todos los proyectos deben tener uno válido ───
+  const proysSinIdT = (E.proyectos || []).filter(p => {
+    const t = (p.idTraspaso || "").trim();
+    return !t || !RE_ID_TRASPASO.test(t);
+  }).map(p => p.nombre);
+  const idTraspasoOk = proyOk && proysSinIdT.length === 0;
+
+  // ─── Regla rdrRules / Streetref con excepciones (Listado Rules) ───
+  // Si un componente cuyo nombre incluye "rdrRules/<NombreRule>" tiene su <NombreRule>
+  // en E.listadoRules, ese componente NO obliga a tener Streetref.
+  // Si entre los rdrRules hay alguno NO listado, sí se exige Streetref.
+  const listadoRulesUpper = (E.listadoRules || []).map(r => String(r).trim().toUpperCase()).filter(Boolean);
   const allComps = [];
   E.proyectos.forEach(p => p.componentes.forEach(c => allComps.push(c)));
+
+  let rdrRulesNoExentas = 0;  // cuántos rdrRules requieren Streetref
+  let hasStreetref = false;
   allComps.forEach(c => {
-    if (c.nombre && c.nombre.includes("rdrRules/")) hasRdrRules = true;
-    if (c.nombre && c.nombre.toLowerCase().includes("streetref")) hasStreetref = true;
+    const nombre = (c.nombre || "");
+    if (nombre.toLowerCase().includes("streetref")) hasStreetref = true;
+    const idx = nombre.indexOf("rdrRules/");
+    if (idx === -1) return;
+    const ruleName = nombre.substring(idx + "rdrRules/".length).trim();
+    // ¿Está en el listado de rules exentas? La comparación es por nombre exacto (case-insensitive),
+    // pero también admitimos "el componente entero comienza por una rule listada" por flexibilidad.
+    const exenta = ruleName && listadoRulesUpper.some(r => ruleName.toUpperCase() === r || ruleName.toUpperCase().startsWith(r));
+    if (!exenta) rdrRulesNoExentas++;
   });
-  const ruleRdrOk = !hasRdrRules || hasStreetref;
+  const ruleRdrOk = rdrRulesNoExentas === 0 || hasStreetref;
+  const rdrRuleMsg = ruleRdrOk
+    ? (rdrRulesNoExentas === 0
+        ? "Sin rdrRules que requieran Streetref (o todas exentas)"
+        : "Componente Streetref incluido (regla rdrRules)")
+    : "Falta 'Streetref' (hay " + rdrRulesNoExentas + " rdrRules no exenta(s))";
 
   let seqOk = true; let msgSeq = "Orden del pase diseñado (parada, componentes y arranque)";
   if (tempOrden && tempOrden.length >= 2) {
@@ -1336,13 +1402,16 @@ function actualizarValidador() {
   it(proyOk, "Al menos 1 proyecto añadido");
   if (proyOk) it(compOk, "Todos los proyectos tienen componentes");
   if (proyOk) it(pOk,    "Todos los proyectos tienen el check 'OK Proyecto'");
+  if (proyOk) it(idTraspasoOk, idTraspasoOk
+      ? "Todos los proyectos tienen ID de Traspaso (YYYY-…)"
+      : "Falta ID de Traspaso en: " + proysSinIdT.join(", "));
   if (compOk) it(relOk,  "Todos los componentes tienen el check 'Release'");
-  if (hasRdrRules) it(ruleRdrOk, ruleRdrOk ? "Componente Streetref incluido (regla rdrRules)" : "Falta 'Streetref' (regla rdrRules detectada)");
+  it(ruleRdrOk, rdrRuleMsg);
   it(seqOk,  msgSeq);
 
   v.innerHTML = '<h4>Validador de preparación</h4><ul class="validator-list">' + items.join('') + '</ul>';
 
-  const todoCorrecto = crqOk && instOk && proyOk && compOk && pOk && relOk && ruleRdrOk && seqOk;
+  const todoCorrecto = crqOk && instOk && proyOk && compOk && pOk && relOk && idTraspasoOk && ruleRdrOk && seqOk;
   v.classList.toggle('is-ok', todoCorrecto);
 
   const btn = $('btn-cerrar-pase');
@@ -1393,7 +1462,7 @@ function pintarHeader() {
   setCheck('jiraOk',    cp.jiraOk);
   setCheck('remOk',     cp.remOk);
   setCheck('docPruebas', cp.docPruebas);
-  setCheck('traspaso',  cp.traspaso);
+  // 'traspaso' ya no existe como check fijo — ahora es uno por proyecto.
 
   actualizarValidador();
 }
@@ -1429,6 +1498,7 @@ function pintarProyectos() {
 
     const head = document.createElement('div');
     head.className = 'project-header';
+    const idTraspasoVal = esc(p.idTraspaso || "");
     head.innerHTML =
       '<div class="project-header__title">' +
         '<span class="project-header__dot"></span>' +
@@ -1437,6 +1507,10 @@ function pintarProyectos() {
       '</div>' +
       '<div class="project-header__meta">' +
         '<span>Resp. BBVA: <strong>' + esc(p.cliente) + '</strong></span>' +
+        '<label class="project-id">' +
+          '<span class="project-id__label">ID Traspaso</span>' +
+          '<input type="text" id="idt-' + esc(p.nombre) + '" class="project-id__input" value="' + idTraspasoVal + '" placeholder="YYYY-…" data-act="idTraspaso" data-nombre="' + esc(p.nombre) + '" data-autofill="year">' +
+        '</label>' +
         '<label class="project-ok"><input type="checkbox" ' + (p.ok ? 'checked' : '') + ' data-act="okProy" data-nombre="' + esc(p.nombre) + '"> OK proyecto</label>' +
         '<button class="btn-icon is-danger" type="button" data-act="delProy" data-nombre="' + esc(p.nombre) + '" title="Eliminar proyecto">' + ICONS.trash + '</button>' +
       '</div>';
@@ -1519,6 +1593,10 @@ document.addEventListener('DOMContentLoaded', () => {
   cont.addEventListener('change', (ev) => {
     const t = ev.target.closest('[data-act]'); if (!t) return;
     if (t.dataset.act === 'okProy') updOkProy(t.dataset.nombre, t.checked);
+    else if (t.dataset.act === 'idTraspaso') {
+      programarSaveIdTraspaso(t.dataset.nombre, t.value);
+      actualizarValidador();
+    }
     else if (t.dataset.act === 'editComp') {
       const fila = parseInt(t.dataset.fila);
       if (t.dataset.changeph === "1") updatePlaceholderInline(fila);
@@ -1529,16 +1607,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   cont.addEventListener('input', (ev) => {
-    const t = ev.target.closest('input[type="text"][data-act="editComp"]'); if (!t) return;
-    const fila = parseInt(t.dataset.fila);
-    revalidarCodFila(fila);
-    marcarDirty(fila);
-    programarAutosaveComp(fila);
+    // Componentes (autosave por fila)
+    const tc = ev.target.closest('input[type="text"][data-act="editComp"]');
+    if (tc) {
+      const fila = parseInt(tc.dataset.fila);
+      revalidarCodFila(fila);
+      marcarDirty(fila);
+      programarAutosaveComp(fila);
+      return;
+    }
+    // ID Traspaso (autosave por proyecto, debounce más corto)
+    const ti = ev.target.closest('input[data-act="idTraspaso"]');
+    if (ti) {
+      programarSaveIdTraspaso(ti.dataset.nombre, ti.value);
+      validarIdTraspasoUI(ti.dataset.nombre);
+      actualizarValidador();
+    }
   });
 
   // Autocompletado de prefijos al hacer foco (si el campo está vacío).
   // - data-autofill="schema" → toma el schema según el Tipo de Subida de esa fila.
   // - data-autofill="cibrdr" → siempre CIBRDR-.
+  // - data-autofill="year"   → año actual + "-" (ej. "2026-"), para ID Traspaso.
   // Listener global porque también cubre el formulario "Añadir proyecto".
   document.addEventListener('focusin', (ev) => {
     const t = ev.target;
@@ -1549,6 +1639,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let prefix = "";
     if (kind === "cibrdr") {
       prefix = CIBRDR_PREFIX;
+    } else if (kind === "year") {
+      prefix = new Date().getFullYear() + "-";
     } else if (kind === "schema") {
       const fila = parseInt(t.dataset.fila);
       prefix = getSchemaForFila(fila);
@@ -1556,12 +1648,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!prefix) return;
 
     t.value = prefix;
-    // Coloca el cursor al final del prefijo para que el usuario siga escribiendo.
-    // setTimeout: algunos navegadores resetean la selección en el focusin.
     setTimeout(() => {
       try { t.setSelectionRange(prefix.length, prefix.length); } catch (_) {}
     }, 0);
-    // No marcamos dirty aún: el cambio real vendrá cuando el usuario teclee.
   });
 
   // Delegación para listas de orden y mergeos (existen siempre en el DOM).
@@ -1581,6 +1670,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (t) { updSomEjecucion(parseInt(t.dataset.fila), t.value); return; }
     t = ev.target.closest('#lista-mergeos [data-act="chkMerge"]');
     if (t) { chkMerge(parseInt(t.dataset.fila), t.checked); return; }
+    t = ev.target.closest('#lista-checks-ans [data-act="chkAns"]');
+    if (t) { updCorreoAns(t.dataset.nombre, t.checked); return; }
   });
 });
 
@@ -1724,12 +1815,38 @@ function pintarMergeos() {
   else root.appendChild(frag);
 }
 
+// Lista dinámica de checks "Correo ANS enviado" — uno por proyecto.
+function pintarChecksPre() {
+  const root = $('lista-checks-ans'); if (!root) return;
+  root.innerHTML = "";
+  const proys = (E.proyectos || []);
+  if (proys.length === 0) {
+    root.innerHTML = '<div class="orden-empty">No hay proyectos en este pase.</div>';
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  proys.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'check-row';
+    const idT = p.idTraspaso ? p.idTraspaso : '— sin ID Traspaso —';
+    const isOk = !!p.correoAns;
+    row.innerHTML =
+      '<label style="flex: 1; display: flex; flex-direction: column; gap: 2px; cursor: pointer;">' +
+        '<span style="font-weight: 700; color: var(--bbva-electric-blue);">Correo ANS enviado · ' + esc(p.nombre) + '</span>' +
+        '<span style="font-size: 12px; color: var(--bbva-gray-4);">ID Traspaso: <strong style="color: var(--bbva-electric-blue);">' + esc(idT) + '</strong></span>' +
+      '</label>' +
+      '<input type="checkbox" ' + (isOk ? 'checked' : '') + ' data-act="chkAns" data-nombre="' + esc(p.nombre) + '">';
+    frag.appendChild(row);
+  });
+  root.appendChild(frag);
+}
+
 // ════ Acciones estructurales (esperan al backend) ═════════
 function procesarNuevoEstado(nuevoE, msg, t) {
   E = nuevoE;
   cacheSet(E.fechaSeleccionada, nuevoE);
   lastDashboardHash = dashHash(E);
-  pintarProyectos(); pintarOrden(); pintarMergeos(); actualizarValidador(); refrescarUI();
+  pintarProyectos(); pintarOrden(); pintarMergeos(); pintarChecksPre(); actualizarValidador(); refrescarUI();
   if (t) removeToast(t);
   if (msg) showToast(msg, "success", 1500);
 }
@@ -1796,6 +1913,84 @@ async function updOkProy(nombre, isChecked) {
     prev.forEach(o => E.proyectos.forEach(p => { if (p.nombre === o.nombre) p.ok = o.ok; }));
     actualizarValidador(); pintarProyectos();
     showToast("No se pudo guardar OK · " + e.message, "error");
+  }
+}
+
+// ─── ID Traspaso ───
+// Formato: debe empezar por "YYYY-" (4 dígitos + guion). Vacío = válido para
+// guardar (pero bloquea avance de fase).
+const RE_ID_TRASPASO = /^\d{4}-/;
+
+function validarIdTraspasoValor(idT) {
+  const t = (idT || "").trim();
+  if (!t) return null;
+  if (!RE_ID_TRASPASO.test(t)) return 'El ID de Traspaso debe empezar por "YYYY-" (4 dígitos y guion).';
+  return null;
+}
+
+// Refleja en la UI si el ID Traspaso del proyecto `nombre` es válido o no.
+function validarIdTraspasoUI(nombre) {
+  // El id del input es "idt-<nombre>"; lo localizamos por selector para esquivar
+  // problemas con CSS chars especiales en el nombre.
+  const inp = document.querySelector('input[data-act="idTraspaso"][data-nombre="' + cssQuote(nombre) + '"]');
+  if (!inp) return;
+  const wrap = inp.closest('.project-id');
+  const err = validarIdTraspasoValor(inp.value);
+  if (err) {
+    inp.title = err;
+    if (wrap) wrap.classList.add('is-invalid');
+  } else {
+    inp.title = "";
+    if (wrap) wrap.classList.remove('is-invalid');
+  }
+}
+
+// Escape mínimo para usar un valor como atributo CSS selector.
+function cssQuote(s) { return String(s).replace(/(["\\])/g, '\\$1'); }
+
+const pendingIdTraspaso = new Map();
+function programarSaveIdTraspaso(nombre, valor) {
+  if (pendingIdTraspaso.has(nombre)) clearTimeout(pendingIdTraspaso.get(nombre));
+  const tid = setTimeout(() => {
+    pendingIdTraspaso.delete(nombre);
+    saveIdTraspaso(nombre, valor);
+  }, 500);
+  pendingIdTraspaso.set(nombre, tid);
+}
+
+async function saveIdTraspaso(nombre, valor) {
+  // Validación cliente antes de mandar.
+  const err = validarIdTraspasoValor(valor);
+  if (err) {
+    // Marcamos pero NO mandamos. El usuario puede seguir editando hasta que sea válido.
+    validarIdTraspasoUI(nombre);
+    return;
+  }
+  // Optimismo: actualizar en E
+  const prev = {};
+  E.proyectos.forEach(p => {
+    if (p.nombre === nombre) { prev.val = p.idTraspaso; p.idTraspaso = valor.trim(); }
+  });
+  try {
+    await llamarBackend("actualizarIdTraspaso", { fechaStr: E.fechaSeleccionada, nombre, idTraspaso: valor.trim() });
+    cacheSet(E.fechaSeleccionada, E);
+  } catch (e) {
+    E.proyectos.forEach(p => { if (p.nombre === nombre) p.idTraspaso = prev.val || ""; });
+    showToast("No se pudo guardar ID Traspaso · " + e.message, "error");
+  }
+}
+
+async function updCorreoAns(nombre, isChecked) {
+  const prev = {};
+  E.proyectos.forEach(p => { if (p.nombre === nombre) { prev.val = p.correoAns; p.correoAns = isChecked; } });
+  actualizarValidador();
+  try {
+    await llamarBackend("actualizarCorreoAns", { fechaStr: E.fechaSeleccionada, nombre, val: isChecked });
+    cacheSet(E.fechaSeleccionada, E);
+  } catch (e) {
+    E.proyectos.forEach(p => { if (p.nombre === nombre) p.correoAns = prev.val; });
+    actualizarValidador(); pintarChecksPre();
+    showToast("No se pudo guardar correo ANS · " + e.message, "error");
   }
 }
 
@@ -1895,8 +2090,9 @@ function guardarPre() {
   clearTimeout(preDebounce);
   preDebounce = setTimeout(async () => {
     const getC = (id) => ({ aplica: $('sel-' + id).value, ok: $('chk-' + id).checked });
-    const checks = { dpPro: getC('dpPro'), jiraOk: getC('jiraOk'), remOk: getC('remOk'), docPruebas: getC('docPruebas'), traspaso: getC('traspaso') };
-    E.checksPre = checks;
+    // 4 checks generales. El "Correo ANS" ya no es check general — es por proyecto.
+    const checks = { dpPro: getC('dpPro'), jiraOk: getC('jiraOk'), remOk: getC('remOk'), docPruebas: getC('docPruebas') };
+    E.checksPre = { ...(E.checksPre || {}), ...checks };
     try {
       await llamarBackend("actualizarChecksPre", { fila: E.fila, checks });
       cacheSet(E.fechaSeleccionada, E);
@@ -1962,11 +2158,16 @@ function validarYAvanzarPrep() {
   avanzar('FASE_2_3_PREPARACION');
 }
 function validarYAvanzarPre() {
-  const ids = ['dpPro','jiraOk','remOk','docPruebas','traspaso'];
+  const ids = ['dpPro','jiraOk','remOk','docPruebas'];
   for (const id of ids) {
     const aplica = $('sel-' + id).value === 'APLICA';
     const ok = $('chk-' + id).checked;
-    if (aplica && !ok) return showToast("Completa los checks que aplican", "error", 4000);
+    if (aplica && !ok) return showToast("Completa los checks generales que aplican", "error", 4000);
+  }
+  // Correo ANS: obligatorio para todos los proyectos del pase.
+  const sinAns = (E.proyectos || []).filter(p => !p.correoAns).map(p => p.nombre);
+  if (sinAns.length > 0) {
+    return showToast("Falta marcar correo ANS enviado en: " + sinAns.join(", "), "error", 5000);
   }
   avanzar('FASE_4_CERRADO');
 }
