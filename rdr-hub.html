@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>RDR Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root { --blue: #003366; --light-blue: #00509e; --bg: #f4f7f9; --white: #ffffff; --green: #2e7d32; --red: #c62828; --grey: #e0e0e0; }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; font-size: 14px; color: #333; }
+    
+    #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--blue); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; transition: opacity 0.3s ease; }
+    .loader-spinner { border: 4px solid rgba(255,255,255,0.2); border-top: 4px solid white; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px;}
+    
+    #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+    .toast { background: #333; color: white; padding: 12px 20px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-weight: bold; animation: fadeUp 0.3s forwards; display: flex; align-items: center; gap: 12px; pointer-events: auto; }
+    .toast-success { border-left: 6px solid var(--green); } .toast-error { border-left: 6px solid var(--red); } .toast-loading { border-left: 6px solid #2196f3; }
+    .spinner { border: 3px solid rgba(255,255,255,0.3); border-top: 3px solid white; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(20px); } }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    .header-master { background: var(--blue); color: white; padding-top: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .header-top { display: flex; justify-content: space-between; align-items: center; padding: 0 20px 15px 20px; }
+    .header-title { font-size: 1.5em; font-weight: bold; margin: 0; }
+    
+    .header-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; padding: 0 20px 15px 20px; align-items: end; }
+    .header-controls label { color: #bbdefb; font-size: 0.75em; text-transform: uppercase; margin-bottom: 3px; display: block;}
+    .header-controls select, .header-controls input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; background: #ffffff; color: #333333; font-weight: bold; box-sizing: border-box; }
+    .header-controls input::placeholder { color: #aaa; font-weight: normal; }
+    
+    .nav-tabs { display: flex; background: var(--light-blue); padding: 0 20px; overflow-x: auto; white-space: nowrap; }
+    .tab-btn { background: transparent; border: none; color: rgba(255,255,255,0.5); padding: 15px 25px; cursor: pointer; font-size: 1em; font-weight: bold; border-bottom: 3px solid transparent; transition: 0.3s; }
+    .tab-btn.active { color: white; border-bottom: 3px solid white; background: rgba(255,255,255,0.1); }
+    .tab-btn:disabled { cursor: not-allowed; }
+
+    .main-content { padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    .card { background: white; width: 100%; max-width: 1200px; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; box-sizing: border-box;}
+    .panel { display: none !important; } .panel.active { display: block !important; }
+    
+    .btn { padding: 10px 18px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; font-size: 0.9em; transition: 0.2s;}
+    .btn:hover { filter: brightness(1.1); } 
+    .btn-save { background: #007bff; } .btn-red { background: var(--red); } .btn-green { background: var(--green); } .btn-warn { background: #ff9800; color: black; }
+    .btn[data-disabled="true"] { background: #cccccc; color: #333333; opacity: 1; cursor: not-allowed; border: 1px solid #bbbbbb; }
+    
+    .status-banner { padding: 15px; border-radius: 6px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; font-size: 1.1em; font-weight: bold; flex-wrap: wrap; gap:10px;}
+    
+    .table-responsive { width: 100%; overflow-x: auto; }
+    .project-container { border: 1px solid #ddd; border-radius: 6px; margin-bottom: 20px; overflow: hidden; background: #fafafa; }
+    .project-header { background: #eee; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; flex-wrap: wrap; gap:10px;}
+    
+    .comp-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1.2fr 2fr 1.2fr 65px 1.5fr 75px; gap: 8px; padding: 6px 10px; align-items: center; min-width: 1100px; }
+    .comp-header { background: #e0e0e0; font-weight: bold; font-size: 0.75em; text-transform: uppercase; color: #555; }
+    .comp-item { border-bottom: 1px solid #eee; background: white; }
+    .inline-input { width: 100%; padding: 4px 6px; border: 1px solid transparent; border-radius: 3px; font-size: 0.85em; background: transparent; box-sizing: border-box;}
+    .inline-input:focus, .inline-input:hover { border: 1px solid #ccc; background: #fff; outline: none; }
+    
+    .btn-icon { background: none; border: none; cursor: pointer; font-size: 1.2em; transition: 0.2s; display: flex; justify-content: center; align-items: center; padding: 4px;}
+    .btn-icon:hover { transform: scale(1.2); }
+    
+    .form-insert { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 25px; background: transparent; padding: 0; align-items: flex-end; }
+    .form-insert label { color: #666; font-size: 0.75em; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; display: block; }
+    .form-insert input[type="text"], .form-insert select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    
+    .check-row { display: flex; align-items: center; gap: 15px; padding: 12px; border-bottom: 1px solid #eee; background: white; border-radius: 4px; margin-bottom: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
+    .check-row select { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.85em; font-weight: bold; cursor: pointer;}
+    .check-row label { flex: 1; margin: 0; font-size: 1.05em; font-weight: 500; transition: 0.2s; cursor:pointer;}
+    .check-row input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; accent-color: var(--green); }
+    .disabled-text { color: #aaa !important; text-decoration: line-through; }
+    
+    .locked-mode { pointer-events: none; opacity: 0.8; filter: grayscale(80%); user-select: none; }
+    
+    .calendar-icon { width: 120px; border: 2px solid var(--blue); border-radius: 8px; overflow: hidden; text-align: center; background: white; margin: 20px auto; }
+    .calendar-header { background: var(--blue); color: white; padding: 5px; font-weight: bold; }
+    .calendar-body { padding: 10px 0; font-size: 2.5em; font-weight: bold; color: #333; }
+  </style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="loader-spinner"></div>
+  <strong style="font-size: 1.8em; margin-bottom: 5px;">RDR HUB</strong>
+  <p id="loader-msg" style="color: rgba(255,255,255,0.8); margin:0;">Iniciando sistema...</p>
+</div>
+
+<div id="toast-container"></div>
+
+<div class="header-master">
+  <div class="header-top"><h1 class="header-title">RDR Hub</h1></div>
+  
+  <div class="header-controls">
+    <div><label>Fecha del Pase</label><select id="h-fecha" onchange="cambiarFecha()"></select></div>
+    
+    <div id="bloque-cabecera-editable" style="display: contents;">
+      <div>
+        <label>CRQ General</label>
+        <div style="display:flex; gap:5px;">
+          <input type="text" id="h-crq" placeholder="Ej: CRQ000..." onkeyup="actualizarValidador()">
+          <button class="btn btn-save" style="padding: 8px 12px;" onclick="autoGuardarCab()" title="Guardar CRQ">💾</button>
+        </div>
+      </div>
+      <div><label>Liderar</label><select id="h-liderar" onchange="autoGuardarCab()"></select></div>
+      <div><label>Aprender</label><select id="h-aprender" onchange="autoGuardarCab()"></select></div>
+      <div>
+        <label style="color:#ffcc80;">Validación Fase 2</label>
+        <div style="background: rgba(255,255,255,0.1); padding: 6px; border-radius: 4px; display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="h-instTec" onchange="autoGuardarCab(); actualizarValidador();" style="width: 18px; height: 18px; accent-color: #ff9800;">
+          <span style="font-weight: bold; font-size: 0.9em; color:#fff;">Instalación Técnica?</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="nav-tabs" id="barra-tabs">
+    <button class="tab-btn" id="t-PROYECTOS" onclick="verTab('PROYECTOS')">1. Preparación</button>
+    <button class="tab-btn" id="t-SECUENCIA" onclick="verTab('SECUENCIA')">2. Orden del Pase</button>
+    <button class="tab-btn" id="t-PRE" onclick="verTab('PRE')">3. Pre-Implant.</button>
+    <button class="tab-btn" id="t-ORDEN" onclick="verTab('ORDEN')">4. Implantación</button>
+    <button class="tab-btn" id="t-POST" onclick="verTab('POST')">5. Post-Implant.</button>
+  </div>
+</div>
+
+<div class="main-content">
+
+  <div id="panel-PENDIENTE" class="panel card" style="text-align:center; padding:40px;">
+    <h2>Pase Calendado no iniciado</h2>
+    <div class="calendar-icon"><div class="calendar-header" id="cal-mes">---</div><div class="calendar-body" id="cal-dia">--</div></div>
+    <button class="btn btn-green" style="padding:15px 30px; font-size:1.2em;" onclick="comenzarPase()">🚀 COMENZAR PASE</button>
+  </div>
+
+  <div id="panel-ENCUESTA" class="panel card" style="text-align:center; padding:40px;">
+    <h2>¿Tenemos subida este pase?</h2>
+    <button class="btn btn-green" style="padding:15px 30px; margin:10px;" onclick="responderEncuesta('SI')">SÍ, ADELANTE</button>
+    <button class="btn btn-red" style="padding:15px 30px; margin:10px;" onclick="responderEncuesta('NO')">NO HAY SUBIDA</button>
+  </div>
+
+  <div id="panel-DESCANSO" class="panel card" style="text-align:center; padding:40px;">
+    <h2>Semana de Descanso</h2>
+    <button class="btn btn-green" onclick="activarEmergencia()">Reactivar Pase de Emergencia</button>
+  </div>
+  
+  <div id="panel-COMPLETADO" class="panel card" style="text-align:center; padding:60px 40px; background: linear-gradient(135deg, #1b5e20, #2e7d32); color: white; border: none; display:none;">
+    <h1 style="font-size: 3.5em; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">¡PASE COMPLETADO AL 100%!</h1>
+    <p style="font-size: 1.5em; margin-top: 20px; color: #e8f5e9;">Todos los proyectos están operativos en producción y las ramas mergeadas.</p>
+    <div style="margin: 40px auto 0; padding: 25px; background: rgba(0,0,0,0.3); border-radius: 8px; display: inline-block; border-left: 5px solid #81c784;">
+       <p style="margin:0; font-size:1.2em; text-align: left;">
+         🔒 <strong>Pase en modo de solo lectura.</strong><br>
+         <span style="font-size: 0.9em; color:#c8e6c9;">El registro ha sido bloqueado por seguridad. Puedes navegar por las pestañas superiores para revisar el historial.</span>
+       </p>
+    </div>
+  </div>
+
+  <div id="panel-PROYECTOS" class="panel card">
+    <div id="banner-estado" class="status-banner"></div>
+    <div id="bloque-proyectos">
+      <div id="contenedor-proyectos"></div>
+      
+      <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px dashed #ccc; margin-top: 30px;">
+        <h4 style="margin-top:0; color:var(--blue);">+ Añadir Nuevo Proyecto</h4>
+        <div class="form-insert" style="background:transparent; padding:0;">
+          <div><label>Nombre Proyecto</label><input type="text" id="add-p-nom" placeholder="Ej: Integración de emisiones..."></div>
+          <div><label>Feature</label><input type="text" id="add-p-feat" placeholder="Ej: CIBRDR-1234"></div>
+          <div><label>Resp. BBVA</label><select id="add-p-resp"></select></div>
+          <button class="btn btn-save" style="height: 35px;" onclick="addProyecto()">Añadir Proyecto</button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="caja-validador" style="background:#fff3e0; border:1px solid #ffb74d; padding:15px; border-radius:8px; margin-top:30px; display:none; transition: 0.3s;"></div>
+    <button id="btn-cerrar-pase" class="btn" style="width:100%; margin-top:15px; padding:15px; font-size:1.1em;" data-disabled="true" onclick="validarYAvanzarPrep()">Completa el validador para avanzar</button>
+  </div>
+
+  <div id="panel-SECUENCIA" class="panel card">
+    <h3 style="margin-top:0; color: var(--blue);">Orden del Pase</h3>
+    <p style="color:#666; margin-bottom: 20px;">Diseña el orden de ejecución. Debe incluir obligatoriamente PARADA, ARRANQUE y todos los Componentes (Códigos) entre medias.</p>
+    
+    <div id="orden-builder" style="background: #f1f1f1; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <button class="btn btn-warn" onclick="addPasoStr('PARADA DEL SISTEMA')">+ PARADA</button>
+        <button class="btn btn-warn" onclick="addPasoStr('ARRANQUE DEL SISTEMA')">+ ARRANQUE</button>
+        <button class="btn btn-warn" onclick="addPasoStr('REINICIO HANDLER')">+ R. HANDLER</button>
+        <button class="btn btn-warn" onclick="addPasoStr('REINICIO PREVENTIVO')">+ R. PREVENT</button>
+        <button class="btn btn-warn" onclick="addPasoStr('REINICIO API')">+ R. API</button>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px;">
+        <div id="container-sel-add-cod" style="flex:1; min-width:150px;"></div>
+        <input type="text" id="txt-add-paso" placeholder="Paso manual personalizado..." style="padding:8px; border-radius:4px; border:1px solid #ccc; flex:1; min-width:150px;">
+        <button class="btn btn-save" onclick="addPasoTxt()">+ Manual</button>
+      </div>
+    </div>
+
+    <div id="lista-orden-prep"></div>
+    <button id="btn-volver-prep" class="btn btn-green" style="width:100%; margin-top:30px; padding:15px; font-size:1.1em;" onclick="verTab('PROYECTOS')">⬅️ Volver a Preparación para Validar</button>
+  </div>
+
+  <div id="panel-PRE" class="panel card">
+    <h3>Checks Pre-Implantación</h3>
+    <p style="color:#666; margin-bottom: 20px;">Antes de pasar a la implantación del sábado, todos los elementos aplicables deben estar confirmados.</p>
+    
+    <div style="background:#f9f9f9; padding:20px; border-radius:6px; display:flex; flex-direction:column; gap:5px;">
+      <div class="check-row" id="row-dpPro">
+        <select id="sel-dpPro" onchange="toggleCheckUI('dpPro'); guardarPre();"><option value="APLICA">Aplica</option><option value="NA">No Aplica</option></select>
+        <label id="lbl-dpPro" for="chk-dpPro">DPs que suben Pendientes de PRO</label>
+        <input type="checkbox" id="chk-dpPro" onchange="guardarPre()">
+      </div>
+      <div class="check-row" id="row-jiraOk">
+        <select id="sel-jiraOk" onchange="toggleCheckUI('jiraOk'); guardarPre();"><option value="APLICA">Aplica</option><option value="NA">No Aplica</option></select>
+        <label id="lbl-jiraOk" for="chk-jiraOk">JIRAs resueltos y marcados para el pase</label>
+        <input type="checkbox" id="chk-jiraOk" onchange="guardarPre()">
+      </div>
+      <div class="check-row" id="row-remOk">
+        <select id="sel-remOk" onchange="toggleCheckUI('remOk'); guardarPre();"><option value="APLICA">Aplica</option><option value="NA">No Aplica</option></select>
+        <label id="lbl-remOk" for="chk-remOk">REMEDYs listos</label>
+        <input type="checkbox" id="chk-remOk" onchange="guardarPre()">
+      </div>
+      <div class="check-row" id="row-docPruebas">
+        <select id="sel-docPruebas" onchange="toggleCheckUI('docPruebas'); guardarPre();"><option value="APLICA">Aplica</option><option value="NA">No Aplica</option></select>
+        <label id="lbl-docPruebas" for="chk-docPruebas">Documento de pruebas post-implantación creado</label>
+        <input type="checkbox" id="chk-docPruebas" onchange="guardarPre()">
+      </div>
+      <div class="check-row" id="row-traspaso">
+        <select id="sel-traspaso" onchange="toggleCheckUI('traspaso'); guardarPre();"><option value="APLICA">Aplica</option><option value="NA">No Aplica</option></select>
+        <label id="lbl-traspaso" for="chk-traspaso">Correo de traspaso al ANS enviado</label>
+        <input type="checkbox" id="chk-traspaso" onchange="guardarPre()">
+      </div>
+    </div>
+    <button id="btn-cerrar-pre" class="btn btn-green" style="width:100%; margin-top:20px; padding:15px; font-size:1.1em;" onclick="validarYAvanzarPre()">TODO LISTO (Pasar a Sábado)</button>
+  </div>
+
+  <div id="panel-ORDEN" class="panel card">
+    <h3 style="margin-top:0; color: var(--blue);">Ejecución del Pase</h3>
+    <p style="color:#666; margin-bottom: 20px;">Ve marcando los elementos a medida que se implanten en producción e informa del SOM asociado a los reinicios o paradas.</p>
+    
+    <div id="lista-orden-ejecucion"></div>
+    <button id="btn-completar-imp" class="btn btn-green" style="width:100%; margin-top:20px; padding:15px; font-size:1.1em;" onclick="validarYCompletarImplantacion()">COMPLETAR IMPLANTACIÓN (Avanzar a Mergeos)</button>
+  </div>
+  
+  <div id="panel-POST" class="panel card">
+    <h3 style="margin-top:0; color: var(--blue);">Post-Implantación: Mergeos</h3>
+    <p style="color:#666; margin-bottom: 20px;">Confirma que las ramas de los siguientes componentes (DP-KYTL) han sido mergeadas correctamente en Develop/Master.</p>
+    
+    <div id="lista-mergeos" style="background:#f9f9f9; padding:20px; border-radius:6px; display:flex; flex-direction:column; gap:5px;"></div>
+    
+    <button id="btn-finalizar-pase" class="btn btn-green" style="width:100%; margin-top:20px; padding:15px; font-size:1.1em;" onclick="validarYFinalizarPase()">FINALIZAR PASE COMPLETAMENTE</button>
+  </div>
+  
+  <button class="btn btn-red" style="margin-top: 50px; opacity: 0.3;" onclick="bombaNuclear()">DEBUG: RESET EXCEL</button>
+</div>
+
+<script>
+  // ========================================================
+  // ⚠️ 1. PEGA AQUÍ LA URL DE TU API DE APPS SCRIPT ⚠️
+  // ========================================================
+  const API_URL = "https://script.google.com/macros/s/AKfycbwZ5Sx4TlJnJ4I1sFntjG9dNyfSFeqRu29vNEKowD1wysLjmVT9fr0m9hNvQZOqE7C9hA/exec";
+
+  let E = {}; 
+  let tempOrden = [];
+  let saveTimeout;
+
+  // ========================================================
+  // 2. NUEVO MOTOR DE PETICIONES (REEMPLAZA A google.script.run)
+  // ========================================================
+  async function llamarBackend(actionName, payloadData = {}) {
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: actionName, payload: payloadData })
+      });
+      const result = await response.json();
+      if (result.status === "error") throw new Error(result.message);
+      return result.data;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+
+  // ========================================================
+  // 3. UI, LOADERS Y TOASTS
+  // ========================================================
+  function showToast(msg, type = 'success', duration = 3000) {
+    const t = document.createElement('div'); t.className = `toast toast-${type}`;
+    t.innerHTML = (type === 'loading') ? `<div class="spinner"></div> <span>${msg}</span>` : `<span>${msg}</span>`;
+    document.getElementById('toast-container').appendChild(t);
+    if(type !== 'loading') { setTimeout(() => { t.style.animation = 'fadeOut 0.3s forwards'; setTimeout(() => t.remove(), 300); }, duration); }
+    return t;
+  }
+  
+  function toggleLoader(show) {
+    let l = document.getElementById('loader');
+    if(show) { l.style.display = 'flex'; setTimeout(()=>l.style.opacity='1', 10); } 
+    else { l.style.opacity = '0'; setTimeout(()=>l.style.display='none', 300); }
+  }
+
+  window.onload = () => cargarCompleto(null);
+
+  // ========================================================
+  // 4. LÓGICA CORE REESCRITA A ASYNC/AWAIT
+  // ========================================================
+  async function cargarCompleto(f) {
+    toggleLoader(true);
+    try {
+      E = await llamarBackend("obtenerDatosDashboard", { fecha: f });
+      pintarHeader(); 
+      refrescarUI(); 
+      toggleLoader(false);
+    } catch(err) {
+      document.getElementById('loader-msg').innerHTML = `<span style="color:#ff5252">Error de conexión: ${err.message}</span><br><button onclick="cargarCompleto(null)" style="margin-top:15px; padding:10px; color:black; cursor:pointer;">Reintentar</button>`;
+    }
+  }
+
+  async function refrescoSilencioso(toastCarga, mensajeExito) {
+    try {
+      E = await llamarBackend("obtenerDatosDashboard", { fecha: E.fechaSeleccionada });
+      pintarProyectos(); pintarOrden(); pintarMergeos();
+      if(toastCarga) toastCarga.remove(); 
+      if(mensajeExito) showToast(mensajeExito, "success");
+    } catch(e) {
+      if(toastCarga) toastCarga.remove(); 
+      showToast("Error de sincro: " + e.message, "error");
+    }
+  }
+
+  function pintarHeader() {
+    let htmlFechas = "";
+    E.fechasDisponibles.forEach(x => htmlFechas += `<option value="${x}">${x}</option>`);
+    document.getElementById('h-fecha').innerHTML = htmlFechas;
+    document.getElementById('h-fecha').value = E.fechaSeleccionada;
+    
+    document.getElementById('h-crq').value = E.crq;
+    document.getElementById('h-instTec').checked = E.instTecnica;
+    
+    const llenar = (id, arr, val) => { 
+      let s = document.getElementById(id); 
+      let html = '<option value="">Elegir...</option>'; 
+      arr.forEach(x => html += `<option value="${x}">${x}</option>`); 
+      s.innerHTML = html;
+      s.value = val; 
+    };
+    
+    llenar('h-liderar', E.equipo, E.liderar); 
+    llenar('h-aprender', E.equipo, E.aprender);
+    llenar('add-p-resp', E.clientes, ""); 
+
+    document.getElementById('cal-dia').innerText = E.fechaSeleccionada.split('/')[0];
+    document.getElementById('cal-mes').innerText = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'][parseInt(E.fechaSeleccionada.split('/')[1])-1];
+
+    const setCheck = (id, obj) => { document.getElementById('sel-'+id).value = obj.aplica; document.getElementById('chk-'+id).checked = obj.ok; toggleCheckUI(id); };
+    setCheck('dpPro', E.checksPre.dpPro); setCheck('jiraOk', E.checksPre.jiraOk); setCheck('remOk', E.checksPre.remOk); setCheck('docPruebas', E.checksPre.docPruebas); setCheck('traspaso', E.checksPre.traspaso);
+    
+    actualizarValidador();
+  }
+
+  function toggleCheckUI(id) {
+    let esAplica = document.getElementById('sel-'+id).value === 'APLICA';
+    let chk = document.getElementById('chk-'+id); let lbl = document.getElementById('lbl-'+id);
+    if(!esAplica) { chk.disabled = true; chk.checked = false; lbl.classList.add('disabled-text'); } 
+    else { chk.disabled = false; lbl.classList.remove('disabled-text'); }
+  }
+
+  function refrescarUI() {
+    const habilitar = (id) => { const b = document.getElementById('t-'+id); b.disabled = false; b.style.opacity = "1"; };
+    document.querySelectorAll('.tab-btn').forEach(b => { b.disabled = true; b.style.opacity = "0.3"; });
+
+    let panelAMostrar = "PROYECTOS";
+    if (E.faseActual === "PENDIENTE") { panelAMostrar = "PENDIENTE"; }
+    else if (E.faseActual === "FASE_1_ENCUESTA") { panelAMostrar = "ENCUESTA"; habilitar("PROYECTOS"); }
+    else if (E.faseActual === "FASE_0_DESCANSO") { panelAMostrar = "DESCANSO"; habilitar("PROYECTOS"); }
+    else if (E.faseActual === "FASE_2_3_PREPARACION") { panelAMostrar = "PROYECTOS"; habilitar("PROYECTOS"); habilitar("SECUENCIA"); }
+    else if (E.faseActual === "FASE_4_CERRADO") { panelAMostrar = "PRE"; habilitar("PROYECTOS"); habilitar("SECUENCIA"); habilitar("PRE"); }
+    else if (E.faseActual === "FASE_6_IMPLANTACION") { panelAMostrar = "ORDEN"; habilitar("PROYECTOS"); habilitar("SECUENCIA"); habilitar("PRE"); habilitar("ORDEN"); }
+    else if (E.faseActual === "FASE_7_POST") { panelAMostrar = "POST"; habilitar("PROYECTOS"); habilitar("SECUENCIA"); habilitar("PRE"); habilitar("ORDEN"); habilitar("POST"); }
+    else if (E.faseActual === "COMPLETADO") { panelAMostrar = "COMPLETADO"; habilitar("PROYECTOS"); habilitar("SECUENCIA"); habilitar("PRE"); habilitar("ORDEN"); habilitar("POST"); }
+
+    const b = document.getElementById('banner-estado'); 
+    const blq = document.getElementById('bloque-proyectos');
+    let isCompletado = (E.faseActual === "COMPLETADO");
+    
+    if(isCompletado) {
+       blq.className = "locked-mode";
+       document.getElementById('panel-PRE').classList.add('locked-mode');
+       document.getElementById('panel-SECUENCIA').classList.add('locked-mode');
+       document.getElementById('panel-ORDEN').classList.add('locked-mode');
+       document.getElementById('panel-POST').classList.add('locked-mode');
+       document.getElementById('bloque-cabecera-editable').classList.add('locked-mode');
+       b.style.display = 'none';
+    } else {
+       blq.className = (E.faseActual !== "FASE_2_3_PREPARACION") ? "locked-mode" : "";
+       document.getElementById('panel-PRE').classList.remove('locked-mode');
+       document.getElementById('panel-SECUENCIA').classList.remove('locked-mode');
+       document.getElementById('panel-ORDEN').classList.remove('locked-mode');
+       document.getElementById('panel-POST').classList.remove('locked-mode');
+       document.getElementById('bloque-cabecera-editable').classList.remove('locked-mode');
+       b.style.display = 'flex';
+       
+       if(E.faseActual === "FASE_2_3_PREPARACION") { b.innerHTML = `<div>PASE ACTIVO - PREPARACIÓN</div> <button class="btn btn-red" onclick="cancelarSubida()">Cancelar Pase</button>`; b.style.background="#e8f5e9"; b.style.color="var(--green)"; } 
+       else if (E.faseActual.includes("CERRADO") || E.faseActual.includes("IMPLANTACION") || E.faseActual.includes("POST")) { b.innerHTML = `<div>🔒 PASE CERRADO PARA EDICIÓN</div> <button class="btn btn-warn" onclick="activarEmergencia()">Editar Emergencia</button>`; b.style.background="#fff3e0"; b.style.color="#e65100"; }
+    }
+    
+    document.getElementById('btn-cerrar-pase').style.display = (E.faseActual === "FASE_2_3_PREPARACION" && !isCompletado) ? "block" : "none";
+    document.getElementById('orden-builder').style.display = (E.faseActual === "FASE_2_3_PREPARACION" && !isCompletado) ? "block" : "none";
+    document.getElementById('btn-volver-prep').style.display = (E.faseActual === "FASE_2_3_PREPARACION" && !isCompletado) ? "block" : "none";
+    document.getElementById('btn-cerrar-pre').style.display = (E.faseActual === "FASE_4_CERRADO" && !isCompletado) ? "block" : "none";
+    document.getElementById('btn-completar-imp').style.display = (E.faseActual === "FASE_6_IMPLANTACION" && !isCompletado) ? "block" : "none";
+    document.getElementById('btn-finalizar-pase').style.display = (E.faseActual === "FASE_7_POST" && !isCompletado) ? "block" : "none";
+
+    verTab(panelAMostrar);
+    pintarProyectos();
+    pintarOrden();
+    pintarMergeos();
+  }
+
+  function verTab(id) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active')); if(document.getElementById('panel-'+id)) document.getElementById('panel-'+id).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); if(document.getElementById('t-'+id)) document.getElementById('t-'+id).classList.add('active');
+  }
+
+  function actualizarValidador() {
+    if(E.faseActual !== "FASE_2_3_PREPARACION") { let v = document.getElementById('caja-validador'); if(v) v.style.display = 'none'; return; }
+    let v = document.getElementById('caja-validador'); if(!v) return;
+    v.style.display = 'block';
+
+    let crqOk = document.getElementById('h-crq').value.trim() !== "";
+    let instOk = document.getElementById('h-instTec').checked;
+    let proyOk = E.proyectos.length > 0;
+    let compOk = proyOk && !E.proyectos.some(p => p.componentes.length === 0);
+    
+    let isT = val => val === true || String(val).toUpperCase() === "TRUE" || String(val).toUpperCase() === "VERDADERO";
+    let pOk = proyOk && !E.proyectos.some(p => !isT(p.ok));
+    let relOk = compOk && !E.proyectos.some(p => p.componentes.some(c => !isT(c.release)));
+    
+    let hasRdrRules = false; let hasStreetref = false; let allComps = [];
+    E.proyectos.forEach(p => p.componentes.forEach(c => allComps.push(c)));
+    allComps.forEach(c => {
+       if(c.nombre && c.nombre.includes("rdrRules/")) hasRdrRules = true;
+       if(c.nombre && c.nombre.toLowerCase().includes("streetref")) hasStreetref = true;
+    });
+    let ruleRdrOk = !hasRdrRules || hasStreetref;
+
+    let seqOk = true;
+    let msgSeq = "Orden del Pase diseñado (Parada, Componentes y Arranque)";
+    
+    if(tempOrden && tempOrden.length >= 2) {
+       let oStrings = tempOrden.map(o => o.elemento.toUpperCase());
+       let idxP = oStrings.findIndex(o => o.includes("PARADA"));
+       let idxA = oStrings.findIndex(o => o.includes("ARRANQUE"));
+       
+       if (idxP === -1 || idxA === -1) {
+           seqOk = false; msgSeq = "Falta añadir PARADA o ARRANQUE";
+       } else if (idxP > idxA) {
+           seqOk = false; msgSeq = "La PARADA debe ir antes del ARRANQUE";
+       } else {
+           let codsUnicos = new Set();
+           allComps.forEach(c => { if(c.codigo && c.codigo.trim() !== "" && c.codigo.trim() !== "-") codsUnicos.add(c.codigo.trim().toUpperCase()); });
+           
+           let faltan = [];
+           codsUnicos.forEach(cod => { 
+               let idxC = oStrings.findIndex(o => o.includes(cod));
+               if (idxC === -1 || idxC <= idxP || idxC >= idxA) faltan.push(cod); 
+           });
+           if (faltan.length > 0) {
+               seqOk = false; msgSeq = "Faltan paquetes o están fuera del bloque principal: " + faltan.join(", ");
+           }
+       }
+    } else {
+       seqOk = false; msgSeq = "Diseña el orden del pase (Falta Parada y Arranque)";
+    }
+
+    let html = `<h4 style="margin-top:0; color:#e65100;">📋 Validador de Preparación</h4><ul style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 10px;">`;
+    const i = (cond, txt) => `<li style="color
