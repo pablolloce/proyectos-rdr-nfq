@@ -6,7 +6,6 @@
   <title>RDR · BBVA × NFQ</title>
   <meta name="description" content="Hub de documentación RDR: Welcome Pack, Formación, Pases Calendados, Retrospectiva, Vacaciones y Portal NFQ-BBVA CIB.">
 
-  <!-- Fuentes oficiales BBVA -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,700;1,8..60,700&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
@@ -22,27 +21,9 @@
       --aqua:     #8BE1E9;
       --purple:   #9694FF;
       --mandarin: #FFB56B;
-      --gray-4:   #ADB8C2;
 
       --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
       --font-body:    "Lato", "Helvetica Neue", Arial, sans-serif;
-
-      --fs-hero:    clamp(56px, 7vw, 128px);
-      --fs-h2:      clamp(28px, 2.5vw, 48px);
-      --fs-h3:      clamp(20px, 1.8vw, 32px);
-      --fs-lead:    clamp(18px, 1.3vw, 24px);
-      --fs-body:    clamp(14px, 1vw, 18px);
-      --fs-caption: clamp(11px, 0.75vw, 14px);
-      --fs-label:   clamp(10px, 0.7vw, 12px);
-
-      --space-1: 8px;  --space-2: 16px; --space-3: 24px; --space-4: 32px;
-      --space-5: 40px; --space-6: 48px; --space-7: 56px; --space-8: 64px;
-
-      --radius-sm: 8px;
-      --radius-md: 16px;
-      --radius-lg: 24px;
-
-      --margin-outer: clamp(24px, 4vw, 64px);
     }
 
     * { box-sizing: border-box; }
@@ -52,140 +33,138 @@
       padding: 0;
       font-family: var(--font-body);
       font-weight: 400;
-      font-size: var(--fs-body);
-      line-height: 1.5;
       color: var(--sand);
       background: var(--electric);
-      min-height: 100vh;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
 
-    h1, h2, h3 {
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    h1, h2 {
       font-family: var(--font-display);
       font-weight: 700;
       margin: 0;
-      line-height: 0.95;
+      line-height: 1;
       letter-spacing: -0.01em;
     }
 
     p { margin: 0; }
-    a { color: inherit; }
+    a { color: inherit; text-decoration: none; }
 
     /* ===========================================================
-       LAYOUT
+       PAGE WRAPPER — compacto, todo accesible
        =========================================================== */
 
     .page {
-      min-height: 100vh;
+      flex: 1;
       display: flex;
       flex-direction: column;
-      padding: var(--margin-outer);
-      gap: var(--space-6);
+      padding: 24px clamp(16px, 3vw, 40px);
+      gap: 20px;
+      max-width: 1600px;
+      width: 100%;
+      margin: 0 auto;
     }
 
     /* ===========================================================
-       HEADER
+       HEADER — todo en una fila horizontal
        =========================================================== */
 
-    .header {
+    .topbar {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: var(--space-4);
+      align-items: center;
+      gap: 24px;
     }
 
-    .header__breadcrumb {
-      font-size: var(--fs-caption);
+    .topbar__left {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .topbar__title {
+      font-family: var(--font-display);
       font-weight: 700;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      opacity: 0.7;
+      font-size: clamp(22px, 2.4vw, 32px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
     }
 
-    .header__logo {
+    .topbar__subtitle {
+      font-size: clamp(11px, 0.85vw, 13px);
+      font-weight: 400;
+      opacity: 0.75;
+      letter-spacing: 0.02em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .topbar__logo {
       font-family: var(--font-body);
       font-weight: 900;
-      font-size: clamp(24px, 2vw, 36px);
+      font-size: clamp(18px, 1.6vw, 22px);
       letter-spacing: -0.02em;
-      line-height: 1;
+      flex-shrink: 0;
     }
 
     /* ===========================================================
-       HERO
-       =========================================================== */
-
-    .hero {
-      margin-top: var(--space-4);
-    }
-
-    .hero__ante {
-      font-size: var(--fs-lead);
-      font-weight: 400;
-      margin-bottom: var(--space-2);
-      padding-bottom: var(--space-2);
-      border-bottom: 1px solid rgba(247,248,248,0.2);
-      max-width: 200px;
-    }
-
-    .hero__title {
-      font-size: var(--fs-hero);
-      margin-bottom: var(--space-4);
-    }
-
-    .hero__subtitle {
-      font-size: var(--fs-lead);
-      font-weight: 400;
-      max-width: 720px;
-      opacity: 0.85;
-      line-height: 1.4;
-    }
-
-    /* ===========================================================
-       GRID DE TARJETAS
+       GRID DE TARJETAS — denso, todo a la vista
        =========================================================== */
 
     .cards {
       flex: 1;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: var(--space-3);
-      margin-top: var(--space-4);
+      gap: 14px;
+      align-content: stretch;
     }
 
-    @media (max-width: 1280px) {
+    @media (max-width: 1100px) {
       .cards { grid-template-columns: repeat(3, 1fr); }
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 720px) {
       .cards { grid-template-columns: repeat(2, 1fr); }
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 460px) {
       .cards { grid-template-columns: 1fr; }
     }
 
     .card {
       display: flex;
       flex-direction: column;
-      padding: var(--space-4);
-      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      border-radius: 14px;
       color: var(--electric);
-      text-decoration: none;
-      min-height: 280px;
+      min-height: 0;
       position: relative;
       overflow: hidden;
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      border: none;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      width: 100%;
     }
 
     .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
     }
 
     .card:focus-visible {
       outline: 2px solid var(--sand);
-      outline-offset: 4px;
+      outline-offset: 3px;
     }
 
     .card--1 { background: var(--serene); }
@@ -196,36 +175,44 @@
     .card--6 { background: var(--purple); }
     .card--7 { background: var(--sand); }
 
+    .card__head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
     .card__phase {
-      font-size: var(--fs-caption);
+      font-size: 10px;
       font-weight: 700;
-      letter-spacing: 0.15em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      margin-bottom: var(--space-2);
       opacity: 0.7;
+      line-height: 1.2;
     }
 
     .card__num {
       font-family: var(--font-display);
-      font-size: clamp(36px, 3.5vw, 56px);
+      font-size: 22px;
       font-weight: 700;
       line-height: 1;
-      margin-bottom: var(--space-3);
+      opacity: 0.85;
     }
 
     .card__title {
       font-family: var(--font-display);
-      font-size: clamp(20px, 1.6vw, 28px);
+      font-size: clamp(17px, 1.4vw, 22px);
       font-weight: 700;
-      line-height: 1.05;
-      margin-bottom: var(--space-2);
+      line-height: 1.1;
+      margin-bottom: 8px;
     }
 
     .card__desc {
-      font-size: var(--fs-body);
-      line-height: 1.45;
-      opacity: 0.85;
-      margin-bottom: var(--space-4);
+      font-size: 13px;
+      line-height: 1.4;
+      opacity: 0.82;
+      margin-bottom: 14px;
       flex: 1;
     }
 
@@ -233,44 +220,78 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: var(--space-2);
-      font-size: var(--fs-caption);
+      gap: 8px;
+      font-size: 11px;
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      padding-top: var(--space-2);
+      padding-top: 10px;
       border-top: 1px solid rgba(0, 19, 145, 0.18);
     }
 
     .card__arrow {
-      font-size: 20px;
-      transition: transform 0.25s ease;
+      font-size: 16px;
+      transition: transform 0.2s ease;
+      line-height: 1;
     }
 
     .card:hover .card__arrow {
-      transform: translateX(4px);
+      transform: translateX(3px);
     }
 
-    /* Botón <button> dentro de card (para copia) — mismo aspecto que <a> */
-    button.card {
-      border: none;
-      font: inherit;
-      text-align: left;
-      width: 100%;
-      cursor: pointer;
+    /* ===========================================================
+       FOOTER — compacto
+       =========================================================== */
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      font-size: 11px;
+      opacity: 0.7;
+      padding-top: 12px;
+      border-top: 1px solid rgba(247,248,248,0.12);
     }
 
-    /* Toast de feedback al copiar */
+    .nfq-credit {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nfq-credit__label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .nfq-credit__logo {
+      font-family: var(--font-body);
+      font-weight: 900;
+      font-size: 14px;
+      letter-spacing: -0.02em;
+    }
+
+    .nfq-credit__logo span {
+      color: var(--mandarin);
+    }
+
+    /* ===========================================================
+       TOAST
+       =========================================================== */
+
     .toast {
       position: fixed;
-      bottom: var(--space-5);
+      bottom: 32px;
       left: 50%;
       transform: translateX(-50%) translateY(20px);
       background: var(--sand);
       color: var(--electric);
-      padding: var(--space-2) var(--space-4);
+      padding: 12px 24px;
       border-radius: 999px;
-      font-size: var(--fs-caption);
+      font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.05em;
       box-shadow: 0 8px 24px rgba(0,0,0,0.25);
@@ -286,134 +307,94 @@
     }
 
     /* ===========================================================
-       FOOTER
+       Pantallas pequeñas
        =========================================================== */
 
-    .footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: var(--space-4);
-      padding-top: var(--space-4);
-      border-top: 1px solid rgba(247,248,248,0.15);
-      font-size: var(--fs-caption);
-      opacity: 0.8;
-    }
-
-    .nfq-credit {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-    }
-
-    .nfq-credit__label {
-      font-size: var(--fs-label);
-      font-weight: 700;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      opacity: 0.7;
-    }
-
-    .nfq-credit__logo {
-      font-family: var(--font-body);
-      font-weight: 900;
-      font-size: 18px;
-      letter-spacing: -0.02em;
-    }
-
-    .nfq-credit__logo span {
-      color: var(--mandarin);
-    }
-
-    /* ===========================================================
-       RESPONSIVE
-       =========================================================== */
-
-    @media (max-width: 600px) {
-      .page { padding: var(--space-4); }
-      .footer { flex-direction: column; align-items: flex-start; }
+    @media (max-width: 460px) {
+      .topbar { flex-wrap: wrap; row-gap: 4px; }
+      .topbar__subtitle { display: none; }
+      .footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
     }
   </style>
 </head>
 <body>
   <main class="page">
 
-    <header class="header">
-      <p class="header__breadcrumb">RDR · BBVA × NFQ</p>
-      <div class="header__logo" aria-label="BBVA">BBVA</div>
+    <header class="topbar">
+      <div class="topbar__left">
+        <h1 class="topbar__title">RDR Knowledge</h1>
+        <p class="topbar__subtitle">Hub de documentación · BBVA × NFQ</p>
+      </div>
+      <div class="topbar__logo" aria-label="BBVA">BBVA</div>
     </header>
-
-    <section class="hero">
-      <p class="hero__ante">Hub de documentación</p>
-      <h1 class="hero__title">RDR<br>Knowledge</h1>
-      <p class="hero__subtitle">
-        Acceso centralizado a la documentación del Repositorio de Datos de Referencia de BBVA: bienvenida, formación, pases calendados y retrospectivas.
-      </p>
-    </section>
 
     <section class="cards" aria-label="Documentos disponibles">
 
       <a class="card card--1" href="que-es-rdr.html">
-        <p class="card__phase">Fase 1 · Welcome Pack</p>
-        <p class="card__num">01</p>
+        <div class="card__head">
+          <p class="card__phase">Welcome · Fase 1</p>
+          <p class="card__num">01</p>
+        </div>
         <h2 class="card__title">¿Qué es RDR?</h2>
-        <p class="card__desc">
-          Definición, entidades de dominio, arquitectura técnica y ecosistema de integración. Punto de partida para entender la plataforma.
-        </p>
+        <p class="card__desc">Definición, entidades, arquitectura y ecosistema. Punto de partida.</p>
         <div class="card__action">
-          <span>Abrir documento</span>
+          <span>Abrir</span>
           <span class="card__arrow" aria-hidden="true">→</span>
         </div>
       </a>
 
       <a class="card card--2" href="rdr-formacion.html">
-        <p class="card__phase">Fase 2 · Welcome Pack</p>
-        <p class="card__num">02</p>
+        <div class="card__head">
+          <p class="card__phase">Welcome · Fase 2</p>
+          <p class="card__num">02</p>
+        </div>
         <h2 class="card__title">Formación RDR</h2>
-        <p class="card__desc">
-          Plan de capacitación técnica y funcional para nuevos miembros del equipo. Profundización en flujos, herramientas y procesos.
-        </p>
+        <p class="card__desc">Plan de capacitación técnica y funcional para el equipo.</p>
         <div class="card__action">
-          <span>Abrir documento</span>
+          <span>Abrir</span>
           <span class="card__arrow" aria-hidden="true">→</span>
         </div>
       </a>
 
       <a class="card card--3" href="rdr-hub.html">
-        <p class="card__phase">Operativa</p>
-        <p class="card__num">03</p>
+        <div class="card__head">
+          <p class="card__phase">Operativa</p>
+          <p class="card__num">03</p>
+        </div>
         <h2 class="card__title">RDR Hub</h2>
-        <p class="card__desc">
-          Pases calendados, planificación de releases y trazabilidad de despliegues en los distintos entornos.
-        </p>
+        <p class="card__desc">Pases calendados, releases y trazabilidad de despliegues.</p>
         <div class="card__action">
-          <span>Abrir documento</span>
+          <span>Abrir</span>
           <span class="card__arrow" aria-hidden="true">→</span>
         </div>
       </a>
 
       <a class="card card--4" href="retro.html">
-        <p class="card__phase">Mejora continua</p>
-        <p class="card__num">04</p>
-        <h2 class="card__title">Retrospectiva RDR</h2>
-        <p class="card__desc">
-          Aprendizajes, decisiones técnicas y áreas de mejora identificadas a lo largo del ciclo del proyecto.
-        </p>
+        <div class="card__head">
+          <p class="card__phase">Mejora continua</p>
+          <p class="card__num">04</p>
+        </div>
+        <h2 class="card__title">Retrospectiva</h2>
+        <p class="card__desc">Aprendizajes, decisiones técnicas y áreas de mejora del proyecto.</p>
         <div class="card__action">
-          <span>Abrir documento</span>
+          <span>Abrir</span>
           <span class="card__arrow" aria-hidden="true">→</span>
         </div>
       </a>
 
       <a class="card card--5" href="vacaciones.html">
-        <p class="card__phase">Equipo</p>
-        <p class="card__num">05</p>
+        <div class="card__head">
+          <p class="card__phase">Equipo</p>
+          <p class="card__num">05</p>
+        </div>
         <h2 class="card__title">Vacaciones RDR</h2>
-        <p class="card__desc">
-          Política de vacaciones, calendario del equipo y normas de coordinación para garantizar la continuidad del servicio.
-        </p>
+        <p class="card__desc">Política, calendario y coordinación de días libres del equipo.</p>
         <div class="card__action">
-          <span>Abrir documento</span>
+          <span>Abrir</span>
           <span class="card__arrow" aria-hidden="true">→</span>
         </div>
       </a>
@@ -422,14 +403,14 @@
          href="PEGAR_AQUI_URL_FORMULARIO"
          target="_blank"
          rel="noopener noreferrer">
-        <p class="card__phase">Equipo · Formulario</p>
-        <p class="card__num">06</p>
-        <h2 class="card__title">Solicitud de Vacaciones</h2>
-        <p class="card__desc">
-          Formulario oficial para tramitar la solicitud de días de vacaciones del equipo RDR.
-        </p>
+        <div class="card__head">
+          <p class="card__phase">Formulario</p>
+          <p class="card__num">06</p>
+        </div>
+        <h2 class="card__title">Solicitar vacaciones</h2>
+        <p class="card__desc">Formulario oficial para tramitar la solicitud de días.</p>
         <div class="card__action">
-          <span>Abrir formulario</span>
+          <span>Abrir</span>
           <span class="card__arrow" aria-hidden="true">↗</span>
         </div>
       </a>
@@ -437,14 +418,14 @@
       <button type="button"
               class="card card--7"
               data-copy-url="PEGAR_AQUI_URL_PORTAL_NFQ_BBVA_CIB">
-        <p class="card__phase">Portal interno</p>
-        <p class="card__num">07</p>
+        <div class="card__head">
+          <p class="card__phase">Portal interno</p>
+          <p class="card__num">07</p>
+        </div>
         <h2 class="card__title">Portal NFQ-BBVA CIB</h2>
-        <p class="card__desc">
-          Acceso al portal interno del equipo NFQ-BBVA CIB. Pulsa para copiar el enlace al portapapeles.
-        </p>
+        <p class="card__desc">Acceso al portal del equipo. Pulsa para copiar el enlace.</p>
         <div class="card__action">
-          <span>Copiar enlace</span>
+          <span>Copiar</span>
           <span class="card__arrow" aria-hidden="true">⧉</span>
         </div>
       </button>
@@ -483,7 +464,6 @@
         if (navigator.clipboard && window.isSecureContext) {
           return navigator.clipboard.writeText(text);
         }
-        // Fallback para http o navegadores antiguos
         return new Promise(function (resolve, reject) {
           var ta = document.createElement('textarea');
           ta.value = text;
