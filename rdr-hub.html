@@ -250,14 +250,20 @@
 
 <script>
   // ========================================================
-  // ⚠️ 1. PEGA AQUÍ LA URL DE TU API DE APPS SCRIPT ⚠️
+  // COMPROBACIÓN VITAL: ARRANQUE FORZADO DEL CÓDIGO
   // ========================================================
+  console.log("=========================================");
+  console.log("🚀 SCRIPT DE RDR HUB CARGADO Y LEYENDO...");
+  console.log("=========================================");
+
+  // ⚠️ 1. PEGA AQUÍ LA URL DE TU API DE APPS SCRIPT ⚠️
   const API_URL = "https://script.google.com/macros/s/AKfycbwZ5Sx4TlJnJ4I1sFntjG9dNyfSFeqRu29vNEKowD1wysLjmVT9fr0m9hNvQZOqE7C9hA/exec";
 
   let E = {}; 
   let tempOrden = [];
   let saveTimeout;
 
+  // 2. RADAR DE DIAGNÓSTICO
   function logUI(mensaje, isError = false) {
     let box = document.getElementById('loader-msg');
     if (isError) {
@@ -268,16 +274,18 @@
     console.log(isError ? "[ERROR] " + mensaje : "[INFO] " + mensaje);
   }
 
+  // 3. MOTOR DE PETICIONES BLINDADO
   async function llamarBackend(actionName, payloadData = {}) {
     try {
-      console.log(`📡 Enviando [${actionName}]`);
+      console.log(`📡 Enviando fetch [${actionName}] a ${API_URL}`);
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: actionName, payload: payloadData })
       });
       
-      if (!response.ok) throw new Error(`El servidor respondió con HTTP ${response.status}`);
+      console.log(`📥 Respuesta recibida. Status HTTP: ${response.status}`);
+      if (!response.ok) throw new Error(`El servidor respondió con código HTTP ${response.status}`);
       
       const result = await response.json();
       if (result.status === "error") throw new Error(result.message);
@@ -289,6 +297,7 @@
     }
   }
 
+  // 4. UI, LOADERS Y TOASTS
   function showToast(msg, type = 'success', duration = 3000) {
     const t = document.createElement('div'); t.className = `toast toast-${type}`;
     t.innerHTML = (type === 'loading') ? `<div class="spinner"></div> <span>${msg}</span>` : `<span>${msg}</span>`;
@@ -303,8 +312,12 @@
     else { l.style.opacity = '0'; setTimeout(()=>l.style.display='none', 300); }
   }
 
+  // ========================================================
+  // 5. INICIADOR BLINDADO Y FUNCIONES DE UI RESTAURADAS
+  // ========================================================
   async function arrancarSistema() {
     toggleLoader(true);
+    console.log("⚙️ Función arrancarSistema() iniciada.");
     
     if (API_URL === "AQUI_TU_URL_DE_APPS_SCRIPT") {
       logUI("FALTA LA URL DE APPS SCRIPT. Ve a la línea 233 del código HTML y pon tu URL real.", true);
@@ -312,154 +325,169 @@
     }
 
     try {
-      logUI("1. Conectando con los servidores...");
+      logUI("1. Conectando con los servidores de Google...");
       E = await llamarBackend("obtenerDatosDashboard", { fecha: null });
       
       if (E && E.error) throw new Error(E.error);
       
-      logUI("2. Datos recibidos. Renderizando UI...");
+      logUI("2. Datos recibidos. Renderizando Interfaz...");
       pintarHeader(); 
       refrescarUI(); 
       toggleLoader(false);
+      console.log("✅ Sistema cargado y funcionando.");
     } catch(err) {
-      logUI(`${err.message}`, true);
+      logUI(`Google ha rechazado la conexión.<br><br>Detalle técnico: ${err.message}`, true);
     }
   }
 
+  // FUERZA EL ARRANQUE PASADO MEDIO SEGUNDO PARA EVITAR BLOQUEOS DEL NAVEGADOR
   setTimeout(() => { arrancarSistema(); }, 500);
 
   // ========================================================
-  // RE-ESCRITURA DE TODAS LAS ACCIONES A UNA SOLA LLAMADA
+  // LÓGICA CORE RESTANTE
   // ========================================================
-  // Al devolver el Backend el objeto 'E' completo, solo tenemos que redibujar.
-  function procesarNuevoEstado(nuevoE, msg, toast) {
-    E = nuevoE;
-    pintarProyectos(); pintarOrden(); pintarMergeos(); actualizarValidador(); refrescarUI();
-    if(toast) toast.remove();
-    if(msg) showToast(msg, "success");
-  }
-
-  async function addCompVacio(nomProy, cantidad) { 
-    let t = showToast(`Añadiendo ${cantidad} fila(s)...`, "loading", 0); 
-    try {
-      let nuevoEstado = await llamarBackend("agregarComponentesVacios", { proy: nomProy, cantidadStr: cantidad, fechaStr: E.fechaSeleccionada });
-      procesarNuevoEstado(nuevoE, "Filas añadidas correctamente", t);
-    } catch(e) { t.remove(); showToast(e.message, "error"); }
-  }
-
-  async function addProyecto() { 
-    let n = document.getElementById('add-p-nom').value; 
-    if(!n) return showToast("El nombre del proyecto es obligatorio", "error"); 
-    let t = showToast("Creando proyecto...", "loading", 0); 
-    try {
-      let feat = document.getElementById('add-p-feat').value;
-      let resp = document.getElementById('add-p-resp').value;
-      let nuevoEstado = await llamarBackend("guardarNuevoProyecto", { fechaStr: E.fechaSeleccionada, nombre: n, feature: feat, respBBVA: resp });
-      document.getElementById('add-p-nom').value=''; document.getElementById('add-p-feat').value=''; 
-      procesarNuevoEstado(nuevoEstado, "Proyecto creado", t);
-    } catch(e) { t.remove(); showToast(e.message, "error"); }
-  }
-
-  async function delComp(fila) { 
-    if(!confirm("¿Seguro que quieres eliminar este componente del proyecto?")) return; 
-    let t = showToast("Eliminando...", "loading", 0); 
-    try {
-      let nuevoEstado = await llamarBackend("eliminarComponente", { fila: fila, fechaStr: E.fechaSeleccionada });
-      procesarNuevoEstado(nuevoEstado, "Componente eliminado", t);
-    } catch(e) { t.remove(); showToast(e.message, "error"); }
-  }
-
-  async function comenzarPase() { 
-    let t = showToast("Abriendo pase...", "loading", 0); 
-    try {
-      let nuevoE = await llamarBackend("iniciarPase", { fila: E.fila, fechaStr: E.fechaSeleccionada });
-      procesarNuevoEstado(nuevoE, "Pase Iniciado", t);
-    } catch(e) { t.remove(); showToast(e.message, "error"); }
-  }
-
-  async function responderEncuesta(r) { 
-    let t = showToast("Registrando...", "loading", 0); 
-    try {
-      let nuevoE = await llamarBackend("responderEncuesta", { respuesta: r, fila: E.fila, fechaStr: E.fechaSeleccionada });
-      procesarNuevoEstado(nuevoE, "Encuesta guardada", t);
-    } catch(e) { t.remove(); showToast(e.message, "error"); }
-  }
-
-  async function cancelarSubida() { 
-    if(!confirm("¿Cancelar todo el pase?")) return; 
-    let t = showToast("Cancelando...", "loading", 0); 
-    try {
-      let nuevoE = await llamarBackend("cancelarSubida", { fila: E.fila, fechaStr: E.fechaSeleccionada });
-      procesarNuevoEstado(nuevoE, "Pase cancelado", t);
-    } catch(e) { t.remove(); showToast(e.message, "error"); }
-  }
-
-  async function activarEmergencia() { 
-    let t = showToast("Reabriendo...", "loading", 0); 
-    try {
-      let nuevoE = await llamarBackend("activarEmergencia", { fila: E.fila, fechaStr: E.fechaSeleccionada });
-      procesarNuevoEstado(nuevoE, "Pase Reabierto", t);
-    } catch(e) { t.remove(); showToast(e.message, "error"); }
-  }
-
-  async function avanzar(f) { 
-    if(!confirm("¿Confirmar esta validación y notificar al equipo por correo?")) return; 
-    let t = showToast("Procesando...", "loading", 0); 
-    try {
-      let nuevoE = await llamarBackend("avanzarFase", { fila: E.fila, fechaStr: E.fechaSeleccionada, faseActual: E.faseActual });
-      procesarNuevoEstado(nuevoE, "Fase completada", t);
-    } catch(e) { t.remove(); showToast(e.message, "error"); }
-  }
-
-  // Las funciones optimistas (Checks) y de Background se mantienen igual porque no dibujan filas nuevas
-  async function updOkProy(nombre, isChecked) { 
-    E.proyectos.forEach(p=>{if(p.nombre===nombre)p.ok=isChecked;}); actualizarValidador();
-    let t = showToast("Guardando OK...", "loading", 0); 
-    try { await llamarBackend("actualizarOKProyecto", { fechaStr: E.fechaSeleccionada, nombre: nombre, val: isChecked }); t.remove(); showToast("OK guardado", "success", 1500); } catch(e) { t.remove(); showToast(e.message, "error"); }
-  }
   
-  async function updComp(fila, event) { 
-    let t = showToast("Guardando componente...", "loading", 0); let btn = event.currentTarget; btn.style.filter = "sepia(1) hue-rotate(90deg)"; 
-    try {
-      let nom = document.getElementById('n-'+fila).value; let tipo = document.getElementById('t-'+fila).value; let subida = document.getElementById('s-'+fila).value; let resp = document.getElementById('r-'+fila).value; let cod = document.getElementById('c-'+fila).value; let us = document.getElementById('u-'+fila).value; let rel = document.getElementById('rel-'+fila).checked; let com = document.getElementById('com-'+fila).value;
-      await llamarBackend("editarComponente", { fila: fila, nom: nom, tipo: tipo, subida: subida, resp: resp, cod: cod, us: us, releaseCheck: rel, com: com });
-      t.remove(); showToast("Guardado", "success", 1500); btn.style.filter = ""; 
-      E.proyectos.forEach(p=>p.componentes.forEach(c=>{if(c.fila===fila){ c.nombre=nom; c.release=rel; c.codigo=cod; }})); actualizarValidador();
-    } catch(e) { t.remove(); showToast(e.message, "error"); btn.style.filter = ""; }
+  function toggleCheckUI(id) {
+    let esAplica = document.getElementById('sel-'+id).value === 'APLICA';
+    let chk = document.getElementById('chk-'+id); let lbl = document.getElementById('lbl-'+id);
+    if(!esAplica) { chk.disabled = true; chk.checked = false; lbl.classList.add('disabled-text'); } 
+    else { chk.disabled = false; lbl.classList.remove('disabled-text'); }
   }
 
-  async function chkOrden(fila, val) { E.ordenPase.forEach(o => { if(o.fila === fila) o.implantado = val; }); try { await llamarBackend("actualizarCheckOrden", { fila: fila, val: val }); showToast("Paso Actualizado", "success", 1000); } catch(e) { showToast("Error al actualizar", "error"); } }
-  async function chkMerge(fila, val) { E.proyectos.forEach(p => p.componentes.forEach(c => { if(c.fila === fila) c.mergeado = val; })); try { await llamarBackend("actualizarMergeComponente", { fila: fila, val: val }); showToast("Mergeo guardado", "success", 1000); } catch(e) { showToast("Error al guardar merge", "error"); } }
-  
-  async function guardarPre() { 
-    let t = showToast("Guardando check...", "loading", 0); 
-    const getC = (id) => ({ aplica: document.getElementById('sel-'+id).value, ok: document.getElementById('chk-'+id).checked }); 
-    let checks = { dpPro: getC('dpPro'), jiraOk: getC('jiraOk'), remOk: getC('remOk'), docPruebas: getC('docPruebas'), traspaso: getC('traspaso') };
-    try { await llamarBackend("actualizarChecksPre", { fila: E.fila, checks: checks }); t.remove(); showToast("Guardado", "success", 1000); } catch(e) { t.remove(); showToast("Error al guardar", "error"); }
+  function refrescarUI() {
+    const habilitar = (id) => { const b = document.getElementById('t-'+id); b.disabled = false; b.style.opacity = "1"; };
+    document.querySelectorAll('.tab-btn').forEach(b => { b.disabled = true; b.style.opacity = "0.3"; });
+
+    let panelAMostrar = "PROYECTOS";
+    if (E.faseActual === "PENDIENTE") { panelAMostrar = "PENDIENTE"; }
+    else if (E.faseActual === "FASE_1_ENCUESTA") { panelAMostrar = "ENCUESTA"; habilitar("PROYECTOS"); }
+    else if (E.faseActual === "FASE_0_DESCANSO") { panelAMostrar = "DESCANSO"; habilitar("PROYECTOS"); }
+    else if (E.faseActual === "FASE_2_3_PREPARACION") { panelAMostrar = "PROYECTOS"; habilitar("PROYECTOS"); habilitar("SECUENCIA"); }
+    else if (E.faseActual === "FASE_4_CERRADO") { panelAMostrar = "PRE"; habilitar("PROYECTOS"); habilitar("SECUENCIA"); habilitar("PRE"); }
+    else if (E.faseActual === "FASE_6_IMPLANTACION") { panelAMostrar = "ORDEN"; habilitar("PROYECTOS"); habilitar("SECUENCIA"); habilitar("PRE"); habilitar("ORDEN"); }
+    else if (E.faseActual === "FASE_7_POST") { panelAMostrar = "POST"; habilitar("PROYECTOS"); habilitar("SECUENCIA"); habilitar("PRE"); habilitar("ORDEN"); habilitar("POST"); }
+    else if (E.faseActual === "COMPLETADO") { panelAMostrar = "COMPLETADO"; habilitar("PROYECTOS"); habilitar("SECUENCIA"); habilitar("PRE"); habilitar("ORDEN"); habilitar("POST"); }
+
+    const b = document.getElementById('banner-estado'); 
+    const blq = document.getElementById('bloque-proyectos');
+    let isCompletado = (E.faseActual === "COMPLETADO");
+    
+    if(isCompletado) {
+       blq.className = "locked-mode";
+       document.getElementById('panel-PRE').classList.add('locked-mode');
+       document.getElementById('panel-SECUENCIA').classList.add('locked-mode');
+       document.getElementById('panel-ORDEN').classList.add('locked-mode');
+       document.getElementById('panel-POST').classList.add('locked-mode');
+       document.getElementById('bloque-cabecera-editable').classList.add('locked-mode');
+       b.style.display = 'none';
+    } else {
+       blq.className = (E.faseActual !== "FASE_2_3_PREPARACION") ? "locked-mode" : "";
+       document.getElementById('panel-PRE').classList.remove('locked-mode');
+       document.getElementById('panel-SECUENCIA').classList.remove('locked-mode');
+       document.getElementById('panel-ORDEN').classList.remove('locked-mode');
+       document.getElementById('panel-POST').classList.remove('locked-mode');
+       document.getElementById('bloque-cabecera-editable').classList.remove('locked-mode');
+       b.style.display = 'flex';
+       
+       if(E.faseActual === "FASE_2_3_PREPARACION") { b.innerHTML = `<div>PASE ACTIVO - PREPARACIÓN</div> <button class="btn btn-red" onclick="cancelarSubida()">Cancelar Pase</button>`; b.style.background="#e8f5e9"; b.style.color="var(--green)"; } 
+       else if (E.faseActual.includes("CERRADO") || E.faseActual.includes("IMPLANTACION") || E.faseActual.includes("POST")) { b.innerHTML = `<div>🔒 PASE CERRADO PARA EDICIÓN</div> <button class="btn btn-warn" onclick="activarEmergencia()">Editar Emergencia</button>`; b.style.background="#fff3e0"; b.style.color="#e65100"; }
+    }
+    
+    document.getElementById('btn-cerrar-pase').style.display = (E.faseActual === "FASE_2_3_PREPARACION" && !isCompletado) ? "block" : "none";
+    document.getElementById('orden-builder').style.display = (E.faseActual === "FASE_2_3_PREPARACION" && !isCompletado) ? "block" : "none";
+    document.getElementById('btn-volver-prep').style.display = (E.faseActual === "FASE_2_3_PREPARACION" && !isCompletado) ? "block" : "none";
+    document.getElementById('btn-cerrar-pre').style.display = (E.faseActual === "FASE_4_CERRADO" && !isCompletado) ? "block" : "none";
+    document.getElementById('btn-completar-imp').style.display = (E.faseActual === "FASE_6_IMPLANTACION" && !isCompletado) ? "block" : "none";
+    document.getElementById('btn-finalizar-pase').style.display = (E.faseActual === "FASE_7_POST" && !isCompletado) ? "block" : "none";
+
+    verTab(panelAMostrar);
+    pintarProyectos();
+    pintarOrden();
+    pintarMergeos();
   }
 
-  async function autoGuardarCab() { 
-    let crq = document.getElementById('h-crq').value; let lider = document.getElementById('h-liderar').value; let aprende = document.getElementById('h-aprender').value; let instTecnica = document.getElementById('h-instTec').checked;
-    let t = showToast("Guardando cabecera...", "loading", 0); 
-    try { await llamarBackend("guardarCabecera", { fila: E.fila, crq: crq, lider: lider, aprende: aprende, instTecnica: instTecnica }); t.remove(); showToast("Guardado", "success", 1500); actualizarValidador(); } catch(e) { t.remove(); showToast("Error", "error"); }
+  function verTab(id) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active')); if(document.getElementById('panel-'+id)) document.getElementById('panel-'+id).classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); if(document.getElementById('t-'+id)) document.getElementById('t-'+id).classList.add('active');
   }
 
-  function guardarOrdenLocal() {
-    E.ordenPase = tempOrden.map((el, i) => ({ fila: i + 1, orden: i + 1, elemento: el.elemento, implantado: false, som: el.som }));
-    actualizarValidador();
-    clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(async () => {
-      let t = showToast("Guardando cambios...", "loading", 0);
-      try { await llamarBackend("actualizarOrdenCompleto", { fechaStr: E.fechaSeleccionada, elementos: tempOrden }); t.remove(); showToast("Secuencia guardada", "success", 1000); } catch(e) { t.remove(); showToast(e.message, "error"); }
-    }, 600); 
+  function actualizarValidador() {
+    if(E.faseActual !== "FASE_2_3_PREPARACION") { let v = document.getElementById('caja-validador'); if(v) v.style.display = 'none'; return; }
+    let v = document.getElementById('caja-validador'); if(!v) return;
+    v.style.display = 'block';
+
+    let crqOk = document.getElementById('h-crq').value.trim() !== "";
+    let instOk = document.getElementById('h-instTec').checked;
+    let proyOk = E.proyectos.length > 0;
+    let compOk = proyOk && !E.proyectos.some(p => p.componentes.length === 0);
+    
+    let isT = val => val === true || String(val).toUpperCase() === "TRUE" || String(val).toUpperCase() === "VERDADERO";
+    let pOk = proyOk && !E.proyectos.some(p => !isT(p.ok));
+    let relOk = compOk && !E.proyectos.some(p => p.componentes.some(c => !isT(c.release)));
+    
+    let hasRdrRules = false; let hasStreetref = false; let allComps = [];
+    E.proyectos.forEach(p => p.componentes.forEach(c => allComps.push(c)));
+    allComps.forEach(c => {
+       if(c.nombre && c.nombre.includes("rdrRules/")) hasRdrRules = true;
+       if(c.nombre && c.nombre.toLowerCase().includes("streetref")) hasStreetref = true;
+    });
+    let ruleRdrOk = !hasRdrRules || hasStreetref;
+
+    let seqOk = true;
+    let msgSeq = "Orden del Pase diseñado (Parada, Componentes y Arranque)";
+    
+    if(tempOrden && tempOrden.length >= 2) {
+       let oStrings = tempOrden.map(o => o.elemento.toUpperCase());
+       let idxP = oStrings.findIndex(o => o.includes("PARADA"));
+       let idxA = oStrings.findIndex(o => o.includes("ARRANQUE"));
+       
+       if (idxP === -1 || idxA === -1) {
+           seqOk = false; msgSeq = "Falta añadir PARADA o ARRANQUE";
+       } else if (idxP > idxA) {
+           seqOk = false; msgSeq = "La PARADA debe ir antes del ARRANQUE";
+       } else {
+           let codsUnicos = new Set();
+           allComps.forEach(c => { if(c.codigo && c.codigo.trim() !== "" && c.codigo.trim() !== "-") codsUnicos.add(c.codigo.trim().toUpperCase()); });
+           
+           let faltan = [];
+           codsUnicos.forEach(cod => { 
+               let idxC = oStrings.findIndex(o => o.includes(cod));
+               if (idxC === -1 || idxC <= idxP || idxC >= idxA) faltan.push(cod); 
+           });
+           if (faltan.length > 0) {
+               seqOk = false; msgSeq = "Faltan paquetes o están fuera del bloque principal: " + faltan.join(", ");
+           }
+       }
+    } else {
+       seqOk = false; msgSeq = "Diseña el orden del pase (Falta Parada y Arranque)";
+    }
+
+    let html = `<h4 style="margin-top:0; color:#e65100;">📋 Validador de Preparación</h4><ul style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 10px;">`;
+    const i = (cond, txt) => `<li style="color:${cond?'var(--green)':'var(--red)'}; font-weight:bold; font-size:1.05em;">${cond?'✅':'❌'} ${txt}</li>`;
+    
+    html += i(crqOk, "CRQ General asignado en cabecera");
+    html += i(instOk, "Instalación Técnica marcada en cabecera");
+    html += i(proyOk, "Al menos 1 Proyecto añadido");
+    if(proyOk) html += i(compOk, "Todos los proyectos tienen componentes");
+    if(proyOk) html += i(pOk, "Todos los proyectos tienen el check 'OK Proyecto'");
+    if(compOk) html += i(relOk, "Todos los componentes tienen el check 'Release'");
+    if(hasRdrRules) html += i(ruleRdrOk, ruleRdrOk ? "Componente Streetref incluido (Regla RdrRules)" : "Falta 'Streetref' (Regla RdrRules detectada)");
+    html += i(seqOk, msgSeq);
+    html += `</ul>`;
+    v.innerHTML = html;
+    
+    let todoCorrecto = crqOk && instOk && proyOk && compOk && pOk && relOk && ruleRdrOk && seqOk;
+    let btn = document.getElementById('btn-cerrar-pase');
+    
+    if(todoCorrecto) {
+       btn.setAttribute('data-disabled', 'false'); btn.innerText = "▶️ VALIDAR Y CERRAR PASE (Avanzar a Pre-Implantación)";
+       btn.style.background = "var(--green)"; btn.style.color = "white"; btn.style.cursor = "pointer";
+    } else {
+       btn.setAttribute('data-disabled', 'true'); btn.innerText = "🔒 Completa el validador para poder avanzar";
+       btn.style.background = "#e0e0e0"; btn.style.color = "#333333"; btn.style.cursor = "pointer"; 
+    }
   }
 
-  async function updSomEjecucion(fila, val) {
-    let t = showToast("Guardando SOM...", "loading", 0);
-    try { await llamarBackend("actualizarSomOrden", { fila: fila, val: val }); t.remove(); showToast("SOM Guardado", "success", 1000); } catch(e) { t.remove(); showToast(e.message, "error"); }
-  }
-
-  // RESTO DEL DIBUJADO DE UI
   function pintarHeader() {
     let htmlFechas = "";
     E.fechasDisponibles.forEach(x => htmlFechas += `<option value="${x}">${x}</option>`);
@@ -594,11 +622,54 @@
     if(numMergeos === 0) h.innerHTML = "<p style='color:gray;'>No hay componentes tipo DP-KYTL que requieran mergeo en este pase.</p>";
   }
 
+  // ACCIONES Y LLAMADAS A API
+  function procesarNuevoEstado(nuevoE, msg, toast) {
+    E = nuevoE;
+    pintarProyectos(); pintarOrden(); pintarMergeos(); actualizarValidador(); refrescarUI();
+    if(toast) toast.remove();
+    if(msg) showToast(msg, "success");
+  }
+
+  async function addCompVacio(nomProy, cantidad) { 
+    let t = showToast(`Añadiendo ${cantidad} fila(s)...`, "loading", 0); 
+    try { let nuevoEstado = await llamarBackend("agregarComponentesVacios", { proy: nomProy, cantidadStr: cantidad, fechaStr: E.fechaSeleccionada }); procesarNuevoEstado(nuevoEstado, "Filas añadidas correctamente", t); } catch(e) { t.remove(); showToast(e.message, "error"); }
+  }
+
+  async function addProyecto() { 
+    let n = document.getElementById('add-p-nom').value; if(!n) return showToast("El nombre del proyecto es obligatorio", "error"); 
+    let t = showToast("Creando proyecto...", "loading", 0); 
+    try { let feat = document.getElementById('add-p-feat').value; let resp = document.getElementById('add-p-resp').value; let nuevoEstado = await llamarBackend("guardarNuevoProyecto", { fechaStr: E.fechaSeleccionada, nombre: n, feature: feat, respBBVA: resp }); document.getElementById('add-p-nom').value=''; document.getElementById('add-p-feat').value=''; procesarNuevoEstado(nuevoEstado, "Proyecto creado", t); } catch(e) { t.remove(); showToast(e.message, "error"); }
+  }
+
+  async function delComp(fila) { 
+    if(!confirm("¿Seguro que quieres eliminar este componente del proyecto?")) return; let t = showToast("Eliminando...", "loading", 0); 
+    try { let nuevoEstado = await llamarBackend("eliminarComponente", { fila: fila, fechaStr: E.fechaSeleccionada }); procesarNuevoEstado(nuevoEstado, "Componente eliminado", t); } catch(e) { t.remove(); showToast(e.message, "error"); }
+  }
+
+  async function comenzarPase() { let t = showToast("Abriendo pase...", "loading", 0); try { let nuevoE = await llamarBackend("iniciarPase", { fila: E.fila, fechaStr: E.fechaSeleccionada }); procesarNuevoEstado(nuevoE, "Pase Iniciado", t); } catch(e) { t.remove(); showToast(e.message, "error"); } }
+  async function responderEncuesta(r) { let t = showToast("Registrando...", "loading", 0); try { let nuevoE = await llamarBackend("responderEncuesta", { respuesta: r, fila: E.fila, fechaStr: E.fechaSeleccionada }); procesarNuevoEstado(nuevoE, "Encuesta guardada", t); } catch(e) { t.remove(); showToast(e.message, "error"); } }
+  async function cancelarSubida() { if(!confirm("¿Cancelar todo el pase?")) return; let t = showToast("Cancelando...", "loading", 0); try { let nuevoE = await llamarBackend("cancelarSubida", { fila: E.fila, fechaStr: E.fechaSeleccionada }); procesarNuevoEstado(nuevoE, "Pase cancelado", t); } catch(e) { t.remove(); showToast(e.message, "error"); } }
+  async function activarEmergencia() { let t = showToast("Reabriendo...", "loading", 0); try { let nuevoE = await llamarBackend("activarEmergencia", { fila: E.fila, fechaStr: E.fechaSeleccionada }); procesarNuevoEstado(nuevoE, "Pase Reabierto", t); } catch(e) { t.remove(); showToast(e.message, "error"); } }
+  async function avanzar(f) { if(!confirm("¿Confirmar esta validación y notificar al equipo por correo?")) return; let t = showToast("Procesando...", "loading", 0); try { let nuevoE = await llamarBackend("avanzarFase", { fila: E.fila, fechaStr: E.fechaSeleccionada, faseActual: E.faseActual }); procesarNuevoEstado(nuevoE, "Fase completada", t); } catch(e) { t.remove(); showToast(e.message, "error"); } }
+
+  async function updOkProy(nombre, isChecked) { E.proyectos.forEach(p=>{if(p.nombre===nombre)p.ok=isChecked;}); actualizarValidador(); let t = showToast("Guardando OK...", "loading", 0); try { await llamarBackend("actualizarOKProyecto", { fechaStr: E.fechaSeleccionada, nombre: nombre, val: isChecked }); t.remove(); showToast("OK guardado", "success", 1500); } catch(e) { t.remove(); showToast(e.message, "error"); } }
+  async function updComp(fila, event) { let t = showToast("Guardando componente...", "loading", 0); let btn = event.currentTarget; btn.style.filter = "sepia(1) hue-rotate(90deg)"; try { let nom = document.getElementById('n-'+fila).value; let tipo = document.getElementById('t-'+fila).value; let subida = document.getElementById('s-'+fila).value; let resp = document.getElementById('r-'+fila).value; let cod = document.getElementById('c-'+fila).value; let us = document.getElementById('u-'+fila).value; let rel = document.getElementById('rel-'+fila).checked; let com = document.getElementById('com-'+fila).value; await llamarBackend("editarComponente", { fila: fila, nom: nom, tipo: tipo, subida: subida, resp: resp, cod: cod, us: us, releaseCheck: rel, com: com }); t.remove(); showToast("Guardado", "success", 1500); btn.style.filter = ""; E.proyectos.forEach(p=>p.componentes.forEach(c=>{if(c.fila===fila){ c.nombre=nom; c.release=rel; c.codigo=cod; }})); actualizarValidador(); } catch(e) { t.remove(); showToast(e.message, "error"); btn.style.filter = ""; } }
+  async function chkOrden(fila, val) { E.ordenPase.forEach(o => { if(o.fila === fila) o.implantado = val; }); try { await llamarBackend("actualizarCheckOrden", { fila: fila, val: val }); showToast("Paso Actualizado", "success", 1000); } catch(e) { showToast("Error al actualizar", "error"); } }
+  async function chkMerge(fila, val) { E.proyectos.forEach(p => p.componentes.forEach(c => { if(c.fila === fila) c.mergeado = val; })); try { await llamarBackend("actualizarMergeComponente", { fila: fila, val: val }); showToast("Mergeo guardado", "success", 1000); } catch(e) { showToast("Error al guardar merge", "error"); } }
+  async function guardarPre() { let t = showToast("Guardando check...", "loading", 0); const getC = (id) => ({ aplica: document.getElementById('sel-'+id).value, ok: document.getElementById('chk-'+id).checked }); let checks = { dpPro: getC('dpPro'), jiraOk: getC('jiraOk'), remOk: getC('remOk'), docPruebas: getC('docPruebas'), traspaso: getC('traspaso') }; try { await llamarBackend("actualizarChecksPre", { fila: E.fila, checks: checks }); t.remove(); showToast("Guardado", "success", 1000); } catch(e) { t.remove(); showToast("Error al guardar", "error"); } }
+  async function autoGuardarCab() { let crq = document.getElementById('h-crq').value; let lider = document.getElementById('h-liderar').value; let aprende = document.getElementById('h-aprender').value; let instTecnica = document.getElementById('h-instTec').checked; let t = showToast("Guardando cabecera...", "loading", 0); try { await llamarBackend("guardarCabecera", { fila: E.fila, crq: crq, lider: lider, aprende: aprende, instTecnica: instTecnica }); t.remove(); showToast("Guardado", "success", 1500); actualizarValidador(); } catch(e) { t.remove(); showToast("Error", "error"); } }
+  
   function addPasoStr(str) { tempOrden.push({elemento: str, som: ""}); pintarSecuenciaLocal(); guardarOrdenLocal(); }
   function addPasoTxt() { let val = document.getElementById('txt-add-paso').value; if(val) { tempOrden.push({elemento: val, som: ""}); document.getElementById('txt-add-paso').value=''; pintarSecuenciaLocal(); guardarOrdenLocal(); } }
   function addPasoCod() { let sel = document.getElementById('sel-add-cod'); let val = sel.value; if(val) { tempOrden.push({elemento: val, som: ""}); sel.value = ""; pintarSecuenciaLocal(); guardarOrdenLocal(); } }
   function removePaso(idx) { tempOrden.splice(idx, 1); pintarSecuenciaLocal(); guardarOrdenLocal(); }
   function updSomLocal(idx, val) { tempOrden[idx].som = val; guardarOrdenLocal(); }
+
+  function guardarOrdenLocal() {
+    E.ordenPase = tempOrden.map((el, i) => ({ fila: i + 1, orden: i + 1, elemento: el.elemento, implantado: false, som: el.som })); actualizarValidador();
+    clearTimeout(saveTimeout); saveTimeout = setTimeout(async () => { let t = showToast("Guardando cambios...", "loading", 0); try { await llamarBackend("actualizarOrdenCompleto", { fechaStr: E.fechaSeleccionada, elementos: tempOrden }); t.remove(); showToast("Secuencia guardada", "success", 1000); } catch(e) { t.remove(); showToast(e.message, "error"); } }, 600); 
+  }
+  async function updSomEjecucion(fila, val) { let t = showToast("Guardando SOM...", "loading", 0); try { await llamarBackend("actualizarSomOrden", { fila: fila, val: val }); t.remove(); showToast("SOM Guardado", "success", 1000); } catch(e) { t.remove(); showToast(e.message, "error"); } }
 
   async function validarYAvanzarPrep() { let btn = document.getElementById('btn-cerrar-pase'); if (btn.getAttribute('data-disabled') === 'true') { document.getElementById('caja-validador').style.border = "2px solid red"; setTimeout(() => document.getElementById('caja-validador').style.border = "1px solid #ffb74d", 1000); return showToast("Revisa el Validador", "error", 4000); } avanzar('FASE_2_3_PREPARACION'); }
   async function validarYAvanzarPre() { const ids = ['dpPro', 'jiraOk', 'remOk', 'docPruebas', 'traspaso']; let todoOk = true; for(let id of ids) { let aplica = document.getElementById('sel-'+id).value === 'APLICA'; let ok = document.getElementById('chk-'+id).checked; if (aplica && !ok) todoOk = false; } if (!todoOk) return showToast("ERROR: Completa los checks que APLICAN.", "error", 5000); avanzar('FASE_4_CERRADO'); }
