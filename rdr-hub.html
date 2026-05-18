@@ -79,7 +79,9 @@
 <div id="loader">
   <div class="loader-spinner"></div>
   <strong style="font-size: 1.8em; margin-bottom: 5px;">RDR HUB</strong>
-  <p id="loader-msg" style="color: rgba(255,255,255,0.8); margin:0;">Iniciando sistema...</p>
+  <div id="loader-msg" style="color: rgba(255,255,255,0.8); margin:0; text-align: center; font-family: monospace; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; min-width: 300px;">
+    Iniciando conexión segura...
+  </div>
 </div>
 
 <div id="toast-container"></div>
@@ -120,7 +122,6 @@
 </div>
 
 <div class="main-content">
-
   <div id="panel-PENDIENTE" class="panel card" style="text-align:center; padding:40px;">
     <h2>Pase Calendado no iniciado</h2>
     <div class="calendar-icon"><div class="calendar-header" id="cal-mes">---</div><div class="calendar-body" id="cal-dia">--</div></div>
@@ -257,43 +258,42 @@
   let saveTimeout;
 
   // ========================================================
-  // 2. NUEVO MOTOR DE PETICIONES (REEMPLAZA A google.script.run)
+  // 2. RADAR DE DIAGNÓSTICO (NUEVO)
+  // ========================================================
+  function logUI(mensaje, isError = false) {
+    let box = document.getElementById('loader-msg');
+    if (isError) {
+      box.innerHTML = `<span style="color:#ff5252; font-weight:bold;">❌ Error Fatal: ${mensaje}</span><br><br><button onclick="cargarCompleto(null)" style="padding:10px; cursor:pointer;">Reintentar Conexión</button>`;
+    } else {
+      box.innerHTML = `<span style="color:#daffde;">> ${mensaje}</span>`;
+    }
+    console.log(isError ? "[ERROR] " + mensaje : "[INFO] " + mensaje);
+  }
+
+  // ========================================================
+  // 3. MOTOR DE PETICIONES BLINDADO
   // ========================================================
   async function llamarBackend(actionName, payloadData = {}) {
     try {
+      // Usamos text/plain para evadir el pre-flight OPTIONS de CORS (Bloqueo silencioso)
       const response = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: actionName, payload: payloadData })
       });
+      
+      if (!response.ok) throw new Error(`El servidor respondió con código ${response.status}`);
+      
       const result = await response.json();
       if (result.status === "error") throw new Error(result.message);
+      
       return result.data;
     } catch (error) {
-      console.error(error);
       throw error;
-    }
-  }
-  
-  async function cargarCompleto(f) {
-    toggleLoader(true);
-    try {
-      E = await llamarBackend("obtenerDatosDashboard", { fecha: f });
-      
-      // NUEVO: Captura explícita de errores devueltos por el backend
-      if (E && E.error) throw new Error(E.error);
-      
-      pintarHeader(); 
-      refrescarUI(); 
-      toggleLoader(false);
-    } catch(err) {
-      console.error(err); // Ahora sí saldrá en consola
-      document.getElementById('loader-msg').innerHTML = `<span style="color:#ff5252">Error Backend: ${err.message}</span><br><button onclick="cargarCompleto(null)" style="margin-top:15px; padding:10px; color:black; cursor:pointer;">Reintentar</button>`;
     }
   }
 
   // ========================================================
-  // 3. UI, LOADERS Y TOASTS
+  // 4. UI, LOADERS Y TOASTS
   // ========================================================
   function showToast(msg, type = 'success', duration = 3000) {
     const t = document.createElement('div'); t.className = `toast toast-${type}`;
@@ -312,17 +312,26 @@
   window.onload = () => cargarCompleto(null);
 
   // ========================================================
-  // 4. LÓGICA CORE REESCRITA A ASYNC/AWAIT
+  // 5. LÓGICA CORE (Con Radar)
   // ========================================================
   async function cargarCompleto(f) {
     toggleLoader(true);
+    
+    if (API_URL === "AQUI_TU_URL_DE_APPS_SCRIPT") {
+      logUI("Te has olvidado de pegar tu URL de Apps Script en el código (Línea 233).", true);
+      return;
+    }
+
     try {
+      logUI("Contactando con los servidores de Google...");
       E = await llamarBackend("obtenerDatosDashboard", { fecha: f });
+      
+      logUI("Datos recibidos. Renderizando Interfaz...");
       pintarHeader(); 
       refrescarUI(); 
       toggleLoader(false);
     } catch(err) {
-      document.getElementById('loader-msg').innerHTML = `<span style="color:#ff5252">Error de conexión: ${err.message}</span><br><button onclick="cargarCompleto(null)" style="margin-top:15px; padding:10px; color:black; cursor:pointer;">Reintentar</button>`;
+      logUI(`Google ha rechazado la conexión. <br><br>Detalle técnico: ${err.message}`, true);
     }
   }
 
@@ -484,4 +493,427 @@
     }
 
     let html = `<h4 style="margin-top:0; color:#e65100;">📋 Validador de Preparación</h4><ul style="list-style:none; padding:0; margin:0; display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 10px;">`;
-    const i = (cond, txt) => `<li style="color
+    const i = (cond, txt) => `<li style="color:${cond?'var(--green)':'var(--red)'}; font-weight:bold; font-size:1.05em;">${cond?'✅':'❌'} ${txt}</li>`;
+    
+    html += i(crqOk, "CRQ General asignado en cabecera");
+    html += i(instOk, "Instalación Técnica marcada en cabecera");
+    html += i(proyOk, "Al menos 1 Proyecto añadido");
+    if(proyOk) html += i(compOk, "Todos los proyectos tienen componentes");
+    if(proyOk) html += i(pOk, "Todos los proyectos tienen el check 'OK Proyecto'");
+    if(compOk) html += i(relOk, "Todos los componentes tienen el check 'Release'");
+    if(hasRdrRules) html += i(ruleRdrOk, ruleRdrOk ? "Componente Streetref incluido (Regla RdrRules)" : "Falta 'Streetref' (Regla RdrRules detectada)");
+    html += i(seqOk, msgSeq);
+    html += `</ul>`;
+    v.innerHTML = html;
+    
+    let todoCorrecto = crqOk && instOk && proyOk && compOk && pOk && relOk && ruleRdrOk && seqOk;
+    let btn = document.getElementById('btn-cerrar-pase');
+    
+    if(todoCorrecto) {
+       btn.setAttribute('data-disabled', 'false'); btn.innerText = "▶️ VALIDAR Y CERRAR PASE (Avanzar a Pre-Implantación)";
+       btn.style.background = "var(--green)"; btn.style.color = "white"; btn.style.cursor = "pointer";
+    } else {
+       btn.setAttribute('data-disabled', 'true'); btn.innerText = "🔒 Completa el validador para poder avanzar";
+       btn.style.background = "#e0e0e0"; btn.style.color = "#333333"; btn.style.cursor = "pointer"; 
+    }
+  }
+
+  function updatePlaceholderInline(fila) {
+    let rawVal = document.getElementById('s-'+fila).value || "";
+    let ts = rawVal.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    let inp = document.getElementById('c-'+fila);
+    if (ts.includes("REMEDY")) inp.placeholder = "REQ..."; else if (ts.includes("APERIODICO") || ts.includes("SERVICE") || ts.includes("JIRA")) inp.placeholder = "SS-..."; else inp.placeholder = "DP-KYTL-...";
+  }
+
+  function pintarProyectos() {
+    let h = document.getElementById('contenedor-proyectos'); h.innerHTML = "";
+    const borderColors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#8E24AA', '#00ACC1', '#F4511E'];
+
+    E.proyectos.forEach((p, idx) => {
+      let bColor = borderColors[idx % borderColors.length];
+      let html = `<div class="project-container" style="border-left: 5px solid ${bColor};"><div class="project-header">
+        <div><strong style="font-size:1.2em; color:var(--blue);">${p.nombre}</strong> <span style="background:var(--grey); padding:2px 8px; border-radius:12px; font-size:0.8em; margin-left:10px;">${p.feature}</span></div>
+        <div style="font-size:0.95em; color:#555; display:flex; align-items:center; gap:10px;">
+          Resp. BBVA: <strong>${p.cliente}</strong> | 
+          <label style="background:white; padding:4px 8px; border-radius:4px; border:1px solid #ccc; cursor:pointer;"><input type="checkbox" ${p.ok?'checked':''} onchange="updOkProy('${p.nombre.replace(/'/g, "\\'")}', this.checked)"> OK Proyecto?</label>
+        </div>
+      </div>`;
+      
+      html += `<div class="table-responsive"><div class="comp-header comp-grid"><div>Componente</div><div>Tipo</div><div>Subida</div><div>COD.</div><div>Historias Usuario</div><div>Resp.</div><div>Release?</div><div>Comentarios</div><div></div></div>`;
+      
+      p.componentes.forEach(c => {
+         let subRaw = c.subida || ""; let sub = subRaw.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+         let placeCod = "DP-KYTL-...";
+         if (sub.includes("REMEDY")) placeCod = "REQ..."; else if (sub.includes("APERIODICO") || sub.includes("SERVICE") || sub.includes("JIRA")) placeCod = "SS-...";
+         
+         html += `<div class="comp-item comp-grid">
+          <input type="text" id="n-${c.fila}" value="${c.nombre}" class="inline-input" placeholder="Nombre..." onchange="actualizarValidador()">
+          <select id="t-${c.fila}" class="inline-input"><option value=""></option>${E.tiposComp.map(x=>`<option value="${x}" ${x===c.tipo?'selected':''}>${x}</option>`).join('')}</select>
+          <select id="s-${c.fila}" class="inline-input" onchange="updatePlaceholderInline(${c.fila})"><option value=""></option>${E.tiposSubida.map(x=>`<option value="${x}" ${x===c.subida?'selected':''}>${x}</option>`).join('')}</select>
+          <input type="text" id="c-${c.fila}" value="${c.codigo}" class="inline-input" placeholder="${placeCod}" onchange="actualizarValidador()">
+          <input type="text" id="u-${c.fila}" value="${c.us}" class="inline-input" placeholder="Ej: CIBRDR-12, CIBRDR-34">
+          <select id="r-${c.fila}" class="inline-input"><option value=""></option>${E.equipo.map(x=>`<option value="${x}" ${x===c.resp?'selected':''}>${x.split(' ')[0]}</option>`).join('')}</select>
+          <div style="text-align:center;"><input type="checkbox" id="rel-${c.fila}" ${c.release?'checked':''} onchange="actualizarValidador()"></div>
+          <input type="text" id="com-${c.fila}" value="${c.comentarios}" class="inline-input" placeholder="Comentarios...">
+          <div style="display:flex; gap:5px;">
+            <button class="btn-icon" onclick="updComp(${c.fila}, event)" title="Guardar Cambios">💾</button>
+            <button class="btn-icon" onclick="delComp(${c.fila})" title="Eliminar componente" style="color:var(--red);">🗑️</button>
+          </div>
+         </div>`;
+      });
+      html += `</div>`;
+      
+      html += `<div style="background:#f9f9f9; padding:8px 15px; text-align:right; border-top:1px solid #eee; display:flex; justify-content:flex-end; gap:10px;">
+        <span style="font-size:0.85em; color:var(--blue); align-self:center;">+ Añadir componentes en blanco:</span>
+        <button class="btn btn-outline" style="color:var(--blue); border:1px solid var(--blue); padding:5px 10px; font-size:0.85em;" onclick="addCompVacio('${p.nombre.replace(/'/g, "\\'")}', 1)">+ 1</button>
+        <button class="btn btn-outline" style="color:var(--blue); border:1px solid var(--blue); padding:5px 10px; font-size:0.85em;" onclick="addCompVacio('${p.nombre.replace(/'/g, "\\'")}', 5)">+ 5</button>
+        <button class="btn btn-outline" style="color:var(--blue); border:1px solid var(--blue); padding:5px 10px; font-size:0.85em;" onclick="addCompVacio('${p.nombre.replace(/'/g, "\\'")}', 10)">+ 10</button>
+      </div></div>`;
+      h.innerHTML += html;
+    });
+
+    actualizarValidador();
+  }
+
+  function pintarSecuenciaLocal() {
+    let hPrep = document.getElementById('lista-orden-prep'); hPrep.innerHTML = ""; 
+    if(tempOrden.length === 0) { hPrep.innerHTML = "<p style='color:gray;'>El orden del pase está vacío.</p>"; return; }
+    
+    tempOrden.forEach((el, idx) => {
+      let elUpper = el.elemento.toUpperCase();
+      let isSys = elUpper.includes("PARADA") || elUpper.includes("ARRANQUE") || elUpper.includes("REINICIO");
+      let inSom = isSys ? `<input type="text" placeholder="SOM-..." value="${el.som}" onchange="updSomLocal(${idx}, this.value)" style="padding:6px; border:1px solid #ccc; border-radius:4px; width:130px; font-size:0.9em; background:#fff;">` : '';
+
+      hPrep.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; background:white;">
+        <div style="display:flex; align-items:center; gap:15px; flex:1;">
+          <strong style="font-size:1.1em; color:var(--blue);">${idx+1}. ${el.elemento}</strong>
+          ${inSom}
+        </div>
+        ${(E.faseActual === "FASE_2_3_PREPARACION") ? `
+        <div style="display:flex; gap:5px;">
+          <button class="btn-icon" style="color:gray;" onclick="movePaso(${idx}, -1)" title="Subir">▲</button>
+          <button class="btn-icon" style="color:gray;" onclick="movePaso(${idx}, 1)" title="Bajar">▼</button>
+          <button class="btn-icon" style="color:var(--red); margin-left:10px;" onclick="removePaso(${idx})" title="Eliminar paso">🗑️</button>
+        </div>` : ''}
+      </div>`; 
+    });
+    actualizarValidador();
+  }
+
+  function movePaso(idx, dir) {
+    if (dir === -1 && idx > 0) { let temp = tempOrden[idx]; tempOrden[idx] = tempOrden[idx-1]; tempOrden[idx-1] = temp; } 
+    else if (dir === 1 && idx < tempOrden.length - 1) { let temp = tempOrden[idx]; tempOrden[idx] = tempOrden[idx+1]; tempOrden[idx+1] = temp; }
+    pintarSecuenciaLocal(); guardarOrdenLocal();
+  }
+
+  function pintarOrden() {
+    tempOrden = E.ordenPase.map(o => ({elemento: o.elemento, som: o.som}));
+
+    let cods = new Set();
+    E.proyectos.forEach(p => p.componentes.forEach(c => { if(c.codigo && c.codigo.trim()!=="" && c.codigo.trim()!=="-") cods.add(c.codigo.trim()); }));
+    
+    let htmlCods = `<select id="sel-add-cod" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc; font-weight:bold; color:var(--blue);" onchange="addPasoCod()">`;
+    htmlCods += `<option value="">+ Selecciona un Componente (COD) para añadirlo...</option>`;
+    cods.forEach(c => htmlCods += `<option value="Instalar Componente: ${c}">${c}</option>`);
+    htmlCods += `</select>`;
+    
+    let container = document.getElementById('container-sel-add-cod');
+    if(container) container.innerHTML = htmlCods;
+
+    pintarSecuenciaLocal();
+
+    let hEjec = document.getElementById('lista-orden-ejecucion');
+    if(hEjec) {
+      hEjec.innerHTML = ""; 
+      if(E.ordenPase.length === 0) { hEjec.innerHTML = "<p style='color:gray;'>El orden de implantación no se definió en la preparación.</p>"; return; }
+
+      E.ordenPase.forEach((o, idx) => { 
+        let elUpper = o.elemento.toUpperCase();
+        let isSys = elUpper.includes("PARADA") || elUpper.includes("ARRANQUE") || elUpper.includes("REINICIO");
+        let inSom = isSys ? `<input type="text" placeholder="SOM-..." value="${o.som}" onchange="updSomEjecucion(${o.fila}, this.value)" style="padding:6px; border:1px solid #ccc; border-radius:4px; width:130px; font-size:0.9em; background:#fff;">` : '';
+
+        hEjec.innerHTML += `<div style="padding:12px; border-bottom:1px solid #eee; display:flex; gap:15px; align-items:center; background:white;">
+          <input type="checkbox" style="width:20px;height:20px;" ${o.implantado?'checked':''} onchange="chkOrden(${o.fila}, this.checked)">
+          <strong style="font-size:1.1em; color:var(--blue);">${idx+1}. ${o.elemento}</strong>
+          ${inSom}
+        </div>`; 
+      }); 
+    }
+    actualizarValidador();
+  }
+
+  function pintarMergeos() {
+    let h = document.getElementById('lista-mergeos');
+    if(!h) return;
+    h.innerHTML = "";
+    
+    let numMergeos = 0;
+    E.proyectos.forEach(p => {
+      p.componentes.forEach(c => {
+         let cod = (c.codigo || "").toUpperCase();
+         if (cod.includes("DP-KYTL")) {
+           numMergeos++;
+           let isMergeado = c.mergeado === true || String(c.mergeado).toUpperCase() === "TRUE" || String(c.mergeado).toUpperCase() === "VERDADERO";
+           h.innerHTML += `<div style="padding:12px; border-bottom:1px solid #eee; display:flex; gap:10px; align-items:center; background:white;">
+              <input type="checkbox" style="width:20px;height:20px;" ${isMergeado?'checked':''} onchange="chkMerge(${c.fila}, this.checked)">
+              <strong style="font-size:1.1em; color:var(--blue);">${c.nombre}</strong> <span style="color:gray;">(${c.codigo})</span>
+            </div>`;
+         }
+      });
+    });
+    
+    if(numMergeos === 0) {
+       h.innerHTML = "<p style='color:gray;'>No hay componentes tipo DP-KYTL que requieran mergeo en este pase. Puedes finalizar directamente.</p>";
+    }
+  }
+
+  function addPasoStr(str) { tempOrden.push({elemento: str, som: ""}); pintarSecuenciaLocal(); guardarOrdenLocal(); }
+  function addPasoTxt() { let val = document.getElementById('txt-add-paso').value; if(val) { tempOrden.push({elemento: val, som: ""}); document.getElementById('txt-add-paso').value=''; pintarSecuenciaLocal(); guardarOrdenLocal(); } }
+  
+  function addPasoCod() { 
+    let sel = document.getElementById('sel-add-cod'); let val = sel.value; 
+    if(val) { tempOrden.push({elemento: val, som: ""}); sel.value = ""; pintarSecuenciaLocal(); guardarOrdenLocal(); } 
+  }
+  
+  function removePaso(idx) { tempOrden.splice(idx, 1); pintarSecuenciaLocal(); guardarOrdenLocal(); }
+  function updSomLocal(idx, val) { tempOrden[idx].som = val; guardarOrdenLocal(); }
+  
+  function guardarOrdenLocal() {
+    E.ordenPase = tempOrden.map((el, i) => ({ fila: i + 1, orden: i + 1, elemento: el.elemento, implantado: false, som: el.som }));
+    actualizarValidador();
+    
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(async () => {
+      let t = showToast("Guardando cambios...", "loading", 0);
+      try {
+        await llamarBackend("actualizarOrdenCompleto", { fechaStr: E.fechaSeleccionada, elementos: tempOrden });
+        t.remove(); showToast("Secuencia guardada", "success", 1000);
+      } catch(e) {
+        t.remove(); showToast(e.message, "error");
+      }
+    }, 600); 
+  }
+
+  async function updSomEjecucion(fila, val) {
+    let t = showToast("Guardando SOM...", "loading", 0);
+    try {
+      await llamarBackend("actualizarSomOrden", { fila: fila, val: val });
+      t.remove(); showToast("SOM Guardado", "success", 1000);
+    } catch(e) {
+      t.remove(); showToast(e.message, "error");
+    }
+  }
+
+  async function validarYAvanzarPrep() {
+    let btn = document.getElementById('btn-cerrar-pase');
+    if (btn.getAttribute('data-disabled') === 'true') {
+      document.getElementById('caja-validador').style.border = "2px solid red";
+      setTimeout(() => document.getElementById('caja-validador').style.border = "1px solid #ffb74d", 1000);
+      return showToast("Atención: Revisa el Validador. Faltan elementos obligatorios.", "error", 4000);
+    }
+    avanzar('FASE_2_3_PREPARACION');
+  }
+
+  async function validarYAvanzarPre() {
+    const ids = ['dpPro', 'jiraOk', 'remOk', 'docPruebas', 'traspaso'];
+    let todoOk = true;
+    for(let id of ids) {
+       let aplica = document.getElementById('sel-'+id).value === 'APLICA';
+       let ok = document.getElementById('chk-'+id).checked;
+       if (aplica && !ok) todoOk = false;
+    }
+    if (!todoOk) return showToast("ERROR: Debes completar todos los checks que APLICAN.", "error", 5000);
+    avanzar('FASE_4_CERRADO');
+  }
+
+  async function validarYCompletarImplantacion() {
+    let faltanChecks = E.ordenPase.some(o => o.implantado !== true && String(o.implantado).toUpperCase() !== "TRUE" && String(o.implantado).toUpperCase() !== "VERDADERO");
+    if(faltanChecks) return showToast("ERROR: Faltan pasos por marcar como implantados en la lista.", "error", 4000);
+    avanzar('FASE_6_IMPLANTACION');
+  }
+
+  async function validarYFinalizarPase() {
+    let faltan = false;
+    E.proyectos.forEach(p => {
+      p.componentes.forEach(c => {
+         let cod = (c.codigo || "").toUpperCase();
+         let isMergeado = c.mergeado === true || String(c.mergeado).toUpperCase() === "TRUE" || String(c.mergeado).toUpperCase() === "VERDADERO";
+         if (cod.includes("DP-KYTL") && !isMergeado) faltan = true;
+      });
+    });
+    
+    if(faltan) return showToast("ERROR: Faltan ramas de componentes DP-KYTL por marcar como mergeadas.", "error", 4000);
+    avanzar('FASE_7_POST');
+  }
+
+  async function updComp(fila, event) { 
+    let t = showToast("Guardando componente...", "loading", 0); 
+    let btn = event.currentTarget; btn.style.filter = "sepia(1) hue-rotate(90deg)"; 
+    try {
+      let nom = document.getElementById('n-'+fila).value;
+      let tipo = document.getElementById('t-'+fila).value;
+      let subida = document.getElementById('s-'+fila).value;
+      let resp = document.getElementById('r-'+fila).value;
+      let cod = document.getElementById('c-'+fila).value;
+      let us = document.getElementById('u-'+fila).value;
+      let rel = document.getElementById('rel-'+fila).checked;
+      let com = document.getElementById('com-'+fila).value;
+
+      await llamarBackend("editarComponente", { fila: fila, nom: nom, tipo: tipo, subida: subida, resp: resp, cod: cod, us: us, releaseCheck: rel, com: com });
+
+      t.remove(); showToast("Guardado", "success", 1500); btn.style.filter = ""; 
+      E.proyectos.forEach(p=>p.componentes.forEach(c=>{if(c.fila===fila){ c.nombre=nom; c.release=rel; c.codigo=cod; }})); 
+      actualizarValidador();
+    } catch(e) {
+      t.remove(); showToast(e.message, "error"); btn.style.filter = "";
+    }
+  }
+
+  async function delComp(fila) { 
+    if(!confirm("¿Seguro que quieres eliminar este componente del proyecto?")) return; 
+    let t = showToast("Eliminando...", "loading", 0); 
+    try {
+      await llamarBackend("eliminarComponente", { fila: fila });
+      refrescoSilencioso(t, "Componente eliminado");
+    } catch(e) {
+      t.remove(); showToast(e.message, "error");
+    }
+  }
+
+  async function updOkProy(nombre, isChecked) { 
+    E.proyectos.forEach(p=>{if(p.nombre===nombre)p.ok=isChecked;}); 
+    actualizarValidador();
+    let t = showToast("Guardando OK...", "loading", 0); 
+    try {
+      await llamarBackend("actualizarOKProyecto", { fechaStr: E.fechaSeleccionada, nombre: nombre, val: isChecked });
+      t.remove(); showToast("OK de proyecto guardado", "success", 1500);
+    } catch(e) {
+      t.remove(); showToast(e.message, "error");
+    }
+  }
+  
+  async function chkOrden(fila, val) { 
+    E.ordenPase.forEach(o => { if(o.fila === fila) o.implantado = val; }); 
+    try {
+      await llamarBackend("actualizarCheckOrden", { fila: fila, val: val });
+      showToast("Paso Actualizado", "success", 1000);
+    } catch(e) { showToast("Error al actualizar paso", "error"); }
+  }
+
+  async function chkMerge(fila, val) { 
+    E.proyectos.forEach(p => p.componentes.forEach(c => { if(c.fila === fila) c.mergeado = val; })); 
+    try {
+      await llamarBackend("actualizarMergeComponente", { fila: fila, val: val });
+      showToast("Mergeo guardado", "success", 1000);
+    } catch(e) { showToast("Error al guardar mergeo", "error"); }
+  }
+  
+  async function guardarPre() { 
+    let t = showToast("Guardando check...", "loading", 0); 
+    const getC = (id) => ({ aplica: document.getElementById('sel-'+id).value, ok: document.getElementById('chk-'+id).checked }); 
+    let checks = { dpPro: getC('dpPro'), jiraOk: getC('jiraOk'), remOk: getC('remOk'), docPruebas: getC('docPruebas'), traspaso: getC('traspaso') };
+    try {
+      await llamarBackend("actualizarChecksPre", { fila: E.fila, checks: checks });
+      t.remove(); showToast("Guardado", "success", 1000);
+    } catch(e) {
+      t.remove(); showToast("Error al guardar", "error");
+    }
+  }
+
+  async function addCompVacio(nomProy, cantidad) { 
+    let t = showToast(`Añadiendo ${cantidad} fila(s)...`, "loading", 0); 
+    try {
+      await llamarBackend("agregarComponentesVacios", { proy: nomProy, cantidadStr: cantidad });
+      refrescoSilencioso(t, "Filas añadidas correctamente");
+    } catch(e) {
+      t.remove(); showToast(e.message, "error");
+    }
+  }
+
+  async function addProyecto() { 
+    let n = document.getElementById('add-p-nom').value; 
+    if(!n) return showToast("El nombre del proyecto es obligatorio", "error"); 
+    let t = showToast("Creando proyecto...", "loading", 0); 
+    try {
+      let feat = document.getElementById('add-p-feat').value;
+      let resp = document.getElementById('add-p-resp').value;
+      await llamarBackend("guardarNuevoProyecto", { fechaStr: E.fechaSeleccionada, nombre: n, feature: feat, respBBVA: resp });
+      document.getElementById('add-p-nom').value=''; 
+      document.getElementById('add-p-feat').value=''; 
+      refrescoSilencioso(t, "Proyecto creado");
+    } catch(e) {
+      t.remove(); showToast(e.message, "error");
+    }
+  }
+  
+  async function autoGuardarCab() { 
+    let crq = document.getElementById('h-crq').value;
+    let lider = document.getElementById('h-liderar').value;
+    let aprende = document.getElementById('h-aprender').value;
+    let instTecnica = document.getElementById('h-instTec').checked;
+    
+    let t = showToast("Guardando cabecera...", "loading", 0); 
+    try {
+      await llamarBackend("guardarCabecera", { fila: E.fila, crq: crq, lider: lider, aprende: aprende, instTecnica: instTecnica });
+      t.remove(); showToast("Información guardada", "success", 1500); actualizarValidador();
+    } catch(e) {
+      t.remove(); showToast("Error guardando cabecera", "error");
+    }
+  }
+
+  async function cambiarFecha() { cargarCompleto(document.getElementById('h-fecha').value); }
+  
+  async function comenzarPase() { 
+    let t = showToast("Abriendo pase...", "loading", 0); 
+    try {
+      await llamarBackend("iniciarPase", { fila: E.fila, fechaStr: E.fechaSeleccionada });
+      t.remove(); cargarCompleto(E.fechaSeleccionada);
+    } catch(e) { t.remove(); showToast(e.message, "error"); }
+  }
+
+  async function responderEncuesta(r) { 
+    let t = showToast("Registrando...", "loading", 0); 
+    try {
+      await llamarBackend("responderEncuesta", { respuesta: r, fila: E.fila, fechaStr: E.fechaSeleccionada });
+      t.remove(); cargarCompleto(E.fechaSeleccionada);
+    } catch(e) { t.remove(); showToast(e.message, "error"); }
+  }
+
+  async function cancelarSubida() { 
+    if(!confirm("¿Cancelar todo el pase?")) return; 
+    let t = showToast("Cancelando...", "loading", 0); 
+    try {
+      await llamarBackend("cancelarSubida", { fila: E.fila, fechaStr: E.fechaSeleccionada });
+      t.remove(); cargarCompleto(E.fechaSeleccionada);
+    } catch(e) { t.remove(); showToast(e.message, "error"); }
+  }
+
+  async function activarEmergencia() { 
+    let t = showToast("Reabriendo...", "loading", 0); 
+    try {
+      await llamarBackend("activarEmergencia", { fila: E.fila, fechaStr: E.fechaSeleccionada });
+      t.remove(); cargarCompleto(E.fechaSeleccionada);
+    } catch(e) { t.remove(); showToast(e.message, "error"); }
+  }
+
+  async function avanzar(f) { 
+    if(!confirm("¿Confirmar esta validación y notificar al equipo por correo?")) return; 
+    let t = showToast("Procesando...", "loading", 0); 
+    try {
+      await llamarBackend("avanzarFase", { fila: E.fila, fechaStr: E.fechaSeleccionada, faseActual: E.faseActual });
+      t.remove(); showToast("Fase completada", "success"); cargarCompleto(E.fechaSeleccionada);
+    } catch(e) { t.remove(); showToast(e.message, "error"); }
+  }
+
+  async function bombaNuclear() { 
+    if(confirm("💥 ESTÁS SEGURO?")) { 
+      toggleLoader(true); 
+      try {
+        await llamarBackend("debugTotal", {});
+        cargarCompleto(null);
+      } catch(e) { toggleLoader(false); showToast("Error de borrado", "error"); }
+    } 
+  }
+</script>
+</body>
+</html>
