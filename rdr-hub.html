@@ -260,15 +260,15 @@ button { cursor: pointer; }
    Main / cards
    =========================================================== */
 .main-content {
-  padding: var(--s-4);
-  max-width: 1280px;
+  padding: var(--s-3) var(--s-3);
+  max-width: 1680px; /* antes 1280 — más espacio para la tabla de componentes */
   margin: 0 auto;
 }
 .card {
   background: var(--bbva-white);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-sm);
-  padding: var(--s-4);
+  padding: var(--s-3);
   margin-bottom: var(--s-3);
   border: 1px solid var(--bbva-gray-1);
 }
@@ -424,12 +424,33 @@ button { cursor: pointer; }
 
 .comp-grid {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1.2fr 1.8fr 1.2fr 70px 1.5fr 80px;
+  /* Columnas:
+     1 Nombre     — flexible, crece y luego envuelve
+     2 Tipo       — fijo razonable
+     3 Subida     — fijo razonable
+     4 Cód.       — fijo razonable
+     5 US         — flexible, crece y luego envuelve
+     6 Resp.      — fijo razonable
+     7 Release    — auto (un checkbox)
+     8 Comentarios — flexible, crece y luego envuelve
+     9 Acciones   — auto (2 botones)
+  */
+  grid-template-columns:
+    minmax(140px, 1.6fr)
+    minmax(110px, 1fr)
+    minmax(110px, 1fr)
+    minmax(120px, 1.2fr)
+    minmax(140px, 1.6fr)
+    minmax(110px, 1fr)
+    auto
+    minmax(140px, 1.5fr)
+    auto;
   gap: 6px;
   padding: 6px 12px;
-  align-items: center;
-  min-width: 1100px;
+  align-items: start;   /* antes center → con textareas variables, mejor align-start */
+  min-width: 980px;     /* antes 1100 — bajamos para permitir tabla cómoda en 1280 */
 }
+.comp-grid > * { min-width: 0; } /* evita que un input fuerce a la columna a crecer más allá del fr */
 .comp-header {
   background: var(--bbva-gray-1);
   font-size: 10px; font-weight: 700;
@@ -437,6 +458,7 @@ button { cursor: pointer; }
   text-transform: uppercase;
   color: var(--bbva-gray-4);
   padding: 8px 12px;
+  align-items: center; /* labels cortos, mejor centrados que align-start */
 }
 .comp-item {
   border-bottom: 1px solid var(--bbva-gray-1);
@@ -474,6 +496,21 @@ button { cursor: pointer; }
   border-color: var(--bbva-serene-blue);
   background: var(--bbva-white);
   box-shadow: 0 0 0 3px rgba(133, 200, 255, 0.25);
+}
+
+/* Variante textarea: misma apariencia, pero crece en alto cuando el texto
+   no cabe en una sola línea (autosize vía JS). */
+textarea.inline-input {
+  resize: none;
+  overflow: hidden;
+  line-height: 1.35;
+  min-height: 28px;
+  font: inherit;
+  font-size: 13px;
+  font-family: var(--bbva-font-body);
+  color: var(--bbva-midnight);
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
 .comp-actions { display: flex; gap: 4px; justify-content: flex-end; }
@@ -797,7 +834,7 @@ button { cursor: pointer; }
 @media (max-width: 720px) {
   .main-content { padding: var(--s-2); }
   .card { padding: var(--s-2); }
-  .comp-grid { min-width: 900px; }
+  .comp-grid { min-width: 880px; }
 }
 </style>
 </head>
@@ -1328,6 +1365,9 @@ function verTab(id) {
   const p = $('panel-' + id); if (p) p.classList.add('active');
   $$('.tab-btn').forEach(b => b.classList.remove('active'));
   const b = $('t-' + id); if (b) b.classList.add('active');
+  // Tras hacer visible un panel, los textareas que estaban ocultos ya pueden
+  // medir su scrollHeight correctamente. rAF para esperar al re-layout.
+  requestAnimationFrame(autosizeAllVisible);
 }
 
 // ════ Validador ═══════════════════════════════════════════
@@ -1542,14 +1582,14 @@ function pintarProyectos() {
       row.className = 'comp-item comp-grid';
       row.dataset.fila = c.fila;
       row.innerHTML =
-        '<input type="text" id="n-' + c.fila + '" value="' + esc(c.nombre) + '" class="inline-input" placeholder="Nombre…" data-act="editComp" data-fila="' + c.fila + '">' +
+        '<textarea id="n-' + c.fila + '" class="inline-input autosize" placeholder="Nombre…" rows="1" data-act="editComp" data-fila="' + c.fila + '">' + esc(c.nombre) + '</textarea>' +
         '<select id="t-' + c.fila + '" class="inline-input" data-act="editComp" data-fila="' + c.fila + '"><option value=""></option>' + tiposOpts + '</select>' +
         '<select id="s-' + c.fila + '" class="inline-input" data-act="editComp" data-fila="' + c.fila + '" data-changeph="1"><option value=""></option>' + subidaOpts + '</select>' +
         '<input type="text" id="c-' + c.fila + '" value="' + esc(c.codigo) + '" class="inline-input" placeholder="' + placeCod + '" data-act="editComp" data-fila="' + c.fila + '" data-autofill="schema">' +
-        '<input type="text" id="u-' + c.fila + '" value="' + esc(c.us) + '" class="inline-input" placeholder="CIBRDR-…" data-act="editComp" data-fila="' + c.fila + '" data-autofill="cibrdr">' +
+        '<textarea id="u-' + c.fila + '" class="inline-input autosize" placeholder="CIBRDR-…" rows="1" data-act="editComp" data-fila="' + c.fila + '" data-autofill="cibrdr">' + esc(c.us) + '</textarea>' +
         '<select id="r-' + c.fila + '" class="inline-input" data-act="editComp" data-fila="' + c.fila + '"><option value=""></option>' + equipoOpts + '</select>' +
-        '<div style="text-align:center;"><input type="checkbox" id="rel-' + c.fila + '" ' + (c.release ? 'checked' : '') + ' data-act="editComp" data-fila="' + c.fila + '"></div>' +
-        '<input type="text" id="com-' + c.fila + '" value="' + esc(c.comentarios) + '" class="inline-input" placeholder="Comentarios…" data-act="editComp" data-fila="' + c.fila + '">' +
+        '<div style="text-align:center; padding-top: 4px;"><input type="checkbox" id="rel-' + c.fila + '" ' + (c.release ? 'checked' : '') + ' data-act="editComp" data-fila="' + c.fila + '"></div>' +
+        '<textarea id="com-' + c.fila + '" class="inline-input autosize" placeholder="Comentarios…" rows="1" data-act="editComp" data-fila="' + c.fila + '">' + esc(c.comentarios) + '</textarea>' +
         '<div class="comp-actions">' +
           '<button class="btn-icon" type="button" data-act="saveComp" data-fila="' + c.fila + '" title="Guardar ahora">' + ICONS.save + '</button>' +
           '<button class="btn-icon is-danger" type="button" data-act="delComp" data-fila="' + c.fila + '" title="Eliminar">' + ICONS.trash + '</button>' +
@@ -1576,6 +1616,12 @@ function pintarProyectos() {
   // Validación inicial: marca como inválidos los Cod. ya guardados que no cumplan
   // el schema actual (puede pasar si se cambió la parametrización a posteriori).
   (E.proyectos || []).forEach(p => (p.componentes || []).forEach(c => revalidarCodFila(c.fila)));
+
+  // Autosize de todos los textareas con contenido inicial.
+  // requestAnimationFrame para que el navegador ya haya hecho el layout
+  // (los textareas necesitan estar en el DOM y con ancho conocido para que
+  // scrollHeight refleje el wrap correcto).
+  requestAnimationFrame(autosizeAllVisible);
 
   actualizarValidador();
 }
@@ -1611,10 +1657,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   cont.addEventListener('input', (ev) => {
-    // Componentes (autosave por fila)
-    const tc = ev.target.closest('input[type="text"][data-act="editComp"]');
+    // Componentes (autosave por fila): inputs y textareas
+    const tc = ev.target.closest('input[type="text"][data-act="editComp"], textarea[data-act="editComp"]');
     if (tc) {
       const fila = parseInt(tc.dataset.fila);
+      // Si es un textarea autosize, redimensionar mientras se teclea.
+      if (tc.tagName === 'TEXTAREA' && tc.classList.contains('autosize')) {
+        autosizeTextarea(tc);
+      }
       revalidarCodFila(fila);
       marcarDirty(fila);
       programarAutosaveComp(fila);
@@ -1636,7 +1686,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Listener global porque también cubre el formulario "Añadir proyecto".
   document.addEventListener('focusin', (ev) => {
     const t = ev.target;
-    if (!t.matches || !t.matches('input[type="text"][data-autofill]')) return;
+    if (!t.matches || !t.matches('input[type="text"][data-autofill], textarea[data-autofill]')) return;
     if (t.value && t.value.trim() !== "") return; // ya tiene contenido: no tocamos
 
     const kind = t.dataset.autofill;
@@ -1655,6 +1705,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       try { t.setSelectionRange(prefix.length, prefix.length); } catch (_) {}
     }, 0);
+    // Si es textarea autosize, refrescar su alto (aunque para un prefijo cortito no cambia).
+    if (t.tagName === 'TEXTAREA' && t.classList.contains('autosize')) autosizeTextarea(t);
   });
 
   // Delegación para listas de orden y mergeos (existen siempre en el DOM).
@@ -1702,6 +1754,29 @@ function revalidarCodFila(fila) {
     codEl.classList.remove('is-invalid');
     if (row) row.classList.remove('is-invalid');
   }
+}
+
+// ─── Autosize de textareas ───
+// Ajusta el alto del textarea a su contenido. Se llama:
+//   - al pintar (para textareas con valor inicial)
+//   - en cada `input` mientras el usuario teclea
+//   - al cambiar de pestaña (un textarea en panel oculto reporta scrollHeight 0)
+function autosizeTextarea(ta) {
+  if (!ta || ta.tagName !== 'TEXTAREA') return;
+  // El truco: reset a 'auto' para que scrollHeight refleje el contenido real,
+  // y luego asignamos altura igual a scrollHeight.
+  ta.style.height = 'auto';
+  // +2px para evitar que aparezca un scrollbar en el borde por redondeos.
+  ta.style.height = (ta.scrollHeight + 2) + 'px';
+}
+
+// Re-mide todos los textareas visibles. Útil al cambiar de pestaña o tras un
+// resize de ventana (al cambiar el ancho de columna, el wrap cambia y el alto debe ajustarse).
+function autosizeAllVisible() {
+  document.querySelectorAll('textarea.autosize').forEach(ta => {
+    // offsetParent es null cuando el elemento o un ancestro está display:none.
+    if (ta.offsetParent !== null) autosizeTextarea(ta);
+  });
 }
 
 // ════ Pintar orden ════════════════════════════════════════
@@ -2206,6 +2281,15 @@ async function bombaNuclear() {
     showToast("Error de borrado · " + e.message, "error");
   }
 }
+
+// Resize de ventana: al cambiar el ancho de las columnas, el wrap del texto
+// cambia y los textareas pueden quedar con alto incorrecto. Re-medimos
+// debounceado para no saturar (resize dispara decenas de eventos por arrastre).
+let resizeTid = null;
+window.addEventListener('resize', () => {
+  if (resizeTid) clearTimeout(resizeTid);
+  resizeTid = setTimeout(autosizeAllVisible, 100);
+});
 
 // Cierra autosave pendiente al cerrar la pestaña (best effort)
 window.addEventListener('beforeunload', () => {
