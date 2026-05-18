@@ -267,7 +267,7 @@
   function logUI(mensaje, isError = false) {
     let box = document.getElementById('loader-msg');
     if (isError) {
-      box.innerHTML = `<span style="color:#ff5252; font-weight:bold;">❌ Error Fatal: ${mensaje}</span><br><br><button onclick="arrancarSistema()" style="padding:10px; cursor:pointer; color:black; font-weight:bold; border-radius:4px; border:none; margin-top:10px;">Reintentar Conexión</button>`;
+      box.innerHTML = `<span style="color:#ff5252; font-weight:bold;">❌ Error Fatal: ${mensaje}</span><br><br><button onclick="cargarCompleto(null)" style="padding:10px; cursor:pointer; color:black; font-weight:bold; border-radius:4px; border:none; margin-top:10px;">Reintentar Conexión</button>`;
     } else {
       box.innerHTML = `<span style="color:#daffde;">> ${mensaje}</span>`;
     }
@@ -313,11 +313,11 @@
   }
 
   // ========================================================
-  // 5. INICIADOR BLINDADO Y FUNCIONES DE UI RESTAURADAS
+  // 5. INICIADOR BLINDADO (La función central restaurada)
   // ========================================================
-  async function arrancarSistema() {
+  async function cargarCompleto(f) {
     toggleLoader(true);
-    console.log("⚙️ Función arrancarSistema() iniciada.");
+    console.log("⚙️ Función cargarCompleto(" + f + ") iniciada.");
     
     if (API_URL === "AQUI_TU_URL_DE_APPS_SCRIPT") {
       logUI("FALTA LA URL DE APPS SCRIPT. Ve a la línea 233 del código HTML y pon tu URL real.", true);
@@ -326,7 +326,7 @@
 
     try {
       logUI("1. Conectando con los servidores de Google...");
-      E = await llamarBackend("obtenerDatosDashboard", { fecha: null });
+      E = await llamarBackend("obtenerDatosDashboard", { fecha: f });
       
       if (E && E.error) throw new Error(E.error);
       
@@ -341,7 +341,7 @@
   }
 
   // FUERZA EL ARRANQUE PASADO MEDIO SEGUNDO PARA EVITAR BLOQUEOS DEL NAVEGADOR
-  setTimeout(() => { arrancarSistema(); }, 500);
+  setTimeout(() => { cargarCompleto(null); }, 500);
 
   // ========================================================
   // LÓGICA CORE RESTANTE
