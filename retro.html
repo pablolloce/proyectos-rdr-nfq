@@ -188,6 +188,7 @@
         <i class="fa-solid fa-link text-bbva-serene text-xs mr-2"></i>
         <span class="text-xs text-bbva-serene/80 mr-1">Sala:</span>
         <span id="room-code-display" class="font-mono font-bold tracking-widest text-sm"></span>
+        <span id="room-peers-badge" class="hidden ml-2 bg-bbva-lime text-bbva-blue text-[10px] font-bold px-1.5 py-0.5 rounded-full"></span>
         <i class="fa-regular fa-copy text-bbva-serene/70 ml-2 text-xs"></i>
       </div>
 
@@ -519,11 +520,14 @@ function generarCodigoSala(len = 6) {
 // que usen el mismo broker público.
 const TRYSTERO_APP_ID = 'rdr-retro-bbva';
 
-// Relays MQTT públicos sobre WSS. Si el primero falla Trystero prueba el
-// siguiente. Ambos son brokers MQTT públicos populares.
+// Relays MQTT públicos sobre WSS (sin signup, sin auth).
+// Trystero conectará a los `relayRedundancy` primeros que funcionen.
+// Si uno falla, el resto siguen.
+//   - EMQX: el más estable y rápido en benchmarks recientes
+//   - HiveMQ: alternativa popular, otra IP/datacenter
 const TRYSTERO_MQTT_RELAYS = [
   'wss://broker.emqx.io:8084/mqtt',
-  'wss://test.mosquitto.org:8081/mqtt',
+  'wss://broker.hivemq.com:8884/mqtt',
 ];
 
 // STUN servers públicos para que WebRTC descubra rutas a través de NAT.
@@ -634,6 +638,8 @@ let onFirstStateReceived = null;
 
 async function conectarASala(joinRoom, code) {
   const roomId = String(code).toLowerCase();
+  console.log('[Retro] Conectando a sala MQTT:', roomId, '· isHost=', isHost);
+  console.log('[Retro] Relays:', TRYSTERO_MQTT_RELAYS);
 
   // Configurar Trystero: appId común, room por código, redes MQTT múltiples
   // y RTC config con STUN público.
@@ -656,25 +662,31 @@ async function conectarASala(joinRoom, code) {
 
   // Cuando llega un nuevo participante:
   trysteroRoom.onPeerJoin(peerId => {
-    console.log('[Retro] Peer entró:', peerId);
+    console.log('[Retro] ✅ Peer entró:', peerId, '· isHost=', isHost);
     if (isHost) {
       // El host envía el estado completo al recién llegado
-      try { sendStateAction(estadoSerializable(), peerId); } catch(e) { console.warn(e); }
+      try {
+        sendStateAction(estadoSerializable(), peerId);
+        console.log('[Retro] → Estado enviado al peer recién llegado');
+        showToast("Nuevo participante conectado", true);
+      } catch(e) { console.warn('[Retro] Error enviando estado:', e); }
     }
+    actualizarBadgePeers();
   });
 
   trysteroRoom.onPeerLeave(peerId => {
-    console.log('[Retro] Peer salió:', peerId);
+    console.log('[Retro] ❌ Peer salió:', peerId);
     if (!isHost) {
       const remaining = Object.keys(trysteroRoom.getPeers ? trysteroRoom.getPeers() : {});
       if (remaining.length === 0) setConnStatus('off');
     }
+    actualizarBadgePeers();
   });
 
   // Recibir 'state' (sólo nos interesa si NO somos host)
   getState((payload, peerId) => {
     if (isHost) return; // host ignora estados ajenos
-    console.log('[Retro] Estado recibido de:', peerId);
+    console.log('[Retro] ✅ Estado recibido de:', peerId);
     estado = payload;
     setConnStatus('ok');
     // Disparar callback "primer estado" si está registrado
@@ -797,17 +809,18 @@ async function unirseSala() {
     try {
       await connectedPromise;
     } catch (timeoutErr) {
-      // Sin estado en 30 s → no conectó
+      // Recopilar diagnóstico ANTES de cerrar el room
+      const diag = diagnosticoTrystero();
       try { if (trysteroRoom) trysteroRoom.leave(); } catch(_){}
       trysteroRoom = null;
       hideLoading();
       return customAlert(
         "⚠️ No se ha podido conectar al organizador.\n\n" +
+        "Diagnóstico:\n" + diag + "\n\n" +
         "Posibles causas:\n" +
-        "• El código es incorrecto.\n" +
-        "• El organizador cerró su pestaña.\n" +
-        "• Tu red bloquea WebRTC (firewall corporativo). " +
-        "Pruébalo desde otra red o el móvil con datos."
+        "• Si los brokers MQTT están desconectados → tu red bloquea WebSocket.\n" +
+        "• Si están conectados pero no se ven peers → código incorrecto o el organizador no está en la sala.\n" +
+        "• Si se ven peers pero no llega estado → WebRTC bloqueado por firewall. Prueba con datos móviles."
       );
     }
 
@@ -821,6 +834,66 @@ async function unirseSala() {
     hideLoading();
     console.error('[Retro] Error uniéndose:', err);
     customAlert("⚠️ Error al conectar:\n\n" + (err.message || err));
+  }
+}
+
+// Devuelve un string corto con el estado actual de la conexión P2P
+function diagnosticoTrystero() {
+  if (!trysteroRoom) return "Sala no inicializada.";
+  const lines = [];
+  // Estado de los WebSockets a los brokers MQTT
+  try {
+    const sockets = trysteroRoom.getRelaySockets ? trysteroRoom.getRelaySockets() : null;
+    if (sockets) {
+      const entries = Object.entries(sockets);
+      if (entries.length === 0) {
+        lines.push("• Sin sockets MQTT abiertos");
+      } else {
+        entries.forEach(([url, ws]) => {
+          const stateLabels = { 0: 'CONNECTING', 1: 'OPEN', 2: 'CLOSING', 3: 'CLOSED' };
+          const st = ws && typeof ws.readyState === 'number' ? stateLabels[ws.readyState] : '?';
+          // Acortar url
+          const short = url.replace(/^wss?:\/\//, '').replace(/\/.*$/, '');
+          lines.push(`• MQTT ${short}: ${st}`);
+        });
+      }
+    } else {
+      lines.push("• Estado de sockets no disponible");
+    }
+  } catch (e) {
+    lines.push("• Error leyendo sockets: " + e.message);
+  }
+  // Peers visibles
+  try {
+    const peers = trysteroRoom.getPeers ? trysteroRoom.getPeers() : null;
+    const n = peers ? Object.keys(peers).length : '?';
+    lines.push(`• Peers detectados en la sala: ${n}`);
+  } catch (e) {
+    lines.push("• Error leyendo peers: " + e.message);
+  }
+  return lines.join('\n');
+}
+
+// Actualiza el badge "Sala: XXX [N]" con número de peers conectados (host)
+function actualizarBadgePeers() {
+  const badge = document.getElementById('room-peers-badge');
+  if (!badge) return;
+  if (!isHost || !trysteroRoom) {
+    badge.classList.add('hidden');
+    return;
+  }
+  try {
+    const peers = trysteroRoom.getPeers ? trysteroRoom.getPeers() : {};
+    const n = Object.keys(peers).length;
+    if (n > 0) {
+      badge.innerText = String(n);
+      badge.title = `${n} participante${n !== 1 ? 's' : ''} conectado${n !== 1 ? 's' : ''}`;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  } catch (e) {
+    badge.classList.add('hidden');
   }
 }
 
