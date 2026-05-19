@@ -378,12 +378,21 @@ let currentSessionId = null;
 let currentUser = 'Anónimo';
 let currentRole = 'participante';
 let pollingInterval = null;
-let isUpdating = false;
 let toastTimeout = null;
 let modalCategoriaPendiente = '';
 let esMejora = false;
 let termometroVotadoLocal = false;
 let lastDataStr = '';
+
+// Anti-rebote: cada respuesta del servidor incluye un `rev` (timestamp ms).
+// Si llega una respuesta de polling con rev menor que la última aceptada,
+// la descartamos: significa que es vieja y vendría a sobreescribir un
+// estado más reciente que acabamos de aplicar.
+let lastAcceptedRev = 0;
+
+// Contador de peticiones en vuelo: si hay mutaciones lanzadas (cambio de
+// fase, voto, etc.), el polling se silencia hasta que terminan todas.
+let inflightMutations = 0;
 
 /* ================================================================
    UI: alertas, loading, toasts
@@ -677,6 +686,8 @@ function iniciarSesion() {
   showLoading("Entrando a la sesión...");
   termometroVotadoLocal = false;
   lastDataStr = '';
+  lastAcceptedRev = 0;
+  inflightMutations = 0;
 
   if (currentUser !== 'Anónimo') {
     gasPost('registrarUsuario', { idSesion: currentSessionId, nombre: currentUser })
@@ -684,7 +695,7 @@ function iniciarSesion() {
   }
 
   obtenerDatosServidor(true);
-  pollingInterval = setInterval(() => obtenerDatosServidor(false), 3000);
+  reiniciarPolling();
 }
 
 function volverAlMenu() {
@@ -698,9 +709,16 @@ function volverAlMenu() {
 
 /* ================================================================
    POLLING DE ESTADO
-   ================================================================ */
+   ================================================================
+   - El polling pregunta al servidor cada 3s por el estado.
+   - Si hay mutaciones en vuelo, salta este tick (la mutación ya
+     devolverá el estado más reciente al terminar).
+   - Cada respuesta lleva un `rev` (timestamp del servidor). Si el rev
+     entrante es menor que el último que aceptamos, lo ignoramos: es
+     una respuesta vieja que llega tarde y nos haría "rebotar".
+*/
 async function obtenerDatosServidor(isInitial) {
-  if (isUpdating && !isInitial) return;
+  if (inflightMutations > 0 && !isInitial) return;
   try {
     const datos = await gasGet('datosCompletos', { id: currentSessionId });
     procesarDatosServidor(datos, false);
@@ -716,7 +734,25 @@ async function obtenerDatosServidor(isInitial) {
   }
 }
 
+/**
+ * Reinicia el ciclo de polling. Tras una mutación, llamamos a esto para
+ * que el próximo poll empiece dentro de 3s desde AHORA (en lugar de caer
+ * en mitad de una ventana antigua y sobreescribir el cambio).
+ */
+function reiniciarPolling() {
+  if (pollingInterval) clearInterval(pollingInterval);
+  pollingInterval = setInterval(() => obtenerDatosServidor(false), 3000);
+}
+
 function procesarDatosServidor(datos, forceRender) {
+  // Anti-rebote: descartar respuestas viejas que llegan después de una
+  // mutación reciente. forceRender ignora esta protección porque viene
+  // directamente de una mutación que acabamos de hacer.
+  if (!forceRender && datos.rev && datos.rev < lastAcceptedRev) {
+    return;
+  }
+  if (datos.rev) lastAcceptedRev = datos.rev;
+
   const newStr = JSON.stringify(datos);
   if (!forceRender && lastDataStr === newStr) return;
   lastDataStr = newStr;
@@ -771,13 +807,18 @@ function actualizarPermisos() {
 }
 
 function renderBreadcrumbs() {
-  document.getElementById('phase-nav').innerHTML = FASES_NOMBRES.map((nom, i) => {
+  const phaseNav = document.getElementById('phase-nav');
+  // No re-renderizar si la fase no ha cambiado (evita parpadeos en el polling)
+  if (phaseNav.dataset.fase === String(estado.faseActual)) return;
+  phaseNav.dataset.fase = String(estado.faseActual);
+
+  phaseNav.innerHTML = FASES_NOMBRES.map((nom, i) => {
     const n = i + 1; const active = n === estado.faseActual; const past = n < estado.faseActual;
-    let html = `<div class="flex items-center">`;
+    let html = `<div class="flex items-center transition-all duration-300">`;
     if (active)
-      html += `<span class="bg-bbva-serene text-bbva-blue px-3 py-1 rounded-full shadow-sm flex items-center font-bold"><span class="w-5 h-5 bg-bbva-blue/15 rounded-full flex justify-center items-center text-xs mr-1.5">${n}</span> ${nom}</span>`;
+      html += `<span class="bg-bbva-serene text-bbva-blue px-3 py-1 rounded-full shadow-sm flex items-center font-bold transition-all duration-300"><span class="w-5 h-5 bg-bbva-blue/15 rounded-full flex justify-center items-center text-xs mr-1.5">${n}</span> ${nom}</span>`;
     else
-      html += `<span class="${past ? 'text-bbva-serene/80' : 'text-bbva-serene/40'} px-2 py-1 flex items-center"><span class="text-xs mr-1">${n}.</span> ${nom}</span>`;
+      html += `<span class="${past ? 'text-bbva-serene/80' : 'text-bbva-serene/40'} px-2 py-1 flex items-center transition-all duration-300"><span class="text-xs mr-1">${n}.</span> ${nom}</span>`;
     if (i < FASES_NOMBRES.length - 1) html += `<i class="fa-solid fa-chevron-right text-bbva-midnight/60 text-xs mx-1"></i>`;
     return html + `</div>`;
   }).join('');
@@ -869,60 +910,76 @@ function renderTarjetas() {
 /* ================================================================
    ACCIONES
    ================================================================ */
-async function avanzarFase() {
-  if (currentRole !== 'organizador' || estado.faseActual >= 5) return;
-  isUpdating = true;
-  showToast("Avanzando de fase...", false, true);
+
+/**
+ * Wrapper común para todas las mutaciones del organizador / participante.
+ * Garantiza: (1) cuenta de peticiones en vuelo para silenciar el polling,
+ * (2) reinicio del polling tras la mutación, (3) mensaje de toast unificado.
+ *
+ * `accion`: nombre de la acción del Apps Script.
+ * `payload`: parámetros para esa acción (incluye automáticamente idSesion).
+ * `mensajes`: { progreso: '...', exito: '...' } para el toast.
+ * `errorMsg`: prefijo del mensaje de error si falla.
+ */
+async function ejecutarMutacion(accion, payload, mensajes, errorMsg) {
+  inflightMutations++;
+  if (mensajes && mensajes.progreso) showToast(mensajes.progreso, false, true);
   try {
-    const datos = await gasPost('cambiarFase', { idSesion: currentSessionId, nuevaFase: estado.faseActual + 1 });
+    const datos = await gasPost(accion, { idSesion: currentSessionId, ...payload });
     procesarDatosServidor(datos, true);
-    showToast("¡Fase actualizada!", true);
+    if (mensajes && mensajes.exito) showToast(mensajes.exito, true);
+    return datos;
   } catch (err) {
     hideToast();
-    customAlert("⚠️ Error al cambiar de fase: " + err.message);
-  } finally { isUpdating = false; }
+    if (errorMsg !== false) customAlert((errorMsg || "Error") + ": " + err.message);
+    throw err;
+  } finally {
+    inflightMutations = Math.max(0, inflightMutations - 1);
+    // Tras una mutación, el próximo poll debe esperar el ciclo completo
+    // para no chocar con la respuesta que acabamos de aplicar.
+    if (inflightMutations === 0) reiniciarPolling();
+  }
+}
+
+async function avanzarFase() {
+  if (currentRole !== 'organizador' || estado.faseActual >= 5) return;
+  await ejecutarMutacion(
+    'cambiarFase',
+    { nuevaFase: estado.faseActual + 1 },
+    { progreso: "Avanzando de fase...", exito: "¡Fase actualizada!" },
+    "⚠️ Error al cambiar de fase"
+  ).catch(() => {});
 }
 
 async function retrocederFase() {
   if (currentRole !== 'organizador' || estado.faseActual <= 1) return;
-  isUpdating = true;
-  showToast("Retrocediendo de fase...", false, true);
-  try {
-    const datos = await gasPost('cambiarFase', { idSesion: currentSessionId, nuevaFase: estado.faseActual - 1 });
-    procesarDatosServidor(datos, true);
-    showToast("¡Fase actualizada!", true);
-  } catch (err) {
-    hideToast();
-    customAlert("⚠️ Error al cambiar de fase: " + err.message);
-  } finally { isUpdating = false; }
+  await ejecutarMutacion(
+    'cambiarFase',
+    { nuevaFase: estado.faseActual - 1 },
+    { progreso: "Retrocediendo de fase...", exito: "¡Fase actualizada!" },
+    "⚠️ Error al cambiar de fase"
+  ).catch(() => {});
 }
 
 async function votarTermometro(idOp) {
   if (estado.faseActual !== 1 || termometroVotadoLocal) return;
   termometroVotadoLocal = true;
-  isUpdating = true;
-  showToast("Guardando voto...", false, true);
-  try {
-    const datos = await gasPost('votoTermometro', { idSesion: currentSessionId, idOpcionVoto: idOp });
-    procesarDatosServidor(datos, true);
-    showToast("¡Voto anónimo registrado!", true);
-  } catch (err) {
-    hideToast();
-    customAlert("Error al votar: " + err.message);
-  } finally { isUpdating = false; }
+  await ejecutarMutacion(
+    'votoTermometro',
+    { idOpcionVoto: idOp },
+    { progreso: "Guardando voto...", exito: "¡Voto anónimo registrado!" },
+    "Error al votar"
+  ).catch(() => { termometroVotadoLocal = false; });
 }
 
 async function votarTarjeta(idTarjeta) {
   if (estado.faseActual !== 3) return;
-  isUpdating = true;
-  showToast("Registrando voto...", false, true);
-  try {
-    const datos = await gasPost('votarTarjeta', { idSesion: currentSessionId, idTarjeta });
-    procesarDatosServidor(datos, true);
-    showToast("¡Voto registrado!", true);
-  } catch (err) {
-    hideToast();
-  } finally { isUpdating = false; }
+  await ejecutarMutacion(
+    'votarTarjeta',
+    { idTarjeta },
+    { progreso: "Registrando voto...", exito: "¡Voto registrado!" },
+    false  // sin alert si falla, sólo toast
+  ).catch(() => {});
 }
 
 /* ================================================================
@@ -965,26 +1022,26 @@ document.getElementById('modal-submit').addEventListener('click', async () => {
   let texto = document.getElementById('modal-input').value.trim();
   if (!texto) return;
   cerrarModal();
-  isUpdating = true;
-  showToast("Añadiendo elemento...", false, true);
 
-  try {
-    let datos;
-    if (esMejora) {
-      datos = await gasPost('crearMejora', { idSesion: currentSessionId, texto });
-    } else {
-      if (modalCategoriaPendiente === 'RECONOCIMIENTO') {
-        const dest = document.getElementById('modal-destinatario').value || 'Todo el equipo';
-        texto = `[PARA:${dest}]${texto}`;
-      }
-      datos = await gasPost('crearTarjeta', { idSesion: currentSessionId, categoria: modalCategoriaPendiente, texto });
+  let accion, params;
+  if (esMejora) {
+    accion = 'crearMejora';
+    params = { texto };
+  } else {
+    if (modalCategoriaPendiente === 'RECONOCIMIENTO') {
+      const dest = document.getElementById('modal-destinatario').value || 'Todo el equipo';
+      texto = `[PARA:${dest}]${texto}`;
     }
-    procesarDatosServidor(datos, true);
-    showToast("¡Elemento añadido!", true);
-  } catch (err) {
-    hideToast();
-    customAlert("Error al añadir: " + err.message);
-  } finally { isUpdating = false; }
+    accion = 'crearTarjeta';
+    params = { categoria: modalCategoriaPendiente, texto };
+  }
+
+  await ejecutarMutacion(
+    accion,
+    params,
+    { progreso: "Añadiendo elemento...", exito: "¡Elemento añadido!" },
+    "Error al añadir"
+  ).catch(() => {});
 });
 
 /* ================================================================
