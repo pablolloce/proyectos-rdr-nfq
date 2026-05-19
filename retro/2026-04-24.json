@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "id": "cfe6847d-6567-46c3-ab78-92be802528cb",
+  "fecha": "24/04/2026",
+  "nombre": "Retrospectiva Abril 24/04",
+  "faseFinal": 5,
+  "usuarios": [
+    "Pablo",
+    "Irene",
+    "Ángela",
+    "Laura",
+    "Chema",
+    "Jose Luis",
+    "Joel",
+    "Vero",
+    "Iker",
+    "Fernando",
+    "AMA",
+    "Edu",
+    "Víctor",
+    "Juanlu",
+    "Miguel",
+    "Dariel",
+    "Marta",
+    "epa",
+    "Victor"
+  ],
+  "termometro": [
+    {
+      "voto": "op3"
+    },
+    {
+      "voto": "op2"
+    },
+    {
+      "voto": "op2"
+    },
+    {
+      "voto": "op2"
+    },
+    {
+      "voto": "op2"
+    },
+    {
+      "voto": "op1"
+    },
+    {
+      "voto": "op3"
+    },
+    {
+      "voto": "op3"
+    },
+    {
+      "voto": "op1"
+    },
+    {
+      "voto": "op2"
+    },
+    {
+      "voto": "op2"
+    },
+    {
+      "voto": "op1"
+    },
+    {
+      "voto": "op1"
+    },
+    {
+      "voto": "op1"
+    },
+    {
+      "voto": "op3"
+    },
+    {
+      "voto": "op2"
+    },
+    {
+      "voto": "op4"
+    },
+    {
+      "voto": "op2"
+    }
+  ],
+  "tarjetas": [
+    {
+      "id": "2c1b20de-428f-4a52-8c6d-fbbd0e5e0bd7",
+      "categoria": "RECONOCIMIENTO",
+      "texto": "[PARA:Pablo]Por todo el trabajo con la IA para facilitarnos la vida",
+      "votos": 2
+    },
+    {
+      "id": "698e30fd-5980-4f34-9c5b-25e133dcbe79",
+      "categoria": "OBSTÁCULOS",
+      "texto": "Sonar, porque hace perder mucho tiempo cuando no lo configuran bien",
+      "votos": 2
+    },
+    {
+      "id": "19d6b51a-8d1b-47d3-a183-53f0b68a1792",
+      "categoria": "ÉXITO",
+      "texto": "El ambiente y el trabajo en equipo es espectacular",
+      "votos": 5
+    },
+    {
+      "id": "0a43c227-9863-485c-af0a-ab2510ec827a",
+      "categoria": "RECONOCIMIENTO",
+      "texto": "[PARA:Todo el equipo]Por estar siempre dispuestos a ayudar cuando alguien tiene una duda o bloqueo",
+      "votos": 2
+    },
+    {
+      "id": "fd6358a9-8fdd-497f-93fc-a998923d8829",
+      "categoria": "RECONOCIMIENTO",
+      "texto": "[PARA:Ángela]Por mirar siempre por el bien del equipo a nivel global e individual",
+      "votos": 1
+    },
+    {
+      "id": "209fe080-e880-474e-a050-db4f3b8bcf42",
+      "categoria": "RECONOCIMIENTO",
+      "texto": "[PARA:Víctor]Por toda su ayuda a los nuevos compañeros",
+      "votos": 1
+    },
+    {
+      "id": "adad39db-33c9-4210-aba1-d3db9d57e218",
+      "categoria": "RECONOCIMIENTO",
+      "texto": "[PARA:Jose Luis]Porque cuando va a realizar algo que puede que no todos sepamos hacer, hace una videollamada para explicarlo y añadir contexto la vez que lo va haciendo",
+      "votos": 1
+    },
+    {
+      "id": "e28d0592-ee68-4e40-8243-63467d190fb9",
+      "categoria": "OBSTÁCULOS",
+      "texto": "Sonar y todas sus configuraciones",
+      "votos": 1
+    },
+    {
+      "id": "d2dcdd1d-4e70-48ba-a586-a95a6c67d804",
+      "categoria": "OBSTÁCULOS",
+      "texto": "Alertas del BBVA",
+      "votos": 0
+    },
+    {
+      "id": "a960751c-4e96-4183-b6c4-28c7e8b9ad92",
+      "categoria": "ÉXITO",
+      "texto": "Que seamos cada vez más yyy que todos los que están entrando son igual de buena gente que los que ya estaban antes :)",
+      "votos": 2
+    },
+    {
+      "id": "c9310856-d063-43f4-9777-afb2c9717d26",
+      "categoria": "OBSTÁCULOS",
+      "texto": "Cuando generáis carpetas en el ordenador, ¿las hacéis por tipología o por funcionalidad? Ejemplo, fotos: creáis carpetas por temática, o los hacéis por fechas o por categoria,....",
+      "votos": 0
+    },
+    {
+      "id": "31c00751-e968-45ee-9cbb-7ef752b04f91",
+      "categoria": "ÉXITO",
+      "texto": "Alta implicación",
+      "votos": 1
+    },
+    {
+      "id": "c000cf19-c589-4420-bde9-28faa39535e8",
+      "categoria": "ÉXITO",
+      "texto": "No nos han hecho rehacer todo Eventos Corporativos prácticamente de 0",
+      "votos": 1
+    },
+    {
+      "id": "643bc80f-a993-4fa7-b79f-b9a239a4c92f",
+      "categoria": "RECONOCIMIENTO",
+      "texto": "[PARA:Chema]Gracias a su ayuda y explicaciones con ventana",
+      "votos": 1
+    },
+    {
+      "id": "75804309-c84d-44bf-bf45-0cea97f06a50",
+      "categoria": "ÉXITO",
+      "texto": "Cerrado el traspaso de Sectorización",
+      "votos": 2
+    },
+    {
+      "id": "593d0704-f416-4b72-af38-0d6bffa0ad27",
+      "categoria": "RECONOCIMIENTO",
+      "texto": "[PARA:Jose Luis]Para todo el equipo del proyecto de Sectorización, pero en especial a JL.\nPor el gran trabajo y, sobretodo, por la paciencia que ha tenido en el proyecto y lo bien que se han abordado los obstáculos",
+      "votos": 0
+    },
+    {
+      "id": "310f0468-2437-4ccc-9d53-53c846b3b6cd",
+      "categoria": "RECONOCIMIENTO",
+      "texto": "[PARA:Marta]Por el esfuerzo en OTC y el trabajo en intentar cerrar todo para que salga fenomenal en el GoLive.\nPD: Laura y Dariel también están muy implicados",
+      "votos": 2
+    },
+    {
+      "id": "6abe63e2-3d17-4aa9-836e-c9e367be434c",
+      "categoria": "RECONOCIMIENTO",
+      "texto": "[PARA:Iker]Por ayudarme con las pruebas, que si no no llegaba",
+      "votos": 0
+    },
+    {
+      "id": "24dbbe59-9bd4-4e51-b6dd-de07f8fcb38d",
+      "categoria": "ÉXITO",
+      "texto": "Fuera del día a día en el trabajo (y lo buenisimos que somos todos en ello), es increible la unión que hay entre miembros del equipo",
+      "votos": 3
+    }
+  ],
+  "mejoras": [
+    {
+      "id": "84300417-86e2-43fe-af76-6855198d3ae1",
+      "texto": "Sonar \n- Usar la extensión de Visual Code\n- Esperar a la migración de los repositorios",
+      "check": false
+    },
+    {
+      "id": "85331469-1d88-4d07-8fcc-e78d6b21c4eb",
+      "texto": "Alertas BBVA\n- /DC/nfq/ (En Integrado)\n- Drive: Documentos\n- Repositorios BBVA: Código\n- EN NINGÚN SITIO: Información Sensible",
+      "check": false
+    },
+    {
+      "id": "d3a1f3f8-8619-4b8e-becc-e5057385d925",
+      "texto": "Responsabilidades en tareas comunes:\n- Asumir que es responsabilidad de todos\n- No suponer que la tarea es de otro",
+      "check": false
+    }
+  ],
+  "exportadoEn": "2026-04-24T18:00:00.000Z"
+}

@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Retro RDR · BBVA</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Source+Serif+4:wght@700&display=swap" rel="stylesheet" />
+
+<!-- PeerJS: WebRTC con servidor de señalización público -->
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          'bbva-blue':    '#001391', // Electric Blue
+          'bbva-midnight':'#070E46',
+          'bbva-deep':    '#000519',
+          'bbva-serene':  '#85C8FF',
+          'bbva-sand':    '#F7F8F8',
+          'bbva-gray2':   '#E2E6EA',
+          'bbva-gray3':   '#CAD1D8',
+          'bbva-gray4':   '#ADB8C2',
+          'bbva-gray5':   '#46536D',
+          'bbva-canary':  '#FFE761',
+          'bbva-lime':    '#88E783',
+          'bbva-aqua':    '#8BE1E9',
+          'bbva-purple':  '#9694FF',
+          'bbva-mandarin':'#FFB56B',
+        },
+        fontFamily: {
+          sans:    ['Lato', 'Helvetica Neue', 'Arial', 'sans-serif'],
+          display: ['"Source Serif 4"', 'Georgia', 'serif'],
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  html, body { font-family: 'Lato', 'Helvetica Neue', Arial, sans-serif; color: #001391; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #CAD1D8; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: #ADB8C2; }
+
+  .display { font-family: 'Source Serif 4', Georgia, serif; font-weight: 700; }
+
+  /* Botón primario BBVA */
+  .btn-primary {
+    background-color: #001391;
+    color: #FFFFFF;
+    transition: all .2s;
+  }
+  .btn-primary:hover { background-color: #070E46; }
+
+  .btn-accent {
+    background-color: #85C8FF;
+    color: #001391;
+  }
+  .btn-accent:hover { background-color: #FFE761; }
+
+  .focus-bbva:focus { outline: none; box-shadow: 0 0 0 3px rgba(0, 19, 145, 0.18); border-color: #001391; }
+
+  /* Marca de agua BBVA en esquina */
+  .bbva-mark {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+</style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-bbva-sand">
+
+<!-- ============ OVERLAYS GLOBALES ============ -->
+<div id="loading-overlay" class="fixed inset-0 bg-bbva-deep/70 z-[100] hidden flex-col items-center justify-center backdrop-blur-sm text-white">
+  <i class="fa-solid fa-spinner fa-spin text-5xl mb-4 text-bbva-serene"></i>
+  <p id="loading-text" class="font-medium text-lg tracking-wide">Procesando...</p>
+</div>
+
+<div id="modal-alert" class="fixed inset-0 bg-bbva-deep/70 z-[150] hidden items-center justify-center backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+    <h3 class="text-lg font-bold text-bbva-blue mb-3 flex items-center display">
+      <i class="fa-solid fa-circle-info text-bbva-blue mr-2"></i> Retro RDR
+    </h3>
+    <p id="modal-alert-text" class="text-sm text-bbva-gray5 mb-6 whitespace-pre-line leading-relaxed"></p>
+    <div class="flex justify-end space-x-3">
+      <button id="modal-alert-cancel" class="px-4 py-2 text-sm text-bbva-gray5 hover:bg-bbva-gray2 rounded-lg hidden font-medium">Cancelar</button>
+      <button id="modal-alert-ok" class="px-5 py-2 text-sm btn-primary rounded-lg shadow font-medium">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VISTA: MENÚ INICIAL ============ -->
+<div id="view-menu" class="absolute inset-0 z-50 flex items-center justify-center bg-bbva-sand p-4 overflow-y-auto">
+  <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-bbva-gray2 my-auto">
+    <!-- BBVA mark -->
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl display text-bbva-blue">Retro RDR</h1>
+      <span class="bbva-mark text-bbva-blue text-xl">BBVA</span>
+    </div>
+
+    <div class="space-y-4">
+      <!-- Nombre -->
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">Tu nombre</label>
+        <input type="text" id="user-name" class="w-full border border-bbva-gray3 p-2 rounded focus-bbva text-sm" placeholder="Ej: Ana" />
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-2 pt-2 border-t border-bbva-gray2">
+        <button id="tab-join" onclick="setTab('join')" class="flex-1 py-2 text-sm font-bold rounded-lg btn-primary">
+          <i class="fa-solid fa-right-to-bracket mr-1"></i> Unirse
+        </button>
+        <button id="tab-host" onclick="setTab('host')" class="flex-1 py-2 text-sm font-bold rounded-lg bg-bbva-gray2 text-bbva-gray5 hover:bg-bbva-gray3">
+          <i class="fa-solid fa-plus mr-1"></i> Crear sala
+        </button>
+        <button id="tab-archive" onclick="setTab('archive')" class="flex-1 py-2 text-sm font-bold rounded-lg bg-bbva-gray2 text-bbva-gray5 hover:bg-bbva-gray3">
+          <i class="fa-solid fa-folder-open mr-1"></i> Histórico
+        </button>
+      </div>
+
+      <!-- Panel: Unirse -->
+      <div id="panel-join" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">Código de sala</label>
+          <input type="text" id="join-code" class="w-full border border-bbva-gray3 p-2 rounded focus-bbva text-sm uppercase tracking-widest font-mono" placeholder="Ej: 7K3MQ2" maxlength="8" />
+        </div>
+        <button onclick="unirseSala()" class="w-full btn-primary py-2 rounded-lg font-bold text-sm shadow">
+          Entrar a la sala
+        </button>
+      </div>
+
+      <!-- Panel: Crear sala -->
+      <div id="panel-host" class="space-y-3 hidden">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">Fecha</label>
+          <input type="date" id="new-session-date" class="w-full border border-bbva-gray3 p-2 rounded focus-bbva text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">Nombre (opcional)</label>
+          <input type="text" id="new-session-name" class="w-full border border-bbva-gray3 p-2 rounded focus-bbva text-sm" placeholder="Ej: Cierre Q2" />
+        </div>
+        <div class="bg-bbva-serene/30 p-3 rounded-lg border border-bbva-serene">
+          <p class="text-xs text-bbva-blue leading-relaxed">
+            <i class="fa-solid fa-circle-info mr-1"></i>
+            Al crear la sala serás el <b>organizador</b>. La sala vive en tu navegador. Cuando cierres esta pestaña, la sala se acaba.
+          </p>
+        </div>
+        <button onclick="crearSala()" class="w-full btn-primary py-2 rounded-lg font-bold text-sm shadow">
+          Crear sala y empezar
+        </button>
+      </div>
+
+      <!-- Panel: Histórico -->
+      <div id="panel-archive" class="space-y-3 hidden">
+        <p class="text-xs text-bbva-gray5">Retrospectivas guardadas. La carga puede tardar.</p>
+        <div id="archive-list" class="space-y-2 max-h-72 overflow-y-auto">
+          <p class="text-xs text-bbva-gray5 italic">Cargando histórico...</p>
+        </div>
+        <div class="pt-2 border-t border-bbva-gray2">
+          <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">…o abre un .json local</label>
+          <input type="file" id="file-archive" accept=".json" onchange="cargarArchivoLocal(this)" class="w-full text-xs text-bbva-gray5 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-bbva-blue file:text-white hover:file:bg-bbva-midnight" />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VISTA: SALA (organizador / participante) ============ -->
+<div id="view-app" class="h-full flex flex-col hidden bg-bbva-sand">
+  <nav class="bg-bbva-blue text-white flex items-center justify-between px-6 py-3 shadow-md z-10 shrink-0">
+    <div class="flex items-center space-x-6">
+      <div class="font-bold text-lg flex items-center cursor-pointer hover:text-bbva-serene transition" onclick="volverAlMenu()" title="Volver al menú">
+        <span class="display">Retro RDR</span>
+        <span id="header-session-name" class="text-bbva-serene text-sm ml-2 font-normal hidden md:inline-block"></span>
+      </div>
+      <div class="hidden lg:flex items-center text-sm font-medium text-bbva-serene/80 space-x-1" id="phase-nav"></div>
+    </div>
+
+    <div class="flex items-center space-x-2 relative">
+      <!-- Código de sala -->
+      <div class="hidden md:flex items-center bg-bbva-midnight rounded-lg px-3 py-1 mr-2 cursor-pointer hover:bg-bbva-deep" onclick="copiarCodigoSala()" title="Copiar código">
+        <i class="fa-solid fa-link text-bbva-serene text-xs mr-2"></i>
+        <span class="text-xs text-bbva-serene/80 mr-1">Sala:</span>
+        <span id="room-code-display" class="font-mono font-bold tracking-widest text-sm"></span>
+        <i class="fa-regular fa-copy text-bbva-serene/70 ml-2 text-xs"></i>
+      </div>
+
+      <!-- Estado conexión (sólo participante) -->
+      <div id="conn-status" class="hidden items-center bg-bbva-midnight rounded-lg px-3 py-1 mr-2 text-xs">
+        <span id="conn-status-dot" class="w-2 h-2 rounded-full bg-yellow-400 mr-2 animate-pulse"></span>
+        <span id="conn-status-text" class="text-bbva-serene">Conectando...</span>
+      </div>
+
+      <!-- Usuarios (sólo organizador) -->
+      <div class="relative group cursor-default hidden md:flex items-center h-full mr-2">
+        <div class="text-sm text-bbva-serene font-medium flex items-center py-1 px-2 rounded">
+          <span id="display-user-name"></span>
+          <i id="icon-dropdown" class="fa-solid fa-chevron-down text-[10px] ml-1.5 opacity-70 hidden"></i>
+        </div>
+        <div id="dropdown-participantes" class="absolute right-0 top-full mt-1 w-52 bg-white rounded-lg shadow-xl border border-bbva-gray2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 hidden">
+          <div class="p-2 border-b border-bbva-gray2 bg-bbva-sand rounded-t-lg">
+            <span class="text-[10px] font-bold text-bbva-gray5 uppercase tracking-wider"><i class="fa-solid fa-users mr-1"></i> Participantes</span>
+          </div>
+          <ul id="lista-participantes" class="p-1 max-h-48 overflow-y-auto text-sm text-bbva-gray5"></ul>
+        </div>
+      </div>
+
+      <button id="btn-retroceder-fase" onclick="retrocederFase()" class="hidden bg-bbva-midnight hover:bg-bbva-deep px-3 py-1.5 rounded text-sm shadow font-medium">
+        <i class="fa-solid fa-backward md:mr-1"></i> <span class="hidden md:inline">Atrás</span>
+      </button>
+      <button id="btn-avanzar-fase" onclick="avanzarFase()" class="hidden btn-accent px-3 py-1.5 rounded text-sm shadow font-bold">
+        <span class="hidden md:inline">Avanzar</span> <i class="fa-solid fa-forward md:ml-1"></i>
+      </button>
+      <button id="btn-exportar" onclick="exportarJSON()" class="hidden bg-bbva-canary hover:bg-bbva-mandarin text-bbva-blue px-3 py-1.5 rounded text-sm shadow font-bold">
+        <i class="fa-solid fa-download md:mr-1"></i> <span class="hidden md:inline">Exportar</span>
+      </button>
+    </div>
+  </nav>
+
+  <main class="flex-1 flex overflow-x-auto overflow-y-hidden p-6 gap-6 items-start relative">
+    <!-- Termómetro -->
+    <aside class="bg-white rounded-2xl shadow-sm border border-bbva-gray2 w-72 flex-shrink-0 flex flex-col max-h-full overflow-hidden border-t-4 border-t-bbva-blue transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+      <div class="p-4 border-b border-bbva-gray2 bg-bbva-sand/50">
+        <h2 class="font-bold text-bbva-blue flex items-center display"><i class="fa-solid fa-temperature-half text-bbva-blue mr-2"></i> Termómetro</h2>
+        <p class="text-xs text-bbva-gray5 mt-1">Encuesta anónima de confianza</p>
+      </div>
+      <div class="p-4 overflow-y-auto flex-none space-y-3" id="thermometer-container"></div>
+      <div class="p-3 bg-bbva-sand text-xs text-bbva-gray5 flex justify-center items-center border-t border-bbva-gray2">
+        <span id="total-votes" class="font-medium">0 Votos</span>
+      </div>
+    </aside>
+
+    <!-- Columnas -->
+    <div class="flex gap-6 h-full pb-4" id="board-container">
+      <div class="w-80 flex-shrink-0 flex flex-col max-h-full bg-white rounded-2xl overflow-hidden shadow-sm border border-bbva-gray2 border-t-4 border-t-bbva-canary">
+        <div class="p-3 border-b border-bbva-gray2">
+          <h3 class="font-bold text-bbva-blue display">ÉXITO 🤩</h3>
+          <p class="text-xs text-bbva-gray5 mt-1">Lo que logramos y debemos celebrar</p>
+        </div>
+        <div class="p-3 flex-1 overflow-y-auto space-y-3 bg-bbva-sand/40" id="col-exito"></div>
+        <div class="p-3 border-t border-bbva-gray2 add-btn-container">
+          <button onclick="promptNuevaTarjeta('ÉXITO')" class="text-bbva-blue hover:bg-bbva-canary/40 w-full text-left p-2 rounded text-sm font-medium">
+            <i class="fa-solid fa-plus mr-1"></i> Agregar elemento
+          </button>
+        </div>
+      </div>
+
+      <div class="w-80 flex-shrink-0 flex flex-col max-h-full bg-white rounded-2xl overflow-hidden shadow-sm border border-bbva-gray2 border-t-4 border-t-bbva-mandarin">
+        <div class="p-3 border-b border-bbva-gray2">
+          <h3 class="font-bold text-bbva-blue display">OBSTÁCULOS 🤬</h3>
+          <p class="text-xs text-bbva-gray5 mt-1">Esos dolorsitos o trabas del día a día</p>
+        </div>
+        <div class="p-3 flex-1 overflow-y-auto space-y-3 bg-bbva-sand/40" id="col-obstaculos"></div>
+        <div class="p-3 border-t border-bbva-gray2 add-btn-container">
+          <button onclick="promptNuevaTarjeta('OBSTÁCULOS')" class="text-bbva-blue hover:bg-bbva-mandarin/30 w-full text-left p-2 rounded text-sm font-medium">
+            <i class="fa-solid fa-plus mr-1"></i> Agregar elemento
+          </button>
+        </div>
+      </div>
+
+      <div class="w-80 flex-shrink-0 flex flex-col max-h-full bg-white rounded-2xl overflow-hidden shadow-sm border border-bbva-gray2 border-t-4 border-t-bbva-serene">
+        <div class="p-3 border-b border-bbva-gray2">
+          <h3 class="font-bold text-bbva-blue display">RECONOCIMIENTO 🏆</h3>
+          <p class="text-xs text-bbva-gray5 mt-1">Agradecimientos entre compañeros</p>
+        </div>
+        <div class="p-3 flex-1 overflow-y-auto space-y-3 bg-bbva-sand/40" id="col-reconocimiento"></div>
+        <div class="p-3 border-t border-bbva-gray2 add-btn-container">
+          <button onclick="promptNuevaTarjeta('RECONOCIMIENTO')" class="text-bbva-blue hover:bg-bbva-serene/30 w-full text-left p-2 rounded text-sm font-medium">
+            <i class="fa-solid fa-plus mr-1"></i> Agregar elemento
+          </button>
+        </div>
+      </div>
+
+      <div class="w-80 flex-shrink-0 flex flex-col max-h-full bg-white rounded-2xl overflow-hidden shadow-sm border border-bbva-gray2 border-t-4 border-t-bbva-lime hidden" id="col-mejoras-container">
+        <div class="p-3 border-b border-bbva-gray2 bg-bbva-lime/15">
+          <h3 class="font-bold text-bbva-blue display">MEJORAS 📈</h3>
+          <p class="text-xs text-bbva-blue/70 mt-1">Acciones para la próxima sesión</p>
+        </div>
+        <div class="p-3 flex-1 overflow-y-auto space-y-3 bg-bbva-sand/40" id="col-mejoras"></div>
+        <div class="p-3 border-t border-bbva-gray2 bg-bbva-lime/15" id="add-mejora-container">
+          <button onclick="promptNuevaMejora()" class="text-bbva-blue hover:bg-bbva-lime/40 w-full text-left p-2 rounded text-sm font-medium">
+            <i class="fa-solid fa-plus mr-1"></i> Agregar acción
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ============ VISTA: VISOR HISTÓRICO (read-only) ============ -->
+<div id="view-archive" class="h-full flex flex-col hidden bg-bbva-sand">
+  <nav class="bg-bbva-blue text-white flex items-center justify-between px-6 py-3 shadow-md z-10 shrink-0">
+    <div class="flex items-center space-x-4">
+      <button onclick="volverAlMenu()" class="text-bbva-serene hover:text-white">
+        <i class="fa-solid fa-arrow-left mr-1"></i> Menú
+      </button>
+      <div class="display font-bold text-lg">Retro RDR</div>
+      <span id="archive-name" class="text-bbva-serene text-sm font-normal hidden md:inline-block"></span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="bbva-mark text-xl">BBVA</span>
+    </div>
+  </nav>
+  <main class="flex-1 overflow-y-auto p-6">
+    <div id="archive-content" class="max-w-7xl mx-auto"></div>
+  </main>
+</div>
+
+<!-- ============ MODAL AÑADIR ============ -->
+<div id="modal-add" class="fixed inset-0 bg-bbva-deep/60 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+    <h3 class="text-lg font-bold text-bbva-blue mb-4 border-b border-bbva-gray2 pb-2 display" id="modal-title">Añadir Tarjeta</h3>
+
+    <div id="div-destinatario" class="mb-3 hidden">
+      <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">¿A quién va dirigido?</label>
+      <select id="modal-destinatario" class="w-full border border-bbva-gray3 p-2 rounded focus-bbva text-sm">
+        <option value="">A todo el equipo</option>
+      </select>
+      <p class="text-[10px] text-bbva-gray4 mt-1">No puedes enviarte un reconocimiento a ti mismo.</p>
+    </div>
+
+    <textarea id="modal-input" class="w-full border border-bbva-gray3 rounded-lg p-3 text-sm focus-bbva resize-none h-24" placeholder="Escribe aquí..."></textarea>
+    <div class="flex justify-end space-x-3 mt-4">
+      <button onclick="cerrarModal()" class="px-4 py-2 text-sm text-bbva-gray5 hover:bg-bbva-gray2 rounded-lg">Cancelar</button>
+      <button id="modal-submit" class="px-4 py-2 text-sm btn-primary rounded-lg shadow font-bold">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div id="toast" class="fixed bottom-4 right-4 bg-bbva-midnight text-white px-5 py-3 rounded-lg shadow-xl opacity-0 hidden z-50 flex items-center">
+  <i id="toast-icon" class="fa-solid fa-spinner fa-spin mr-3 text-bbva-serene"></i>
+  <span id="toast-text" class="text-sm font-medium">Procesando...</span>
+</div>
+
+<!-- ============ MODAL: CÓDIGO DE SALA RECIÉN CREADA ============ -->
+<div id="modal-room-created" class="fixed inset-0 bg-bbva-deep/70 z-[160] hidden items-center justify-center backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md text-center">
+    <div class="bbva-mark text-bbva-blue text-2xl mb-2">BBVA</div>
+    <h3 class="display text-2xl text-bbva-blue mb-2">¡Sala creada!</h3>
+    <p class="text-sm text-bbva-gray5 mb-6">Comparte este código con los participantes. La sala vive en este navegador, no la cierres.</p>
+    <div class="bg-bbva-serene/40 border-2 border-bbva-blue rounded-xl py-4 px-3 mb-4 cursor-pointer hover:bg-bbva-serene/60" onclick="copiarCodigoSala()">
+      <p class="text-xs text-bbva-blue/80 font-bold uppercase tracking-wider mb-1">Código de sala</p>
+      <p id="room-code-big" class="font-mono font-bold text-4xl tracking-widest text-bbva-blue"></p>
+      <p class="text-xs text-bbva-blue mt-2"><i class="fa-regular fa-copy mr-1"></i>Toca para copiar</p>
+    </div>
+    <button onclick="cerrarModalRoomCreated()" class="w-full btn-primary py-2 rounded-lg font-bold text-sm shadow">
+      Empezar retrospectiva
+    </button>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   ESTADO GLOBAL
+   ================================================================ */
+const FASES_NOMBRES = ["Termómetro de confianza", "Grupo", "Votar", "Comentamos", "Completo"];
+const TERMOMETRO_OPCIONES = [
+  { id: 'op1', texto: 'Plena confianza', emoji: '🤩', bar: 'bg-bbva-blue' },
+  { id: 'op2', texto: 'Cómodo',          emoji: '😌', bar: 'bg-bbva-purple' },
+  { id: 'op3', texto: 'Un poco cauto',   emoji: '🤔', bar: 'bg-bbva-canary' },
+  { id: 'op4', texto: 'Reservado',       emoji: '🤐', bar: 'bg-bbva-mandarin' },
+  { id: 'op5', texto: 'Prefiero escuchar', emoji: '👂', bar: 'bg-bbva-gray4' },
+];
+
+// El estado autoritativo (la "fuente de verdad"). En el HOST está vivo; en
+// participantes es una réplica que recibe vía PeerJS.
+let estado = {
+  id:           null,           // id único de sesión
+  fecha:        '',
+  nombre:       '',
+  fase:         1,
+  usuarios:     [],             // [nombre,...]  (lista canónica, organizador la fija)
+  termometro:   [],             // [{voto:'op1',clientId},...] anónimo
+  tarjetas:     [],             // [{id, categoria, texto, votos}]
+  mejoras:      [],             // [{id, texto, check}]
+};
+
+let currentUser = 'Anónimo';
+let currentRole = 'participante';  // 'organizador' = host de la sala
+let isHost = false;
+
+let peer = null;                 // objeto Peer.js
+let myPeerId = null;             // id propio en la red P2P
+let roomCode = null;             // código corto compartible
+let hostConnection = null;       // sólo participante: conexión al host
+let participantConnections = []; // sólo host: [{conn, name}]
+let termometroVotadoLocal = false; // anti-doble-voto en sesión
+
+let modalCategoriaPendiente = ''; let esMejora = false;
+let toastTimeout = null;
+let activeTab = 'join';
+
+/* ================================================================
+   ALERTAS / TOASTS
+   ================================================================ */
+function customAlert(msg) {
+  document.getElementById('modal-alert-text').innerText = msg;
+  document.getElementById('modal-alert-cancel').classList.add('hidden');
+  document.getElementById('modal-alert-ok').onclick = cerrarModalAlert;
+  const m = document.getElementById('modal-alert');
+  m.classList.remove('hidden'); m.classList.add('flex');
+}
+function customConfirm(msg, cb) {
+  document.getElementById('modal-alert-text').innerText = msg;
+  document.getElementById('modal-alert-cancel').classList.remove('hidden');
+  document.getElementById('modal-alert-ok').onclick = () => { cerrarModalAlert(); cb && cb(); };
+  document.getElementById('modal-alert-cancel').onclick = cerrarModalAlert;
+  const m = document.getElementById('modal-alert');
+  m.classList.remove('hidden'); m.classList.add('flex');
+}
+function cerrarModalAlert() {
+  const m = document.getElementById('modal-alert');
+  m.classList.add('hidden'); m.classList.remove('flex');
+}
+
+function showLoading(msg) {
+  if(msg) document.getElementById('loading-text').innerText = msg;
+  const o = document.getElementById('loading-overlay');
+  o.classList.remove('hidden'); o.classList.add('flex');
+}
+function hideLoading() {
+  const o = document.getElementById('loading-overlay');
+  o.classList.add('hidden'); o.classList.remove('flex');
+}
+
+function showToast(msg, success = false, persistent = false) {
+  const t = document.getElementById('toast');
+  const tt = document.getElementById('toast-text');
+  const ti = document.getElementById('toast-icon');
+  tt.innerText = msg;
+  if (success) ti.className = "fa-solid fa-check text-bbva-lime mr-3";
+  else         ti.className = "fa-solid fa-spinner fa-spin text-bbva-serene mr-3";
+  t.classList.remove('hidden', 'opacity-0');
+  clearTimeout(toastTimeout);
+  if (!persistent) toastTimeout = setTimeout(hideToast, 2500);
+}
+function hideToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('opacity-0');
+  toastTimeout = setTimeout(() => t.classList.add('hidden'), 300);
+}
+
+/* ================================================================
+   TABS DEL MENÚ INICIAL
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  setTab('join');
+  // pre-rellenar fecha de hoy
+  const hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('new-session-date').value = hoy;
+  // cargar histórico (lazy: sólo cuando entren al tab, pero también al cargar para tenerlo listo)
+  cargarHistorico();
+});
+
+function setTab(tab) {
+  activeTab = tab;
+  for (const t of ['join','host','archive']) {
+    const btn = document.getElementById('tab-' + t);
+    const panel = document.getElementById('panel-' + t);
+    if (t === tab) {
+      btn.classList.remove('bg-bbva-gray2','text-bbva-gray5');
+      btn.classList.add('btn-primary');
+      panel.classList.remove('hidden');
+    } else {
+      btn.classList.add('bg-bbva-gray2','text-bbva-gray5');
+      btn.classList.remove('btn-primary');
+      panel.classList.add('hidden');
+    }
+  }
+}
+
+/* ================================================================
+   CÓDIGOS DE SALA  (corto y legible, p.ej. 7K3MQ2)
+   ================================================================ */
+const ROOM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin 0/O, 1/I
+function generarCodigoSala(len = 6) {
+  let s = '';
+  for (let i = 0; i < len; i++) s += ROOM_ALPHABET[Math.floor(Math.random() * ROOM_ALPHABET.length)];
+  return s;
+}
+// Para PeerJS, usamos un namespace común para evitar choques con otros usos del servidor público.
+function peerIdFromRoom(code) { return 'rdrretro-' + code.toUpperCase(); }
+
+/* ================================================================
+   CREAR SALA (organizador / host)
+   ================================================================ */
+function crearSala() {
+  const nombreUser = document.getElementById('user-name').value.trim();
+  if (!nombreUser) return customAlert("Pon tu nombre antes de crear la sala.");
+
+  const dateInput = document.getElementById('new-session-date').value;
+  if (!dateInput) return customAlert("Selecciona una fecha.");
+  const sesionName = document.getElementById('new-session-name').value.trim();
+
+  currentUser = nombreUser;
+  currentRole = 'organizador';
+  isHost = true;
+
+  // Estado inicial
+  const partes = dateInput.split('-'); // yyyy-mm-dd
+  const fechaFmt = `${partes[2]}/${partes[1]}/${partes[0]}`;
+  estado = {
+    id:       'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    fecha:    fechaFmt,
+    nombre:   sesionName,
+    fase:     1,
+    usuarios: [currentUser],
+    termometro: [],
+    tarjetas: [],
+    mejoras:  [],
+  };
+
+  // Intentar reservar un código que esté libre. Reintenta si falla.
+  showLoading("Creando sala...");
+  intentarCrearPeer(0);
+}
+
+function intentarCrearPeer(intento) {
+  if (intento >= 5) {
+    hideLoading();
+    return customAlert("No se ha podido crear la sala tras varios intentos. Inténtalo otra vez.");
+  }
+  const code = generarCodigoSala();
+  const desiredId = peerIdFromRoom(code);
+
+  // Si había un peer previo, ciérralo limpio.
+  if (peer) { try { peer.destroy(); } catch(_){} peer = null; }
+
+  peer = new Peer(desiredId, { debug: 1 });
+
+  let resolved = false;
+  const onOpen = (id) => {
+    if (resolved) return; resolved = true;
+    myPeerId = id;
+    roomCode = code;
+    hideLoading();
+    iniciarSalaHost();
+  };
+  const onError = (err) => {
+    if (resolved) return; resolved = true;
+    // Si el ID ya está en uso, reintenta con otro código
+    if (err && (err.type === 'unavailable-id' || /taken|unavailable/i.test(err.message || ''))) {
+      try { peer.destroy(); } catch(_){}
+      intentarCrearPeer(intento + 1);
+    } else {
+      hideLoading();
+      customAlert("⚠️ Error al conectar con el servidor de señalización:\n" + (err && err.message || err));
+    }
+  };
+
+  peer.on('open', onOpen);
+  peer.on('error', onError);
+  peer.on('connection', conn => host_aceptarConexion(conn));
+}
+
+function iniciarSalaHost() {
+  // Mostrar modal con código
+  document.getElementById('room-code-big').innerText = roomCode;
+  document.getElementById('modal-room-created').classList.remove('hidden');
+  document.getElementById('modal-room-created').classList.add('flex');
+
+  // Pasar a la vista de sala
+  abrirVistaApp();
+  render();
+}
+
+function cerrarModalRoomCreated() {
+  document.getElementById('modal-room-created').classList.add('hidden');
+  document.getElementById('modal-room-created').classList.remove('flex');
+}
+
+/* ================================================================
+   ACEPTAR PARTICIPANTES (host)
+   ================================================================ */
+function host_aceptarConexion(conn) {
+  conn.on('open', () => {
+    // El nombre llega en el primer mensaje 'hello'
+    participantConnections.push({ conn, name: null });
+    // Mandar estado completo al recién llegado
+    conn.send({ type: 'state', payload: estadoSerializable() });
+  });
+  conn.on('data', data => host_procesarMensajeDeParticipante(conn, data));
+  conn.on('close', () => host_eliminarConexion(conn));
+  conn.on('error', () => host_eliminarConexion(conn));
+}
+
+function host_eliminarConexion(conn) {
+  const idx = participantConnections.findIndex(p => p.conn === conn);
+  if (idx >= 0) {
+    const removed = participantConnections.splice(idx, 1)[0];
+    // No quitamos al usuario de estado.usuarios — si vuelve a conectarse
+    // recuperaría la sesión y mantenemos su histórico de votos/tarjetas.
+    render();
+  }
+}
+
+function host_procesarMensajeDeParticipante(conn, msg) {
+  if (!msg || !msg.type) return;
+  const ref = participantConnections.find(p => p.conn === conn);
+
+  switch (msg.type) {
+    case 'hello': {
+      // msg.name
+      const nombre = (msg.name || 'Anónimo').toString().trim() || 'Anónimo';
+      if (ref) ref.name = nombre;
+      if (!estado.usuarios.includes(nombre)) estado.usuarios.push(nombre);
+      broadcastState();
+      break;
+    }
+    case 'termometro': {
+      if (estado.fase !== 1) break;
+      // Anti-doble: usamos el clientId (peer id) para que cada navegador vote 1 vez
+      const cid = msg.clientId || (conn.peer);
+      if (estado.termometro.some(v => v.clientId === cid)) break;
+      if (!TERMOMETRO_OPCIONES.find(o => o.id === msg.voto)) break;
+      estado.termometro.push({ voto: msg.voto, clientId: cid });
+      broadcastState();
+      break;
+    }
+    case 'nuevaTarjeta': {
+      if (estado.fase !== 2) break;
+      if (!['ÉXITO','OBSTÁCULOS','RECONOCIMIENTO'].includes(msg.categoria)) break;
+      const texto = (msg.texto || '').toString().trim();
+      if (!texto) break;
+      estado.tarjetas.push({
+        id: 'tar-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
+        categoria: msg.categoria,
+        texto: texto,
+        votos: 0,
+      });
+      broadcastState();
+      break;
+    }
+    case 'votarTarjeta': {
+      if (estado.fase !== 3) break;
+      const t = estado.tarjetas.find(x => x.id === msg.tarjetaId);
+      if (t) { t.votos = (t.votos || 0) + 1; broadcastState(); }
+      break;
+    }
+    // Las acciones de organizador (cambiar fase, crear mejora) sólo vienen
+    // de la propia UI del host, no por mensaje.
+  }
+}
+
+function estadoSerializable() {
+  // Misma forma que estado, sin riesgo de referencias circulares
+  return JSON.parse(JSON.stringify(estado));
+}
+function broadcastState() {
+  if (!isHost) return;
+  const payload = estadoSerializable();
+  participantConnections.forEach(p => {
+    try { p.conn.send({ type: 'state', payload }); } catch(_){}
+  });
+  render();
+}
+
+/* ================================================================
+   UNIRSE A SALA (participante)
+   ================================================================ */
+function unirseSala() {
+  const nombreUser = document.getElementById('user-name').value.trim();
+  if (!nombreUser) return customAlert("Pon tu nombre antes de unirte.");
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (!code) return customAlert("Escribe el código de la sala.");
+  if (code.length < 4) return customAlert("El código parece incompleto.");
+
+  currentUser = nombreUser;
+  currentRole = 'participante';
+  isHost = false;
+  roomCode = code;
+
+  showLoading("Conectando a la sala...");
+
+  // Crear nuestro peer con ID aleatorio (anónimo en cuanto al alias)
+  if (peer) { try { peer.destroy(); } catch(_){} peer = null; }
+  peer = new Peer({ debug: 1 });
+
+  peer.on('open', id => {
+    myPeerId = id;
+    const targetId = peerIdFromRoom(code);
+    const conn = peer.connect(targetId, { reliable: true });
+
+    let connected = false;
+    const timeout = setTimeout(() => {
+      if (!connected) {
+        hideLoading();
+        try { conn.close(); } catch(_){}
+        customAlert("⚠️ No se pudo conectar. Comprueba el código y que el organizador tenga la pestaña abierta.");
+      }
+    }, 10000);
+
+    conn.on('open', () => {
+      connected = true;
+      clearTimeout(timeout);
+      hostConnection = conn;
+      hideLoading();
+
+      // Saludar con nombre
+      conn.send({ type: 'hello', name: currentUser });
+
+      abrirVistaApp();
+      setConnStatus('ok');
+    });
+
+    conn.on('data', data => participant_procesarMensajeDeHost(data));
+    conn.on('close', () => {
+      setConnStatus('off');
+      showToast("Conexión perdida con el organizador.", false, true);
+    });
+    conn.on('error', err => {
+      if (!connected) {
+        clearTimeout(timeout);
+        hideLoading();
+        customAlert("⚠️ Error al conectar: " + (err && err.message || err));
+      } else {
+        setConnStatus('off');
+      }
+    });
+  });
+
+  peer.on('error', err => {
+    hideLoading();
+    if (err.type === 'peer-unavailable') {
+      customAlert("⚠️ Esa sala no existe o el organizador no está conectado.");
+    } else {
+      customAlert("⚠️ Error de red: " + (err && err.message || err));
+    }
+  });
+}
+
+function setConnStatus(status) {
+  const wrap = document.getElementById('conn-status');
+  const dot = document.getElementById('conn-status-dot');
+  const txt = document.getElementById('conn-status-text');
+  if (!wrap) return;
+  if (isHost) { wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden'); wrap.classList.add('flex');
+  if (status === 'ok')  { dot.className = "w-2 h-2 rounded-full bg-bbva-lime mr-2"; txt.innerText = 'Conectado'; }
+  if (status === 'off') { dot.className = "w-2 h-2 rounded-full bg-red-400 mr-2 animate-pulse"; txt.innerText = 'Desconectado'; }
+}
+
+function participant_procesarMensajeDeHost(msg) {
+  if (!msg || !msg.type) return;
+  if (msg.type === 'state') {
+    const newState = msg.payload;
+    // Sustituir estado entero
+    estado = newState;
+    render();
+  }
+}
+
+/* ================================================================
+   ABRIR VISTA APP (común a host y participante)
+   ================================================================ */
+function abrirVistaApp() {
+  document.getElementById('view-menu').classList.add('hidden');
+  document.getElementById('view-app').classList.remove('hidden');
+  document.getElementById('display-user-name').innerHTML =
+    `<i class="fa-regular fa-user mr-1"></i> ${currentUser} (${currentRole})`;
+  document.getElementById('room-code-display').innerText = roomCode || '—';
+  termometroVotadoLocal = false;
+  if (!isHost) setConnStatus('ok');
+  render();
+}
+
+function volverAlMenu() {
+  customConfirm(
+    isHost
+      ? "Si vuelves al menú, la sala se cerrará para todos. ¿Continuar?"
+      : "¿Salir de la sala?",
+    () => {
+      try { if (peer) peer.destroy(); } catch(_){}
+      peer = null; hostConnection = null; participantConnections = [];
+      isHost = false; roomCode = null;
+      document.getElementById('view-app').classList.add('hidden');
+      document.getElementById('view-archive').classList.add('hidden');
+      document.getElementById('view-menu').classList.remove('hidden');
+      cargarHistorico();
+    }
+  );
+}
+
+function copiarCodigoSala() {
+  if (!roomCode) return;
+  navigator.clipboard.writeText(roomCode).then(
+    () => showToast("Código copiado al portapapeles", true),
+    () => showToast("No se pudo copiar")
+  );
+}
+
+/* ================================================================
+   ACCIONES (host: directas; participante: vía mensaje)
+   ================================================================ */
+function avanzarFase() {
+  if (!isHost || estado.fase >= 5) return;
+  estado.fase += 1;
+  broadcastState();
+  showToast("¡Fase actualizada!", true);
+}
+function retrocederFase() {
+  if (!isHost || estado.fase <= 1) return;
+  estado.fase -= 1;
+  broadcastState();
+  showToast("¡Fase actualizada!", true);
+}
+
+function votarTermometro(idOp) {
+  if (estado.fase !== 1 || termometroVotadoLocal) return;
+  termometroVotadoLocal = true;
+  showToast("Voto registrado", true);
+
+  if (isHost) {
+    // anti-doble por clientId
+    if (!estado.termometro.some(v => v.clientId === myPeerId)) {
+      estado.termometro.push({ voto: idOp, clientId: myPeerId });
+      broadcastState();
+    }
+  } else if (hostConnection && hostConnection.open) {
+    hostConnection.send({ type: 'termometro', voto: idOp, clientId: myPeerId });
+  }
+}
+
+function votarTarjeta(tarjetaId) {
+  if (estado.fase !== 3) return;
+  showToast("Voto registrado", true);
+  if (isHost) {
+    const t = estado.tarjetas.find(x => x.id === tarjetaId);
+    if (t) { t.votos = (t.votos || 0) + 1; broadcastState(); }
+  } else if (hostConnection && hostConnection.open) {
+    hostConnection.send({ type: 'votarTarjeta', tarjetaId });
+  }
+}
+
+/* ================================================================
+   MODAL AÑADIR
+   ================================================================ */
+function promptNuevaTarjeta(cat) {
+  if (estado.fase !== 2) return;
+  modalCategoriaPendiente = cat; esMejora = false;
+  document.getElementById('modal-title').innerText = `Añadir a ${cat}`;
+
+  const divDest = document.getElementById('div-destinatario');
+  const selDest = document.getElementById('modal-destinatario');
+  if (cat === 'RECONOCIMIENTO') {
+    divDest.classList.remove('hidden');
+    const otros = [...new Set(estado.usuarios)].filter(u => u !== currentUser);
+    selDest.innerHTML = `<option value="Todo el equipo">A todo el equipo</option>` +
+      otros.map(u => `<option value="${escapeHTML(u)}">${escapeHTML(u)}</option>`).join('');
+  } else divDest.classList.add('hidden');
+
+  document.getElementById('modal-input').value = '';
+  document.getElementById('modal-add').classList.remove('hidden');
+  setTimeout(() => document.getElementById('modal-input').focus(), 100);
+}
+
+function promptNuevaMejora() {
+  if (!isHost || estado.fase === 5) return;
+  esMejora = true;
+  document.getElementById('modal-title').innerText = `Añadir acción de mejora`;
+  document.getElementById('div-destinatario').classList.add('hidden');
+  document.getElementById('modal-input').value = '';
+  document.getElementById('modal-add').classList.remove('hidden');
+  setTimeout(() => document.getElementById('modal-input').focus(), 100);
+}
+
+function cerrarModal() {
+  document.getElementById('modal-add').classList.add('hidden');
+}
+
+document.getElementById('modal-submit').addEventListener('click', () => {
+  let texto = document.getElementById('modal-input').value.trim();
+  if (!texto) return;
+
+  cerrarModal();
+  if (esMejora) {
+    // Sólo el host crea mejoras
+    if (isHost) {
+      estado.mejoras.push({
+        id: 'mej-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
+        texto, check: false,
+      });
+      broadcastState();
+      showToast("Mejora añadida", true);
+    }
+  } else {
+    if (modalCategoriaPendiente === 'RECONOCIMIENTO') {
+      const dest = document.getElementById('modal-destinatario').value || 'Todo el equipo';
+      texto = `[PARA:${dest}]${texto}`;
+    }
+    if (isHost) {
+      estado.tarjetas.push({
+        id: 'tar-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
+        categoria: modalCategoriaPendiente,
+        texto, votos: 0,
+      });
+      broadcastState();
+      showToast("Añadido", true);
+    } else if (hostConnection && hostConnection.open) {
+      hostConnection.send({ type: 'nuevaTarjeta', categoria: modalCategoriaPendiente, texto });
+      showToast("Enviado al organizador...", true);
+    }
+  }
+});
+
+/* ================================================================
+   RENDER
+   ================================================================ */
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, m =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function escapeAttr(s) { return escapeHTML(s); }
+
+function render() {
+  renderBreadcrumbs();
+  renderTermometro();
+  renderColumnasVisibilidad();
+  renderTarjetas();
+  actualizarPermisos();
+  // Nombre de sesión en header
+  const hsn = document.getElementById('header-session-name');
+  if (estado.nombre) { hsn.innerText = '· ' + estado.nombre; hsn.classList.remove('hidden'); }
+  else hsn.classList.add('hidden');
+}
+
+function actualizarPermisos() {
+  const btnAv = document.getElementById('btn-avanzar-fase');
+  const btnRe = document.getElementById('btn-retroceder-fase');
+  const btnEx = document.getElementById('btn-exportar');
+  const dd    = document.getElementById('dropdown-participantes');
+  const ic    = document.getElementById('icon-dropdown');
+
+  if (isHost) {
+    btnAv.classList.toggle('hidden', estado.fase >= 5);
+    btnRe.classList.toggle('hidden', estado.fase <= 1);
+    btnEx.classList.toggle('hidden', estado.fase < 5);
+    dd.classList.remove('hidden'); ic.classList.remove('hidden');
+    const unicos = [...new Set(estado.usuarios)];
+    const ul = document.getElementById('lista-participantes');
+    ul.innerHTML = unicos.length
+      ? unicos.map(u => `<li class="py-1 px-2 hover:bg-bbva-sand rounded text-xs flex items-center"><i class="fa-solid fa-circle text-[6px] text-bbva-lime mr-2"></i>${escapeHTML(u)}</li>`).join('')
+      : `<li class="py-1 px-2 text-xs italic text-bbva-gray4">Solo tú</li>`;
+  } else {
+    btnAv.classList.add('hidden'); btnRe.classList.add('hidden'); btnEx.classList.add('hidden');
+    dd.classList.add('hidden'); ic.classList.add('hidden');
+  }
+}
+
+function renderBreadcrumbs() {
+  document.getElementById('phase-nav').innerHTML = FASES_NOMBRES.map((nom, i) => {
+    const n = i + 1; const active = n === estado.fase; const past = n < estado.fase;
+    let html = `<div class="flex items-center">`;
+    if (active)
+      html += `<span class="bg-bbva-serene text-bbva-blue px-3 py-1 rounded-full shadow-sm flex items-center font-bold"><span class="w-5 h-5 bg-bbva-blue/15 rounded-full flex justify-center items-center text-xs mr-1.5">${n}</span> ${nom}</span>`;
+    else
+      html += `<span class="${past ? 'text-bbva-serene/80' : 'text-bbva-serene/40'} px-2 py-1 flex items-center"><span class="text-xs mr-1">${n}.</span> ${nom}</span>`;
+    if (i < FASES_NOMBRES.length - 1) html += `<i class="fa-solid fa-chevron-right text-bbva-midnight/60 text-xs mx-1"></i>`;
+    return html + `</div>`;
+  }).join('');
+}
+
+function renderTermometro() {
+  const votos = { op1:0, op2:0, op3:0, op4:0, op5:0 };
+  estado.termometro.forEach(v => { if (votos[v.voto] !== undefined) votos[v.voto]++; });
+  const total = Object.values(votos).reduce((a,b)=>a+b,0);
+  document.getElementById('total-votes').innerText = `${total} Voto${total !== 1 ? 's' : ''}`;
+
+  const showRes = estado.fase > 1;
+  const canVote = estado.fase === 1 && !termometroVotadoLocal;
+
+  const html = TERMOMETRO_OPCIONES.map(op => {
+    const v = votos[op.id]; const pct = total ? Math.round((v/total)*100) : 0;
+    const cursor = canVote ? 'cursor-pointer hover:bg-bbva-sand group hover:-translate-y-1 hover:shadow-sm border-bbva-gray2' : 'opacity-90 border-bbva-gray2';
+    return `<div onclick="votarTermometro('${op.id}')" class="relative rounded-lg border p-2 transition-all overflow-hidden ${cursor}">
+      ${showRes ? `<div class="absolute left-0 top-0 bottom-0 ${op.bar} opacity-25 transition-all duration-500" style="width: ${pct}%"></div>` : ''}
+      <div class="relative flex justify-between items-center z-10">
+        <div class="flex items-center space-x-2"><span class="text-xl">${op.emoji}</span><span class="text-sm font-medium text-bbva-blue">${op.texto}</span></div>
+        ${showRes ? `<span class="text-xs font-bold text-bbva-gray5">${pct}%</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  const cont = document.getElementById('thermometer-container');
+  if (cont.innerHTML !== html) cont.innerHTML = html;
+}
+
+function renderColumnasVisibilidad() {
+  document.getElementById('board-container').classList.toggle('hidden', estado.fase === 1);
+  document.querySelectorAll('.add-btn-container').forEach(btn => btn.style.display = (estado.fase === 2) ? 'block' : 'none');
+  document.getElementById('col-mejoras-container').classList.toggle('hidden', estado.fase < 4);
+  const btnMej = document.getElementById('add-mejora-container');
+  btnMej.style.display = (estado.fase === 4 && isHost) ? 'block' : 'none';
+}
+
+function renderTarjetas() {
+  let arr = [...estado.tarjetas];
+  if (estado.fase >= 4) {
+    arr.sort((a,b) => (b.votos - a.votos) || String(a.id).localeCompare(String(b.id)));
+  }
+  const getHtml = (t, borderColor) => {
+    let txt = t.texto || '';
+    let badge = '';
+    if (t.categoria === 'RECONOCIMIENTO' && txt.startsWith('[PARA:')) {
+      const idx = txt.indexOf(']');
+      if (idx !== -1) {
+        const dest = txt.substring(6, idx);
+        badge = `<div class="mb-2"><span class="bg-bbva-serene/30 border border-bbva-serene text-bbva-blue font-bold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded shadow-sm"><i class="fa-solid fa-star text-bbva-canary mr-1"></i>Para: ${escapeHTML(dest)}</span></div>`;
+        txt = txt.substring(idx + 1);
+      }
+    }
+    const showVoteBtn = estado.fase === 3;
+    const heartCount = (t.votos > 0)
+      ? `<span class="text-bbva-blue font-bold bg-bbva-gray2 px-1.5 rounded text-xs"><i class="fa-solid fa-heart text-bbva-mandarin mr-1 text-[10px]"></i>${t.votos}</span>`
+      : '';
+    return `<div class="bg-white border border-bbva-gray2 border-l-4 ${borderColor} rounded-lg p-3 shadow-sm transition-all hover:shadow-md hover:-translate-y-1">
+      ${badge}
+      <p class="text-sm text-bbva-midnight leading-relaxed whitespace-pre-line">${escapeHTML(txt)}</p>
+      <div class="mt-3 flex justify-end items-center text-xs text-bbva-gray4">
+        <div class="flex items-center space-x-1">
+          ${showVoteBtn ? `<button onclick="votarTarjeta('${t.id}')" class="text-bbva-gray4 hover:text-bbva-mandarin bg-bbva-sand hover:bg-bbva-mandarin/10 px-2 py-1 rounded transition border border-bbva-gray2"><i class="fa-regular fa-heart"></i></button>` : ''}
+          ${heartCount}
+        </div>
+      </div>
+    </div>`;
+  };
+
+  const colors = {
+    'ÉXITO':         'border-l-bbva-canary',
+    'OBSTÁCULOS':    'border-l-bbva-mandarin',
+    'RECONOCIMIENTO':'border-l-bbva-serene',
+  };
+  const ids = { 'ÉXITO': 'col-exito', 'OBSTÁCULOS': 'col-obstaculos', 'RECONOCIMIENTO': 'col-reconocimiento' };
+  for (const cat of Object.keys(ids)) {
+    const html = arr.filter(t => t.categoria === cat).map(t => getHtml(t, colors[cat])).join('');
+    const el = document.getElementById(ids[cat]);
+    if (el.innerHTML !== html) el.innerHTML = html;
+  }
+
+  const htmlMej = estado.mejoras.map(m =>
+    `<div class="bg-white border border-bbva-gray2 border-l-4 border-l-bbva-lime rounded-lg p-3 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
+       <p class="text-sm text-bbva-midnight whitespace-pre-line">${escapeHTML(m.texto)}</p>
+     </div>`
+  ).join('');
+  const elMej = document.getElementById('col-mejoras');
+  if (elMej.innerHTML !== htmlMej) elMej.innerHTML = htmlMej;
+}
+
+/* ================================================================
+   EXPORTAR JSON  (al final, fase 5)
+   ================================================================ */
+function exportarJSON() {
+  if (!isHost) return;
+  const dump = {
+    version: 1,
+    id: estado.id,
+    fecha: estado.fecha,
+    nombre: estado.nombre,
+    faseFinal: estado.fase,
+    usuarios: [...new Set(estado.usuarios)],
+    // No exportamos clientId del termómetro (privacidad)
+    termometro: estado.termometro.map(v => ({ voto: v.voto })),
+    tarjetas: estado.tarjetas.map(t => ({ id: t.id, categoria: t.categoria, texto: t.texto, votos: t.votos || 0 })),
+    mejoras: estado.mejoras.map(m => ({ id: m.id, texto: m.texto, check: !!m.check })),
+    exportadoEn: new Date().toISOString(),
+  };
+
+  const slug = slugify(estado.nombre || 'retrospectiva');
+  const fecha = estado.fecha ? estado.fecha.split('/').reverse().join('-') : new Date().toISOString().slice(0,10);
+  const filename = `${fecha}-${slug}.json`;
+
+  const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 100);
+
+  showToast("JSON descargado", true);
+}
+
+function slugify(s) {
+  return (s || '').toString()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'retro';
+}
+
+/* ================================================================
+   HISTÓRICO  (lista /retro/index.json + lectura de cada .json)
+   ================================================================ */
+async function cargarHistorico() {
+  const list = document.getElementById('archive-list');
+  list.innerHTML = `<p class="text-xs text-bbva-gray5 italic">Cargando histórico...</p>`;
+  try {
+    const res = await fetch('./retro/index.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('No hay índice');
+    const idx = await res.json();
+    if (!idx.sesiones || !idx.sesiones.length) {
+      list.innerHTML = `<p class="text-xs text-bbva-gray5 italic">No hay retrospectivas archivadas todavía.</p>`;
+      return;
+    }
+    list.innerHTML = idx.sesiones.map(s =>
+      `<button onclick="abrirHistorica('${escapeAttr(s.archivo)}')" class="w-full text-left p-3 rounded-lg border border-bbva-gray2 hover:border-bbva-blue hover:bg-bbva-serene/15 transition group">
+         <div class="flex items-center justify-between">
+           <div>
+             <p class="font-bold text-bbva-blue text-sm group-hover:underline">${escapeHTML(s.nombre || s.archivo)}</p>
+             <p class="text-xs text-bbva-gray5">${escapeHTML(s.fecha || '')} · ${s.participantes || '?'} participantes</p>
+           </div>
+           <i class="fa-solid fa-arrow-right text-bbva-blue/60 group-hover:text-bbva-blue"></i>
+         </div>
+       </button>`
+    ).join('');
+  } catch (e) {
+    list.innerHTML = `<p class="text-xs text-bbva-gray5 italic">No hay índice <code>/retro/index.json</code> disponible (o estás en local sin servidor).</p>`;
+  }
+}
+
+async function abrirHistorica(archivo) {
+  showLoading("Cargando retrospectiva...");
+  try {
+    const res = await fetch(`./retro/${archivo}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('No se ha podido cargar');
+    const data = await res.json();
+    hideLoading();
+    mostrarVistaArchivo(data);
+  } catch (e) {
+    hideLoading();
+    customAlert("⚠️ No se pudo cargar el archivo.\n\n" + (e.message || e));
+  }
+}
+
+function cargarArchivoLocal(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      mostrarVistaArchivo(data);
+    } catch (err) {
+      customAlert("⚠️ El archivo no es un JSON válido.");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function mostrarVistaArchivo(data) {
+  document.getElementById('view-menu').classList.add('hidden');
+  document.getElementById('view-app').classList.add('hidden');
+  document.getElementById('view-archive').classList.remove('hidden');
+
+  document.getElementById('archive-name').innerText =
+    (data.nombre || 'Retrospectiva') + (data.fecha ? ` · ${data.fecha}` : '');
+
+  const votos = { op1:0, op2:0, op3:0, op4:0, op5:0 };
+  (data.termometro || []).forEach(v => { if (votos[v.voto] !== undefined) votos[v.voto]++; });
+  const total = Object.values(votos).reduce((a,b)=>a+b,0);
+
+  const tarjetas = (data.tarjetas || []).slice().sort((a,b) => (b.votos||0) - (a.votos||0));
+
+  const tarjetaHTML = (t, borderClass) => {
+    let txt = t.texto || ''; let badge = '';
+    if (t.categoria === 'RECONOCIMIENTO' && txt.startsWith('[PARA:')) {
+      const idx = txt.indexOf(']');
+      if (idx !== -1) {
+        const dest = txt.substring(6, idx);
+        badge = `<div class="mb-2"><span class="bg-bbva-serene/30 border border-bbva-serene text-bbva-blue font-bold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded shadow-sm"><i class="fa-solid fa-star text-bbva-canary mr-1"></i>Para: ${escapeHTML(dest)}</span></div>`;
+        txt = txt.substring(idx + 1);
+      }
+    }
+    const heart = (t.votos > 0)
+      ? `<span class="text-bbva-blue font-bold bg-bbva-gray2 px-1.5 rounded text-xs"><i class="fa-solid fa-heart text-bbva-mandarin mr-1 text-[10px]"></i>${t.votos}</span>` : '';
+    return `<div class="bg-white border border-bbva-gray2 border-l-4 ${borderClass} rounded-lg p-3 shadow-sm">
+      ${badge}
+      <p class="text-sm text-bbva-midnight whitespace-pre-line leading-relaxed">${escapeHTML(txt)}</p>
+      <div class="mt-2 flex justify-end">${heart}</div>
+    </div>`;
+  };
+
+  const exito = tarjetas.filter(t => t.categoria === 'ÉXITO');
+  const obst = tarjetas.filter(t => t.categoria === 'OBSTÁCULOS');
+  const rec  = tarjetas.filter(t => t.categoria === 'RECONOCIMIENTO');
+
+  document.getElementById('archive-content').innerHTML = `
+    <header class="mb-8">
+      <h1 class="display text-4xl text-bbva-blue mb-2">${escapeHTML(data.nombre || 'Retrospectiva')}</h1>
+      <p class="text-bbva-gray5">${escapeHTML(data.fecha || '')} · ${(data.usuarios || []).length} participantes</p>
+    </header>
+
+    <!-- Termómetro -->
+    <section class="bg-white border border-bbva-gray2 rounded-2xl p-6 mb-6 shadow-sm">
+      <h2 class="display text-2xl text-bbva-blue mb-1">Termómetro de confianza</h2>
+      <p class="text-sm text-bbva-gray5 mb-4">${total} voto${total !== 1 ? 's' : ''} anónimos</p>
+      <div class="space-y-2">
+        ${TERMOMETRO_OPCIONES.map(op => {
+          const v = votos[op.id]; const pct = total ? Math.round((v/total)*100) : 0;
+          return `<div class="relative rounded-lg border border-bbva-gray2 p-3 overflow-hidden">
+            <div class="absolute left-0 top-0 bottom-0 ${op.bar} opacity-25" style="width: ${pct}%"></div>
+            <div class="relative flex justify-between items-center z-10">
+              <div class="flex items-center space-x-3"><span class="text-2xl">${op.emoji}</span><span class="text-sm font-medium text-bbva-blue">${op.texto}</span></div>
+              <span class="text-xs font-bold text-bbva-gray5">${v} · ${pct}%</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </section>
+
+    <!-- Tarjetas -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <div class="bg-white border border-bbva-gray2 border-t-4 border-t-bbva-canary rounded-2xl p-4 shadow-sm">
+        <h3 class="display text-xl text-bbva-blue mb-3">ÉXITO 🤩</h3>
+        <div class="space-y-3">${exito.length ? exito.map(t => tarjetaHTML(t, 'border-l-bbva-canary')).join('') : '<p class="text-xs italic text-bbva-gray4">Sin entradas</p>'}</div>
+      </div>
+      <div class="bg-white border border-bbva-gray2 border-t-4 border-t-bbva-mandarin rounded-2xl p-4 shadow-sm">
+        <h3 class="display text-xl text-bbva-blue mb-3">OBSTÁCULOS 🤬</h3>
+        <div class="space-y-3">${obst.length ? obst.map(t => tarjetaHTML(t, 'border-l-bbva-mandarin')).join('') : '<p class="text-xs italic text-bbva-gray4">Sin entradas</p>'}</div>
+      </div>
+      <div class="bg-white border border-bbva-gray2 border-t-4 border-t-bbva-serene rounded-2xl p-4 shadow-sm">
+        <h3 class="display text-xl text-bbva-blue mb-3">RECONOCIMIENTO 🏆</h3>
+        <div class="space-y-3">${rec.length ? rec.map(t => tarjetaHTML(t, 'border-l-bbva-serene')).join('') : '<p class="text-xs italic text-bbva-gray4">Sin entradas</p>'}</div>
+      </div>
+    </section>
+
+    <!-- Mejoras -->
+    ${(data.mejoras && data.mejoras.length) ? `
+    <section class="bg-white border border-bbva-gray2 border-t-4 border-t-bbva-lime rounded-2xl p-6 mb-6 shadow-sm">
+      <h2 class="display text-2xl text-bbva-blue mb-4">Acciones de mejora 📈</h2>
+      <div class="space-y-3">
+        ${data.mejoras.map(m => `
+          <div class="bg-bbva-lime/10 border border-bbva-gray2 border-l-4 border-l-bbva-lime rounded-lg p-3">
+            <p class="text-sm text-bbva-midnight whitespace-pre-line">${escapeHTML(m.texto)}</p>
+          </div>`).join('')}
+      </div>
+    </section>` : ''}
+
+    <!-- Participantes -->
+    ${(data.usuarios && data.usuarios.length) ? `
+    <section class="bg-white border border-bbva-gray2 rounded-2xl p-6 shadow-sm">
+      <h2 class="display text-xl text-bbva-blue mb-3">Participantes</h2>
+      <div class="flex flex-wrap gap-2">
+        ${[...new Set(data.usuarios)].map(u => `<span class="text-xs px-3 py-1 rounded-full bg-bbva-serene/30 text-bbva-blue font-medium">${escapeHTML(u)}</span>`).join('')}
+      </div>
+    </section>` : ''}
+  `;
+}
+
+/* ================================================================
+   ATAJO: Enter en el código de sala = unirse
+   ================================================================ */
+document.getElementById('join-code').addEventListener('keydown', e => {
+  if (e.key === 'Enter') unirseSala();
+});
+</script>
+</body>
+</html>
