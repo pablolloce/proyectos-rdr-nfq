@@ -10,8 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Source+Serif+4:wght@700&display=swap" rel="stylesheet" />
 
-<!-- PeerJS: WebRTC con servidor de señalización público -->
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<!-- P2P: Trystero se importa dinámicamente desde esm.sh dentro del JS -->
 
 <script>
   tailwind.config = {
@@ -341,16 +340,28 @@
 </div>
 
 <!-- ============ MODAL: CÓDIGO DE SALA RECIÉN CREADA ============ -->
-<div id="modal-room-created" class="fixed inset-0 bg-bbva-deep/70 z-[160] hidden items-center justify-center backdrop-blur-sm">
+<div id="modal-room-created" class="fixed inset-0 bg-bbva-deep/70 z-[160] hidden items-center justify-center backdrop-blur-sm p-4">
   <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md text-center">
     <div class="bbva-mark text-bbva-blue text-2xl mb-2">BBVA</div>
     <h3 class="display text-2xl text-bbva-blue mb-2">¡Sala creada!</h3>
-    <p class="text-sm text-bbva-gray5 mb-6">Comparte este código con los participantes. La sala vive en este navegador, no la cierres.</p>
-    <div class="bg-bbva-serene/40 border-2 border-bbva-blue rounded-xl py-4 px-3 mb-4 cursor-pointer hover:bg-bbva-serene/60" onclick="copiarCodigoSala()">
+    <p class="text-sm text-bbva-gray5 mb-6">Comparte el enlace o el código con los participantes. La sala vive en este navegador, no la cierres.</p>
+
+    <!-- Código -->
+    <div class="bg-bbva-serene/40 border-2 border-bbva-blue rounded-xl py-4 px-3 mb-3 cursor-pointer hover:bg-bbva-serene/60" onclick="copiarCodigoSala()">
       <p class="text-xs text-bbva-blue/80 font-bold uppercase tracking-wider mb-1">Código de sala</p>
       <p id="room-code-big" class="font-mono font-bold text-4xl tracking-widest text-bbva-blue"></p>
-      <p class="text-xs text-bbva-blue mt-2"><i class="fa-regular fa-copy mr-1"></i>Toca para copiar</p>
+      <p class="text-xs text-bbva-blue mt-2"><i class="fa-regular fa-copy mr-1"></i>Toca para copiar el código</p>
     </div>
+
+    <!-- Link compartible -->
+    <div class="bg-bbva-sand border border-bbva-gray2 rounded-xl p-3 mb-4 text-left">
+      <p class="text-xs text-bbva-gray5 font-bold uppercase tracking-wider mb-1">Enlace directo</p>
+      <p id="room-share-link" class="text-xs text-bbva-blue font-mono break-all leading-relaxed"></p>
+      <button onclick="copiarLinkSala()" class="mt-2 w-full bg-bbva-blue/10 hover:bg-bbva-blue/20 text-bbva-blue text-xs font-bold py-1.5 rounded">
+        <i class="fa-regular fa-copy mr-1"></i> Copiar enlace
+      </button>
+    </div>
+
     <button onclick="cerrarModalRoomCreated()" class="w-full btn-primary py-2 rounded-lg font-bold text-sm shadow">
       Empezar retrospectiva
     </button>
@@ -387,11 +398,7 @@ let currentUser = 'Anónimo';
 let currentRole = 'participante';  // 'organizador' = host de la sala
 let isHost = false;
 
-let peer = null;                 // objeto Peer.js
-let myPeerId = null;             // id propio en la red P2P
 let roomCode = null;             // código corto compartible
-let hostConnection = null;       // sólo participante: conexión al host
-let participantConnections = []; // sólo host: [{conn, name}]
 let termometroVotadoLocal = false; // anti-doble-voto en sesión
 
 let modalCategoriaPendiente = ''; let esMejora = false;
@@ -452,7 +459,17 @@ function hideToast() {
    TABS DEL MENÚ INICIAL
    ================================================================ */
 document.addEventListener('DOMContentLoaded', () => {
-  setTab('join');
+  // ¿Vienen con un #room=XXX en la URL? Pre-rellenar y tab "Unirse".
+  const hash = location.hash;
+  const m = /[#&]room=([A-Za-z0-9]+)/.exec(hash);
+  if (m) {
+    document.getElementById('join-code').value = m[1].toUpperCase();
+    setTab('join');
+    // Auto-foco en el campo nombre para que sólo tenga que escribirlo y pulsar Enter
+    setTimeout(() => document.getElementById('user-name').focus(), 200);
+  } else {
+    setTab('join');
+  }
   // pre-rellenar fecha de hoy
   const hoy = new Date().toISOString().split('T')[0];
   document.getElementById('new-session-date').value = hoy;
@@ -486,44 +503,61 @@ function generarCodigoSala(len = 6) {
   for (let i = 0; i < len; i++) s += ROOM_ALPHABET[Math.floor(Math.random() * ROOM_ALPHABET.length)];
   return s;
 }
-// Para PeerJS usamos un namespace propio + lowercase (el servidor público
-// es sensible a mayúsculas en algunos casos).
-function peerIdFromRoom(code) { return 'rdrretro-' + String(code).toLowerCase(); }
 
-// Config de PeerJS: servidor de señalización + ICE servers públicos para NAT.
-// Forzamos secure:true porque GitHub Pages sirve por HTTPS.
-const PEER_CONFIG = {
-  debug: 1,
-  // Servidor público de PeerJS
-  host: '0.peerjs.com',
-  port: 443,
-  path: '/',
-  secure: true,
-  // STUN/TURN públicos: Google STUN (UDP) + OpenRelay TURN (TCP-443 que pasa
-  // por la mayoría de redes corporativas). Sin TURN, redes con NAT simétrico
-  // o firewalls estrictos pueden bloquear WebRTC.
-  config: {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:global.stun.twilio.com:3478' },
-      {
-        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-        username: 'openrelayproject',
-        credential: 'openrelayproject',
-      },
-      {
-        urls: 'turn:openrelay.metered.ca:443',
-        username: 'openrelayproject',
-        credential: 'openrelayproject',
-      },
-    ],
-  },
+/* ================================================================
+   P2P con TRYSTERO (MQTT como medio de señalización)
+   ================================================================
+   La señalización va por WebSocket Seguro (wss) al puerto 8084 del
+   broker público de EMQX, que suele atravesar firewalls corporativos
+   porque parece tráfico HTTPS normal. Para los datos reales del
+   chat usamos WebRTC con STUN público (UDP) y, si no funciona,
+   sin TURN — algunas redes corporativas estrictas no podrán conectar.
+*/
+
+// Identificador único de "aplicación" en la red MQTT. Distinto a "room id"
+// (que cambia por sala). Esto evita que choque con otras apps Trystero
+// que usen el mismo broker público.
+const TRYSTERO_APP_ID = 'rdr-retro-bbva';
+
+// Relays MQTT públicos sobre WSS. Si el primero falla Trystero prueba el
+// siguiente. Ambos son brokers MQTT públicos populares.
+const TRYSTERO_MQTT_RELAYS = [
+  'wss://broker.emqx.io:8084/mqtt',
+  'wss://test.mosquitto.org:8081/mqtt',
+];
+
+// STUN servers públicos para que WebRTC descubra rutas a través de NAT.
+// Sin TURN: si la red bloquea WebRTC de forma agresiva, no se podrá conectar.
+const TRYSTERO_RTC_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:global.stun.twilio.com:3478' },
+    { urls: 'stun:stun.cloudflare.com:3478' },
+  ],
 };
+
+// Trystero se carga como módulo ES desde CDN. Se importa dinámicamente al
+// crear/unirse a sala para no penalizar la carga inicial si no se usa P2P.
+let trysteroJoinRoom = null;
+async function loadTrystero() {
+  if (trysteroJoinRoom) return trysteroJoinRoom;
+  try {
+    const mod = await import('https://esm.sh/trystero@0.21.8/mqtt');
+    trysteroJoinRoom = mod.joinRoom;
+    return trysteroJoinRoom;
+  } catch (e) {
+    console.error('[Retro] No se pudo cargar Trystero:', e);
+    throw new Error('No se pudo cargar la librería P2P. Revisa tu conexión.');
+  }
+}
 
 /* ================================================================
    CREAR SALA (organizador / host)
    ================================================================ */
-function crearSala() {
+async function crearSala() {
   const nombreUser = document.getElementById('user-name').value.trim();
   if (!nombreUser) return customAlert("Pon tu nombre antes de crear la sala.");
 
@@ -549,87 +583,29 @@ function crearSala() {
     mejoras:  [],
   };
 
-  // Intentar reservar un código que esté libre. Reintenta si falla.
   showLoading("Creando sala...");
-  intentarCrearPeer(0);
-}
-
-function intentarCrearPeer(intento) {
-  if (intento >= 5) {
-    hideLoading();
-    return customAlert("No se ha podido crear la sala tras varios intentos. Inténtalo otra vez.");
-  }
-  const code = generarCodigoSala();
-  const desiredId = peerIdFromRoom(code);
-
-  // Si había un peer previo, ciérralo limpio.
-  if (peer) { try { peer.destroy(); } catch(_){} peer = null; }
-
-  peer = new Peer(desiredId, PEER_CONFIG);
-
-  let resolved = false;
-  // Timeout por si el servidor de PeerJS no responde
-  const openTimeout = setTimeout(() => {
-    if (resolved) return; resolved = true;
-    hideLoading();
-    try { peer.destroy(); } catch(_){}
-    customAlert("⚠️ El servidor de señalización no responde.\n\nInténtalo de nuevo en unos segundos. Si persiste, el servidor público de PeerJS puede estar caído.");
-  }, 15000);
-
-  const onOpen = (id) => {
-    if (resolved) return; resolved = true;
-    clearTimeout(openTimeout);
-    myPeerId = id;
-    roomCode = code;
-    console.log('[Retro] Sala creada. Peer ID:', id, '· Código compartible:', code);
+  try {
+    const joinRoom = await loadTrystero();
+    roomCode = generarCodigoSala();
+    await conectarASala(joinRoom, roomCode);
     hideLoading();
     iniciarSalaHost();
-  };
-  const onError = (err) => {
-    // Errores que llegan DESPUÉS de abrir la sala (típicamente
-    // 'peer-unavailable' cuando alguien intenta conectarse con código mal):
-    // sólo loguearlos, NO cerrar la sala.
-    if (resolved) {
-      console.warn('[Peer] error no fatal:', err && err.type, err && err.message);
-      return;
-    }
-    resolved = true;
-    clearTimeout(openTimeout);
-    // Si el ID ya está en uso, reintenta con otro código
-    if (err && (err.type === 'unavailable-id' || /taken|unavailable/i.test(err.message || ''))) {
-      try { peer.destroy(); } catch(_){}
-      intentarCrearPeer(intento + 1);
-    } else {
-      hideLoading();
-      const t = err && err.type;
-      if (t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed') {
-        customAlert("⚠️ No hay conexión con el servidor de señalización.\n\nPuede ser un fallo puntual del servicio público de PeerJS o un bloqueo de tu red. Inténtalo de nuevo.");
-      } else if (t === 'browser-incompatible') {
-        customAlert("⚠️ Tu navegador no soporta WebRTC. Usa Chrome, Firefox o Edge actualizados.");
-      } else {
-        customAlert("⚠️ Error al crear la sala [" + (t || 'desconocido') + "]:\n" + (err && err.message || err));
-      }
-    }
-  };
-
-  peer.on('open', onOpen);
-  peer.on('error', onError);
-  peer.on('connection', conn => host_aceptarConexion(conn));
-  peer.on('disconnected', () => {
-    // El cliente se desconecta del servidor de señalización pero las
-    // conexiones WebRTC ya establecidas siguen vivas. Reintentamos.
-    console.warn('[Peer] desconectado del servidor de señalización, reintentando...');
-    try { peer.reconnect(); } catch(_){}
-  });
+  } catch (err) {
+    hideLoading();
+    console.error('[Retro] Error creando sala:', err);
+    customAlert("⚠️ No se pudo crear la sala.\n\n" + (err.message || err));
+  }
 }
 
 function iniciarSalaHost() {
-  // Mostrar modal con código
+  // Mostrar modal con código y URL compartible
   document.getElementById('room-code-big').innerText = roomCode;
+  const shareUrl = buildShareUrl(roomCode);
+  const linkEl = document.getElementById('room-share-link');
+  if (linkEl) linkEl.innerText = shareUrl;
   document.getElementById('modal-room-created').classList.remove('hidden');
   document.getElementById('modal-room-created').classList.add('flex');
 
-  // Pasar a la vista de sala
   abrirVistaApp();
   render();
 }
@@ -639,53 +615,101 @@ function cerrarModalRoomCreated() {
   document.getElementById('modal-room-created').classList.remove('flex');
 }
 
+function buildShareUrl(code) {
+  // URL actual sin hash + #room=CODE en el hash, para que al pegar/abrir
+  // el link se pre-rellene el código.
+  const base = location.origin + location.pathname;
+  return `${base}#room=${encodeURIComponent(code)}`;
+}
+
 /* ================================================================
-   ACEPTAR PARTICIPANTES (host)
+   TRYSTERO: conexión común (host y participante usan la misma API)
    ================================================================ */
-function host_aceptarConexion(conn) {
-  console.log('[Retro] Conexión entrante de peer:', conn.peer);
-  conn.on('open', () => {
-    console.log('[Retro] Canal abierto con:', conn.peer);
-    // El nombre llega en el primer mensaje 'hello'
-    participantConnections.push({ conn, name: null });
-    // Mandar estado completo al recién llegado
-    conn.send({ type: 'state', payload: estadoSerializable() });
+// Variables globales del room
+let trysteroRoom = null;
+let sendStateAction = null;   // función para enviar 'state' a todos
+let sendActionAction = null;  // función para enviar 'action' (mensaje de usuario)
+// Callback opcional que se llama la primera vez que un participante recibe estado
+let onFirstStateReceived = null;
+
+async function conectarASala(joinRoom, code) {
+  const roomId = String(code).toLowerCase();
+
+  // Configurar Trystero: appId común, room por código, redes MQTT múltiples
+  // y RTC config con STUN público.
+  trysteroRoom = joinRoom(
+    {
+      appId: TRYSTERO_APP_ID,
+      relayUrls: TRYSTERO_MQTT_RELAYS,
+      relayRedundancy: 2, // conectar a 2 brokers simultáneos para resiliencia
+      rtcConfig: TRYSTERO_RTC_CONFIG,
+    },
+    roomId
+  );
+
+  // Definir las "acciones" (canales de mensajería) que vamos a usar.
+  // En Trystero, makeAction(name) devuelve [send, recv].
+  const [sendState, getState] = trysteroRoom.makeAction('state');
+  const [sendAction, getAction] = trysteroRoom.makeAction('action');
+  sendStateAction = sendState;
+  sendActionAction = sendAction;
+
+  // Cuando llega un nuevo participante:
+  trysteroRoom.onPeerJoin(peerId => {
+    console.log('[Retro] Peer entró:', peerId);
+    if (isHost) {
+      // El host envía el estado completo al recién llegado
+      try { sendStateAction(estadoSerializable(), peerId); } catch(e) { console.warn(e); }
+    }
   });
-  conn.on('data', data => host_procesarMensajeDeParticipante(conn, data));
-  conn.on('close', () => host_eliminarConexion(conn));
-  conn.on('error', () => host_eliminarConexion(conn));
-}
 
-function host_eliminarConexion(conn) {
-  const idx = participantConnections.findIndex(p => p.conn === conn);
-  if (idx >= 0) {
-    const removed = participantConnections.splice(idx, 1)[0];
-    // No quitamos al usuario de estado.usuarios — si vuelve a conectarse
-    // recuperaría la sesión y mantenemos su histórico de votos/tarjetas.
+  trysteroRoom.onPeerLeave(peerId => {
+    console.log('[Retro] Peer salió:', peerId);
+    if (!isHost) {
+      const remaining = Object.keys(trysteroRoom.getPeers ? trysteroRoom.getPeers() : {});
+      if (remaining.length === 0) setConnStatus('off');
+    }
+  });
+
+  // Recibir 'state' (sólo nos interesa si NO somos host)
+  getState((payload, peerId) => {
+    if (isHost) return; // host ignora estados ajenos
+    console.log('[Retro] Estado recibido de:', peerId);
+    estado = payload;
+    setConnStatus('ok');
+    // Disparar callback "primer estado" si está registrado
+    if (onFirstStateReceived) {
+      const cb = onFirstStateReceived;
+      onFirstStateReceived = null;
+      cb();
+    }
     render();
-  }
+  });
+
+  // Recibir 'action' (sólo nos interesa si SÍ somos host)
+  getAction((msg, peerId) => {
+    if (!isHost) return;
+    procesarAccionDeParticipante(msg, peerId);
+  });
 }
 
-function host_procesarMensajeDeParticipante(conn, msg) {
+function procesarAccionDeParticipante(msg, peerId) {
   if (!msg || !msg.type) return;
-  const ref = participantConnections.find(p => p.conn === conn);
-
   switch (msg.type) {
     case 'hello': {
-      // msg.name
       const nombre = (msg.name || 'Anónimo').toString().trim() || 'Anónimo';
-      if (ref) ref.name = nombre;
+      // Guardar relación peerId → nombre (para mostrar lista de conectados)
+      peerNames[peerId] = nombre;
       if (!estado.usuarios.includes(nombre)) estado.usuarios.push(nombre);
       broadcastState();
       break;
     }
     case 'termometro': {
       if (estado.fase !== 1) break;
-      // Anti-doble: usamos el clientId (peer id) para que cada navegador vote 1 vez
-      const cid = msg.clientId || (conn.peer);
-      if (estado.termometro.some(v => v.clientId === cid)) break;
+      // Anti-doble: usamos el peerId como clientId
+      if (estado.termometro.some(v => v.clientId === peerId)) break;
       if (!TERMOMETRO_OPCIONES.find(o => o.id === msg.voto)) break;
-      estado.termometro.push({ voto: msg.voto, clientId: cid });
+      estado.termometro.push({ voto: msg.voto, clientId: peerId });
       broadcastState();
       break;
     }
@@ -709,28 +733,32 @@ function host_procesarMensajeDeParticipante(conn, msg) {
       if (t) { t.votos = (t.votos || 0) + 1; broadcastState(); }
       break;
     }
-    // Las acciones de organizador (cambiar fase, crear mejora) sólo vienen
-    // de la propia UI del host, no por mensaje.
   }
 }
 
+// Diccionario peerId → nombre, sólo lo usa el host
+let peerNames = {};
+
 function estadoSerializable() {
-  // Misma forma que estado, sin riesgo de referencias circulares
   return JSON.parse(JSON.stringify(estado));
 }
+
 function broadcastState() {
-  if (!isHost) return;
-  const payload = estadoSerializable();
-  participantConnections.forEach(p => {
-    try { p.conn.send({ type: 'state', payload }); } catch(_){}
-  });
+  if (!isHost || !sendStateAction) return;
+  // Enviar a TODOS los peers conectados (sin segundo argumento = broadcast)
+  try { sendStateAction(estadoSerializable()); } catch (e) { console.warn(e); }
   render();
+}
+
+function enviarAccionAlHost(msg) {
+  if (isHost || !sendActionAction) return;
+  try { sendActionAction(msg); } catch (e) { console.warn(e); }
 }
 
 /* ================================================================
    UNIRSE A SALA (participante)
    ================================================================ */
-function unirseSala() {
+async function unirseSala() {
   const nombreUser = document.getElementById('user-name').value.trim();
   if (!nombreUser) return customAlert("Pon tu nombre antes de unirte.");
   const code = document.getElementById('join-code').value.trim().toUpperCase();
@@ -742,100 +770,58 @@ function unirseSala() {
   isHost = false;
   roomCode = code;
 
+  // Reset del estado para no arrastrar una sesión anterior
+  estado = {
+    id: null, fecha: '', nombre: '', fase: 1, usuarios: [],
+    termometro: [], tarjetas: [], mejoras: [],
+  };
+  termometroVotadoLocal = false;
+
   showLoading("Conectando a la sala...");
 
-  // Crear nuestro peer con ID aleatorio (anónimo en cuanto al alias)
-  if (peer) { try { peer.destroy(); } catch(_){} peer = null; }
-  peer = new Peer(PEER_CONFIG);
+  try {
+    const joinRoom = await loadTrystero();
+    // Esperamos el primer 'state' del host o timeout
+    const connectedPromise = new Promise((resolve, reject) => {
+      onFirstStateReceived = resolve;
+      setTimeout(() => {
+        if (onFirstStateReceived) {
+          onFirstStateReceived = null;
+          reject(new Error('timeout'));
+        }
+      }, 30000);
+    });
 
-  let connected = false;
-  let connectTimeout = null;
-  let openTimeout = null;
-  let conn = null;
+    await conectarASala(joinRoom, code);
 
-  // Errores del Peer (no de la connection). 'peer-unavailable' llega aquí
-  // y NO al conn.on('error') — es importante.
-  peer.on('error', err => {
-    if (connected) {
-      console.warn('[Peer] error no fatal tras conectar:', err && err.type);
-      return;
-    }
-    if (connectTimeout) clearTimeout(connectTimeout);
-    if (openTimeout) clearTimeout(openTimeout);
-    hideLoading();
-    const t = err && err.type;
-    if (t === 'peer-unavailable') {
-      customAlert("⚠️ La sala no existe o el organizador no está conectado.\n\nComprueba el código y pídele que tenga la pestaña abierta.");
-    } else if (t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed') {
-      customAlert("⚠️ No hay conexión con el servidor de señalización.\n\nPuede ser un bloqueo de red o un fallo puntual del servidor público de PeerJS. Inténtalo de nuevo en unos segundos.");
-    } else if (t === 'browser-incompatible') {
-      customAlert("⚠️ Tu navegador no soporta WebRTC. Usa Chrome, Firefox o Edge actualizados.");
-    } else {
-      customAlert("⚠️ Error de red [" + (t || 'desconocido') + "]:\n" + (err && err.message || err));
-    }
-    try { peer.destroy(); } catch(_){}
-    peer = null;
-  });
-
-  peer.on('disconnected', () => {
-    console.warn('[Peer] desconectado del servidor de señalización, reintentando...');
-    try { peer.reconnect(); } catch(_){}
-  });
-
-  // Si el servidor de señalización no responde en 15 s, abortar.
-  openTimeout = setTimeout(() => {
-    if (connected) return;
-    hideLoading();
-    try { peer.destroy(); } catch(_){}
-    peer = null;
-    customAlert("⚠️ El servidor de señalización no responde.\n\nPuede ser un fallo del servicio público de PeerJS o un bloqueo de tu red. Inténtalo otra vez en unos segundos.");
-  }, 15000);
-
-  peer.on('open', id => {
-    clearTimeout(openTimeout);
-    myPeerId = id;
-    const targetId = peerIdFromRoom(code);
-    console.log('[Retro] Mi peer ID:', id, '· Conectando al host:', targetId);
-    conn = peer.connect(targetId, { reliable: true, serialization: 'json' });
-
-    // Timeout: la primera conexión WebRTC puede tardar varios segundos
-    // mientras negocia ICE, especialmente si hay que pasar por TURN.
-    connectTimeout = setTimeout(() => {
-      if (!connected) {
-        hideLoading();
-        try { if (conn) conn.close(); } catch(_){}
-        customAlert("⚠️ Tiempo de espera agotado al conectar con la sala.\n\nPosibles causas:\n• El código está mal escrito.\n• El organizador cerró su pestaña.\n• Tu red bloquea WebRTC (firewall corporativo).");
-      }
-    }, 20000);
-
-    conn.on('open', () => {
-      connected = true;
-      clearTimeout(connectTimeout);
-      hostConnection = conn;
+    try {
+      await connectedPromise;
+    } catch (timeoutErr) {
+      // Sin estado en 30 s → no conectó
+      try { if (trysteroRoom) trysteroRoom.leave(); } catch(_){}
+      trysteroRoom = null;
       hideLoading();
+      return customAlert(
+        "⚠️ No se ha podido conectar al organizador.\n\n" +
+        "Posibles causas:\n" +
+        "• El código es incorrecto.\n" +
+        "• El organizador cerró su pestaña.\n" +
+        "• Tu red bloquea WebRTC (firewall corporativo). " +
+        "Pruébalo desde otra red o el móvil con datos."
+      );
+    }
 
-      // Saludar con nombre
-      try { conn.send({ type: 'hello', name: currentUser }); } catch(_){}
-
-      abrirVistaApp();
-      setConnStatus('ok');
-    });
-
-    conn.on('data', data => participant_procesarMensajeDeHost(data));
-    conn.on('close', () => {
-      setConnStatus('off');
-      showToast("Conexión perdida con el organizador.", false, true);
-    });
-    conn.on('error', err => {
-      if (!connected) {
-        clearTimeout(connectTimeout);
-        hideLoading();
-        customAlert("⚠️ Error en la conexión: " + (err && err.message || err));
-      } else {
-        setConnStatus('off');
-      }
-    });
-  });
+    // Conectado
+    hideLoading();
+    abrirVistaApp();
+    setConnStatus('ok');
+    // Saludar al host con el nombre
+    enviarAccionAlHost({ type: 'hello', name: currentUser });
+  } catch (err) {
+    hideLoading();
+    console.error('[Retro] Error uniéndose:', err);
+    customAlert("⚠️ Error al conectar:\n\n" + (err.message || err));
+  }
 }
 
 function setConnStatus(status) {
@@ -847,16 +833,6 @@ function setConnStatus(status) {
   wrap.classList.remove('hidden'); wrap.classList.add('flex');
   if (status === 'ok')  { dot.className = "w-2 h-2 rounded-full bg-bbva-lime mr-2"; txt.innerText = 'Conectado'; }
   if (status === 'off') { dot.className = "w-2 h-2 rounded-full bg-red-400 mr-2 animate-pulse"; txt.innerText = 'Desconectado'; }
-}
-
-function participant_procesarMensajeDeHost(msg) {
-  if (!msg || !msg.type) return;
-  if (msg.type === 'state') {
-    const newState = msg.payload;
-    // Sustituir estado entero
-    estado = newState;
-    render();
-  }
 }
 
 /* ================================================================
@@ -879,8 +855,12 @@ function volverAlMenu() {
       ? "Si vuelves al menú, la sala se cerrará para todos. ¿Continuar?"
       : "¿Salir de la sala?",
     () => {
-      try { if (peer) peer.destroy(); } catch(_){}
-      peer = null; hostConnection = null; participantConnections = [];
+      // Salir del room de Trystero
+      try { if (trysteroRoom) trysteroRoom.leave(); } catch(_){}
+      trysteroRoom = null;
+      sendStateAction = null;
+      sendActionAction = null;
+      peerNames = {};
       isHost = false; roomCode = null;
       document.getElementById('view-app').classList.add('hidden');
       document.getElementById('view-archive').classList.add('hidden');
@@ -894,6 +874,15 @@ function copiarCodigoSala() {
   if (!roomCode) return;
   navigator.clipboard.writeText(roomCode).then(
     () => showToast("Código copiado al portapapeles", true),
+    () => showToast("No se pudo copiar")
+  );
+}
+
+function copiarLinkSala() {
+  if (!roomCode) return;
+  const url = buildShareUrl(roomCode);
+  navigator.clipboard.writeText(url).then(
+    () => showToast("Enlace copiado al portapapeles", true),
     () => showToast("No se pudo copiar")
   );
 }
@@ -920,13 +909,14 @@ function votarTermometro(idOp) {
   showToast("Voto registrado", true);
 
   if (isHost) {
-    // anti-doble por clientId
-    if (!estado.termometro.some(v => v.clientId === myPeerId)) {
-      estado.termometro.push({ voto: idOp, clientId: myPeerId });
+    // anti-doble por clientId (host usa marker 'host')
+    const hostCid = '__host__';
+    if (!estado.termometro.some(v => v.clientId === hostCid)) {
+      estado.termometro.push({ voto: idOp, clientId: hostCid });
       broadcastState();
     }
-  } else if (hostConnection && hostConnection.open) {
-    hostConnection.send({ type: 'termometro', voto: idOp, clientId: myPeerId });
+  } else {
+    enviarAccionAlHost({ type: 'termometro', voto: idOp });
   }
 }
 
@@ -936,8 +926,8 @@ function votarTarjeta(tarjetaId) {
   if (isHost) {
     const t = estado.tarjetas.find(x => x.id === tarjetaId);
     if (t) { t.votos = (t.votos || 0) + 1; broadcastState(); }
-  } else if (hostConnection && hostConnection.open) {
-    hostConnection.send({ type: 'votarTarjeta', tarjetaId });
+  } else {
+    enviarAccionAlHost({ type: 'votarTarjeta', tarjetaId });
   }
 }
 
@@ -1005,8 +995,8 @@ document.getElementById('modal-submit').addEventListener('click', () => {
       });
       broadcastState();
       showToast("Añadido", true);
-    } else if (hostConnection && hostConnection.open) {
-      hostConnection.send({ type: 'nuevaTarjeta', categoria: modalCategoriaPendiente, texto });
+    } else {
+      enviarAccionAlHost({ type: 'nuevaTarjeta', categoria: modalCategoriaPendiente, texto });
       showToast("Enviado al organizador...", true);
     }
   }
