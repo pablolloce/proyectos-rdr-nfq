@@ -10,14 +10,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Source+Serif+4:wght@700&display=swap" rel="stylesheet" />
 
-<!-- P2P: Trystero se importa dinámicamente desde esm.sh dentro del JS -->
-
 <script>
   tailwind.config = {
     theme: {
       extend: {
         colors: {
-          'bbva-blue':    '#001391', // Electric Blue
+          'bbva-blue':    '#001391',
           'bbva-midnight':'#070E46',
           'bbva-deep':    '#000519',
           'bbva-serene':  '#85C8FF',
@@ -50,28 +48,12 @@
 
   .display { font-family: 'Source Serif 4', Georgia, serif; font-weight: 700; }
 
-  /* Botón primario BBVA */
-  .btn-primary {
-    background-color: #001391;
-    color: #FFFFFF;
-    transition: all .2s;
-  }
+  .btn-primary { background-color: #001391; color: #FFFFFF; transition: all .2s; }
   .btn-primary:hover { background-color: #070E46; }
-
-  .btn-accent {
-    background-color: #85C8FF;
-    color: #001391;
-  }
-  .btn-accent:hover { background-color: #FFE761; }
 
   .focus-bbva:focus { outline: none; box-shadow: 0 0 0 3px rgba(0, 19, 145, 0.18); border-color: #001391; }
 
-  /* Marca de agua BBVA en esquina */
-  .bbva-mark {
-    font-family: 'Source Serif 4', Georgia, serif;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
+  .bbva-mark { font-family: 'Source Serif 4', Georgia, serif; font-weight: 700; letter-spacing: -0.02em; }
 </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden bg-bbva-sand">
@@ -98,80 +80,108 @@
 <!-- ============ VISTA: MENÚ INICIAL ============ -->
 <div id="view-menu" class="absolute inset-0 z-50 flex items-center justify-center bg-bbva-sand p-4 overflow-y-auto">
   <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-bbva-gray2 my-auto">
-    <!-- BBVA mark -->
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl display text-bbva-blue">Retro RDR</h1>
       <span class="bbva-mark text-bbva-blue text-xl">BBVA</span>
     </div>
 
     <div class="space-y-4">
-      <!-- Nombre -->
+      <!-- Nombre + rol -->
       <div>
         <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">Tu nombre</label>
         <input type="text" id="user-name" class="w-full border border-bbva-gray3 p-2 rounded focus-bbva text-sm" placeholder="Ej: Ana" />
       </div>
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">Tu rol</label>
+        <select id="user-role" class="w-full border border-bbva-gray3 p-2 rounded focus-bbva text-sm" onchange="togglePanelOrganizador()">
+          <option value="participante">Participante</option>
+          <option value="organizador">Organizador</option>
+        </select>
+      </div>
+
+      <hr class="my-2 border-bbva-gray2">
 
       <!-- Tabs -->
-      <div class="flex gap-2 pt-2 border-t border-bbva-gray2">
+      <div class="flex gap-2">
         <button id="tab-join" onclick="setTab('join')" class="flex-1 py-2 text-sm font-bold rounded-lg btn-primary">
-          <i class="fa-solid fa-right-to-bracket mr-1"></i> Unirse
-        </button>
-        <button id="tab-host" onclick="setTab('host')" class="flex-1 py-2 text-sm font-bold rounded-lg bg-bbva-gray2 text-bbva-gray5 hover:bg-bbva-gray3">
-          <i class="fa-solid fa-plus mr-1"></i> Crear sala
+          <i class="fa-solid fa-right-to-bracket mr-1"></i> Sesión
         </button>
         <button id="tab-archive" onclick="setTab('archive')" class="flex-1 py-2 text-sm font-bold rounded-lg bg-bbva-gray2 text-bbva-gray5 hover:bg-bbva-gray3">
           <i class="fa-solid fa-folder-open mr-1"></i> Histórico
         </button>
       </div>
 
-      <!-- Panel: Unirse -->
+      <!-- Panel: Unirse / Crear -->
       <div id="panel-join" class="space-y-3">
         <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">Código de sala</label>
-          <input type="text" id="join-code" class="w-full border border-bbva-gray3 p-2 rounded focus-bbva text-sm uppercase tracking-widest font-mono" placeholder="Ej: 7K3MQ2" maxlength="8" />
+          <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">Unirse a una sesión</label>
+          <div class="flex gap-2">
+            <select id="session-selector" class="flex-1 border border-bbva-gray3 p-2 rounded focus-bbva text-sm">
+              <option value="">Cargando sesiones...</option>
+            </select>
+            <button onclick="entrarSesion()" class="btn-primary px-4 py-2 rounded-lg font-bold text-sm shadow">Entrar</button>
+          </div>
         </div>
-        <button onclick="unirseSala()" class="w-full btn-primary py-2 rounded-lg font-bold text-sm shadow">
-          Entrar a la sala
-        </button>
-      </div>
 
-      <!-- Panel: Crear sala -->
-      <div id="panel-host" class="space-y-3 hidden">
-        <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">Fecha</label>
-          <input type="date" id="new-session-date" class="w-full border border-bbva-gray3 p-2 rounded focus-bbva text-sm" />
+        <!-- Sólo organizador: crear / archivar / inactivar / gestionar -->
+        <div id="panel-organizador" class="hidden pt-3 border-t border-bbva-gray2 space-y-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-bbva-blue mb-2">
+              <i class="fa-solid fa-calendar-plus mr-1"></i> Crear nueva sesión
+            </label>
+            <div class="space-y-3 bg-bbva-serene/15 p-3 rounded-lg border border-bbva-serene/40">
+              <div>
+                <label class="block text-xs text-bbva-gray5 mb-1">Fecha:</label>
+                <input type="date" id="new-session-date" class="w-full border border-bbva-gray3 p-2 rounded focus-bbva text-sm">
+              </div>
+              <div>
+                <label class="block text-xs text-bbva-gray5 mb-1">Nombre (opcional):</label>
+                <input type="text" id="new-session-name" class="w-full border border-bbva-gray3 p-2 rounded focus-bbva text-sm" placeholder="Ej: Cierre Q2">
+              </div>
+              <button onclick="crearNuevaSesion()" class="w-full btn-primary py-2 rounded-lg font-bold text-sm shadow">
+                Crear y entrar
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">
+              Acciones sobre la sesión seleccionada arriba
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="cambiarEstadoSeleccionada('ARCHIVED')" class="bg-bbva-serene/40 hover:bg-bbva-serene/70 text-bbva-blue border border-bbva-serene px-3 py-2 rounded-lg font-medium text-sm">
+                <i class="fa-solid fa-box-archive mr-1"></i> Archivar
+              </button>
+              <button onclick="cambiarEstadoSeleccionada('INACTIVE')" class="bg-bbva-gray2 hover:bg-bbva-gray3 text-bbva-gray5 border border-bbva-gray3 px-3 py-2 rounded-lg font-medium text-sm">
+                <i class="fa-solid fa-eye-slash mr-1"></i> Marcar inactiva
+              </button>
+            </div>
+            <p class="text-[10px] text-bbva-gray4 mt-1 leading-snug">
+              <b>Archivar:</b> retrospectivas terminadas que pasan al histórico.<br>
+              <b>Marcar inactiva:</b> pruebas o errores que quieres ocultar.
+            </p>
+          </div>
+
+          <div class="pt-2 border-t border-bbva-gray2">
+            <button onclick="abrirModalInactivas()" class="w-full text-xs text-bbva-gray5 hover:text-bbva-blue hover:bg-bbva-sand py-2 rounded-lg flex items-center justify-center">
+              <i class="fa-solid fa-trash-can-arrow-up mr-2"></i> Gestionar sesiones inactivas
+            </button>
+          </div>
         </div>
-        <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">Nombre (opcional)</label>
-          <input type="text" id="new-session-name" class="w-full border border-bbva-gray3 p-2 rounded focus-bbva text-sm" placeholder="Ej: Cierre Q2" />
-        </div>
-        <div class="bg-bbva-serene/30 p-3 rounded-lg border border-bbva-serene">
-          <p class="text-xs text-bbva-blue leading-relaxed">
-            <i class="fa-solid fa-circle-info mr-1"></i>
-            Al crear la sala serás el <b>organizador</b>. La sala vive en tu navegador. Cuando cierres esta pestaña, la sala se acaba.
-          </p>
-        </div>
-        <button onclick="crearSala()" class="w-full btn-primary py-2 rounded-lg font-bold text-sm shadow">
-          Crear sala y empezar
-        </button>
       </div>
 
       <!-- Panel: Histórico -->
       <div id="panel-archive" class="space-y-3 hidden">
-        <p class="text-xs text-bbva-gray5">Retrospectivas guardadas. La carga puede tardar.</p>
+        <p class="text-xs text-bbva-gray5">Sesiones archivadas. La carga puede tardar unos segundos.</p>
         <div id="archive-list" class="space-y-2 max-h-72 overflow-y-auto">
           <p class="text-xs text-bbva-gray5 italic">Cargando histórico...</p>
-        </div>
-        <div class="pt-2 border-t border-bbva-gray2">
-          <label class="block text-xs font-bold uppercase tracking-wider text-bbva-gray5 mb-1">…o abre un .json local</label>
-          <input type="file" id="file-archive" accept=".json" onchange="cargarArchivoLocal(this)" class="w-full text-xs text-bbva-gray5 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-bbva-blue file:text-white hover:file:bg-bbva-midnight" />
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ============ VISTA: SALA (organizador / participante) ============ -->
+<!-- ============ VISTA: SALA ============ -->
 <div id="view-app" class="h-full flex flex-col hidden bg-bbva-sand">
   <nav class="bg-bbva-blue text-white flex items-center justify-between px-6 py-3 shadow-md z-10 shrink-0">
     <div class="flex items-center space-x-6">
@@ -183,22 +193,6 @@
     </div>
 
     <div class="flex items-center space-x-2 relative">
-      <!-- Código de sala -->
-      <div class="hidden md:flex items-center bg-bbva-midnight rounded-lg px-3 py-1 mr-2 cursor-pointer hover:bg-bbva-deep" onclick="copiarCodigoSala()" title="Copiar código">
-        <i class="fa-solid fa-link text-bbva-serene text-xs mr-2"></i>
-        <span class="text-xs text-bbva-serene/80 mr-1">Sala:</span>
-        <span id="room-code-display" class="font-mono font-bold tracking-widest text-sm"></span>
-        <span id="room-peers-badge" class="hidden ml-2 bg-bbva-lime text-bbva-blue text-[10px] font-bold px-1.5 py-0.5 rounded-full"></span>
-        <i class="fa-regular fa-copy text-bbva-serene/70 ml-2 text-xs"></i>
-      </div>
-
-      <!-- Estado conexión (sólo participante) -->
-      <div id="conn-status" class="hidden items-center bg-bbva-midnight rounded-lg px-3 py-1 mr-2 text-xs">
-        <span id="conn-status-dot" class="w-2 h-2 rounded-full bg-yellow-400 mr-2 animate-pulse"></span>
-        <span id="conn-status-text" class="text-bbva-serene">Conectando...</span>
-      </div>
-
-      <!-- Usuarios (sólo organizador) -->
       <div class="relative group cursor-default hidden md:flex items-center h-full mr-2">
         <div class="text-sm text-bbva-serene font-medium flex items-center py-1 px-2 rounded">
           <span id="display-user-name"></span>
@@ -215,17 +209,13 @@
       <button id="btn-retroceder-fase" onclick="retrocederFase()" class="hidden bg-bbva-midnight hover:bg-bbva-deep px-3 py-1.5 rounded text-sm shadow font-medium">
         <i class="fa-solid fa-backward md:mr-1"></i> <span class="hidden md:inline">Atrás</span>
       </button>
-      <button id="btn-avanzar-fase" onclick="avanzarFase()" class="hidden btn-accent px-3 py-1.5 rounded text-sm shadow font-bold">
+      <button id="btn-avanzar-fase" onclick="avanzarFase()" class="hidden bg-bbva-serene hover:bg-bbva-canary text-bbva-blue px-3 py-1.5 rounded text-sm shadow font-bold">
         <span class="hidden md:inline">Avanzar</span> <i class="fa-solid fa-forward md:ml-1"></i>
-      </button>
-      <button id="btn-exportar" onclick="exportarJSON()" class="hidden bg-bbva-canary hover:bg-bbva-mandarin text-bbva-blue px-3 py-1.5 rounded text-sm shadow font-bold">
-        <i class="fa-solid fa-download md:mr-1"></i> <span class="hidden md:inline">Exportar</span>
       </button>
     </div>
   </nav>
 
   <main class="flex-1 flex overflow-x-auto overflow-y-hidden p-6 gap-6 items-start relative">
-    <!-- Termómetro -->
     <aside class="bg-white rounded-2xl shadow-sm border border-bbva-gray2 w-72 flex-shrink-0 flex flex-col max-h-full overflow-hidden border-t-4 border-t-bbva-blue transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
       <div class="p-4 border-b border-bbva-gray2 bg-bbva-sand/50">
         <h2 class="font-bold text-bbva-blue flex items-center display"><i class="fa-solid fa-temperature-half text-bbva-blue mr-2"></i> Termómetro</h2>
@@ -237,7 +227,6 @@
       </div>
     </aside>
 
-    <!-- Columnas -->
     <div class="flex gap-6 h-full pb-4" id="board-container">
       <div class="w-80 flex-shrink-0 flex flex-col max-h-full bg-white rounded-2xl overflow-hidden shadow-sm border border-bbva-gray2 border-t-4 border-t-bbva-canary">
         <div class="p-3 border-b border-bbva-gray2">
@@ -294,7 +283,7 @@
   </main>
 </div>
 
-<!-- ============ VISTA: VISOR HISTÓRICO (read-only) ============ -->
+<!-- ============ VISTA: VISOR HISTÓRICO ============ -->
 <div id="view-archive" class="h-full flex flex-col hidden bg-bbva-sand">
   <nav class="bg-bbva-blue text-white flex items-center justify-between px-6 py-3 shadow-md z-10 shrink-0">
     <div class="flex items-center space-x-4">
@@ -334,42 +323,39 @@
   </div>
 </div>
 
+<!-- ============ MODAL GESTIONAR INACTIVAS ============ -->
+<div id="modal-inactivas" class="fixed inset-0 bg-bbva-deep/60 z-50 hidden flex items-center justify-center backdrop-blur-sm p-4">
+  <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
+    <div class="flex justify-between items-start mb-3 border-b border-bbva-gray2 pb-3">
+      <div>
+        <h3 class="text-lg font-bold text-bbva-blue display"><i class="fa-solid fa-eye-slash mr-2"></i>Sesiones inactivas</h3>
+        <p class="text-xs text-bbva-gray5 mt-1">Reactivar las que sean válidas, eliminar las que no sirvan.</p>
+      </div>
+      <button onclick="cerrarModalInactivas()" class="text-bbva-gray4 hover:text-bbva-blue text-xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="inactivas-list" class="flex-1 overflow-y-auto space-y-2 min-h-[120px]">
+      <p class="text-xs text-bbva-gray5 italic">Cargando...</p>
+    </div>
+    <div class="pt-3 border-t border-bbva-gray2 mt-3 flex justify-end">
+      <button onclick="cerrarModalInactivas()" class="px-4 py-2 text-sm text-bbva-gray5 hover:bg-bbva-gray2 rounded-lg">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ TOAST ============ -->
 <div id="toast" class="fixed bottom-4 right-4 bg-bbva-midnight text-white px-5 py-3 rounded-lg shadow-xl opacity-0 hidden z-50 flex items-center">
   <i id="toast-icon" class="fa-solid fa-spinner fa-spin mr-3 text-bbva-serene"></i>
   <span id="toast-text" class="text-sm font-medium">Procesando...</span>
 </div>
 
-<!-- ============ MODAL: CÓDIGO DE SALA RECIÉN CREADA ============ -->
-<div id="modal-room-created" class="fixed inset-0 bg-bbva-deep/70 z-[160] hidden items-center justify-center backdrop-blur-sm p-4">
-  <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md text-center">
-    <div class="bbva-mark text-bbva-blue text-2xl mb-2">BBVA</div>
-    <h3 class="display text-2xl text-bbva-blue mb-2">¡Sala creada!</h3>
-    <p class="text-sm text-bbva-gray5 mb-6">Comparte el enlace o el código con los participantes. La sala vive en este navegador, no la cierres.</p>
-
-    <!-- Código -->
-    <div class="bg-bbva-serene/40 border-2 border-bbva-blue rounded-xl py-4 px-3 mb-3 cursor-pointer hover:bg-bbva-serene/60" onclick="copiarCodigoSala()">
-      <p class="text-xs text-bbva-blue/80 font-bold uppercase tracking-wider mb-1">Código de sala</p>
-      <p id="room-code-big" class="font-mono font-bold text-4xl tracking-widest text-bbva-blue"></p>
-      <p class="text-xs text-bbva-blue mt-2"><i class="fa-regular fa-copy mr-1"></i>Toca para copiar el código</p>
-    </div>
-
-    <!-- Link compartible -->
-    <div class="bg-bbva-sand border border-bbva-gray2 rounded-xl p-3 mb-4 text-left">
-      <p class="text-xs text-bbva-gray5 font-bold uppercase tracking-wider mb-1">Enlace directo</p>
-      <p id="room-share-link" class="text-xs text-bbva-blue font-mono break-all leading-relaxed"></p>
-      <button onclick="copiarLinkSala()" class="mt-2 w-full bg-bbva-blue/10 hover:bg-bbva-blue/20 text-bbva-blue text-xs font-bold py-1.5 rounded">
-        <i class="fa-regular fa-copy mr-1"></i> Copiar enlace
-      </button>
-    </div>
-
-    <button onclick="cerrarModalRoomCreated()" class="w-full btn-primary py-2 rounded-lg font-bold text-sm shadow">
-      Empezar retrospectiva
-    </button>
-  </div>
-</div>
-
 <script>
+/* ================================================================
+   CONFIGURACIÓN — RELLENA ESTO TRAS DESPLEGAR Code.gs
+   ================================================================ */
+// Pega aquí la URL de tu Apps Script Web App (la que termina en /exec).
+// Despliegue: Deploy → New deployment → Web app → "Anyone".
+const GAS_URL = "https://script.google.com/macros/s/AKfycbx1sGjHUH9LPw1qF4nOBPOCcP1T9eW-zbMg8FQznqTWOd4yipqpke_8ynNxdu4Gsza2/exec";
+
 /* ================================================================
    ESTADO GLOBAL
    ================================================================ */
@@ -382,32 +368,25 @@ const TERMOMETRO_OPCIONES = [
   { id: 'op5', texto: 'Prefiero escuchar', emoji: '👂', bar: 'bg-bbva-gray4' },
 ];
 
-// El estado autoritativo (la "fuente de verdad"). En el HOST está vivo; en
-// participantes es una réplica que recibe vía PeerJS.
 let estado = {
-  id:           null,           // id único de sesión
-  fecha:        '',
-  nombre:       '',
-  fase:         1,
-  usuarios:     [],             // [nombre,...]  (lista canónica, organizador la fija)
-  termometro:   [],             // [{voto:'op1',clientId},...] anónimo
-  tarjetas:     [],             // [{id, categoria, texto, votos}]
-  mejoras:      [],             // [{id, texto, check}]
+  faseActual: 1, nombreSesion: '', usuarios: [],
+  votosTermometro: { op1: 0, op2: 0, op3: 0, op4: 0, op5: 0 },
+  tarjetas: [], mejoras: [],
 };
 
+let currentSessionId = null;
 let currentUser = 'Anónimo';
-let currentRole = 'participante';  // 'organizador' = host de la sala
-let isHost = false;
-
-let roomCode = null;             // código corto compartible
-let termometroVotadoLocal = false; // anti-doble-voto en sesión
-
-let modalCategoriaPendiente = ''; let esMejora = false;
+let currentRole = 'participante';
+let pollingInterval = null;
+let isUpdating = false;
 let toastTimeout = null;
-let activeTab = 'join';
+let modalCategoriaPendiente = '';
+let esMejora = false;
+let termometroVotadoLocal = false;
+let lastDataStr = '';
 
 /* ================================================================
-   ALERTAS / TOASTS
+   UI: alertas, loading, toasts
    ================================================================ */
 function customAlert(msg) {
   document.getElementById('modal-alert-text').innerText = msg;
@@ -428,9 +407,8 @@ function cerrarModalAlert() {
   const m = document.getElementById('modal-alert');
   m.classList.add('hidden'); m.classList.remove('flex');
 }
-
 function showLoading(msg) {
-  if(msg) document.getElementById('loading-text').innerText = msg;
+  if (msg) document.getElementById('loading-text').innerText = msg;
   const o = document.getElementById('loading-overlay');
   o.classList.remove('hidden'); o.classList.add('flex');
 }
@@ -438,7 +416,6 @@ function hideLoading() {
   const o = document.getElementById('loading-overlay');
   o.classList.add('hidden'); o.classList.remove('flex');
 }
-
 function showToast(msg, success = false, persistent = false) {
   const t = document.getElementById('toast');
   const tt = document.getElementById('toast-text');
@@ -457,649 +434,311 @@ function hideToast() {
 }
 
 /* ================================================================
+   CAPA DE TRANSPORTE: fetch al Apps Script Web App
+   ================================================================
+   - GET para lecturas.
+   - POST con Content-Type: text/plain (evita el preflight CORS).
+*/
+async function gasGet(action, params) {
+  const qs = new URLSearchParams({ action, ...(params || {}) }).toString();
+  const res = await fetch(`${GAS_URL}?${qs}`, { method: 'GET', redirect: 'follow' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'Error desconocido');
+  return json.data;
+}
+async function gasPost(action, payload) {
+  const body = JSON.stringify({ action, ...(payload || {}) });
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body,
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'Error desconocido');
+  return json.data;
+}
+
+/* ================================================================
    TABS DEL MENÚ INICIAL
    ================================================================ */
 document.addEventListener('DOMContentLoaded', () => {
-  // ¿Vienen con un #room=XXX en la URL? Pre-rellenar y tab "Unirse".
-  const hash = location.hash;
-  const m = /[#&]room=([A-Za-z0-9]+)/.exec(hash);
-  if (m) {
-    document.getElementById('join-code').value = m[1].toUpperCase();
-    setTab('join');
-    // Auto-foco en el campo nombre para que sólo tenga que escribirlo y pulsar Enter
-    setTimeout(() => document.getElementById('user-name').focus(), 200);
-  } else {
-    setTab('join');
-  }
-  // pre-rellenar fecha de hoy
+  setTab('join');
   const hoy = new Date().toISOString().split('T')[0];
   document.getElementById('new-session-date').value = hoy;
-  // cargar histórico (lazy: sólo cuando entren al tab, pero también al cargar para tenerlo listo)
+  cargarSesionesIniciales();
   cargarHistorico();
 });
 
 function setTab(tab) {
-  activeTab = tab;
-  for (const t of ['join','host','archive']) {
+  for (const t of ['join', 'archive']) {
     const btn = document.getElementById('tab-' + t);
     const panel = document.getElementById('panel-' + t);
     if (t === tab) {
-      btn.classList.remove('bg-bbva-gray2','text-bbva-gray5');
+      btn.classList.remove('bg-bbva-gray2', 'text-bbva-gray5');
       btn.classList.add('btn-primary');
       panel.classList.remove('hidden');
     } else {
-      btn.classList.add('bg-bbva-gray2','text-bbva-gray5');
+      btn.classList.add('bg-bbva-gray2', 'text-bbva-gray5');
       btn.classList.remove('btn-primary');
       panel.classList.add('hidden');
     }
   }
 }
 
-/* ================================================================
-   CÓDIGOS DE SALA  (corto y legible, p.ej. 7K3MQ2)
-   ================================================================ */
-const ROOM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin 0/O, 1/I
-function generarCodigoSala(len = 6) {
-  let s = '';
-  for (let i = 0; i < len; i++) s += ROOM_ALPHABET[Math.floor(Math.random() * ROOM_ALPHABET.length)];
-  return s;
+function togglePanelOrganizador() {
+  const isOrg = document.getElementById('user-role').value === 'organizador';
+  document.getElementById('panel-organizador').classList.toggle('hidden', !isOrg);
 }
 
 /* ================================================================
-   P2P con TRYSTERO (Nostr como medio de señalización)
-   ================================================================
-   La señalización va por WebSocket Seguro (wss:443) a varios relays
-   Nostr públicos. Nostr usa puertos HTTPS estándar, lo que pasa los
-   firewalls corporativos como si fuera tráfico web normal.
-   Para los datos reales del chat usamos WebRTC con STUN público (UDP).
-*/
-
-// Identificador único de "aplicación" en la red de señalización. Distinto
-// a "room id" (que cambia por sala). Esto evita choques con otras apps
-// Trystero que usen los mismos relays.
-const TRYSTERO_APP_ID = 'rdr-retro-bbva';
-
-// Relays Nostr públicos sobre WSS:443 (sin signup, sin auth).
-// Nostr es la estrategia recomendada por Trystero: cientos de relays
-// activos, redundancia muy alta. Todos usan WSS:443, lo que pasa los
-// firewalls corporativos como si fuera HTTPS normal — más fiable que los
-// puertos no estándar 8084/8884 de los brokers MQTT públicos.
-const TRYSTERO_RELAYS = [
-  'wss://relay.damus.io',
-  'wss://relay.nostr.band',
-  'wss://nos.lol',
-  'wss://relay.snort.social',
-];
-
-// STUN servers públicos para que WebRTC descubra rutas a través de NAT.
-// Sin TURN: si la red bloquea WebRTC de forma agresiva, no se podrá conectar.
-const TRYSTERO_RTC_CONFIG = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:global.stun.twilio.com:3478' },
-    { urls: 'stun:stun.cloudflare.com:3478' },
-  ],
-};
-
-// Trystero se carga como módulo ES desde CDN. Se importa dinámicamente al
-// crear/unirse a sala para no penalizar la carga inicial si no se usa P2P.
-// Estrategia: Nostr (más robusta y con muchos relays).
-let trysteroModule = null;
-async function loadTrystero() {
-  if (trysteroModule) return trysteroModule;
-  try {
-    const mod = await import('https://esm.sh/trystero@0.21.8/nostr');
-    trysteroModule = mod;
-    console.log('[Retro] Trystero cargado. selfId:', mod.selfId, '· exports:', Object.keys(mod));
-    return mod;
-  } catch (e) {
-    console.error('[Retro] No se pudo cargar Trystero:', e);
-    throw new Error('No se pudo cargar la librería P2P. Revisa tu conexión.');
-  }
-}
-
-/* ================================================================
-   CREAR SALA (organizador / host)
+   CARGA DE SESIONES (lista) — desde Apps Script
    ================================================================ */
-async function crearSala() {
-  const nombreUser = document.getElementById('user-name').value.trim();
-  if (!nombreUser) return customAlert("Pon tu nombre antes de crear la sala.");
-
-  const dateInput = document.getElementById('new-session-date').value;
-  if (!dateInput) return customAlert("Selecciona una fecha.");
-  const sesionName = document.getElementById('new-session-name').value.trim();
-
-  currentUser = nombreUser;
-  currentRole = 'organizador';
-  isHost = true;
-
-  // Estado inicial
-  const partes = dateInput.split('-'); // yyyy-mm-dd
-  const fechaFmt = `${partes[2]}/${partes[1]}/${partes[0]}`;
-  estado = {
-    id:       'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
-    fecha:    fechaFmt,
-    nombre:   sesionName,
-    fase:     1,
-    usuarios: [currentUser],
-    termometro: [],
-    tarjetas: [],
-    mejoras:  [],
-  };
-
-  showLoading("Creando sala...");
+async function cargarSesionesIniciales() {
+  const selector = document.getElementById('session-selector');
+  selector.innerHTML = '<option value="">Cargando sesiones...</option>';
   try {
-    const mod = await loadTrystero();
-    roomCode = generarCodigoSala();
-    await conectarASala(mod, roomCode);
-    hideLoading();
-    iniciarSalaHost();
+    const sesiones = await gasGet('listaSesiones');
+    llenarSelectorSesiones(sesiones);
   } catch (err) {
-    hideLoading();
-    console.error('[Retro] Error creando sala:', err);
-    customAlert("⚠️ No se pudo crear la sala.\n\n" + (err.message || err));
+    console.error('Error cargando sesiones:', err);
+    selector.innerHTML = '<option value="">Error al cargar</option>';
+    customAlert("⚠️ No se pudo conectar con el servidor.\n\nComprueba que GAS_URL en index.html apunte a tu Web App desplegada.\n\nDetalle: " + err.message);
   }
 }
 
-function iniciarSalaHost() {
-  // Mostrar modal con código y URL compartible
-  document.getElementById('room-code-big').innerText = roomCode;
-  const shareUrl = buildShareUrl(roomCode);
-  const linkEl = document.getElementById('room-share-link');
-  if (linkEl) linkEl.innerText = shareUrl;
-  document.getElementById('modal-room-created').classList.remove('hidden');
-  document.getElementById('modal-room-created').classList.add('flex');
-
-  abrirVistaApp();
-  render();
-}
-
-function cerrarModalRoomCreated() {
-  document.getElementById('modal-room-created').classList.add('hidden');
-  document.getElementById('modal-room-created').classList.remove('flex');
-}
-
-function buildShareUrl(code) {
-  // URL actual sin hash + #room=CODE en el hash, para que al pegar/abrir
-  // el link se pre-rellene el código.
-  const base = location.origin + location.pathname;
-  return `${base}#room=${encodeURIComponent(code)}`;
-}
-
-/* ================================================================
-   TRYSTERO: conexión común (host y participante usan la misma API)
-   ================================================================ */
-// Variables globales del room
-let trysteroRoom = null;
-let trysteroGetRelaySockets = null; // función expuesta por el módulo trystero
-let sendStateAction = null;   // función para enviar 'state' a todos
-let sendActionAction = null;  // función para enviar 'action' (mensaje de usuario)
-// Callback opcional que se llama la primera vez que un participante recibe estado
-let onFirstStateReceived = null;
-
-async function conectarASala(mod, code) {
-  const roomId = String(code).toLowerCase();
-  console.log('[Retro] Conectando a sala:', roomId, '· isHost=', isHost);
-  console.log('[Retro] Relays configurados:', TRYSTERO_RELAYS);
-  console.log('[Retro] selfId (mi peer):', mod.selfId);
-
-  // API v0.21+: las opciones son `relayUrls` y `relayRedundancy`.
-  // Al pasar relayUrls, Trystero usa toda la lista (redundancy se ignora).
-  trysteroRoom = mod.joinRoom(
-    {
-      appId: TRYSTERO_APP_ID,
-      relayUrls: TRYSTERO_RELAYS,
-      relayRedundancy: TRYSTERO_RELAYS.length,
-      rtcConfig: TRYSTERO_RTC_CONFIG,
-    },
-    roomId,
-    // Tercer arg: onJoinError, llamado si la sala no se puede unir
-    (details) => {
-      console.error('[Retro] onJoinError:', details);
-    }
-  );
-
-  // Hacer accesible globalmente para diagnóstico
-  trysteroGetRelaySockets = mod.getRelaySockets || null;
-
-  // Loggear estado de los sockets cada 2 s mientras esperamos conexión.
-  // (Útil para depurar y para que veas si está progresando.)
-  let logCount = 0;
-  const sockLogger = setInterval(() => {
-    if (!trysteroGetRelaySockets) { clearInterval(sockLogger); return; }
-    try {
-      const socks = trysteroGetRelaySockets();
-      const status = Object.entries(socks || {}).map(([url, ws]) => {
-        const labels = { 0:'CONNECTING', 1:'OPEN', 2:'CLOSING', 3:'CLOSED' };
-        return url.replace(/^wss?:\/\//,'').split('/')[0] + '=' + (labels[ws.readyState] || '?');
-      }).join(' | ');
-      console.log('[Retro] sockets:', status || '(ninguno)');
-    } catch(e) { /* ignorar */ }
-    if (++logCount >= 15) clearInterval(sockLogger); // máximo 30 s de logs
-  }, 2000);
-
-  // Definir las "acciones" (canales de mensajería) que vamos a usar.
-  // En Trystero, makeAction(name) devuelve [send, recv].
-  const [sendState, getState] = trysteroRoom.makeAction('state');
-  const [sendAction, getAction] = trysteroRoom.makeAction('action');
-  sendStateAction = sendState;
-  sendActionAction = sendAction;
-
-  // Cuando llega un nuevo participante:
-  trysteroRoom.onPeerJoin(peerId => {
-    console.log('[Retro] ✅ Peer entró:', peerId, '· isHost=', isHost);
-    if (isHost) {
-      // El host envía el estado completo al recién llegado
-      try {
-        sendStateAction(estadoSerializable(), peerId);
-        console.log('[Retro] → Estado enviado al peer recién llegado');
-        showToast("Nuevo participante conectado", true);
-      } catch(e) { console.warn('[Retro] Error enviando estado:', e); }
-    }
-    actualizarBadgePeers();
-  });
-
-  trysteroRoom.onPeerLeave(peerId => {
-    console.log('[Retro] ❌ Peer salió:', peerId);
-    if (!isHost) setConnStatus('off');
-    actualizarBadgePeers();
-  });
-
-  // Recibir 'state' (sólo nos interesa si NO somos host)
-  getState((payload, peerId) => {
-    if (isHost) return; // host ignora estados ajenos
-    console.log('[Retro] ✅ Estado recibido de:', peerId);
-    estado = payload;
-    setConnStatus('ok');
-    // Disparar callback "primer estado" si está registrado
-    if (onFirstStateReceived) {
-      const cb = onFirstStateReceived;
-      onFirstStateReceived = null;
-      cb();
-    }
-    render();
-  });
-
-  // Recibir 'action' (sólo nos interesa si SÍ somos host)
-  getAction((msg, peerId) => {
-    if (!isHost) return;
-    procesarAccionDeParticipante(msg, peerId);
-  });
-}
-
-function procesarAccionDeParticipante(msg, peerId) {
-  if (!msg || !msg.type) return;
-  switch (msg.type) {
-    case 'hello': {
-      const nombre = (msg.name || 'Anónimo').toString().trim() || 'Anónimo';
-      // Guardar relación peerId → nombre (para mostrar lista de conectados)
-      peerNames[peerId] = nombre;
-      if (!estado.usuarios.includes(nombre)) estado.usuarios.push(nombre);
-      broadcastState();
-      break;
-    }
-    case 'termometro': {
-      if (estado.fase !== 1) break;
-      // Anti-doble: usamos el peerId como clientId
-      if (estado.termometro.some(v => v.clientId === peerId)) break;
-      if (!TERMOMETRO_OPCIONES.find(o => o.id === msg.voto)) break;
-      estado.termometro.push({ voto: msg.voto, clientId: peerId });
-      broadcastState();
-      break;
-    }
-    case 'nuevaTarjeta': {
-      if (estado.fase !== 2) break;
-      if (!['ÉXITO','OBSTÁCULOS','RECONOCIMIENTO'].includes(msg.categoria)) break;
-      const texto = (msg.texto || '').toString().trim();
-      if (!texto) break;
-      estado.tarjetas.push({
-        id: 'tar-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
-        categoria: msg.categoria,
-        texto: texto,
-        votos: 0,
-      });
-      broadcastState();
-      break;
-    }
-    case 'votarTarjeta': {
-      if (estado.fase !== 3) break;
-      const t = estado.tarjetas.find(x => x.id === msg.tarjetaId);
-      if (t) { t.votos = (t.votos || 0) + 1; broadcastState(); }
-      break;
-    }
-  }
-}
-
-// Diccionario peerId → nombre, sólo lo usa el host
-let peerNames = {};
-
-function estadoSerializable() {
-  return JSON.parse(JSON.stringify(estado));
-}
-
-function broadcastState() {
-  if (!isHost || !sendStateAction) return;
-  // Enviar a TODOS los peers conectados (sin segundo argumento = broadcast)
-  try { sendStateAction(estadoSerializable()); } catch (e) { console.warn(e); }
-  render();
-}
-
-function enviarAccionAlHost(msg) {
-  if (isHost || !sendActionAction) return;
-  try { sendActionAction(msg); } catch (e) { console.warn(e); }
-}
-
-/* ================================================================
-   UNIRSE A SALA (participante)
-   ================================================================ */
-async function unirseSala() {
-  const nombreUser = document.getElementById('user-name').value.trim();
-  if (!nombreUser) return customAlert("Pon tu nombre antes de unirte.");
-  const code = document.getElementById('join-code').value.trim().toUpperCase();
-  if (!code) return customAlert("Escribe el código de la sala.");
-  if (code.length < 4) return customAlert("El código parece incompleto.");
-
-  currentUser = nombreUser;
-  currentRole = 'participante';
-  isHost = false;
-  roomCode = code;
-
-  // Reset del estado para no arrastrar una sesión anterior
-  estado = {
-    id: null, fecha: '', nombre: '', fase: 1, usuarios: [],
-    termometro: [], tarjetas: [], mejoras: [],
-  };
-  termometroVotadoLocal = false;
-
-  showLoading("Conectando a la sala...");
-
-  try {
-    const mod = await loadTrystero();
-    // Esperamos el primer 'state' del host o timeout
-    const connectedPromise = new Promise((resolve, reject) => {
-      onFirstStateReceived = resolve;
-      setTimeout(() => {
-        if (onFirstStateReceived) {
-          onFirstStateReceived = null;
-          reject(new Error('timeout'));
-        }
-      }, 30000);
-    });
-
-    await conectarASala(mod, code);
-
-    try {
-      await connectedPromise;
-    } catch (timeoutErr) {
-      // Recopilar diagnóstico ANTES de cerrar el room
-      const diag = diagnosticoTrystero();
-      try { if (trysteroRoom) trysteroRoom.leave(); } catch(_){}
-      trysteroRoom = null;
-      hideLoading();
-      return customAlert(
-        "⚠️ No se ha podido conectar al organizador.\n\n" +
-        "Diagnóstico:\n" + diag + "\n\n" +
-        "Posibles causas:\n" +
-        "• Si los relays están desconectados → tu red bloquea WebSocket.\n" +
-        "• Si están conectados pero no se ven peers → código incorrecto o el organizador no está en la sala.\n" +
-        "• Si se ven peers pero no llega estado → WebRTC bloqueado por firewall. Prueba con datos móviles."
-      );
-    }
-
-    // Conectado
-    hideLoading();
-    abrirVistaApp();
-    setConnStatus('ok');
-    // Saludar al host con el nombre
-    enviarAccionAlHost({ type: 'hello', name: currentUser });
-  } catch (err) {
-    hideLoading();
-    console.error('[Retro] Error uniéndose:', err);
-    customAlert("⚠️ Error al conectar:\n\n" + (err.message || err));
-  }
-}
-
-// Devuelve un string corto con el estado actual de la conexión P2P
-function diagnosticoTrystero() {
-  if (!trysteroRoom) return "Sala no inicializada.";
-  const lines = [];
-  // Estado de los WebSockets a los relays
-  try {
-    const sockets = trysteroGetRelaySockets ? trysteroGetRelaySockets() : null;
-    if (sockets) {
-      const entries = Object.entries(sockets);
-      if (entries.length === 0) {
-        lines.push("• Sin sockets abiertos");
-      } else {
-        entries.forEach(([url, ws]) => {
-          const stateLabels = { 0: 'CONNECTING', 1: 'OPEN', 2: 'CLOSING', 3: 'CLOSED' };
-          const st = ws && typeof ws.readyState === 'number' ? stateLabels[ws.readyState] : '?';
-          // Acortar url
-          const short = url.replace(/^wss?:\/\//, '').replace(/\/.*$/, '');
-          lines.push(`• ${short}: ${st}`);
-        });
-      }
-    } else {
-      lines.push("• getRelaySockets no disponible en el módulo Trystero");
-    }
-  } catch (e) {
-    lines.push("• Error leyendo sockets: " + e.message);
-  }
-  return lines.join('\n');
-}
-
-// Actualiza el badge "Sala: XXX [N]" con número de peers conectados (host)
-function actualizarBadgePeers() {
-  const badge = document.getElementById('room-peers-badge');
-  if (!badge) return;
-  if (!isHost || !trysteroRoom) {
-    badge.classList.add('hidden');
+function llenarSelectorSesiones(sesiones) {
+  const selector = document.getElementById('session-selector');
+  if (!sesiones || sesiones.length === 0) {
+    selector.innerHTML = '<option value="">No hay sesiones creadas</option>';
     return;
   }
-  try {
-    const peers = trysteroRoom.getPeers ? trysteroRoom.getPeers() : {};
-    const n = Object.keys(peers).length;
-    if (n > 0) {
-      badge.innerText = String(n);
-      badge.title = `${n} participante${n !== 1 ? 's' : ''} conectado${n !== 1 ? 's' : ''}`;
-      badge.classList.remove('hidden');
-    } else {
-      badge.classList.add('hidden');
-    }
-  } catch (e) {
-    badge.classList.add('hidden');
-  }
-}
-
-function setConnStatus(status) {
-  const wrap = document.getElementById('conn-status');
-  const dot = document.getElementById('conn-status-dot');
-  const txt = document.getElementById('conn-status-text');
-  if (!wrap) return;
-  if (isHost) { wrap.classList.add('hidden'); return; }
-  wrap.classList.remove('hidden'); wrap.classList.add('flex');
-  if (status === 'ok')  { dot.className = "w-2 h-2 rounded-full bg-bbva-lime mr-2"; txt.innerText = 'Conectado'; }
-  if (status === 'off') { dot.className = "w-2 h-2 rounded-full bg-red-400 mr-2 animate-pulse"; txt.innerText = 'Desconectado'; }
+  const placeholder = '<option value="" disabled selected>-- Selecciona una sesión --</option>';
+  selector.innerHTML = placeholder + sesiones.map(s =>
+    `<option value="${escapeAttr(s.id)}">${escapeHTML(s.fecha)}</option>`
+  ).join('');
 }
 
 /* ================================================================
-   ABRIR VISTA APP (común a host y participante)
+   CREAR / INACTIVAR SESIÓN (organizador)
    ================================================================ */
-function abrirVistaApp() {
+async function crearNuevaSesion() {
+  const dateInput = document.getElementById('new-session-date').value;
+  const nameInput = document.getElementById('new-session-name').value.trim();
+  if (!dateInput) return customAlert("Selecciona una fecha.");
+
+  const partes = dateInput.split('-');
+  const fechaStr = `${partes[2]}/${partes[1]}/${partes[0]}`;
+
+  showLoading("Creando nueva sesión...");
+  try {
+    const nuevoId = await gasPost('crearSesion', { fechaStr, nombreSesion: nameInput });
+    currentSessionId = nuevoId;
+    iniciarSesion();
+  } catch (err) {
+    hideLoading();
+    customAlert("⚠️ Error al crear la sesión.\n\n" + err.message);
+  }
+}
+
+async function cambiarEstadoSeleccionada(estado) {
+  const sel = document.getElementById('session-selector');
+  const idSesion = sel.value;
+  if (!idSesion) return customAlert("Selecciona una sesión en el desplegable primero.");
+
+  const nombreSel = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
+  const verbo = estado === 'ARCHIVED' ? 'archivar' : 'marcar como inactiva';
+  const tras  = estado === 'ARCHIVED'
+    ? 'Pasará al histórico (lectura) y dejará de aparecer en el desplegable.'
+    : 'Se ocultará del desplegable. Podrás reactivarla desde "Gestionar sesiones inactivas".';
+
+  customConfirm(`¿Seguro que quieres ${verbo} esta sesión?\n\n"${nombreSel}"\n\n${tras}`, async () => {
+    showLoading("Actualizando estado...");
+    try {
+      const sesionesActualizadas = await gasPost('cambiarEstadoSesion', { idSesion, estado });
+      hideLoading();
+      showToast(estado === 'ARCHIVED' ? "Sesión archivada." : "Sesión marcada como inactiva.", true);
+      llenarSelectorSesiones(sesionesActualizadas);
+    } catch (err) {
+      hideLoading();
+      customAlert("⚠️ Error al cambiar el estado.\n\n" + err.message);
+    }
+  });
+}
+
+/* ================================================================
+   GESTIONAR SESIONES INACTIVAS (modal admin)
+   ================================================================ */
+async function abrirModalInactivas() {
+  const m = document.getElementById('modal-inactivas');
+  m.classList.remove('hidden');
+  await refrescarListaInactivas();
+}
+
+function cerrarModalInactivas() {
+  document.getElementById('modal-inactivas').classList.add('hidden');
+}
+
+async function refrescarListaInactivas() {
+  const list = document.getElementById('inactivas-list');
+  list.innerHTML = `<p class="text-xs text-bbva-gray5 italic">Cargando...</p>`;
+  try {
+    const sesiones = await gasGet('inactivas');
+    if (!sesiones || !sesiones.length) {
+      list.innerHTML = `<p class="text-xs text-bbva-gray5 italic py-8 text-center">No hay sesiones inactivas.</p>`;
+      return;
+    }
+    list.innerHTML = sesiones.map(s => {
+      const titulo = s.nombre || s.fecha || 'Sin nombre';
+      const meta = [
+        s.fecha,
+        `${s.participantes || 0} participante${s.participantes !== 1 ? 's' : ''}`,
+        `${s.tarjetas || 0} tarjeta${s.tarjetas !== 1 ? 's' : ''}`,
+        `${s.votosTermometro || 0} voto${s.votosTermometro !== 1 ? 's' : ''}`,
+      ].filter(Boolean).join(' · ');
+      const idAttr = escapeAttr(s.id);
+      const nomAttr = escapeAttr(titulo);
+      return `<div class="border border-bbva-gray2 rounded-lg p-3 flex items-center justify-between gap-3">
+        <div class="min-w-0 flex-1">
+          <p class="font-bold text-bbva-blue text-sm truncate">${escapeHTML(titulo)}</p>
+          <p class="text-xs text-bbva-gray5">${escapeHTML(meta)}</p>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button onclick="reactivarInactiva('${idAttr}', '${nomAttr}')"
+            class="bg-bbva-lime/30 hover:bg-bbva-lime/60 text-bbva-blue border border-bbva-lime px-3 py-1.5 rounded-lg text-xs font-medium"
+            title="Volver a activa">
+            <i class="fa-solid fa-rotate-left mr-1"></i> Reactivar
+          </button>
+          <button onclick="eliminarInactiva('${idAttr}', '${nomAttr}')"
+            class="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg text-xs font-medium"
+            title="Borrar permanentemente">
+            <i class="fa-solid fa-trash mr-1"></i> Eliminar
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    list.innerHTML = `<p class="text-xs text-red-600 italic">Error al cargar inactivas: ${escapeHTML(err.message || String(err))}</p>`;
+  }
+}
+
+async function reactivarInactiva(idSesion, nombre) {
+  customConfirm(`¿Reactivar "${nombre}"?\n\nVolverá a aparecer en el desplegable de sesiones activas.`, async () => {
+    showLoading("Reactivando sesión...");
+    try {
+      const sesionesActivas = await gasPost('cambiarEstadoSesion', { idSesion, estado: 'ACTIVE' });
+      hideLoading();
+      showToast("Sesión reactivada.", true);
+      llenarSelectorSesiones(sesionesActivas);
+      await refrescarListaInactivas();
+    } catch (err) {
+      hideLoading();
+      customAlert("⚠️ Error al reactivar.\n\n" + err.message);
+    }
+  });
+}
+
+async function eliminarInactiva(idSesion, nombre) {
+  customConfirm(`⚠️ ¿Eliminar PERMANENTEMENTE "${nombre}"?\n\nSe borrarán todos sus datos (tarjetas, mejoras, votos, participantes). Esta acción es irreversible.`, async () => {
+    showLoading("Eliminando sesión...");
+    try {
+      await gasPost('eliminarSesion', { idSesion });
+      hideLoading();
+      showToast("Sesión eliminada.", true);
+      await refrescarListaInactivas();
+    } catch (err) {
+      hideLoading();
+      customAlert("⚠️ Error al eliminar.\n\n" + err.message);
+    }
+  });
+}
+
+/* ================================================================
+   ENTRAR A UNA SESIÓN
+   ================================================================ */
+function entrarSesion() {
+  const sel = document.getElementById('session-selector');
+  if (!sel.value) return customAlert("Selecciona una sesión de la lista primero.");
+  currentSessionId = sel.value;
+  iniciarSesion();
+}
+
+function iniciarSesion() {
+  currentUser = document.getElementById('user-name').value.trim() || 'Anónimo';
+  currentRole = document.getElementById('user-role').value;
+
   document.getElementById('view-menu').classList.add('hidden');
   document.getElementById('view-app').classList.remove('hidden');
   document.getElementById('display-user-name').innerHTML =
-    `<i class="fa-regular fa-user mr-1"></i> ${currentUser} (${currentRole})`;
-  document.getElementById('room-code-display').innerText = roomCode || '—';
+    `<i class="fa-regular fa-user mr-1"></i> ${escapeHTML(currentUser)} (${currentRole})`;
+
+  showLoading("Entrando a la sesión...");
   termometroVotadoLocal = false;
-  if (!isHost) setConnStatus('ok');
-  render();
+  lastDataStr = '';
+
+  if (currentUser !== 'Anónimo') {
+    gasPost('registrarUsuario', { idSesion: currentSessionId, nombre: currentUser })
+      .catch(err => console.warn('No se pudo registrar usuario:', err.message));
+  }
+
+  obtenerDatosServidor(true);
+  pollingInterval = setInterval(() => obtenerDatosServidor(false), 3000);
 }
 
 function volverAlMenu() {
-  customConfirm(
-    isHost
-      ? "Si vuelves al menú, la sala se cerrará para todos. ¿Continuar?"
-      : "¿Salir de la sala?",
-    () => {
-      // Salir del room de Trystero
-      try { if (trysteroRoom) trysteroRoom.leave(); } catch(_){}
-      trysteroRoom = null;
-      sendStateAction = null;
-      sendActionAction = null;
-      peerNames = {};
-      isHost = false; roomCode = null;
-      document.getElementById('view-app').classList.add('hidden');
-      document.getElementById('view-archive').classList.add('hidden');
-      document.getElementById('view-menu').classList.remove('hidden');
-      cargarHistorico();
-    }
-  );
-}
-
-function copiarCodigoSala() {
-  if (!roomCode) return;
-  navigator.clipboard.writeText(roomCode).then(
-    () => showToast("Código copiado al portapapeles", true),
-    () => showToast("No se pudo copiar")
-  );
-}
-
-function copiarLinkSala() {
-  if (!roomCode) return;
-  const url = buildShareUrl(roomCode);
-  navigator.clipboard.writeText(url).then(
-    () => showToast("Enlace copiado al portapapeles", true),
-    () => showToast("No se pudo copiar")
-  );
+  clearInterval(pollingInterval);
+  document.getElementById('view-app').classList.add('hidden');
+  document.getElementById('view-archive').classList.add('hidden');
+  document.getElementById('view-menu').classList.remove('hidden');
+  cargarSesionesIniciales();
+  cargarHistorico();
 }
 
 /* ================================================================
-   ACCIONES (host: directas; participante: vía mensaje)
+   POLLING DE ESTADO
    ================================================================ */
-function avanzarFase() {
-  if (!isHost || estado.fase >= 5) return;
-  estado.fase += 1;
-  broadcastState();
-  showToast("¡Fase actualizada!", true);
-}
-function retrocederFase() {
-  if (!isHost || estado.fase <= 1) return;
-  estado.fase -= 1;
-  broadcastState();
-  showToast("¡Fase actualizada!", true);
-}
-
-function votarTermometro(idOp) {
-  if (estado.fase !== 1 || termometroVotadoLocal) return;
-  termometroVotadoLocal = true;
-  showToast("Voto registrado", true);
-
-  if (isHost) {
-    // anti-doble por clientId (host usa marker 'host')
-    const hostCid = '__host__';
-    if (!estado.termometro.some(v => v.clientId === hostCid)) {
-      estado.termometro.push({ voto: idOp, clientId: hostCid });
-      broadcastState();
-    }
-  } else {
-    enviarAccionAlHost({ type: 'termometro', voto: idOp });
-  }
-}
-
-function votarTarjeta(tarjetaId) {
-  if (estado.fase !== 3) return;
-  showToast("Voto registrado", true);
-  if (isHost) {
-    const t = estado.tarjetas.find(x => x.id === tarjetaId);
-    if (t) { t.votos = (t.votos || 0) + 1; broadcastState(); }
-  } else {
-    enviarAccionAlHost({ type: 'votarTarjeta', tarjetaId });
-  }
-}
-
-/* ================================================================
-   MODAL AÑADIR
-   ================================================================ */
-function promptNuevaTarjeta(cat) {
-  if (estado.fase !== 2) return;
-  modalCategoriaPendiente = cat; esMejora = false;
-  document.getElementById('modal-title').innerText = `Añadir a ${cat}`;
-
-  const divDest = document.getElementById('div-destinatario');
-  const selDest = document.getElementById('modal-destinatario');
-  if (cat === 'RECONOCIMIENTO') {
-    divDest.classList.remove('hidden');
-    const otros = [...new Set(estado.usuarios)].filter(u => u !== currentUser);
-    selDest.innerHTML = `<option value="Todo el equipo">A todo el equipo</option>` +
-      otros.map(u => `<option value="${escapeHTML(u)}">${escapeHTML(u)}</option>`).join('');
-  } else divDest.classList.add('hidden');
-
-  document.getElementById('modal-input').value = '';
-  document.getElementById('modal-add').classList.remove('hidden');
-  setTimeout(() => document.getElementById('modal-input').focus(), 100);
-}
-
-function promptNuevaMejora() {
-  if (!isHost || estado.fase === 5) return;
-  esMejora = true;
-  document.getElementById('modal-title').innerText = `Añadir acción de mejora`;
-  document.getElementById('div-destinatario').classList.add('hidden');
-  document.getElementById('modal-input').value = '';
-  document.getElementById('modal-add').classList.remove('hidden');
-  setTimeout(() => document.getElementById('modal-input').focus(), 100);
-}
-
-function cerrarModal() {
-  document.getElementById('modal-add').classList.add('hidden');
-}
-
-document.getElementById('modal-submit').addEventListener('click', () => {
-  let texto = document.getElementById('modal-input').value.trim();
-  if (!texto) return;
-
-  cerrarModal();
-  if (esMejora) {
-    // Sólo el host crea mejoras
-    if (isHost) {
-      estado.mejoras.push({
-        id: 'mej-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
-        texto, check: false,
-      });
-      broadcastState();
-      showToast("Mejora añadida", true);
-    }
-  } else {
-    if (modalCategoriaPendiente === 'RECONOCIMIENTO') {
-      const dest = document.getElementById('modal-destinatario').value || 'Todo el equipo';
-      texto = `[PARA:${dest}]${texto}`;
-    }
-    if (isHost) {
-      estado.tarjetas.push({
-        id: 'tar-' + Date.now() + '-' + Math.random().toString(36).slice(2,6),
-        categoria: modalCategoriaPendiente,
-        texto, votos: 0,
-      });
-      broadcastState();
-      showToast("Añadido", true);
+async function obtenerDatosServidor(isInitial) {
+  if (isUpdating && !isInitial) return;
+  try {
+    const datos = await gasGet('datosCompletos', { id: currentSessionId });
+    procesarDatosServidor(datos, false);
+    if (isInitial) hideLoading();
+  } catch (err) {
+    if (isInitial) {
+      hideLoading();
+      customAlert("⚠️ Error de conexión: " + err.message);
+      volverAlMenu();
     } else {
-      enviarAccionAlHost({ type: 'nuevaTarjeta', categoria: modalCategoriaPendiente, texto });
-      showToast("Enviado al organizador...", true);
+      console.warn('Polling falló:', err.message);
     }
   }
-});
-
-/* ================================================================
-   RENDER
-   ================================================================ */
-function escapeHTML(s) {
-  return String(s).replace(/[&<>"']/g, m =>
-    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
-function escapeAttr(s) { return escapeHTML(s); }
+
+function procesarDatosServidor(datos, forceRender) {
+  const newStr = JSON.stringify(datos);
+  if (!forceRender && lastDataStr === newStr) return;
+  lastDataStr = newStr;
+
+  estado.faseActual = datos.fase || 1;
+  estado.nombreSesion = datos.nombreSesion || '';
+  estado.usuarios = datos.usuarios || [];
+
+  const hsn = document.getElementById('header-session-name');
+  if (estado.nombreSesion) {
+    hsn.innerText = '· ' + estado.nombreSesion;
+    hsn.classList.remove('hidden');
+  } else hsn.classList.add('hidden');
+
+  estado.votosTermometro = { op1: 0, op2: 0, op3: 0, op4: 0, op5: 0 };
+  (datos.termometro || []).forEach(t => {
+    if (estado.votosTermometro[t.voto] !== undefined) estado.votosTermometro[t.voto]++;
+  });
+  estado.tarjetas = datos.tarjetas || [];
+  estado.mejoras = datos.mejoras || [];
+  render();
+}
 
 function render() {
   renderBreadcrumbs();
@@ -1107,23 +746,17 @@ function render() {
   renderColumnasVisibilidad();
   renderTarjetas();
   actualizarPermisos();
-  // Nombre de sesión en header
-  const hsn = document.getElementById('header-session-name');
-  if (estado.nombre) { hsn.innerText = '· ' + estado.nombre; hsn.classList.remove('hidden'); }
-  else hsn.classList.add('hidden');
 }
 
 function actualizarPermisos() {
   const btnAv = document.getElementById('btn-avanzar-fase');
   const btnRe = document.getElementById('btn-retroceder-fase');
-  const btnEx = document.getElementById('btn-exportar');
-  const dd    = document.getElementById('dropdown-participantes');
-  const ic    = document.getElementById('icon-dropdown');
+  const dd = document.getElementById('dropdown-participantes');
+  const ic = document.getElementById('icon-dropdown');
 
-  if (isHost) {
-    btnAv.classList.toggle('hidden', estado.fase >= 5);
-    btnRe.classList.toggle('hidden', estado.fase <= 1);
-    btnEx.classList.toggle('hidden', estado.fase < 5);
+  if (currentRole === 'organizador') {
+    btnAv.classList.toggle('hidden', estado.faseActual >= 5);
+    btnRe.classList.toggle('hidden', estado.faseActual <= 1);
     dd.classList.remove('hidden'); ic.classList.remove('hidden');
     const unicos = [...new Set(estado.usuarios)];
     const ul = document.getElementById('lista-participantes');
@@ -1131,14 +764,15 @@ function actualizarPermisos() {
       ? unicos.map(u => `<li class="py-1 px-2 hover:bg-bbva-sand rounded text-xs flex items-center"><i class="fa-solid fa-circle text-[6px] text-bbva-lime mr-2"></i>${escapeHTML(u)}</li>`).join('')
       : `<li class="py-1 px-2 text-xs italic text-bbva-gray4">Solo tú</li>`;
   } else {
-    btnAv.classList.add('hidden'); btnRe.classList.add('hidden'); btnEx.classList.add('hidden');
+    btnAv.classList.add('hidden');
+    btnRe.classList.add('hidden');
     dd.classList.add('hidden'); ic.classList.add('hidden');
   }
 }
 
 function renderBreadcrumbs() {
   document.getElementById('phase-nav').innerHTML = FASES_NOMBRES.map((nom, i) => {
-    const n = i + 1; const active = n === estado.fase; const past = n < estado.fase;
+    const n = i + 1; const active = n === estado.faseActual; const past = n < estado.faseActual;
     let html = `<div class="flex items-center">`;
     if (active)
       html += `<span class="bg-bbva-serene text-bbva-blue px-3 py-1 rounded-full shadow-sm flex items-center font-bold"><span class="w-5 h-5 bg-bbva-blue/15 rounded-full flex justify-center items-center text-xs mr-1.5">${n}</span> ${nom}</span>`;
@@ -1150,16 +784,15 @@ function renderBreadcrumbs() {
 }
 
 function renderTermometro() {
-  const votos = { op1:0, op2:0, op3:0, op4:0, op5:0 };
-  estado.termometro.forEach(v => { if (votos[v.voto] !== undefined) votos[v.voto]++; });
-  const total = Object.values(votos).reduce((a,b)=>a+b,0);
+  const total = Object.values(estado.votosTermometro).reduce((a, b) => a + b, 0);
   document.getElementById('total-votes').innerText = `${total} Voto${total !== 1 ? 's' : ''}`;
 
-  const showRes = estado.fase > 1;
-  const canVote = estado.fase === 1 && !termometroVotadoLocal;
+  const showRes = estado.faseActual > 1;
+  const canVote = estado.faseActual === 1 && !termometroVotadoLocal;
 
   const html = TERMOMETRO_OPCIONES.map(op => {
-    const v = votos[op.id]; const pct = total ? Math.round((v/total)*100) : 0;
+    const v = estado.votosTermometro[op.id] || 0;
+    const pct = total ? Math.round((v / total) * 100) : 0;
     const cursor = canVote ? 'cursor-pointer hover:bg-bbva-sand group hover:-translate-y-1 hover:shadow-sm border-bbva-gray2' : 'opacity-90 border-bbva-gray2';
     return `<div onclick="votarTermometro('${op.id}')" class="relative rounded-lg border p-2 transition-all overflow-hidden ${cursor}">
       ${showRes ? `<div class="absolute left-0 top-0 bottom-0 ${op.bar} opacity-25 transition-all duration-500" style="width: ${pct}%"></div>` : ''}
@@ -1174,21 +807,20 @@ function renderTermometro() {
 }
 
 function renderColumnasVisibilidad() {
-  document.getElementById('board-container').classList.toggle('hidden', estado.fase === 1);
-  document.querySelectorAll('.add-btn-container').forEach(btn => btn.style.display = (estado.fase === 2) ? 'block' : 'none');
-  document.getElementById('col-mejoras-container').classList.toggle('hidden', estado.fase < 4);
+  document.getElementById('board-container').classList.toggle('hidden', estado.faseActual === 1);
+  document.querySelectorAll('.add-btn-container').forEach(btn => btn.style.display = (estado.faseActual === 2) ? 'block' : 'none');
+  document.getElementById('col-mejoras-container').classList.toggle('hidden', estado.faseActual < 4);
   const btnMej = document.getElementById('add-mejora-container');
-  btnMej.style.display = (estado.fase === 4 && isHost) ? 'block' : 'none';
+  btnMej.style.display = (estado.faseActual === 4 && currentRole === 'organizador') ? 'block' : 'none';
 }
 
 function renderTarjetas() {
   let arr = [...estado.tarjetas];
-  if (estado.fase >= 4) {
-    arr.sort((a,b) => (b.votos - a.votos) || String(a.id).localeCompare(String(b.id)));
+  if (estado.faseActual >= 4) {
+    arr.sort((a, b) => (b.votos - a.votos) || String(a.id).localeCompare(String(b.id)));
   }
   const getHtml = (t, borderColor) => {
-    let txt = t.texto || '';
-    let badge = '';
+    let txt = t.texto || ''; let badge = '';
     if (t.categoria === 'RECONOCIMIENTO' && txt.startsWith('[PARA:')) {
       const idx = txt.indexOf(']');
       if (idx !== -1) {
@@ -1197,7 +829,7 @@ function renderTarjetas() {
         txt = txt.substring(idx + 1);
       }
     }
-    const showVoteBtn = estado.fase === 3;
+    const showVoteBtn = estado.faseActual === 3;
     const heartCount = (t.votos > 0)
       ? `<span class="text-bbva-blue font-bold bg-bbva-gray2 px-1.5 rounded text-xs"><i class="fa-solid fa-heart text-bbva-mandarin mr-1 text-[10px]"></i>${t.votos}</span>`
       : '';
@@ -1206,7 +838,7 @@ function renderTarjetas() {
       <p class="text-sm text-bbva-midnight leading-relaxed whitespace-pre-line">${escapeHTML(txt)}</p>
       <div class="mt-3 flex justify-end items-center text-xs text-bbva-gray4">
         <div class="flex items-center space-x-1">
-          ${showVoteBtn ? `<button onclick="votarTarjeta('${t.id}')" class="text-bbva-gray4 hover:text-bbva-mandarin bg-bbva-sand hover:bg-bbva-mandarin/10 px-2 py-1 rounded transition border border-bbva-gray2"><i class="fa-regular fa-heart"></i></button>` : ''}
+          ${showVoteBtn ? `<button onclick="votarTarjeta('${escapeAttr(t.id)}')" class="text-bbva-gray4 hover:text-bbva-mandarin bg-bbva-sand hover:bg-bbva-mandarin/10 px-2 py-1 rounded transition border border-bbva-gray2"><i class="fa-regular fa-heart"></i></button>` : ''}
           ${heartCount}
         </div>
       </div>
@@ -1235,102 +867,182 @@ function renderTarjetas() {
 }
 
 /* ================================================================
-   EXPORTAR JSON  (al final, fase 5)
+   ACCIONES
    ================================================================ */
-function exportarJSON() {
-  if (!isHost) return;
-  const dump = {
-    version: 1,
-    id: estado.id,
-    fecha: estado.fecha,
-    nombre: estado.nombre,
-    faseFinal: estado.fase,
-    usuarios: [...new Set(estado.usuarios)],
-    // No exportamos clientId del termómetro (privacidad)
-    termometro: estado.termometro.map(v => ({ voto: v.voto })),
-    tarjetas: estado.tarjetas.map(t => ({ id: t.id, categoria: t.categoria, texto: t.texto, votos: t.votos || 0 })),
-    mejoras: estado.mejoras.map(m => ({ id: m.id, texto: m.texto, check: !!m.check })),
-    exportadoEn: new Date().toISOString(),
-  };
-
-  const slug = slugify(estado.nombre || 'retrospectiva');
-  const fecha = estado.fecha ? estado.fecha.split('/').reverse().join('-') : new Date().toISOString().slice(0,10);
-  const filename = `${fecha}-${slug}.json`;
-
-  const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  document.body.appendChild(a); a.click();
-  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 100);
-
-  showToast("JSON descargado", true);
+async function avanzarFase() {
+  if (currentRole !== 'organizador' || estado.faseActual >= 5) return;
+  isUpdating = true;
+  showToast("Avanzando de fase...", false, true);
+  try {
+    const datos = await gasPost('cambiarFase', { idSesion: currentSessionId, nuevaFase: estado.faseActual + 1 });
+    procesarDatosServidor(datos, true);
+    showToast("¡Fase actualizada!", true);
+  } catch (err) {
+    hideToast();
+    customAlert("⚠️ Error al cambiar de fase: " + err.message);
+  } finally { isUpdating = false; }
 }
 
-function slugify(s) {
-  return (s || '').toString()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .toLowerCase().trim()
-    .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'retro';
+async function retrocederFase() {
+  if (currentRole !== 'organizador' || estado.faseActual <= 1) return;
+  isUpdating = true;
+  showToast("Retrocediendo de fase...", false, true);
+  try {
+    const datos = await gasPost('cambiarFase', { idSesion: currentSessionId, nuevaFase: estado.faseActual - 1 });
+    procesarDatosServidor(datos, true);
+    showToast("¡Fase actualizada!", true);
+  } catch (err) {
+    hideToast();
+    customAlert("⚠️ Error al cambiar de fase: " + err.message);
+  } finally { isUpdating = false; }
+}
+
+async function votarTermometro(idOp) {
+  if (estado.faseActual !== 1 || termometroVotadoLocal) return;
+  termometroVotadoLocal = true;
+  isUpdating = true;
+  showToast("Guardando voto...", false, true);
+  try {
+    const datos = await gasPost('votoTermometro', { idSesion: currentSessionId, idOpcionVoto: idOp });
+    procesarDatosServidor(datos, true);
+    showToast("¡Voto anónimo registrado!", true);
+  } catch (err) {
+    hideToast();
+    customAlert("Error al votar: " + err.message);
+  } finally { isUpdating = false; }
+}
+
+async function votarTarjeta(idTarjeta) {
+  if (estado.faseActual !== 3) return;
+  isUpdating = true;
+  showToast("Registrando voto...", false, true);
+  try {
+    const datos = await gasPost('votarTarjeta', { idSesion: currentSessionId, idTarjeta });
+    procesarDatosServidor(datos, true);
+    showToast("¡Voto registrado!", true);
+  } catch (err) {
+    hideToast();
+  } finally { isUpdating = false; }
 }
 
 /* ================================================================
-   HISTÓRICO  (lista /retro/index.json + lectura de cada .json)
+   MODAL AÑADIR
+   ================================================================ */
+function promptNuevaTarjeta(cat) {
+  if (estado.faseActual !== 2) return;
+  modalCategoriaPendiente = cat; esMejora = false;
+  document.getElementById('modal-title').innerText = `Añadir a ${cat}`;
+
+  const divDest = document.getElementById('div-destinatario');
+  const selDest = document.getElementById('modal-destinatario');
+  if (cat === 'RECONOCIMIENTO') {
+    divDest.classList.remove('hidden');
+    const otros = [...new Set(estado.usuarios)].filter(u => u !== currentUser);
+    selDest.innerHTML = `<option value="Todo el equipo">A todo el equipo</option>` +
+      otros.map(u => `<option value="${escapeAttr(u)}">${escapeHTML(u)}</option>`).join('');
+  } else divDest.classList.add('hidden');
+
+  document.getElementById('modal-input').value = '';
+  document.getElementById('modal-add').classList.remove('hidden');
+  setTimeout(() => document.getElementById('modal-input').focus(), 100);
+}
+
+function promptNuevaMejora() {
+  if (currentRole !== 'organizador' || estado.faseActual === 5) return;
+  esMejora = true;
+  document.getElementById('modal-title').innerText = `Añadir acción de mejora`;
+  document.getElementById('div-destinatario').classList.add('hidden');
+  document.getElementById('modal-input').value = '';
+  document.getElementById('modal-add').classList.remove('hidden');
+  setTimeout(() => document.getElementById('modal-input').focus(), 100);
+}
+
+function cerrarModal() {
+  document.getElementById('modal-add').classList.add('hidden');
+}
+
+document.getElementById('modal-submit').addEventListener('click', async () => {
+  let texto = document.getElementById('modal-input').value.trim();
+  if (!texto) return;
+  cerrarModal();
+  isUpdating = true;
+  showToast("Añadiendo elemento...", false, true);
+
+  try {
+    let datos;
+    if (esMejora) {
+      datos = await gasPost('crearMejora', { idSesion: currentSessionId, texto });
+    } else {
+      if (modalCategoriaPendiente === 'RECONOCIMIENTO') {
+        const dest = document.getElementById('modal-destinatario').value || 'Todo el equipo';
+        texto = `[PARA:${dest}]${texto}`;
+      }
+      datos = await gasPost('crearTarjeta', { idSesion: currentSessionId, categoria: modalCategoriaPendiente, texto });
+    }
+    procesarDatosServidor(datos, true);
+    showToast("¡Elemento añadido!", true);
+  } catch (err) {
+    hideToast();
+    customAlert("Error al añadir: " + err.message);
+  } finally { isUpdating = false; }
+});
+
+/* ================================================================
+   HISTÓRICO desde Google Sheets (sesiones archivadas)
    ================================================================ */
 async function cargarHistorico() {
   const list = document.getElementById('archive-list');
   list.innerHTML = `<p class="text-xs text-bbva-gray5 italic">Cargando histórico...</p>`;
   try {
-    const res = await fetch('./retro/index.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error('No hay índice');
-    const idx = await res.json();
-    if (!idx.sesiones || !idx.sesiones.length) {
-      list.innerHTML = `<p class="text-xs text-bbva-gray5 italic">No hay retrospectivas archivadas todavía.</p>`;
+    const sesiones = await gasGet('historico');
+    if (!sesiones || !sesiones.length) {
+      list.innerHTML = `<p class="text-xs text-bbva-gray5 italic">No hay sesiones archivadas todavía.</p>`;
       return;
     }
-    list.innerHTML = idx.sesiones.map(s =>
-      `<button onclick="abrirHistorica('${escapeAttr(s.archivo)}')" class="w-full text-left p-3 rounded-lg border border-bbva-gray2 hover:border-bbva-blue hover:bg-bbva-serene/15 transition group">
+    list.innerHTML = sesiones.map(s => {
+      const titulo = s.nombre || s.fecha || 'Retrospectiva';
+      // Las dos cifras más representativas: participantes y tarjetas
+      const meta = [
+        s.fecha,
+        `${s.participantes || 0} participante${s.participantes !== 1 ? 's' : ''}`,
+        `${s.tarjetas || 0} tarjeta${s.tarjetas !== 1 ? 's' : ''}`,
+      ].filter(Boolean).join(' · ');
+      return `<button onclick="abrirHistorica('${escapeAttr(s.id)}', '${escapeAttr(s.fecha)}', '${escapeAttr(s.nombre || '')}')" class="w-full text-left p-3 rounded-lg border border-bbva-gray2 hover:border-bbva-blue hover:bg-bbva-serene/15 transition group">
          <div class="flex items-center justify-between">
            <div>
-             <p class="font-bold text-bbva-blue text-sm group-hover:underline">${escapeHTML(s.nombre || s.archivo)}</p>
-             <p class="text-xs text-bbva-gray5">${escapeHTML(s.fecha || '')} · ${s.participantes || '?'} participantes</p>
+             <p class="font-bold text-bbva-blue text-sm group-hover:underline">${escapeHTML(titulo)}</p>
+             <p class="text-xs text-bbva-gray5">${escapeHTML(meta)}</p>
            </div>
            <i class="fa-solid fa-arrow-right text-bbva-blue/60 group-hover:text-bbva-blue"></i>
          </div>
-       </button>`
-    ).join('');
+       </button>`;
+    }).join('');
   } catch (e) {
-    list.innerHTML = `<p class="text-xs text-bbva-gray5 italic">No hay índice <code>/retro/index.json</code> disponible (o estás en local sin servidor).</p>`;
+    list.innerHTML = `<p class="text-xs text-bbva-gray5 italic">⚠️ No se pudo cargar el histórico: ${escapeHTML(e.message || String(e))}</p>`;
   }
 }
 
-async function abrirHistorica(archivo) {
+async function abrirHistorica(idSesion, fecha, nombre) {
   showLoading("Cargando retrospectiva...");
   try {
-    const res = await fetch(`./retro/${archivo}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error('No se ha podido cargar');
-    const data = await res.json();
+    const data = await gasGet('datosCompletos', { id: idSesion });
+    // Compongo el mismo formato que esperaba el visor antes (cuando leía JSON):
+    //   {nombre, fecha, usuarios, termometro, tarjetas, mejoras}
+    const dump = {
+      id: idSesion,
+      nombre: nombre || data.nombreSesion || '',
+      fecha: fecha || '',
+      usuarios: data.usuarios || [],
+      termometro: data.termometro || [],
+      tarjetas: data.tarjetas || [],
+      mejoras: data.mejoras || [],
+    };
     hideLoading();
-    mostrarVistaArchivo(data);
+    mostrarVistaArchivo(dump);
   } catch (e) {
     hideLoading();
-    customAlert("⚠️ No se pudo cargar el archivo.\n\n" + (e.message || e));
+    customAlert("⚠️ No se pudo cargar la retrospectiva.\n\n" + (e.message || e));
   }
-}
-
-function cargarArchivoLocal(input) {
-  const file = input.files && input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      mostrarVistaArchivo(data);
-    } catch (err) {
-      customAlert("⚠️ El archivo no es un JSON válido.");
-    }
-  };
-  reader.readAsText(file);
 }
 
 function mostrarVistaArchivo(data) {
@@ -1341,11 +1053,11 @@ function mostrarVistaArchivo(data) {
   document.getElementById('archive-name').innerText =
     (data.nombre || 'Retrospectiva') + (data.fecha ? ` · ${data.fecha}` : '');
 
-  const votos = { op1:0, op2:0, op3:0, op4:0, op5:0 };
+  const votos = { op1: 0, op2: 0, op3: 0, op4: 0, op5: 0 };
   (data.termometro || []).forEach(v => { if (votos[v.voto] !== undefined) votos[v.voto]++; });
-  const total = Object.values(votos).reduce((a,b)=>a+b,0);
+  const total = Object.values(votos).reduce((a, b) => a + b, 0);
 
-  const tarjetas = (data.tarjetas || []).slice().sort((a,b) => (b.votos||0) - (a.votos||0));
+  const tarjetas = (data.tarjetas || []).slice().sort((a, b) => (b.votos || 0) - (a.votos || 0));
 
   const tarjetaHTML = (t, borderClass) => {
     let txt = t.texto || ''; let badge = '';
@@ -1367,8 +1079,8 @@ function mostrarVistaArchivo(data) {
   };
 
   const exito = tarjetas.filter(t => t.categoria === 'ÉXITO');
-  const obst = tarjetas.filter(t => t.categoria === 'OBSTÁCULOS');
-  const rec  = tarjetas.filter(t => t.categoria === 'RECONOCIMIENTO');
+  const obst  = tarjetas.filter(t => t.categoria === 'OBSTÁCULOS');
+  const rec   = tarjetas.filter(t => t.categoria === 'RECONOCIMIENTO');
 
   document.getElementById('archive-content').innerHTML = `
     <header class="mb-8">
@@ -1376,13 +1088,12 @@ function mostrarVistaArchivo(data) {
       <p class="text-bbva-gray5">${escapeHTML(data.fecha || '')} · ${(data.usuarios || []).length} participantes</p>
     </header>
 
-    <!-- Termómetro -->
     <section class="bg-white border border-bbva-gray2 rounded-2xl p-6 mb-6 shadow-sm">
       <h2 class="display text-2xl text-bbva-blue mb-1">Termómetro de confianza</h2>
       <p class="text-sm text-bbva-gray5 mb-4">${total} voto${total !== 1 ? 's' : ''} anónimos</p>
       <div class="space-y-2">
         ${TERMOMETRO_OPCIONES.map(op => {
-          const v = votos[op.id]; const pct = total ? Math.round((v/total)*100) : 0;
+          const v = votos[op.id]; const pct = total ? Math.round((v / total) * 100) : 0;
           return `<div class="relative rounded-lg border border-bbva-gray2 p-3 overflow-hidden">
             <div class="absolute left-0 top-0 bottom-0 ${op.bar} opacity-25" style="width: ${pct}%"></div>
             <div class="relative flex justify-between items-center z-10">
@@ -1394,7 +1105,6 @@ function mostrarVistaArchivo(data) {
       </div>
     </section>
 
-    <!-- Tarjetas -->
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
       <div class="bg-white border border-bbva-gray2 border-t-4 border-t-bbva-canary rounded-2xl p-4 shadow-sm">
         <h3 class="display text-xl text-bbva-blue mb-3">ÉXITO 🤩</h3>
@@ -1410,7 +1120,6 @@ function mostrarVistaArchivo(data) {
       </div>
     </section>
 
-    <!-- Mejoras -->
     ${(data.mejoras && data.mejoras.length) ? `
     <section class="bg-white border border-bbva-gray2 border-t-4 border-t-bbva-lime rounded-2xl p-6 mb-6 shadow-sm">
       <h2 class="display text-2xl text-bbva-blue mb-4">Acciones de mejora 📈</h2>
@@ -1422,7 +1131,6 @@ function mostrarVistaArchivo(data) {
       </div>
     </section>` : ''}
 
-    <!-- Participantes -->
     ${(data.usuarios && data.usuarios.length) ? `
     <section class="bg-white border border-bbva-gray2 rounded-2xl p-6 shadow-sm">
       <h2 class="display text-xl text-bbva-blue mb-3">Participantes</h2>
@@ -1434,11 +1142,13 @@ function mostrarVistaArchivo(data) {
 }
 
 /* ================================================================
-   ATAJO: Enter en el código de sala = unirse
+   UTILIDADES
    ================================================================ */
-document.getElementById('join-code').addEventListener('keydown', e => {
-  if (e.key === 'Enter') unirseSala();
-});
+function escapeHTML(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, m =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+}
+function escapeAttr(s) { return escapeHTML(s); }
 </script>
 </body>
 </html>
