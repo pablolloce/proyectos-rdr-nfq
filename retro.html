@@ -486,8 +486,39 @@ function generarCodigoSala(len = 6) {
   for (let i = 0; i < len; i++) s += ROOM_ALPHABET[Math.floor(Math.random() * ROOM_ALPHABET.length)];
   return s;
 }
-// Para PeerJS, usamos un namespace común para evitar choques con otros usos del servidor público.
-function peerIdFromRoom(code) { return 'rdrretro-' + code.toUpperCase(); }
+// Para PeerJS usamos un namespace propio + lowercase (el servidor público
+// es sensible a mayúsculas en algunos casos).
+function peerIdFromRoom(code) { return 'rdrretro-' + String(code).toLowerCase(); }
+
+// Config de PeerJS: servidor de señalización + ICE servers públicos para NAT.
+// Forzamos secure:true porque GitHub Pages sirve por HTTPS.
+const PEER_CONFIG = {
+  debug: 1,
+  // Servidor público de PeerJS
+  host: '0.peerjs.com',
+  port: 443,
+  path: '/',
+  secure: true,
+  // STUN/TURN públicos: Google STUN (UDP) + OpenRelay TURN (TCP-443 que pasa
+  // por la mayoría de redes corporativas). Sin TURN, redes con NAT simétrico
+  // o firewalls estrictos pueden bloquear WebRTC.
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478' },
+      {
+        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+        username: 'openrelayproject',
+        credential: 'openrelayproject',
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443',
+        username: 'openrelayproject',
+        credential: 'openrelayproject',
+      },
+    ],
+  },
+};
 
 /* ================================================================
    CREAR SALA (organizador / host)
@@ -534,31 +565,62 @@ function intentarCrearPeer(intento) {
   // Si había un peer previo, ciérralo limpio.
   if (peer) { try { peer.destroy(); } catch(_){} peer = null; }
 
-  peer = new Peer(desiredId, { debug: 1 });
+  peer = new Peer(desiredId, PEER_CONFIG);
 
   let resolved = false;
+  // Timeout por si el servidor de PeerJS no responde
+  const openTimeout = setTimeout(() => {
+    if (resolved) return; resolved = true;
+    hideLoading();
+    try { peer.destroy(); } catch(_){}
+    customAlert("⚠️ El servidor de señalización no responde.\n\nInténtalo de nuevo en unos segundos. Si persiste, el servidor público de PeerJS puede estar caído.");
+  }, 15000);
+
   const onOpen = (id) => {
     if (resolved) return; resolved = true;
+    clearTimeout(openTimeout);
     myPeerId = id;
     roomCode = code;
+    console.log('[Retro] Sala creada. Peer ID:', id, '· Código compartible:', code);
     hideLoading();
     iniciarSalaHost();
   };
   const onError = (err) => {
-    if (resolved) return; resolved = true;
+    // Errores que llegan DESPUÉS de abrir la sala (típicamente
+    // 'peer-unavailable' cuando alguien intenta conectarse con código mal):
+    // sólo loguearlos, NO cerrar la sala.
+    if (resolved) {
+      console.warn('[Peer] error no fatal:', err && err.type, err && err.message);
+      return;
+    }
+    resolved = true;
+    clearTimeout(openTimeout);
     // Si el ID ya está en uso, reintenta con otro código
     if (err && (err.type === 'unavailable-id' || /taken|unavailable/i.test(err.message || ''))) {
       try { peer.destroy(); } catch(_){}
       intentarCrearPeer(intento + 1);
     } else {
       hideLoading();
-      customAlert("⚠️ Error al conectar con el servidor de señalización:\n" + (err && err.message || err));
+      const t = err && err.type;
+      if (t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed') {
+        customAlert("⚠️ No hay conexión con el servidor de señalización.\n\nPuede ser un fallo puntual del servicio público de PeerJS o un bloqueo de tu red. Inténtalo de nuevo.");
+      } else if (t === 'browser-incompatible') {
+        customAlert("⚠️ Tu navegador no soporta WebRTC. Usa Chrome, Firefox o Edge actualizados.");
+      } else {
+        customAlert("⚠️ Error al crear la sala [" + (t || 'desconocido') + "]:\n" + (err && err.message || err));
+      }
     }
   };
 
   peer.on('open', onOpen);
   peer.on('error', onError);
   peer.on('connection', conn => host_aceptarConexion(conn));
+  peer.on('disconnected', () => {
+    // El cliente se desconecta del servidor de señalización pero las
+    // conexiones WebRTC ya establecidas siguen vivas. Reintentamos.
+    console.warn('[Peer] desconectado del servidor de señalización, reintentando...');
+    try { peer.reconnect(); } catch(_){}
+  });
 }
 
 function iniciarSalaHost() {
@@ -581,7 +643,9 @@ function cerrarModalRoomCreated() {
    ACEPTAR PARTICIPANTES (host)
    ================================================================ */
 function host_aceptarConexion(conn) {
+  console.log('[Retro] Conexión entrante de peer:', conn.peer);
   conn.on('open', () => {
+    console.log('[Retro] Canal abierto con:', conn.peer);
     // El nombre llega en el primer mensaje 'hello'
     participantConnections.push({ conn, name: null });
     // Mandar estado completo al recién llegado
@@ -682,30 +746,76 @@ function unirseSala() {
 
   // Crear nuestro peer con ID aleatorio (anónimo en cuanto al alias)
   if (peer) { try { peer.destroy(); } catch(_){} peer = null; }
-  peer = new Peer({ debug: 1 });
+  peer = new Peer(PEER_CONFIG);
+
+  let connected = false;
+  let connectTimeout = null;
+  let openTimeout = null;
+  let conn = null;
+
+  // Errores del Peer (no de la connection). 'peer-unavailable' llega aquí
+  // y NO al conn.on('error') — es importante.
+  peer.on('error', err => {
+    if (connected) {
+      console.warn('[Peer] error no fatal tras conectar:', err && err.type);
+      return;
+    }
+    if (connectTimeout) clearTimeout(connectTimeout);
+    if (openTimeout) clearTimeout(openTimeout);
+    hideLoading();
+    const t = err && err.type;
+    if (t === 'peer-unavailable') {
+      customAlert("⚠️ La sala no existe o el organizador no está conectado.\n\nComprueba el código y pídele que tenga la pestaña abierta.");
+    } else if (t === 'network' || t === 'server-error' || t === 'socket-error' || t === 'socket-closed') {
+      customAlert("⚠️ No hay conexión con el servidor de señalización.\n\nPuede ser un bloqueo de red o un fallo puntual del servidor público de PeerJS. Inténtalo de nuevo en unos segundos.");
+    } else if (t === 'browser-incompatible') {
+      customAlert("⚠️ Tu navegador no soporta WebRTC. Usa Chrome, Firefox o Edge actualizados.");
+    } else {
+      customAlert("⚠️ Error de red [" + (t || 'desconocido') + "]:\n" + (err && err.message || err));
+    }
+    try { peer.destroy(); } catch(_){}
+    peer = null;
+  });
+
+  peer.on('disconnected', () => {
+    console.warn('[Peer] desconectado del servidor de señalización, reintentando...');
+    try { peer.reconnect(); } catch(_){}
+  });
+
+  // Si el servidor de señalización no responde en 15 s, abortar.
+  openTimeout = setTimeout(() => {
+    if (connected) return;
+    hideLoading();
+    try { peer.destroy(); } catch(_){}
+    peer = null;
+    customAlert("⚠️ El servidor de señalización no responde.\n\nPuede ser un fallo del servicio público de PeerJS o un bloqueo de tu red. Inténtalo otra vez en unos segundos.");
+  }, 15000);
 
   peer.on('open', id => {
+    clearTimeout(openTimeout);
     myPeerId = id;
     const targetId = peerIdFromRoom(code);
-    const conn = peer.connect(targetId, { reliable: true });
+    console.log('[Retro] Mi peer ID:', id, '· Conectando al host:', targetId);
+    conn = peer.connect(targetId, { reliable: true, serialization: 'json' });
 
-    let connected = false;
-    const timeout = setTimeout(() => {
+    // Timeout: la primera conexión WebRTC puede tardar varios segundos
+    // mientras negocia ICE, especialmente si hay que pasar por TURN.
+    connectTimeout = setTimeout(() => {
       if (!connected) {
         hideLoading();
-        try { conn.close(); } catch(_){}
-        customAlert("⚠️ No se pudo conectar. Comprueba el código y que el organizador tenga la pestaña abierta.");
+        try { if (conn) conn.close(); } catch(_){}
+        customAlert("⚠️ Tiempo de espera agotado al conectar con la sala.\n\nPosibles causas:\n• El código está mal escrito.\n• El organizador cerró su pestaña.\n• Tu red bloquea WebRTC (firewall corporativo).");
       }
-    }, 10000);
+    }, 20000);
 
     conn.on('open', () => {
       connected = true;
-      clearTimeout(timeout);
+      clearTimeout(connectTimeout);
       hostConnection = conn;
       hideLoading();
 
       // Saludar con nombre
-      conn.send({ type: 'hello', name: currentUser });
+      try { conn.send({ type: 'hello', name: currentUser }); } catch(_){}
 
       abrirVistaApp();
       setConnStatus('ok');
@@ -718,22 +828,13 @@ function unirseSala() {
     });
     conn.on('error', err => {
       if (!connected) {
-        clearTimeout(timeout);
+        clearTimeout(connectTimeout);
         hideLoading();
-        customAlert("⚠️ Error al conectar: " + (err && err.message || err));
+        customAlert("⚠️ Error en la conexión: " + (err && err.message || err));
       } else {
         setConnStatus('off');
       }
     });
-  });
-
-  peer.on('error', err => {
-    hideLoading();
-    if (err.type === 'peer-unavailable') {
-      customAlert("⚠️ Esa sala no existe o el organizador no está conectado.");
-    } else {
-      customAlert("⚠️ Error de red: " + (err && err.message || err));
-    }
   });
 }
 
