@@ -506,28 +506,29 @@ function generarCodigoSala(len = 6) {
 }
 
 /* ================================================================
-   P2P con TRYSTERO (MQTT como medio de señalización)
+   P2P con TRYSTERO (Nostr como medio de señalización)
    ================================================================
-   La señalización va por WebSocket Seguro (wss) al puerto 8084 del
-   broker público de EMQX, que suele atravesar firewalls corporativos
-   porque parece tráfico HTTPS normal. Para los datos reales del
-   chat usamos WebRTC con STUN público (UDP) y, si no funciona,
-   sin TURN — algunas redes corporativas estrictas no podrán conectar.
+   La señalización va por WebSocket Seguro (wss:443) a varios relays
+   Nostr públicos. Nostr usa puertos HTTPS estándar, lo que pasa los
+   firewalls corporativos como si fuera tráfico web normal.
+   Para los datos reales del chat usamos WebRTC con STUN público (UDP).
 */
 
-// Identificador único de "aplicación" en la red MQTT. Distinto a "room id"
-// (que cambia por sala). Esto evita que choque con otras apps Trystero
-// que usen el mismo broker público.
+// Identificador único de "aplicación" en la red de señalización. Distinto
+// a "room id" (que cambia por sala). Esto evita choques con otras apps
+// Trystero que usen los mismos relays.
 const TRYSTERO_APP_ID = 'rdr-retro-bbva';
 
-// Relays MQTT públicos sobre WSS (sin signup, sin auth).
-// Trystero conectará a los `relayRedundancy` primeros que funcionen.
-// Si uno falla, el resto siguen.
-//   - EMQX: el más estable y rápido en benchmarks recientes
-//   - HiveMQ: alternativa popular, otra IP/datacenter
-const TRYSTERO_MQTT_RELAYS = [
-  'wss://broker.emqx.io:8084/mqtt',
-  'wss://broker.hivemq.com:8884/mqtt',
+// Relays Nostr públicos sobre WSS:443 (sin signup, sin auth).
+// Nostr es la estrategia recomendada por Trystero: cientos de relays
+// activos, redundancia muy alta. Todos usan WSS:443, lo que pasa los
+// firewalls corporativos como si fuera HTTPS normal — más fiable que los
+// puertos no estándar 8084/8884 de los brokers MQTT públicos.
+const TRYSTERO_RELAYS = [
+  'wss://relay.damus.io',
+  'wss://relay.nostr.band',
+  'wss://nos.lol',
+  'wss://relay.snort.social',
 ];
 
 // STUN servers públicos para que WebRTC descubra rutas a través de NAT.
@@ -545,12 +546,12 @@ const TRYSTERO_RTC_CONFIG = {
 
 // Trystero se carga como módulo ES desde CDN. Se importa dinámicamente al
 // crear/unirse a sala para no penalizar la carga inicial si no se usa P2P.
-// Guardamos joinRoom, getRelaySockets y selfId como exports del módulo.
+// Estrategia: Nostr (más robusta y con muchos relays).
 let trysteroModule = null;
 async function loadTrystero() {
   if (trysteroModule) return trysteroModule;
   try {
-    const mod = await import('https://esm.sh/trystero@0.21.8/mqtt');
+    const mod = await import('https://esm.sh/trystero@0.21.8/nostr');
     trysteroModule = mod;
     console.log('[Retro] Trystero cargado. selfId:', mod.selfId, '· exports:', Object.keys(mod));
     return mod;
@@ -641,18 +642,17 @@ let onFirstStateReceived = null;
 
 async function conectarASala(mod, code) {
   const roomId = String(code).toLowerCase();
-  console.log('[Retro] Conectando a sala MQTT:', roomId, '· isHost=', isHost);
-  console.log('[Retro] Relays configurados:', TRYSTERO_MQTT_RELAYS);
+  console.log('[Retro] Conectando a sala:', roomId, '· isHost=', isHost);
+  console.log('[Retro] Relays configurados:', TRYSTERO_RELAYS);
   console.log('[Retro] selfId (mi peer):', mod.selfId);
 
-  // API v0.21+: las opciones son `relayUrls` y `relayRedundancy` (ojo: no
-  // `urls`/`redundancy` como decía algún README viejo). Si no se pasan,
-  // Trystero usa los relays por defecto del paquete (que incluye Mosquitto).
+  // API v0.21+: las opciones son `relayUrls` y `relayRedundancy`.
+  // Al pasar relayUrls, Trystero usa toda la lista (redundancy se ignora).
   trysteroRoom = mod.joinRoom(
     {
       appId: TRYSTERO_APP_ID,
-      relayUrls: TRYSTERO_MQTT_RELAYS,
-      relayRedundancy: TRYSTERO_MQTT_RELAYS.length,
+      relayUrls: TRYSTERO_RELAYS,
+      relayRedundancy: TRYSTERO_RELAYS.length,
       rtcConfig: TRYSTERO_RTC_CONFIG,
     },
     roomId,
@@ -843,7 +843,7 @@ async function unirseSala() {
         "⚠️ No se ha podido conectar al organizador.\n\n" +
         "Diagnóstico:\n" + diag + "\n\n" +
         "Posibles causas:\n" +
-        "• Si los brokers MQTT están desconectados → tu red bloquea WebSocket.\n" +
+        "• Si los relays están desconectados → tu red bloquea WebSocket.\n" +
         "• Si están conectados pero no se ven peers → código incorrecto o el organizador no está en la sala.\n" +
         "• Si se ven peers pero no llega estado → WebRTC bloqueado por firewall. Prueba con datos móviles."
       );
@@ -866,20 +866,20 @@ async function unirseSala() {
 function diagnosticoTrystero() {
   if (!trysteroRoom) return "Sala no inicializada.";
   const lines = [];
-  // Estado de los WebSockets a los brokers MQTT
+  // Estado de los WebSockets a los relays
   try {
     const sockets = trysteroGetRelaySockets ? trysteroGetRelaySockets() : null;
     if (sockets) {
       const entries = Object.entries(sockets);
       if (entries.length === 0) {
-        lines.push("• Sin sockets MQTT abiertos");
+        lines.push("• Sin sockets abiertos");
       } else {
         entries.forEach(([url, ws]) => {
           const stateLabels = { 0: 'CONNECTING', 1: 'OPEN', 2: 'CLOSING', 3: 'CLOSED' };
           const st = ws && typeof ws.readyState === 'number' ? stateLabels[ws.readyState] : '?';
           // Acortar url
           const short = url.replace(/^wss?:\/\//, '').replace(/\/.*$/, '');
-          lines.push(`• MQTT ${short}: ${st}`);
+          lines.push(`• ${short}: ${st}`);
         });
       }
     } else {
