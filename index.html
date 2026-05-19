@@ -267,15 +267,17 @@
       text-transform: uppercase;
     }
 
+    .nfq-credit__isotipo {
+      height: 18px;
+      width: auto;
+      display: block;
+    }
+
     .nfq-credit__logo {
       font-family: var(--font-body);
       font-weight: 900;
       font-size: 14px;
       letter-spacing: -0.02em;
-    }
-
-    .nfq-credit__logo span {
-      color: var(--mandarin);
     }
 
     /* ===========================================================
@@ -400,7 +402,7 @@
       </a>
 
       <a class="card card--6"
-         href="PEGAR_AQUI_URL_FORMULARIO"
+         href="https://docs.google.com/forms/d/e/1FAIpQLSeJC5PN7LP2OEwTthrbcbeFM_wOltrr6TcNwm8MhYbjYTCU2Q/viewform"
          target="_blank"
          rel="noopener noreferrer">
         <div class="card__head">
@@ -417,7 +419,7 @@
 
       <button type="button"
               class="card card--7"
-              data-copy-url="PEGAR_AQUI_URL_PORTAL_NFQ_BBVA_CIB">
+              data-copy-url="https://sites.google.com/bbva.com/portal-nfq-bbva-cib/">
         <div class="card__head">
           <p class="card__phase">Portal interno</p>
           <p class="card__num">07</p>
@@ -436,7 +438,26 @@
       <p>RDR · Repositorio de Datos de Referencia · BBVA</p>
       <div class="nfq-credit">
         <span class="nfq-credit__label">Hecho por</span>
-        <span class="nfq-credit__logo">n<span>f</span>q</span>
+        <svg class="nfq-credit__isotipo" viewBox="0 0 484 610" xmlns="http://www.w3.org/2000/svg" aria-label="nfq" role="img">
+          <defs>
+            <linearGradient id="nfq-l" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0" stop-color="#EE6A3A"/>
+              <stop offset="1" stop-color="#CD3D60"/>
+            </linearGradient>
+            <linearGradient id="nfq-m" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0" stop-color="#CD3D60"/>
+              <stop offset="1" stop-color="#1D7CF4"/>
+            </linearGradient>
+            <linearGradient id="nfq-r" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0" stop-color="#1D7CF4"/>
+              <stop offset="1" stop-color="#217AEE"/>
+            </linearGradient>
+          </defs>
+          <path d="M 0,94 L 160,1 L 480,512 L 320,605 Z" fill="url(#nfq-m)"/>
+          <path d="M 0,94 L 160,1 L 160,510 L 0,601 Z" fill="url(#nfq-l)"/>
+          <path d="M 320,90 L 480,2 L 480,512 L 320,605 Z" fill="url(#nfq-r)"/>
+        </svg>
+        <span class="nfq-credit__logo">nfq</span>
       </div>
     </footer>
 
