@@ -545,13 +545,15 @@ const TRYSTERO_RTC_CONFIG = {
 
 // Trystero se carga como módulo ES desde CDN. Se importa dinámicamente al
 // crear/unirse a sala para no penalizar la carga inicial si no se usa P2P.
-let trysteroJoinRoom = null;
+// Guardamos joinRoom, getRelaySockets y selfId como exports del módulo.
+let trysteroModule = null;
 async function loadTrystero() {
-  if (trysteroJoinRoom) return trysteroJoinRoom;
+  if (trysteroModule) return trysteroModule;
   try {
     const mod = await import('https://esm.sh/trystero@0.21.8/mqtt');
-    trysteroJoinRoom = mod.joinRoom;
-    return trysteroJoinRoom;
+    trysteroModule = mod;
+    console.log('[Retro] Trystero cargado. selfId:', mod.selfId, '· exports:', Object.keys(mod));
+    return mod;
   } catch (e) {
     console.error('[Retro] No se pudo cargar Trystero:', e);
     throw new Error('No se pudo cargar la librería P2P. Revisa tu conexión.');
@@ -589,9 +591,9 @@ async function crearSala() {
 
   showLoading("Creando sala...");
   try {
-    const joinRoom = await loadTrystero();
+    const mod = await loadTrystero();
     roomCode = generarCodigoSala();
-    await conectarASala(joinRoom, roomCode);
+    await conectarASala(mod, roomCode);
     hideLoading();
     iniciarSalaHost();
   } catch (err) {
@@ -631,27 +633,53 @@ function buildShareUrl(code) {
    ================================================================ */
 // Variables globales del room
 let trysteroRoom = null;
+let trysteroGetRelaySockets = null; // función expuesta por el módulo trystero
 let sendStateAction = null;   // función para enviar 'state' a todos
 let sendActionAction = null;  // función para enviar 'action' (mensaje de usuario)
 // Callback opcional que se llama la primera vez que un participante recibe estado
 let onFirstStateReceived = null;
 
-async function conectarASala(joinRoom, code) {
+async function conectarASala(mod, code) {
   const roomId = String(code).toLowerCase();
   console.log('[Retro] Conectando a sala MQTT:', roomId, '· isHost=', isHost);
-  console.log('[Retro] Relays:', TRYSTERO_MQTT_RELAYS);
+  console.log('[Retro] Relays configurados:', TRYSTERO_MQTT_RELAYS);
+  console.log('[Retro] selfId (mi peer):', mod.selfId);
 
-  // Configurar Trystero: appId común, room por código, redes MQTT múltiples
-  // y RTC config con STUN público.
-  trysteroRoom = joinRoom(
+  // API v0.21+: las opciones son `relayUrls` y `relayRedundancy` (ojo: no
+  // `urls`/`redundancy` como decía algún README viejo). Si no se pasan,
+  // Trystero usa los relays por defecto del paquete (que incluye Mosquitto).
+  trysteroRoom = mod.joinRoom(
     {
       appId: TRYSTERO_APP_ID,
       relayUrls: TRYSTERO_MQTT_RELAYS,
-      relayRedundancy: 2, // conectar a 2 brokers simultáneos para resiliencia
+      relayRedundancy: TRYSTERO_MQTT_RELAYS.length,
       rtcConfig: TRYSTERO_RTC_CONFIG,
     },
-    roomId
+    roomId,
+    // Tercer arg: onJoinError, llamado si la sala no se puede unir
+    (details) => {
+      console.error('[Retro] onJoinError:', details);
+    }
   );
+
+  // Hacer accesible globalmente para diagnóstico
+  trysteroGetRelaySockets = mod.getRelaySockets || null;
+
+  // Loggear estado de los sockets cada 2 s mientras esperamos conexión.
+  // (Útil para depurar y para que veas si está progresando.)
+  let logCount = 0;
+  const sockLogger = setInterval(() => {
+    if (!trysteroGetRelaySockets) { clearInterval(sockLogger); return; }
+    try {
+      const socks = trysteroGetRelaySockets();
+      const status = Object.entries(socks || {}).map(([url, ws]) => {
+        const labels = { 0:'CONNECTING', 1:'OPEN', 2:'CLOSING', 3:'CLOSED' };
+        return url.replace(/^wss?:\/\//,'').split('/')[0] + '=' + (labels[ws.readyState] || '?');
+      }).join(' | ');
+      console.log('[Retro] sockets:', status || '(ninguno)');
+    } catch(e) { /* ignorar */ }
+    if (++logCount >= 15) clearInterval(sockLogger); // máximo 30 s de logs
+  }, 2000);
 
   // Definir las "acciones" (canales de mensajería) que vamos a usar.
   // En Trystero, makeAction(name) devuelve [send, recv].
@@ -676,10 +704,7 @@ async function conectarASala(joinRoom, code) {
 
   trysteroRoom.onPeerLeave(peerId => {
     console.log('[Retro] ❌ Peer salió:', peerId);
-    if (!isHost) {
-      const remaining = Object.keys(trysteroRoom.getPeers ? trysteroRoom.getPeers() : {});
-      if (remaining.length === 0) setConnStatus('off');
-    }
+    if (!isHost) setConnStatus('off');
     actualizarBadgePeers();
   });
 
@@ -792,7 +817,7 @@ async function unirseSala() {
   showLoading("Conectando a la sala...");
 
   try {
-    const joinRoom = await loadTrystero();
+    const mod = await loadTrystero();
     // Esperamos el primer 'state' del host o timeout
     const connectedPromise = new Promise((resolve, reject) => {
       onFirstStateReceived = resolve;
@@ -804,7 +829,7 @@ async function unirseSala() {
       }, 30000);
     });
 
-    await conectarASala(joinRoom, code);
+    await conectarASala(mod, code);
 
     try {
       await connectedPromise;
@@ -843,7 +868,7 @@ function diagnosticoTrystero() {
   const lines = [];
   // Estado de los WebSockets a los brokers MQTT
   try {
-    const sockets = trysteroRoom.getRelaySockets ? trysteroRoom.getRelaySockets() : null;
+    const sockets = trysteroGetRelaySockets ? trysteroGetRelaySockets() : null;
     if (sockets) {
       const entries = Object.entries(sockets);
       if (entries.length === 0) {
@@ -858,18 +883,10 @@ function diagnosticoTrystero() {
         });
       }
     } else {
-      lines.push("• Estado de sockets no disponible");
+      lines.push("• getRelaySockets no disponible en el módulo Trystero");
     }
   } catch (e) {
     lines.push("• Error leyendo sockets: " + e.message);
-  }
-  // Peers visibles
-  try {
-    const peers = trysteroRoom.getPeers ? trysteroRoom.getPeers() : null;
-    const n = peers ? Object.keys(peers).length : '?';
-    lines.push(`• Peers detectados en la sala: ${n}`);
-  } catch (e) {
-    lines.push("• Error leyendo peers: " + e.message);
   }
   return lines.join('\n');
 }
