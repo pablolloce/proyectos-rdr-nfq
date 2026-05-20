@@ -916,6 +916,55 @@ textarea.inline-input {
 
 .cmd-paso { margin-bottom: var(--s-2); }
 .cmd-paso:last-child { margin-bottom: 0; }
+
+/* Tarjeta de paso agrupado: encabezado con máquina + comandos + resultado esperado */
+.cmd-step {
+  background: var(--bbva-white);
+  border: 1px solid var(--bbva-gray-1);
+  border-left: 3px solid var(--bbva-serene-blue);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.cmd-step:last-child { margin-bottom: 0; }
+.cmd-step__head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 12px; flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.cmd-step__title {
+  font-family: var(--bbva-font-body);
+  font-size: 13px; font-weight: 700;
+  color: var(--bbva-electric-blue);
+  margin: 0;
+}
+.cmd-step__maq {
+  font-size: 10px; letter-spacing: 0.06em;
+  text-transform: uppercase; font-weight: 700;
+  background: var(--bbva-electric-blue);
+  color: var(--bbva-sand);
+  padding: 3px 8px;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+.cmd-step__cmds { margin-bottom: 8px; }
+.cmd-step__cmds .cmd-paso__row { margin-bottom: 4px; }
+.cmd-step__cmds .cmd-paso__row:last-child { margin-bottom: 0; }
+.cmd-step__esperado {
+  background: var(--bbva-sand);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--bbva-midnight);
+  line-height: 1.4;
+}
+.cmd-step__esperado-lbl {
+  display: block;
+  font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase; font-weight: 700;
+  color: var(--bbva-gray-4);
+  margin-bottom: 3px;
+}
 .cmd-sep {
   margin: var(--s-2) 0 6px;
   padding: 6px 10px;
@@ -1362,56 +1411,166 @@ const COMANDOS = {
   PARADA: {
     titulo: "PARADA DEL SISTEMA",
     pasos: [
-      { txt: "ps -edf | grep KYTL", desc: "En TODAS las máquinas · Debe salir solo UNA línea" },
+      {
+        agrupado: true,
+        titulo: "Verificar parada de procesos KYTL",
+        maquinas: "TODAS las máquinas",
+        comandos: ["ps -edf | grep KYTL"],
+        esperado: "Debe salir SOLO UNA línea (la del propio grep).",
+      },
     ],
   },
   ARRANQUE: {
     titulo: "ARRANQUE DEL SISTEMA",
     pasos: [
-      { txt: "ps -edf | grep KYTL", desc: "[0] En TODAS las máquinas · Deben salir VARIAS líneas" },
-      { txt: "cd /usr/local/pr/goldensource_87/ApplicationLogs/Fileloading", desc: "[1] En máquinas 501 y 602" },
-      { txt: "ls -alrt", desc: "[1] Debe existir goldensource.orchestrator.log" },
-      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1", desc: "[2] En TODAS las máquinas" },
-      { txt: "grep -Rnis WFLYSRV0025 *", desc: "[2] Debe poner 'perezosos', NO 'lazy'" },
-      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/DOMAIN", desc: "[3] En TODAS las máquinas" },
-      { txt: "grep conectado host-controller.log", desc: "[3] Debe poner 'conectado'" },
-      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR501_KYTL_01_10", desc: "[4] En máquina 501" },
-      { txt: "grep -ai \"RDR_Receive\" server*.log", desc: "[4] Comprobar 12 detenidos" },
-      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR602_KYTL_01_20", desc: "[5] En máquina 602" },
-      { txt: "grep -ai \"RDR_Receive\" server*.log", desc: "[5] Comprobar 12 detenidos" },
-      { txt: "ps -edf | grep ServicesRDR", desc: "[6] En máquinas 501 y 602 · Deben salir VARIAS líneas" },
-      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR501_KYTL_01_10", desc: "[7] En máquina 501" },
-      { txt: "grep \"Invocación EJB\" server.log", desc: "[7] NO deben salir errores periódicos" },
-      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR501_KYTL_02_10", desc: "[7] En máquina 501" },
-      { txt: "grep \"Invocación EJB\" server.log", desc: "[7] NO deben salir errores periódicos" },
-      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR602_KYTL_01_20", desc: "[8] En máquina 602" },
-      { txt: "grep \"Invocación EJB\" server.log", desc: "[8] NO deben salir errores periódicos" },
-      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR602_KYTL_02_20", desc: "[8] En máquina 602" },
-      { txt: "grep \"Invocación EJB\" server.log", desc: "[8] NO deben salir errores periódicos" },
-      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7/LPRDR507_KYTL_03_10", desc: "[9] En máquina 507" },
-      { txt: "grep 'superposición prog' server.log", desc: "[9] NO deben salir errores periódicos" },
-      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7/LPRDR608_KYTL_03_20", desc: "[10] En máquina 608" },
-      { txt: "grep 'superposición prog' server.log", desc: "[10] NO deben salir errores periódicos" },
+      {
+        agrupado: true,
+        titulo: "Paso 0 · Procesos KYTL arrancados",
+        maquinas: "TODAS las máquinas",
+        comandos: ["ps -edf | grep KYTL"],
+        esperado: "Deben salir VARIAS líneas (a diferencia de la PARADA, que dejaba una sola).",
+      },
+      {
+        agrupado: true,
+        titulo: "Paso 1 · Orchestrator de Fileloading",
+        maquinas: "Máquinas 501 y 602",
+        comandos: [
+          "cd /usr/local/pr/goldensource_87/ApplicationLogs/Fileloading",
+          "ls -alrt",
+        ],
+        esperado: "Debe existir el archivo goldensource.orchestrator.log.",
+      },
+      {
+        agrupado: true,
+        titulo: "Paso 2 · Verificar idioma del log (perezosos)",
+        maquinas: "TODAS las máquinas",
+        comandos: [
+          "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1",
+          "grep -Rnis WFLYSRV0025 *",
+        ],
+        esperado: "Debe poner 'perezosos', NO 'lazy'.",
+      },
+      {
+        agrupado: true,
+        titulo: "Paso 3 · Host-controller conectado",
+        maquinas: "TODAS las máquinas",
+        comandos: [
+          "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/DOMAIN",
+          "grep conectado host-controller.log",
+        ],
+        esperado: "Debe poner 'conectado'.",
+      },
+      {
+        agrupado: true,
+        titulo: "Paso 4 · RDR_Receive en 501",
+        maquinas: "Máquina 501",
+        comandos: [
+          "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR501_KYTL_01_10",
+          'grep -ai "RDR_Receive" server*.log',
+        ],
+        esperado: "Comprobar 12 detenidos.",
+      },
+      {
+        agrupado: true,
+        titulo: "Paso 5 · RDR_Receive en 602",
+        maquinas: "Máquina 602",
+        comandos: [
+          "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR602_KYTL_01_20",
+          'grep -ai "RDR_Receive" server*.log',
+        ],
+        esperado: "Comprobar 12 detenidos.",
+      },
+      {
+        agrupado: true,
+        titulo: "Paso 6 · ServicesRDR arrancado",
+        maquinas: "Máquinas 501 y 602",
+        comandos: ["ps -edf | grep ServicesRDR"],
+        esperado: "Deben salir VARIAS líneas.",
+      },
+      {
+        agrupado: true,
+        titulo: "Paso 7 · Sin errores periódicos en 501",
+        maquinas: "Máquina 501",
+        comandos: [
+          "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR501_KYTL_01_10",
+          'grep "Invocación EJB" server.log',
+          "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR501_KYTL_02_10",
+          'grep "Invocación EJB" server.log',
+        ],
+        esperado: "NO deben salir errores periódicos en ninguno de los dos directorios.",
+      },
+      {
+        agrupado: true,
+        titulo: "Paso 8 · Sin errores periódicos en 602",
+        maquinas: "Máquina 602",
+        comandos: [
+          "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR602_KYTL_01_20",
+          'grep "Invocación EJB" server.log',
+          "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR602_KYTL_02_20",
+          'grep "Invocación EJB" server.log',
+        ],
+        esperado: "NO deben salir errores periódicos en ninguno de los dos directorios.",
+      },
+      {
+        agrupado: true,
+        titulo: "Paso 9 · Sin superposición prog en 507",
+        maquinas: "Máquina 507",
+        comandos: [
+          "cd /logs/pr/producto/jboss_eap/jboss-eap-7/LPRDR507_KYTL_03_10",
+          "grep 'superposición prog' server.log",
+        ],
+        esperado: "NO deben salir errores periódicos.",
+      },
+      {
+        agrupado: true,
+        titulo: "Paso 10 · Sin superposición prog en 608",
+        maquinas: "Máquina 608",
+        comandos: [
+          "cd /logs/pr/producto/jboss_eap/jboss-eap-7/LPRDR608_KYTL_03_20",
+          "grep 'superposición prog' server.log",
+        ],
+        esperado: "NO deben salir errores periódicos.",
+      },
     ],
   },
   REINICIO_HANDLER: {
     titulo: "REINICIO HANDLER",
     pasos: [
-      { txt: "ps -edf | grep ServicesRDR", desc: "Deben salir varias líneas" },
+      {
+        agrupado: true,
+        titulo: "Verificar procesos ServicesRDR",
+        maquinas: "Máquinas 501 y 602",
+        comandos: ["ps -edf | grep ServicesRDR"],
+        esperado: "Deben salir varias líneas.",
+      },
     ],
   },
   RECARGA_CACHE: {
     titulo: "RECARGA DE CACHE",
     pasos: [
-      { txt: "cd /pr/kytl/online/multipais/multicanal/logs", desc: "Ir al directorio de logs" },
-      { txt: "tail -f CacheCAC1.log", desc: "Monitorear la recarga de CacheCAC1" },
-      { txt: "tail -f CacheOLAP.log", desc: "Monitorear la recarga de CacheOLAP" },
+      {
+        agrupado: true,
+        titulo: "Monitorización de los logs de cache",
+        maquinas: "Servidor de aplicación",
+        comandos: [
+          "cd /pr/kytl/online/multipais/multicanal/logs",
+          "tail -f CacheCAC1.log",
+          "tail -f CacheOLAP.log",
+        ],
+        esperado: "Ver el progreso de la recarga en CacheCAC1 y CacheOLAP. Sin errores en ninguno de los dos.",
+      },
     ],
   },
   REINICIO_API: {
     titulo: "REINICIO API",
     pasos: [
-      { txt: "Logs en NOVA NRDR - Entorno Producción", desc: "Comprobar logs en la consola NOVA" },
+      {
+        agrupado: true,
+        titulo: "Verificación en NOVA",
+        maquinas: "Consola NOVA NRDR",
+        comandos: [],
+        esperado: "Revisar los logs en NOVA NRDR – Entorno Producción. Sin errores tras el reinicio.",
+      },
     ],
   },
 };
@@ -2247,18 +2406,28 @@ function resolverBloquesComandos(elemento) {
 function clonarBloque(bloque) {
   return {
     titulo: bloque.titulo,
-    pasos: bloque.pasos.map(p => ({ ...p })),
+    pasos: bloque.pasos.map(p => p.agrupado ? { ...p, comandos: [...(p.comandos || [])] } : { ...p }),
   };
 }
 
 function resolverPlaceholders(bloque, vars) {
+  const nombre = vars.NOMBRE || "[NOMBRE]";
+  const cod = vars.COD || "[COD]";
+  const repl = s => String(s || "").replace(/\{NOMBRE\}/g, nombre).replace(/\{COD\}/g, cod);
   return {
     titulo: bloque.titulo,
-    pasos: bloque.pasos.map(p => ({
-      ...p,
-      txt: String(p.txt).replace(/\{NOMBRE\}/g, vars.NOMBRE || "[NOMBRE]")
-                        .replace(/\{COD\}/g, vars.COD || "[COD]"),
-    })),
+    pasos: bloque.pasos.map(p => {
+      if (p.agrupado) {
+        return {
+          ...p,
+          titulo: repl(p.titulo),
+          maquinas: repl(p.maquinas),
+          esperado: repl(p.esperado),
+          comandos: (p.comandos || []).map(repl),
+        };
+      }
+      return { ...p, txt: repl(p.txt) };
+    }),
   };
 }
 
@@ -2340,6 +2509,26 @@ function abrirModalComandos(elemento) {
         if (paso.esSeparador) {
           return '<div class="cmd-sep">' + esc(paso.desc || '') + '</div>';
         }
+        // Paso agrupado (con máquina + comandos + esperado)
+        if (paso.agrupado) {
+          const cmdsHtml = (paso.comandos || []).map(c =>
+            '<div class="cmd-paso__row">' +
+              '<code class="cmd-paso__txt">' + esc(c) + '</code>' +
+              '<button class="cmd-paso__copy" type="button" data-cmd-copy="' + encodeURIComponent(c) + '" title="Copiar al portapapeles">' +
+                ICONS.copy + '<span class="cmd-paso__copy-label">Copiar</span>' +
+              '</button>' +
+            '</div>'
+          ).join('');
+          return '<article class="cmd-step">' +
+            '<header class="cmd-step__head">' +
+              '<h5 class="cmd-step__title">' + esc(paso.titulo || ('Paso ' + (i + 1))) + '</h5>' +
+              (paso.maquinas ? '<span class="cmd-step__maq">' + esc(paso.maquinas) + '</span>' : '') +
+            '</header>' +
+            (cmdsHtml ? '<div class="cmd-step__cmds">' + cmdsHtml + '</div>' : '') +
+            (paso.esperado ? '<div class="cmd-step__esperado"><span class="cmd-step__esperado-lbl">Resultado esperado</span>' + esc(paso.esperado) + '</div>' : '') +
+          '</article>';
+        }
+        // Paso simple (formato antiguo)
         return '' +
           '<div class="cmd-paso">' +
             '<div class="cmd-paso__desc">' + esc(paso.desc || ('Paso ' + (i + 1))) + '</div>' +
