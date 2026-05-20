@@ -831,6 +831,134 @@ textarea.inline-input {
   animation: spin .8s linear infinite;
 }
 
+/* ─── Comandos de comprobación post-implantación ─── */
+.btn-ver-cmd {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  background: var(--bbva-electric-blue); color: var(--bbva-sand);
+  border: none; border-radius: var(--r-sm);
+  font-family: var(--bbva-font-body); font-weight: 700;
+  font-size: 12px; letter-spacing: 0.02em;
+  cursor: pointer; transition: background .15s, transform .1s;
+  flex-shrink: 0;
+}
+.btn-ver-cmd:hover { background: var(--bbva-midnight); }
+.btn-ver-cmd:active { transform: scale(0.98); }
+.btn-ver-cmd svg { width: 14px; height: 14px; fill: currentColor; }
+
+/* Drawer overlay */
+.cmd-drawer {
+  position: fixed; inset: 0; z-index: 9000;
+  pointer-events: none;
+  opacity: 0; transition: opacity .2s ease;
+}
+.cmd-drawer.is-open {
+  pointer-events: auto;
+  opacity: 1;
+}
+.cmd-drawer__backdrop {
+  position: absolute; inset: 0;
+  background: rgba(7, 14, 70, 0.45); /* Midnight con alpha */
+}
+.cmd-drawer__panel {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: min(640px, 92vw);
+  background: var(--bbva-white);
+  display: flex; flex-direction: column;
+  box-shadow: -8px 0 32px rgba(7, 14, 70, 0.18);
+  transform: translateX(100%);
+  transition: transform .25s cubic-bezier(.16,1,.3,1);
+}
+.cmd-drawer.is-open .cmd-drawer__panel { transform: translateX(0); }
+.cmd-drawer__head {
+  padding: var(--s-3);
+  background: var(--bbva-midnight); color: var(--bbva-sand);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--s-2);
+}
+.cmd-drawer__kicker {
+  font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase; opacity: 0.7;
+}
+.cmd-drawer__h {
+  font-family: var(--bbva-font-display);
+  margin: 4px 0 0; font-size: 18px; font-weight: 700;
+  word-break: break-word;
+}
+.cmd-drawer__head .btn-icon {
+  color: var(--bbva-sand);
+  flex-shrink: 0;
+}
+.cmd-drawer__head .btn-icon:hover { background: rgba(247, 248, 248, 0.12); }
+.cmd-drawer__body {
+  flex: 1; overflow-y: auto;
+  padding: var(--s-3);
+  background: var(--bbva-sand);
+}
+
+.cmd-bloque {
+  background: var(--bbva-white);
+  border: 1px solid var(--bbva-gray-1);
+  border-radius: var(--r-md);
+  padding: var(--s-3);
+  margin-bottom: var(--s-3);
+}
+.cmd-bloque__titulo {
+  font-family: var(--bbva-font-body);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--bbva-electric-blue);
+  margin: 0 0 var(--s-2);
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--bbva-electric-blue);
+}
+
+.cmd-paso { margin-bottom: var(--s-2); }
+.cmd-paso:last-child { margin-bottom: 0; }
+.cmd-paso__desc {
+  font-size: 12px;
+  color: var(--bbva-gray-4);
+  margin-bottom: 4px;
+}
+.cmd-paso__row {
+  display: flex; gap: 6px; align-items: stretch;
+}
+.cmd-paso__txt {
+  flex: 1;
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 12.5px;
+  color: var(--bbva-midnight);
+  background: var(--bbva-sand);
+  border: 1px solid var(--bbva-gray-1);
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.4;
+}
+.cmd-paso__txt.is-link {
+  color: var(--bbva-electric-blue);
+  font-weight: 600;
+}
+.cmd-paso__copy {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 0 10px;
+  background: var(--bbva-electric-blue); color: var(--bbva-sand);
+  border: none; border-radius: var(--r-sm);
+  font-family: var(--bbva-font-body); font-weight: 700;
+  font-size: 11px;
+  cursor: pointer; transition: background .15s;
+  flex-shrink: 0;
+  min-width: 80px; justify-content: center;
+}
+.cmd-paso__copy:hover { background: var(--bbva-midnight); }
+.cmd-paso__copy.is-copied { background: var(--bbva-lime); color: var(--bbva-electric-blue); }
+.cmd-paso__copy svg { width: 12px; height: 12px; fill: currentColor; }
+
+@media (max-width: 720px) {
+  .cmd-drawer__panel { width: 100vw; }
+}
+
 @media (max-width: 720px) {
   .main-content { padding: var(--s-2); }
   .card { padding: var(--s-2); }
@@ -847,6 +975,23 @@ textarea.inline-input {
 </div>
 
 <div id="toast-container"></div>
+
+<!-- Drawer lateral con los comandos de comprobación post-implantación. -->
+<div id="comandos-drawer" class="cmd-drawer" aria-hidden="true">
+  <div id="comandos-drawer-backdrop" class="cmd-drawer__backdrop"></div>
+  <aside class="cmd-drawer__panel" role="dialog" aria-labelledby="comandos-drawer-titulo">
+    <header class="cmd-drawer__head">
+      <div>
+        <div class="cmd-drawer__kicker">Comandos de comprobación</div>
+        <h3 id="comandos-drawer-titulo" class="cmd-drawer__h"></h3>
+      </div>
+      <button id="comandos-drawer-close" class="btn-icon" type="button" title="Cerrar (Esc)" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>
+      </button>
+    </header>
+    <div id="comandos-drawer-body" class="cmd-drawer__body"></div>
+  </aside>
+</div>
 
 <header class="header-master">
   <div class="header-top">
@@ -968,6 +1113,7 @@ textarea.inline-input {
         <button class="btn btn-warn" type="button" onclick="addPasoStr('REINICIO HANDLER')">+ R. HANDLER</button>
         <button class="btn btn-warn" type="button" onclick="addPasoStr('REINICIO PREVENTIVO')">+ R. PREVENT</button>
         <button class="btn btn-warn" type="button" onclick="addPasoStr('REINICIO API')">+ R. API</button>
+        <button class="btn btn-warn" type="button" onclick="addPasoStr('RECARGA CACHE')">+ RECARGA CACHE</button>
       </div>
       <div class="orden-builder__row">
         <div id="container-sel-add-cod" style="flex:1; min-width:160px;"></div>
@@ -1101,10 +1247,164 @@ const ICONS = {
   arrowDn: '<svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>',
   check:   '<svg class="v-icon ok" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>',
   cross:   '<svg class="v-icon ko" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>',
+  terminal:'<svg viewBox="0 0 24 24"><path fill="currentColor" d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM4 18V8h16v10H4zm2-2 2.5-2.5L6 11l1.4-1.4L11 13l-3.6 3.6L6 16zm6 0v-2h6v2h-6z"/></svg>',
+  copy:    '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"/></svg>',
+  close:   '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.4 17.6 5 12 10.6 6.4 5 5 6.4 10.6 12 5 17.6 6.4 19 12 13.4 17.6 19 19 17.6 13.4 12z"/></svg>',
 };
 
 // Prefijo fijo para Historias de usuario y Feature de proyecto.
 const CIBRDR_PREFIX = "CIBRDR-";
+
+/* ════════════════════════════════════════════════════════════════════
+   BIBLIOTECA DE COMANDOS DE COMPROBACIÓN POST-IMPLANTACIÓN
+   Plantillas extraídas del documento "Comandos Pase RDR Hub".
+   Cada comando puede tener {NOMBRE} (del componente) y {COD} (DP-KYTL-XXX, SS-XXX...).
+   Se resuelven en runtime con los datos reales del componente.
+   ════════════════════════════════════════════════════════════════════ */
+const COMANDOS = {
+  // ─── Por tipo de componente / subida ───
+  JAVAS: {
+    titulo: "JAVAS",
+    pasos: [
+      { txt: "cd /pr/kytl/online/multipais/multicanal/jar", desc: "Ir al directorio de JARs" },
+      { txt: "ls -alrt {NOMBRE}", desc: "Comprobar que se ha creado / modificado" },
+    ],
+  },
+  WORKSTATION: {
+    titulo: "WORKSTATION",
+    pasos: [
+      { txt: "cd /usr/local/pr/goldensource_87/release/RDR/custom/PostInstallation/", desc: "Ir al directorio de instalación" },
+      { txt: "tail -f Workstation.log", desc: "Debe salir BUILD SUCCESSFUL" },
+    ],
+  },
+  ESTATICOS: {
+    titulo: "ESTÁTICOS",
+    pasos: [
+      { txt: "cd /pr/kytl/online/multipais/multicanal/dat/properties", desc: "Ir al directorio de properties" },
+      { txt: "ls -alrt {NOMBRE}", desc: "Comprobar que se ha creado / modificado" },
+      { txt: "cat {NOMBRE}", desc: "Comprobar que se ha realizado el cambio" },
+    ],
+  },
+  EXTRACCION: {
+    titulo: "EXTRACCIÓN",
+    pasos: [
+      { txt: "select * from FT_T_ATE1 where ACTION_NME='{NOMBRE}';", desc: "Comprobar que se ha creado / modificado" },
+    ],
+  },
+  PROCEDIMIENTOS: {
+    titulo: "PROCEDIMIENTOS",
+    pasos: [
+      { txt: "SELECT object_name, object_type, status, last_ddl_time FROM all_objects WHERE object_type IN ('PROCEDURE') AND object_name = '{NOMBRE}';", desc: "Comprobar que se ha creado / modificado" },
+    ],
+  },
+  FUNCIONES: {
+    titulo: "FUNCIONES",
+    pasos: [
+      { txt: "SELECT object_name, object_type, status, last_ddl_time FROM all_objects WHERE object_type IN ('FUNCTION') AND object_name = '{NOMBRE}';", desc: "Comprobar que se ha creado / modificado" },
+    ],
+  },
+  WORKFLOWS: {
+    titulo: "WORKFLOWS",
+    pasos: [
+      { txt: "select * from FT_WF_WFDF where WORKFLOW_NME='{NOMBRE}';", desc: "Comprobar que se ha generado la nueva versión" },
+    ],
+  },
+  QUERIES: {
+    titulo: "QUERIES",
+    pasos: [
+      { txt: "select * from FT_CFG_QRDF where QUERY_NME='{NOMBRE}';", desc: "Comprobar que se ha creado / modificado" },
+    ],
+  },
+  RESOURCES: {
+    titulo: "RECURSOS",
+    pasos: [
+      { txt: "select * from FT_CFG_RSRC where URI like '%{NOMBRE}';", desc: "Comprobar que se ha creado / modificado" },
+    ],
+  },
+  PAQUETE: {
+    titulo: "PAQUETE",
+    pasos: [
+      { txt: "select * from FT_T_IICP order by CREATED_TMS desc;", desc: "Comprobar que el último se ha implementado" },
+    ],
+  },
+  // ─── Por prefijo de código ───
+  DP_KYTL: {
+    titulo: "Link DP-KYTL",
+    pasos: [
+      { txt: "https://cibdesktop.es.igrupobbva/ENOA/com.bbva.ecdy-deploymentfront-deploymentmgr-1/#/KYTL/deployment/{COD}", desc: "Abrir el link para verificar el deployment", esLink: true },
+    ],
+  },
+  SS: {
+    titulo: "Link JIRA SS",
+    pasos: [
+      { txt: "https://cibproducts.grupobbva.com/JIRA/browse/{COD}", desc: "Abrir el JIRA para verificar el estado", esLink: true },
+    ],
+  },
+  ARQDAT: {
+    titulo: "Link JIRA ARQDAT",
+    pasos: [
+      { txt: "https://cibproducts.grupobbva.com/JIRA/browse/{COD}", desc: "Abrir el JIRA para verificar el estado", esLink: true },
+    ],
+  },
+  // ─── Pasos del sistema (no dependen del componente) ───
+  PARADA: {
+    titulo: "PARADA DEL SISTEMA",
+    pasos: [
+      { txt: "ps -edf | grep KYTL", desc: "En TODAS las máquinas · Debe salir solo UNA línea" },
+    ],
+  },
+  ARRANQUE: {
+    titulo: "ARRANQUE DEL SISTEMA",
+    pasos: [
+      { txt: "ps -edf | grep KYTL", desc: "[0] En TODAS las máquinas · Deben salir VARIAS líneas" },
+      { txt: "cd /usr/local/pr/goldensource_87/ApplicationLogs/Fileloading", desc: "[1] En máquinas 501 y 602" },
+      { txt: "ls -alrt", desc: "[1] Debe existir goldensource.orchestrator.log" },
+      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1", desc: "[2] En TODAS las máquinas" },
+      { txt: "grep -Rnis WFLYSRV0025 *", desc: "[2] Debe poner 'perezosos', NO 'lazy'" },
+      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/DOMAIN", desc: "[3] En TODAS las máquinas" },
+      { txt: "grep conectado host-controller.log", desc: "[3] Debe poner 'conectado'" },
+      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR501_KYTL_01_10", desc: "[4] En máquina 501" },
+      { txt: "grep -ai \"RDR_Receive\" server*.log", desc: "[4] Comprobar 12 detenidos" },
+      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR602_KYTL_01_20", desc: "[5] En máquina 602" },
+      { txt: "grep -ai \"RDR_Receive\" server*.log", desc: "[5] Comprobar 12 detenidos" },
+      { txt: "ps -edf | grep ServicesRDR", desc: "[6] En máquinas 501 y 602 · Deben salir VARIAS líneas" },
+      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR501_KYTL_01_10", desc: "[7] En máquina 501" },
+      { txt: "grep \"Invocación EJB\" server.log", desc: "[7] NO deben salir errores periódicos" },
+      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR501_KYTL_02_10", desc: "[7] En máquina 501" },
+      { txt: "grep \"Invocación EJB\" server.log", desc: "[7] NO deben salir errores periódicos" },
+      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR602_KYTL_01_20", desc: "[8] En máquina 602" },
+      { txt: "grep \"Invocación EJB\" server.log", desc: "[8] NO deben salir errores periódicos" },
+      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7.1/LPRDR602_KYTL_02_20", desc: "[8] En máquina 602" },
+      { txt: "grep \"Invocación EJB\" server.log", desc: "[8] NO deben salir errores periódicos" },
+      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7/LPRDR507_KYTL_03_10", desc: "[9] En máquina 507" },
+      { txt: "grep 'superposición prog' server.log", desc: "[9] NO deben salir errores periódicos" },
+      { txt: "cd /logs/pr/producto/jboss_eap/jboss-eap-7/LPRDR608_KYTL_03_20", desc: "[10] En máquina 608" },
+      { txt: "grep 'superposición prog' server.log", desc: "[10] NO deben salir errores periódicos" },
+    ],
+  },
+  REINICIO_HANDLER: {
+    titulo: "REINICIO HANDLER",
+    pasos: [
+      { txt: "ps -edf | grep ServicesRDR", desc: "Deben salir varias líneas" },
+    ],
+  },
+  RECARGA_CACHE: {
+    titulo: "RECARGA DE CACHE",
+    pasos: [
+      { txt: "cd /pr/kytl/online/multipais/multicanal/logs", desc: "Ir al directorio de logs" },
+      { txt: "tail -f CacheCAC1.log", desc: "Monitorear la recarga de CacheCAC1" },
+      { txt: "tail -f CacheOLAP.log", desc: "Monitorear la recarga de CacheOLAP" },
+    ],
+  },
+  REINICIO_API: {
+    titulo: "REINICIO API",
+    pasos: [
+      { txt: "Logs en NOVA NRDR - Entorno Producción", desc: "Comprobar logs en la consola NOVA" },
+    ],
+  },
+};
+// El Reinicio Preventivo comparte comprobación con el ARRANQUE.
+COMANDOS.REINICIO_PREVENTIVO = COMANDOS.ARRANQUE;
 
 // Devuelve el schema esperado para una fila de componente, según su tipo de subida.
 // Devuelve "" si no hay schema parametrizado.
@@ -1729,6 +2029,27 @@ document.addEventListener('DOMContentLoaded', () => {
     t = ev.target.closest('#lista-checks-ans [data-act="chkAns"]');
     if (t) { updCorreoAns(t.dataset.nombre, t.checked); return; }
   });
+
+  // Click handler global para el drawer de comandos
+  document.addEventListener('click', (ev) => {
+    // Abrir drawer con comandos de un paso
+    const tVer = ev.target.closest('[data-act="verCmd"]');
+    if (tVer) { abrirModalComandos(tVer.dataset.elemento); return; }
+    // Botón cerrar del drawer
+    const tClose = ev.target.closest('#comandos-drawer-close, [data-act="cerrarDrawer"]');
+    if (tClose) { cerrarModalComandos(); return; }
+    // Copiar comando individual
+    const tCopy = ev.target.closest('[data-cmd-copy]');
+    if (tCopy) { copiarTextoAlPortapapeles(decodeURIComponent(tCopy.dataset.cmdCopy), tCopy); return; }
+    // Click fuera del panel pero dentro del overlay → cerrar
+    const tBackdrop = ev.target.closest('#comandos-drawer-backdrop');
+    if (tBackdrop) { cerrarModalComandos(); return; }
+  });
+
+  // Cerrar drawer con Escape
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') cerrarModalComandos();
+  });
 });
 
 function marcarDirty(fila) {
@@ -1777,6 +2098,198 @@ function autosizeAllVisible() {
     // offsetParent es null cuando el elemento o un ancestro está display:none.
     if (ta.offsetParent !== null) autosizeTextarea(ta);
   });
+}
+
+/* ─────────────────────────────────────────────────────────
+   COMANDOS DE COMPROBACIÓN POST-IMPLANTACIÓN
+   ───────────────────────────────────────────────────────── */
+
+/* Dado un elemento del orden (string), devuelve los bloques de comandos aplicables
+   resueltos contra los datos reales. Cada bloque trae {titulo, pasos:[{txt, desc, esLink?}]}
+   con los placeholders {NOMBRE}/{COD} ya sustituidos. */
+function resolverBloquesComandos(elemento) {
+  if (!elemento) return [];
+  const elUp = elemento.toUpperCase();
+  const bloques = [];
+
+  // Elementos del sistema (no dependen del componente)
+  if (elUp.includes("PARADA"))                return [clonarBloque(COMANDOS.PARADA)];
+  if (elUp.includes("ARRANQUE"))              return [clonarBloque(COMANDOS.ARRANQUE)];
+  if (elUp.includes("REINICIO PREVENTIVO"))   return [clonarBloque(COMANDOS.REINICIO_PREVENTIVO)];
+  if (elUp.includes("REINICIO HANDLER"))      return [clonarBloque(COMANDOS.REINICIO_HANDLER)];
+  if (elUp.includes("REINICIO API"))          return [clonarBloque(COMANDOS.REINICIO_API)];
+  if (elUp.includes("RECARGA CACHE"))         return [clonarBloque(COMANDOS.RECARGA_CACHE)];
+
+  // Si el elemento es "Instalar Componente: <COD>", buscamos el componente real
+  // por su código y desplegamos los bloques que correspondan a su tipo/subida.
+  // Aceptamos también "<COD>" suelto por si el orden incluye solo el código.
+  const codigos = extraerCodigosDeElemento(elemento);
+  if (codigos.length === 0) return [];
+
+  codigos.forEach(cod => {
+    // Bloque de link según prefijo del Cod.
+    const codUp = cod.toUpperCase();
+    if (codUp.startsWith("DP-KYTL-"))      bloques.push(resolverPlaceholders(COMANDOS.DP_KYTL, { COD: cod }));
+    else if (codUp.startsWith("SS-"))      bloques.push(resolverPlaceholders(COMANDOS.SS, { COD: cod }));
+    else if (codUp.startsWith("ARQDAT-"))  bloques.push(resolverPlaceholders(COMANDOS.ARQDAT, { COD: cod }));
+
+    // Y los bloques de comprobación según tipo/subida del componente.
+    const comp = buscarComponentePorCod(cod);
+    if (comp) {
+      const tipo = (comp.tipo || "").toLowerCase();
+      const subida = (comp.subida || "").toLowerCase();
+      // Mapeo Tipo/Subida → bloque
+      // (cubre los pares "habituales" del Excel Parametrizaciones)
+      const map = [
+        { match: t => t === "java",           bloque: "JAVAS" },
+        { match: t => t === "workstation",    bloque: "WORKSTATION" },
+        { match: t => t.startsWith("estát") || t.startsWith("estat"), bloque: "ESTATICOS" },
+        { match: t => t.startsWith("procedimi"), bloque: "PROCEDIMIENTOS" },
+        { match: t => t.startsWith("func"),   bloque: "FUNCIONES" },
+        { match: t => t.startsWith("workfl"), bloque: "WORKFLOWS" },
+        { match: t => t === "query",          bloque: "QUERIES" },
+        { match: t => t.startsWith("recurs"), bloque: "RESOURCES" },
+      ];
+      let agregado = false;
+      for (const m of map) {
+        if (m.match(tipo)) {
+          bloques.push(resolverPlaceholders(COMANDOS[m.bloque], { NOMBRE: comp.nombre || "", COD: cod }));
+          agregado = true;
+          break;
+        }
+      }
+      // Si la subida es Paquete, añadimos el bloque de paquete además.
+      if (subida.startsWith("paquete")) {
+        bloques.push(resolverPlaceholders(COMANDOS.PAQUETE, { NOMBRE: comp.nombre || "", COD: cod }));
+        agregado = true;
+      }
+      // Si la subida es Aperiódico, el bloque es EXTRACCION (según el doc original).
+      if (subida.startsWith("aperiódico") || subida.startsWith("aperiodico")) {
+        // No sustituye al bloque tipo si ya hubo (puede acumularse).
+        if (!agregado) bloques.push(resolverPlaceholders(COMANDOS.EXTRACCION, { NOMBRE: comp.nombre || "", COD: cod }));
+      }
+    }
+  });
+
+  return bloques;
+}
+
+function clonarBloque(bloque) {
+  return {
+    titulo: bloque.titulo,
+    pasos: bloque.pasos.map(p => ({ ...p })),
+  };
+}
+
+function resolverPlaceholders(bloque, vars) {
+  return {
+    titulo: bloque.titulo,
+    pasos: bloque.pasos.map(p => ({
+      ...p,
+      txt: String(p.txt).replace(/\{NOMBRE\}/g, vars.NOMBRE || "[NOMBRE]")
+                        .replace(/\{COD\}/g, vars.COD || "[COD]"),
+    })),
+  };
+}
+
+/* "Instalar Componente: DP-KYTL-1234" → ["DP-KYTL-1234"]
+   "SS-33333"                          → ["SS-33333"]
+   "DP-KYTL-A y DP-KYTL-B"             → ["DP-KYTL-A", "DP-KYTL-B"]   */
+function extraerCodigosDeElemento(elemento) {
+  if (!elemento) return [];
+  const re = /(?:DP-KYTL-|SS-|ARQDAT-|REQ-)[A-Z0-9_-]+/gi;
+  return (elemento.match(re) || []).map(s => s.trim());
+}
+
+function buscarComponentePorCod(cod) {
+  const codUp = String(cod || "").toUpperCase().trim();
+  for (const p of (E.proyectos || [])) {
+    for (const c of (p.componentes || [])) {
+      if (String(c.codigo || "").toUpperCase().trim() === codUp) return c;
+    }
+  }
+  return null;
+}
+
+/* Renderiza y abre el modal lateral con los bloques de comandos del elemento. */
+function abrirModalComandos(elemento) {
+  const bloques = resolverBloquesComandos(elemento);
+  const drawer = $('comandos-drawer');
+  const titEl = $('comandos-drawer-titulo');
+  const bodyEl = $('comandos-drawer-body');
+  if (!drawer || !titEl || !bodyEl) return;
+
+  titEl.textContent = elemento;
+
+  if (bloques.length === 0) {
+    bodyEl.innerHTML = '<p style="color: var(--bbva-gray-4); padding: var(--s-3); text-align: center;">No hay comandos definidos para este elemento.</p>';
+  } else {
+    const html = bloques.map(b => {
+      const pasosHtml = b.pasos.map((paso, i) => {
+        const tipo = paso.esLink ? 'enlace' : 'comando';
+        return '' +
+          '<div class="cmd-paso">' +
+            '<div class="cmd-paso__desc">' + esc(paso.desc || ('Paso ' + (i + 1))) + '</div>' +
+            '<div class="cmd-paso__row">' +
+              '<code class="cmd-paso__txt' + (paso.esLink ? ' is-link' : '') + '">' + esc(paso.txt) + '</code>' +
+              '<button class="cmd-paso__copy" type="button" data-cmd-copy="' + encodeURIComponent(paso.txt) + '" title="Copiar al portapapeles">' +
+                ICONS.copy + '<span class="cmd-paso__copy-label">Copiar</span>' +
+              '</button>' +
+            '</div>' +
+          '</div>';
+      }).join('');
+      return '<section class="cmd-bloque">' +
+        '<h4 class="cmd-bloque__titulo">' + esc(b.titulo) + '</h4>' +
+        pasosHtml +
+      '</section>';
+    }).join('');
+    bodyEl.innerHTML = html;
+  }
+
+  drawer.classList.add('is-open');
+  // Focus al close para accesibilidad
+  setTimeout(() => { const cb = $('comandos-drawer-close'); if (cb) cb.focus(); }, 50);
+}
+
+function cerrarModalComandos() {
+  const drawer = $('comandos-drawer');
+  if (drawer) drawer.classList.remove('is-open');
+}
+
+/* Handler único de copia (delegación). Se monta una sola vez. */
+function copiarTextoAlPortapapeles(texto, btnEl) {
+  const onOk = () => {
+    if (!btnEl) return;
+    const lbl = btnEl.querySelector('.cmd-paso__copy-label');
+    const prev = lbl ? lbl.textContent : '';
+    if (lbl) lbl.textContent = 'Copiado';
+    btnEl.classList.add('is-copied');
+    setTimeout(() => {
+      if (lbl) lbl.textContent = prev;
+      btnEl.classList.remove('is-copied');
+    }, 1400);
+  };
+  const onErr = () => showToast("No se pudo copiar al portapapeles", "error");
+
+  // Intento principal: API moderna
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(texto).then(onOk).catch(() => {
+      // Fallback execCommand
+      try { fallbackCopy(texto); onOk(); } catch (_) { onErr(); }
+    });
+  } else {
+    try { fallbackCopy(texto); onOk(); } catch (_) { onErr(); }
+  }
+}
+
+function fallbackCopy(texto) {
+  const ta = document.createElement('textarea');
+  ta.value = texto;
+  ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
 }
 
 // ════ Pintar orden ════════════════════════════════════════
@@ -1838,13 +2351,17 @@ function pintarOrdenEjecucion() {
   E.ordenPase.forEach((o, idx) => {
     const elUpper = o.elemento.toUpperCase();
     const isSys = elUpper.includes("PARADA") || elUpper.includes("ARRANQUE") || elUpper.includes("REINICIO");
+    // Casi cualquier paso del orden tiene comandos asociados (sistema o componente).
+    // Solo casos raros sin match no muestran el botón.
+    const tieneComandos = resolverBloquesComandos(o.elemento).length > 0;
     const step = document.createElement('div');
     step.className = 'orden-step';
     step.innerHTML =
       '<input type="checkbox" ' + (o.implantado ? 'checked' : '') + ' data-act="chkOrden" data-fila="' + o.fila + '">' +
       '<div class="orden-step__num">' + (idx + 1) + '</div>' +
       '<div class="orden-step__text">' + esc(o.elemento) + '</div>' +
-      (isSys ? '<input type="text" class="orden-step__som" placeholder="SOM-…" value="' + esc(o.som) + '" data-act="somEjec" data-fila="' + o.fila + '">' : '');
+      (isSys ? '<input type="text" class="orden-step__som" placeholder="SOM-…" value="' + esc(o.som) + '" data-act="somEjec" data-fila="' + o.fila + '">' : '') +
+      (tieneComandos ? '<button class="btn-ver-cmd" type="button" data-act="verCmd" data-elemento="' + esc(o.elemento) + '" title="Ver comandos de comprobación">' + ICONS.terminal + '<span>Ver comandos</span></button>' : '');
     frag.appendChild(step);
   });
   hEjec.appendChild(frag);
