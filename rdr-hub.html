@@ -884,6 +884,7 @@ textarea.inline-input {
   font-family: var(--bbva-font-display);
   margin: 4px 0 0; font-size: 18px; font-weight: 700;
   word-break: break-word;
+  color: var(--bbva-sand);   /* Sobreescribe color heredado del h3 global */
 }
 .cmd-drawer__head .btn-icon {
   color: var(--bbva-sand);
@@ -915,6 +916,17 @@ textarea.inline-input {
 
 .cmd-paso { margin-bottom: var(--s-2); }
 .cmd-paso:last-child { margin-bottom: 0; }
+.cmd-sep {
+  margin: var(--s-2) 0 6px;
+  padding: 6px 10px;
+  background: var(--bbva-electric-blue);
+  color: var(--bbva-sand);
+  border-radius: var(--r-sm);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+.cmd-sep:first-child { margin-top: 0; }
 .cmd-paso__desc {
   font-size: 12px;
   color: var(--bbva-gray-4);
@@ -1267,7 +1279,7 @@ const COMANDOS = {
     titulo: "JAVAS",
     pasos: [
       { txt: "cd /pr/kytl/online/multipais/multicanal/jar", desc: "Ir al directorio de JARs" },
-      { txt: "ls -alrt {NOMBRE}", desc: "Comprobar que se ha creado / modificado" },
+      { txt: "ls -alrt {NOMBRE}*", desc: "Comprobar que el .jar se ha creado / modificado (wildcard para cualquier versión / sufijo)" },
     ],
   },
   WORKSTATION: {
@@ -1733,7 +1745,16 @@ function actualizarValidador() {
       const faltan = [];
       cods.forEach(cod => {
         const idxC = oStrings.findIndex(o => o.includes(cod));
-        if (idxC === -1 || idxC <= idxP || idxC >= idxA) faltan.push(cod);
+        if (idxC === -1) { faltan.push(cod); return; }
+        // Excepción: los REMEDYs (REQ-) pueden ir ANTES de la PARADA
+        // (porque suelen aplicarse en producción antes de la subida del paquete).
+        // Para REQ-, solo exigimos que estén antes del ARRANQUE.
+        const esRemedy = cod.startsWith("REQ-");
+        if (esRemedy) {
+          if (idxC >= idxA) faltan.push(cod);
+        } else {
+          if (idxC <= idxP || idxC >= idxA) faltan.push(cod);
+        }
       });
       if (faltan.length > 0) { seqOk = false; msgSeq = "Faltan paquetes o están fuera del bloque principal: " + faltan.join(", "); }
     }
@@ -2106,7 +2127,11 @@ function autosizeAllVisible() {
 
 /* Dado un elemento del orden (string), devuelve los bloques de comandos aplicables
    resueltos contra los datos reales. Cada bloque trae {titulo, pasos:[{txt, desc, esLink?}]}
-   con los placeholders {NOMBRE}/{COD} ya sustituidos. */
+   con los placeholders {NOMBRE}/{COD} ya sustituidos.
+
+   Cuando un Cod. agrupa varios componentes (p.ej. 3 Javas en el mismo DP-KYTL-),
+   se generan los pasos de cada componente uno tras otro en el mismo bloque, para
+   que el equipo del sábado tenga el `ls -alrt` de cada Java en orden. */
 function resolverBloquesComandos(elemento) {
   if (!elemento) return [];
   const elUp = elemento.toUpperCase();
@@ -2120,55 +2145,100 @@ function resolverBloquesComandos(elemento) {
   if (elUp.includes("REINICIO API"))          return [clonarBloque(COMANDOS.REINICIO_API)];
   if (elUp.includes("RECARGA CACHE"))         return [clonarBloque(COMANDOS.RECARGA_CACHE)];
 
-  // Si el elemento es "Instalar Componente: <COD>", buscamos el componente real
-  // por su código y desplegamos los bloques que correspondan a su tipo/subida.
-  // Aceptamos también "<COD>" suelto por si el orden incluye solo el código.
+  // Si el elemento es "Instalar X: <COD>", procesamos el(los) Cod. encontrados.
   const codigos = extraerCodigosDeElemento(elemento);
   if (codigos.length === 0) return [];
 
+  // Para cada Cod. distinto en el paso (normalmente solo uno):
   codigos.forEach(cod => {
-    // Bloque de link según prefijo del Cod.
+    // 1. Bloque de link según prefijo del Cod.
     const codUp = cod.toUpperCase();
     if (codUp.startsWith("DP-KYTL-"))      bloques.push(resolverPlaceholders(COMANDOS.DP_KYTL, { COD: cod }));
     else if (codUp.startsWith("SS-"))      bloques.push(resolverPlaceholders(COMANDOS.SS, { COD: cod }));
     else if (codUp.startsWith("ARQDAT-"))  bloques.push(resolverPlaceholders(COMANDOS.ARQDAT, { COD: cod }));
+    // REQ- no tiene link asociado en el documento original (Remedy se gestiona por su URL externa)
 
-    // Y los bloques de comprobación según tipo/subida del componente.
-    const comp = buscarComponentePorCod(cod);
-    if (comp) {
-      const tipo = (comp.tipo || "").toLowerCase();
-      const subida = (comp.subida || "").toLowerCase();
-      // Mapeo Tipo/Subida → bloque
-      // (cubre los pares "habituales" del Excel Parametrizaciones)
-      const map = [
-        { match: t => t === "java",           bloque: "JAVAS" },
-        { match: t => t === "workstation",    bloque: "WORKSTATION" },
-        { match: t => t.startsWith("estát") || t.startsWith("estat"), bloque: "ESTATICOS" },
-        { match: t => t.startsWith("procedimi"), bloque: "PROCEDIMIENTOS" },
-        { match: t => t.startsWith("func"),   bloque: "FUNCIONES" },
-        { match: t => t.startsWith("workfl"), bloque: "WORKFLOWS" },
-        { match: t => t === "query",          bloque: "QUERIES" },
-        { match: t => t.startsWith("recurs"), bloque: "RESOURCES" },
-      ];
-      let agregado = false;
-      for (const m of map) {
-        if (m.match(tipo)) {
-          bloques.push(resolverPlaceholders(COMANDOS[m.bloque], { NOMBRE: comp.nombre || "", COD: cod }));
-          agregado = true;
-          break;
-        }
-      }
-      // Si la subida es Paquete, añadimos el bloque de paquete además.
-      if (subida.startsWith("paquete")) {
-        bloques.push(resolverPlaceholders(COMANDOS.PAQUETE, { NOMBRE: comp.nombre || "", COD: cod }));
-        agregado = true;
-      }
-      // Si la subida es Aperiódico, el bloque es EXTRACCION (según el doc original).
-      if (subida.startsWith("aperiódico") || subida.startsWith("aperiodico")) {
-        // No sustituye al bloque tipo si ya hubo (puede acumularse).
-        if (!agregado) bloques.push(resolverPlaceholders(COMANDOS.EXTRACCION, { NOMBRE: comp.nombre || "", COD: cod }));
-      }
+    // 2. TODOS los componentes que comparten este Cod. (paquete agrupado).
+    const comps = buscarComponentesPorCod(cod);
+    if (comps.length === 0) return;
+
+    // ¿Es un paquete de subida "Paquete"? Si sí, añadimos el bloque PAQUETE
+    // como verificación global del despliegue (independiente del nombre del componente).
+    const subidaPaquete = comps.some(c => String(c.subida || "").toLowerCase().startsWith("paquete"));
+    if (subidaPaquete) {
+      bloques.push(resolverPlaceholders(COMANDOS.PAQUETE, { COD: cod }));
     }
+
+    // 3. Por cada componente, añadimos el bloque correspondiente a su Tipo Componente.
+    // IMPORTANTE: la decisión es por Tipo Componente, no por Tipo Subida.
+    // Mapeo según parametrización confirmada:
+    //   Java         → JAVAS
+    //   Workstation  → WORKSTATION
+    //   Estático     → ESTATICOS
+    //   Workflow     → WORKFLOWS
+    //   Query        → QUERIES
+    //   Recursos     → RESOURCES
+    //   Procedimiento → PROCEDIMIENTOS
+    //   Función      → FUNCIONES
+    //   Extracción   → EXTRACCION
+    //   Evento, Cadena, Dependientes Entorno, Directorio → sin bloque específico
+    //     (el link DP-KYTL y/o PAQUETE ya cubren la verificación).
+    const tipoABloque = (tipoLower) => {
+      const t = tipoLower || "";
+      if (t === "java")              return "JAVAS";
+      if (t === "workstation")       return "WORKSTATION";
+      if (t.startsWith("estát") || t.startsWith("estat"))     return "ESTATICOS";
+      if (t.startsWith("workfl"))    return "WORKFLOWS";
+      if (t === "query")             return "QUERIES";
+      if (t.startsWith("recurs"))    return "RESOURCES";
+      if (t.startsWith("procedimi")) return "PROCEDIMIENTOS";
+      if (t.startsWith("func"))      return "FUNCIONES";
+      if (t.startsWith("extrac"))    return "EXTRACCION";
+      return null;
+    };
+
+    // Agrupamos por bloque para mostrar todos los pasos de un mismo tipo juntos.
+    // Ej: si hay 3 Javas en este paquete, vemos UN bloque "JAVAS" con 3 secciones
+    // (una por Java), y no 3 bloques "JAVAS" separados.
+    const porBloque = {}; // bloqueKey → [comp, comp, ...]
+    comps.forEach(c => {
+      const tipo = (c.tipo || "").toLowerCase();
+      const bk = tipoABloque(tipo);
+      if (!bk) return;
+      (porBloque[bk] = porBloque[bk] || []).push(c);
+    });
+
+    Object.keys(porBloque).forEach(bk => {
+      const bloquePlantilla = COMANDOS[bk];
+      if (!bloquePlantilla) return;
+      const compsDelBloque = porBloque[bk];
+
+      if (compsDelBloque.length === 1) {
+        // Caso simple: un solo componente de este tipo
+        const c = compsDelBloque[0];
+        bloques.push(resolverPlaceholders(bloquePlantilla, { NOMBRE: c.nombre || "", COD: cod }));
+      } else {
+        // Caso múltiple: varios componentes del mismo tipo dentro del paquete.
+        // Generamos un único bloque que repite los pasos por cada componente,
+        // con su nombre en la descripción para distinguirlos.
+        const titulo = bloquePlantilla.titulo + " · " + compsDelBloque.length + " componentes";
+        const pasos = [];
+        compsDelBloque.forEach((c, idx) => {
+          // Separador entre componentes (solo a partir del segundo)
+          if (idx > 0) pasos.push({ esSeparador: true, desc: "— " + (c.nombre || "componente " + (idx + 1)) + " —" });
+          else if (compsDelBloque.length > 1) pasos.push({ esSeparador: true, desc: "— " + (c.nombre || "componente 1") + " —" });
+
+          bloquePlantilla.pasos.forEach(p => {
+            pasos.push({
+              ...p,
+              txt: String(p.txt).replace(/\{NOMBRE\}/g, c.nombre || "[NOMBRE]")
+                                .replace(/\{COD\}/g, cod),
+            });
+          });
+        });
+        bloques.push({ titulo, pasos });
+      }
+    });
   });
 
   return bloques;
@@ -2201,14 +2271,54 @@ function extraerCodigosDeElemento(elemento) {
   return (elemento.match(re) || []).map(s => s.trim());
 }
 
+// Mantenida por compatibilidad: devuelve el primer componente con ese Cod.
 function buscarComponentePorCod(cod) {
+  const lista = buscarComponentesPorCod(cod);
+  return lista.length > 0 ? lista[0] : null;
+}
+
+// Devuelve TODOS los componentes que comparten un mismo Cod.
+// (Un paquete DP-KYTL- puede agrupar varios Javas, Workflows, Queries, etc.)
+function buscarComponentesPorCod(cod) {
   const codUp = String(cod || "").toUpperCase().trim();
-  for (const p of (E.proyectos || [])) {
-    for (const c of (p.componentes || [])) {
-      if (String(c.codigo || "").toUpperCase().trim() === codUp) return c;
-    }
+  const out = [];
+  (E.proyectos || []).forEach(p => (p.componentes || []).forEach(c => {
+    if (String(c.codigo || "").toUpperCase().trim() === codUp) out.push(c);
+  }));
+  return out;
+}
+
+// Etiqueta del paso según el Tipo de Subida más representativo de un Cod.
+// Si en un Cod. hay subidas mezcladas → escogemos la primera del primer componente.
+function etiquetaPasoPorCod(cod) {
+  const comps = buscarComponentesPorCod(cod);
+  if (comps.length === 0) {
+    // Fallback por prefijo si no hay componente cargado todavía
+    const u = String(cod).toUpperCase();
+    if (u.startsWith("REQ-"))    return "REMEDY: " + cod;
+    if (u.startsWith("SS-"))     return "Aperiódico: " + cod;
+    if (u.startsWith("ARQDAT-")) return "Modificación modelo BBDD: " + cod;
+    return "Instalar Componente: " + cod;
   }
-  return null;
+  // Tipo de Subida del primer componente (o el más representativo).
+  // En caso de mezcla, el primero es razonable; el usuario también lo verá luego en los bloques.
+  const subida = (comps[0].subida || "").toLowerCase();
+  return etiquetaPorSubida(subida, cod);
+}
+
+function etiquetaPorSubida(subidaLower, cod) {
+  const s = subidaLower || "";
+  if (s === "java")                       return "Instalar Javas: " + cod;
+  if (s === "workstation")                return "Instalar Workstation: " + cod;
+  if (s.startsWith("paquete"))            return "Instalar Paquete Custom: " + cod;
+  if (s.startsWith("aperiódico") || s.startsWith("aperiodico")) return "Aperiódico: " + cod;
+  if (s === "bbdd")                       return "Modificación modelo BBDD: " + cod;
+  if (s === "remedy")                     return "REMEDY: " + cod;
+  if (s.startsWith("estát") || s.startsWith("estat")) return "Estático: " + cod;
+  if (s === "service")                    return "Service: " + cod;
+  if (s === "ear")                        return "EAR: " + cod;
+  if (s.startsWith("dependientes"))       return "Dependientes Entorno: " + cod;
+  return "Instalar Componente: " + cod; // genérico cuando no hay tipo de subida
 }
 
 /* Renderiza y abre el modal lateral con los bloques de comandos del elemento. */
@@ -2226,7 +2336,10 @@ function abrirModalComandos(elemento) {
   } else {
     const html = bloques.map(b => {
       const pasosHtml = b.pasos.map((paso, i) => {
-        const tipo = paso.esLink ? 'enlace' : 'comando';
+        // Separador visual entre componentes dentro del mismo bloque
+        if (paso.esSeparador) {
+          return '<div class="cmd-sep">' + esc(paso.desc || '') + '</div>';
+        }
         return '' +
           '<div class="cmd-paso">' +
             '<div class="cmd-paso__desc">' + esc(paso.desc || ('Paso ' + (i + 1))) + '</div>' +
@@ -2334,7 +2447,12 @@ function pintarSelectorCods() {
   }));
 
   let html = '<select id="sel-add-cod" onchange="addPasoCod()"><option value="">+ Selecciona un componente (cód)…</option>';
-  cods.forEach(c => html += '<option value="' + esc("Instalar Componente: " + c) + '">' + esc(c) + '</option>');
+  // Cada Cod. aparece UNA vez en el selector, con la etiqueta dinámica
+  // según el Tipo de Subida del componente (o el primero si comparten Cod).
+  cods.forEach(c => {
+    const etiqueta = etiquetaPasoPorCod(c);
+    html += '<option value="' + esc(etiqueta) + '">' + esc(c) + ' — ' + esc(etiqueta.replace(": " + c, "")) + '</option>';
+  });
   html += '</select>';
   container.innerHTML = html;
 }
