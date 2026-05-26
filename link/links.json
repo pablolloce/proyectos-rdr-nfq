@@ -1,0 +1,30 @@
+{
+  "_comment": "Hub RDR · enlaces centralizados. Edita este archivo cuando un link cambie y haz commit. La página los recoge automáticamente al cargar.",
+  "_updated": "2026-05-26",
+
+  "portalBBVACIB": {
+    "url": "https://sites.google.com/bbva.com/portal-nfq-bbva-cib/",
+    "note": "Portal interno del equipo NFQ-BBVA CIB"
+  },
+
+  "timeReportBBVA": {
+    "url": "https://docs.google.com/spreadsheets/d/1dZsJcMsrVg3WnjwwLSQnve616uxYDaio5isa28dnNYU/edit?gid=218660641#gid=218660641",
+    "note": "Time Report de BBVA — link estable"
+  },
+
+  "timeReportNFQ": {
+    "url": "https://docs.google.com/spreadsheets/d/1d3Ssa1EHPWlaynrmh6gdV5WnfSRZrcTe7GWMNncM-ZU/edit?gid=0#gid=0",
+    "note": "Time Report de NFQ — cambia cada 3 meses, recordar actualizar",
+    "expires": "2026-08-26"
+  },
+
+  "driveBBVA": {
+    "url": "https://drive.google.com/drive/folders/0AEkC6lvF0dGAUk9PVA",
+    "note": "Drive con documentación compartida del proyecto RDR"
+  },
+
+  "githubBBVA": {
+    "url": "https://bbva.ghe.com/XE93412/Proyectos-RDR-NFQ",
+    "note": "Repositorio de código fuente RDR en GitHub BBVA"
+  }
+}

@@ -3,9 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 484 610'%3E%3Cdefs%3E%3ClinearGradient id='l' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0' stop-color='%23EE6A3A'/%3E%3Cstop offset='1' stop-color='%23CD3D60'/%3E%3C/linearGradient%3E%3ClinearGradient id='m' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0' stop-color='%23CD3D60'/%3E%3Cstop offset='1' stop-color='%231D7CF4'/%3E%3C/linearGradient%3E%3ClinearGradient id='r' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0' stop-color='%231D7CF4'/%3E%3Cstop offset='1' stop-color='%23217AEE'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M 0,94 L 160,1 L 480,512 L 320,605 Z' fill='url(%23m)'/%3E%3Cpath d='M 0,94 L 160,1 L 160,510 L 0,601 Z' fill='url(%23l)'/%3E%3Cpath d='M 320,90 L 480,2 L 480,512 L 320,605 Z' fill='url(%23r)'/%3E%3C/svg%3E">
-  <title>RDR Hub · BBVA × NFQ</title>
-  <meta name="description" content="Hub de documentación RDR: Welcome Pack, Formación, Pases Calendados, Retrospectiva, Vacaciones y Portal NFQ-BBVA CIB.">
+  <title>RDR · BBVA × NFQ</title>
+  <meta name="description" content="Hub RDR: formaciones, equipo y proyectos del Repositorio de Datos de Referencia.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,7 +34,7 @@
       font-family: var(--font-body);
       font-weight: 400;
       color: var(--sand);
-      background: var(--midnight);
+      background: var(--electric);
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
@@ -46,7 +45,7 @@
       flex-direction: column;
     }
 
-    h1, h2 {
+    h1, h2, h3 {
       font-family: var(--font-display);
       font-weight: 700;
       margin: 0;
@@ -56,24 +55,25 @@
 
     p { margin: 0; }
     a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
 
     /* ===========================================================
-       PAGE WRAPPER — compacto, todo accesible
+       PAGE
        =========================================================== */
 
     .page {
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 24px clamp(16px, 3vw, 40px);
-      gap: 20px;
+      padding: 22px clamp(16px, 3vw, 40px);
+      gap: 18px;
       max-width: 1600px;
       width: 100%;
       margin: 0 auto;
     }
 
     /* ===========================================================
-       HEADER — todo en una fila horizontal
+       HEADER
        =========================================================== */
 
     .topbar {
@@ -103,7 +103,6 @@
       font-size: clamp(11px, 0.85vw, 13px);
       font-weight: 400;
       opacity: 0.75;
-      letter-spacing: 0.02em;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -118,49 +117,103 @@
     }
 
     /* ===========================================================
-       GRID DE TARJETAS — denso, todo a la vista
+       SECCIONES
        =========================================================== */
 
-    .cards {
+    .sections {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section__head {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      padding-bottom: 4px;
+    }
+
+    .section__num {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      opacity: 0.55;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .section__title {
+      font-family: var(--font-display);
+      font-size: clamp(15px, 1.3vw, 19px);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .section__line {
+      flex: 1;
+      height: 1px;
+      background: rgba(247,248,248,0.18);
+      margin-left: 4px;
+    }
+
+    .section__hint {
+      font-size: 11px;
+      opacity: 0.55;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+
+    .section__grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-      align-content: stretch;
+      gap: 12px;
     }
 
-    @media (max-width: 1100px) {
-      .cards { grid-template-columns: repeat(3, 1fr); }
+    /* Cada sección define su propio grid según el número de cards */
+    .section--formaciones .section__grid { grid-template-columns: repeat(3, 1fr); }
+    .section--equipo      .section__grid { grid-template-columns: repeat(3, 1fr); }
+    .section--proyectos   .section__grid { grid-template-columns: repeat(2, 1fr); }
+
+    @media (max-width: 980px) {
+      .section--formaciones .section__grid,
+      .section--equipo      .section__grid,
+      .section--proyectos   .section__grid { grid-template-columns: repeat(2, 1fr); }
     }
 
-    @media (max-width: 720px) {
-      .cards { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 560px) {
+      .section--formaciones .section__grid,
+      .section--equipo      .section__grid,
+      .section--proyectos   .section__grid { grid-template-columns: 1fr; }
     }
 
-    @media (max-width: 460px) {
-      .cards { grid-template-columns: 1fr; }
-    }
+    /* ===========================================================
+       CARD BASE
+       =========================================================== */
 
     .card {
       display: flex;
       flex-direction: column;
-      padding: 16px 18px;
+      padding: 14px 16px;
       border-radius: 14px;
       color: var(--electric);
-      min-height: 0;
       position: relative;
       overflow: hidden;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
       border: none;
-      font: inherit;
       text-align: left;
       cursor: pointer;
       width: 100%;
+      min-height: 130px;
     }
 
     .card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
     }
 
     .card:focus-visible {
@@ -168,20 +221,20 @@
       outline-offset: 3px;
     }
 
-    .card--1 { background: var(--serene); }
-    .card--2 { background: var(--lime); }
-    .card--3 { background: var(--canary); }
-    .card--4 { background: var(--mandarin); }
-    .card--5 { background: var(--aqua); }
-    .card--6 { background: var(--purple); }
-    .card--7 { background: var(--sand); }
+    .card--serene  { background: var(--serene); }
+    .card--lime    { background: var(--lime); }
+    .card--canary  { background: var(--canary); }
+    .card--aqua    { background: var(--aqua); }
+    .card--purple  { background: var(--purple); }
+    .card--mandarin{ background: var(--mandarin); }
+    .card--sand    { background: var(--sand); }
 
     .card__head {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
       gap: 8px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .card__phase {
@@ -190,12 +243,11 @@
       letter-spacing: 0.12em;
       text-transform: uppercase;
       opacity: 0.7;
-      line-height: 1.2;
     }
 
     .card__num {
       font-family: var(--font-display);
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 700;
       line-height: 1;
       opacity: 0.85;
@@ -203,20 +255,21 @@
 
     .card__title {
       font-family: var(--font-display);
-      font-size: clamp(17px, 1.4vw, 22px);
+      font-size: clamp(16px, 1.3vw, 20px);
       font-weight: 700;
       line-height: 1.1;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .card__desc {
-      font-size: 13px;
+      font-size: 12.5px;
       line-height: 1.4;
       opacity: 0.82;
-      margin-bottom: 14px;
       flex: 1;
+      margin-bottom: 10px;
     }
 
+    /* Card simple: footer con un solo CTA */
     .card__action {
       display: flex;
       align-items: center;
@@ -226,13 +279,13 @@
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      padding-top: 10px;
+      padding-top: 8px;
       border-top: 1px solid rgba(0, 19, 145, 0.18);
     }
 
     .card__arrow {
-      font-size: 16px;
-      transition: transform 0.2s ease;
+      font-size: 15px;
+      transition: transform 0.18s ease;
       line-height: 1;
     }
 
@@ -241,7 +294,65 @@
     }
 
     /* ===========================================================
-       FOOTER — compacto
+       CARD CON ACCIONES MÚLTIPLES (Time Report / Drive+Repo)
+       =========================================================== */
+
+    /* Estas cards no son clicables ellas mismas — los botones internos sí */
+    .card--multi {
+      cursor: default;
+      padding: 14px 16px 12px;
+    }
+
+    .card--multi:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .card__pills {
+      display: flex;
+      gap: 6px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(0, 19, 145, 0.18);
+      margin-top: auto;
+    }
+
+    .pill {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(0, 19, 145, 0.10);
+      color: var(--electric);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .pill:hover {
+      background: rgba(0, 19, 145, 0.18);
+      transform: translateY(-1px);
+    }
+
+    .pill:focus-visible {
+      outline: 2px solid var(--electric);
+      outline-offset: 2px;
+    }
+
+    .pill__icon {
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    /* ===========================================================
+       FOOTER
        =========================================================== */
 
     .footer {
@@ -251,7 +362,7 @@
       gap: 16px;
       font-size: 11px;
       opacity: 0.7;
-      padding-top: 12px;
+      padding-top: 10px;
       border-top: 1px solid rgba(247,248,248,0.12);
     }
 
@@ -268,12 +379,6 @@
       text-transform: uppercase;
     }
 
-    .nfq-credit__isotipo {
-      height: 18px;
-      width: auto;
-      display: block;
-    }
-
     .nfq-credit__logo {
       font-family: var(--font-body);
       font-weight: 900;
@@ -281,26 +386,28 @@
       letter-spacing: -0.02em;
     }
 
+    .nfq-credit__logo span { color: var(--mandarin); }
+
     /* ===========================================================
        TOAST
        =========================================================== */
 
     .toast {
       position: fixed;
-      bottom: 32px;
+      bottom: 28px;
       left: 50%;
       transform: translateX(-50%) translateY(20px);
       background: var(--sand);
       color: var(--electric);
-      padding: 12px 24px;
+      padding: 11px 22px;
       border-radius: 999px;
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.05em;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.28);
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.25s ease, transform 0.25s ease;
+      transition: opacity 0.22s ease, transform 0.22s ease;
       z-index: 1000;
     }
 
@@ -309,18 +416,15 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    /* ===========================================================
-       Pantallas pequeñas
-       =========================================================== */
-
-    @media (max-width: 460px) {
+    @media (max-width: 560px) {
       .topbar { flex-wrap: wrap; row-gap: 4px; }
       .topbar__subtitle { display: none; }
       .footer {
         flex-direction: column;
         align-items: flex-start;
-        gap: 8px;
+        gap: 6px;
       }
+      .section__hint { display: none; }
     }
   </style>
 </head>
@@ -329,136 +433,191 @@
 
     <header class="topbar">
       <div class="topbar__left">
-        <h1 class="topbar__title">RDR Hub</h1>
+        <h1 class="topbar__title">RDR Knowledge</h1>
         <p class="topbar__subtitle">Hub de documentación · BBVA × NFQ</p>
       </div>
       <div class="topbar__logo" aria-label="BBVA">BBVA</div>
     </header>
 
-    <section class="cards" aria-label="Documentos disponibles">
+    <div class="sections">
 
-      <a class="card card--1" href="que-es-rdr.html">
-        <div class="card__head">
-          <p class="card__phase">Welcome · Fase 1</p>
-          <p class="card__num">01</p>
+      <!-- ============================================================
+           SECCIÓN 01 · FORMACIONES
+           ============================================================ -->
+      <section class="section section--formaciones" aria-labelledby="sec-formaciones">
+        <div class="section__head">
+          <span class="section__num">01</span>
+          <h2 class="section__title" id="sec-formaciones">Formaciones</h2>
+          <span class="section__line" aria-hidden="true"></span>
+          <span class="section__hint">Welcome pack y materiales de referencia</span>
         </div>
-        <h2 class="card__title">¿Qué es RDR?</h2>
-        <p class="card__desc">Definición, entidades, arquitectura y ecosistema. Punto de partida.</p>
-        <div class="card__action">
-          <span>Abrir</span>
-          <span class="card__arrow" aria-hidden="true">→</span>
-        </div>
-      </a>
+        <div class="section__grid">
 
-      <a class="card card--2" href="rdr-formacion.html">
-        <div class="card__head">
-          <p class="card__phase">Welcome · Fase 2</p>
-          <p class="card__num">02</p>
-        </div>
-        <h2 class="card__title">Formación RDR</h2>
-        <p class="card__desc">Plan de capacitación técnica y funcional para el equipo.</p>
-        <div class="card__action">
-          <span>Abrir</span>
-          <span class="card__arrow" aria-hidden="true">→</span>
-        </div>
-      </a>
+          <a class="card card--serene" href="que-es-rdr.html">
+            <div class="card__head">
+              <p class="card__phase">Welcome · Fase 1</p>
+            </div>
+            <h3 class="card__title">¿Qué es RDR?</h3>
+            <p class="card__desc">Definición, entidades, arquitectura y ecosistema. Punto de partida.</p>
+            <div class="card__action">
+              <span>Abrir</span>
+              <span class="card__arrow" aria-hidden="true">→</span>
+            </div>
+          </a>
 
-      <a class="card card--3" href="pases-calendados.html">
-        <div class="card__head">
-          <p class="card__phase">Operativa</p>
-          <p class="card__num">03</p>
-        </div>
-        <h2 class="card__title">Pases Calendados RDR</h2>
-        <p class="card__desc">Pases calendados, releases y trazabilidad de despliegues.</p>
-        <div class="card__action">
-          <span>Abrir</span>
-          <span class="card__arrow" aria-hidden="true">→</span>
-        </div>
-      </a>
+          <a class="card card--lime" href="rdr-formacion.html">
+            <div class="card__head">
+              <p class="card__phase">Welcome · Fase 2</p>
+            </div>
+            <h3 class="card__title">HUB Formativo</h3>
+            <p class="card__desc">Plan de capacitación técnica y funcional para el equipo RDR.</p>
+            <div class="card__action">
+              <span>Abrir</span>
+              <span class="card__arrow" aria-hidden="true">→</span>
+            </div>
+          </a>
 
-      <a class="card card--4" href="retro.html">
-        <div class="card__head">
-          <p class="card__phase">Mejora continua</p>
-          <p class="card__num">04</p>
-        </div>
-        <h2 class="card__title">Retrospectiva</h2>
-        <p class="card__desc">Aprendizajes, decisiones técnicas y áreas de mejora del proyecto.</p>
-        <div class="card__action">
-          <span>Abrir</span>
-          <span class="card__arrow" aria-hidden="true">→</span>
-        </div>
-      </a>
+          <button type="button"
+                  class="card card--sand"
+                  data-link-key="portalBBVACIB">
+            <div class="card__head">
+              <p class="card__phase">Portal interno</p>
+            </div>
+            <h3 class="card__title">Portal BBVA CIB</h3>
+            <p class="card__desc">Acceso al portal del equipo. Pulsa para copiar el enlace.</p>
+            <div class="card__action">
+              <span>Copiar enlace</span>
+              <span class="card__arrow" aria-hidden="true">⧉</span>
+            </div>
+          </button>
 
-      <a class="card card--5" href="vacaciones.html">
-        <div class="card__head">
-          <p class="card__phase">Equipo</p>
-          <p class="card__num">05</p>
         </div>
-        <h2 class="card__title">Vacaciones RDR</h2>
-        <p class="card__desc">Política, calendario y coordinación de días libres del equipo.</p>
-        <div class="card__action">
-          <span>Abrir</span>
-          <span class="card__arrow" aria-hidden="true">→</span>
-        </div>
-      </a>
+      </section>
 
-      <a class="card card--6"
-         href="https://docs.google.com/forms/d/e/1FAIpQLSeSxBz1hQp_sVbZk1iEIyi0Oqq_qIvQwdQsKN6rXAhiyAuoow/alreadyresponded"
-         target="_blank"
-         rel="noopener noreferrer">
-        <div class="card__head">
-          <p class="card__phase">Formulario</p>
-          <p class="card__num">06</p>
+      <!-- ============================================================
+           SECCIÓN 02 · EQUIPO RDR
+           ============================================================ -->
+      <section class="section section--equipo" aria-labelledby="sec-equipo">
+        <div class="section__head">
+          <span class="section__num">02</span>
+          <h2 class="section__title" id="sec-equipo">Equipo RDR</h2>
+          <span class="section__line" aria-hidden="true"></span>
+          <span class="section__hint">Operativa diaria del equipo</span>
         </div>
-        <h2 class="card__title">Solicitar vacaciones</h2>
-        <p class="card__desc">Formulario oficial para tramitar la solicitud de días.</p>
-        <div class="card__action">
-          <span>Abrir</span>
-          <span class="card__arrow" aria-hidden="true">↗</span>
-        </div>
-      </a>
+        <div class="section__grid">
 
-      <button type="button"
-              class="card card--7"
-              data-copy-url="https://sites.google.com/bbva.com/portal-nfq-bbva-cib/">
-        <div class="card__head">
-          <p class="card__phase">Portal interno</p>
-          <p class="card__num">07</p>
-        </div>
-        <h2 class="card__title">Portal NFQ-BBVA CIB</h2>
-        <p class="card__desc">Acceso al portal del equipo. Pulsa para copiar el enlace.</p>
-        <div class="card__action">
-          <span>Copiar</span>
-          <span class="card__arrow" aria-hidden="true">⧉</span>
-        </div>
-      </button>
+          <a class="card card--aqua" href="vacaciones.html">
+            <div class="card__head">
+              <p class="card__phase">Política y calendario</p>
+            </div>
+            <h3 class="card__title">Vacaciones RDR</h3>
+            <p class="card__desc">Política, calendario y coordinación de días libres del equipo.</p>
+            <div class="card__action">
+              <span>Abrir</span>
+              <span class="card__arrow" aria-hidden="true">→</span>
+            </div>
+          </a>
 
-    </section>
+          <div class="card card--multi card--purple">
+            <div class="card__head">
+              <p class="card__phase">Reporte de horas</p>
+            </div>
+            <h3 class="card__title">Time Report</h3>
+            <p class="card__desc">Imputación semanal de tiempos para BBVA y NFQ.</p>
+            <div class="card__pills">
+              <button type="button"
+                      class="pill"
+                      data-link-key="timeReportBBVA"
+                      aria-label="Copiar enlace de Time Report BBVA">
+                <span>BBVA</span>
+                <span class="pill__icon" aria-hidden="true">⧉</span>
+              </button>
+              <a class="pill"
+                 href="#"
+                 data-link-key="timeReportNFQ"
+                 data-link-action="open"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 aria-label="Abrir Time Report NFQ">
+                <span>NFQ</span>
+                <span class="pill__icon" aria-hidden="true">↗</span>
+              </a>
+            </div>
+          </div>
+
+          <a class="card card--mandarin" href="retro.html">
+            <div class="card__head">
+              <p class="card__phase">Mejora continua</p>
+            </div>
+            <h3 class="card__title">Retrospectiva</h3>
+            <p class="card__desc">Aprendizajes, decisiones técnicas y áreas de mejora del proyecto.</p>
+            <div class="card__action">
+              <span>Abrir</span>
+              <span class="card__arrow" aria-hidden="true">→</span>
+            </div>
+          </a>
+
+        </div>
+      </section>
+
+      <!-- ============================================================
+           SECCIÓN 03 · PROYECTOS RDR
+           ============================================================ -->
+      <section class="section section--proyectos" aria-labelledby="sec-proyectos">
+        <div class="section__head">
+          <span class="section__num">03</span>
+          <h2 class="section__title" id="sec-proyectos">Proyectos RDR</h2>
+          <span class="section__line" aria-hidden="true"></span>
+          <span class="section__hint">Releases, código y documentación</span>
+        </div>
+        <div class="section__grid">
+
+          <a class="card card--canary" href="rdr-hub.html">
+            <div class="card__head">
+              <p class="card__phase">Operativa</p>
+            </div>
+            <h3 class="card__title">Pases Calendados</h3>
+            <p class="card__desc">Planificación de releases y trazabilidad de despliegues por entorno.</p>
+            <div class="card__action">
+              <span>Abrir</span>
+              <span class="card__arrow" aria-hidden="true">→</span>
+            </div>
+          </a>
+
+          <div class="card card--multi card--sand">
+            <div class="card__head">
+              <p class="card__phase">Recursos BBVA</p>
+            </div>
+            <h3 class="card__title">Drive y Repositorio</h3>
+            <p class="card__desc">Documentación compartida en Drive y código fuente en GitHub BBVA.</p>
+            <div class="card__pills">
+              <button type="button"
+                      class="pill"
+                      data-link-key="driveBBVA"
+                      aria-label="Copiar enlace del Drive BBVA">
+                <span>Drive BBVA</span>
+                <span class="pill__icon" aria-hidden="true">⧉</span>
+              </button>
+              <button type="button"
+                      class="pill"
+                      data-link-key="githubBBVA"
+                      aria-label="Copiar enlace del Repositorio GitHub BBVA">
+                <span>GitHub BBVA</span>
+                <span class="pill__icon" aria-hidden="true">⧉</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
 
     <footer class="footer">
       <p>RDR · Repositorio de Datos de Referencia · BBVA</p>
       <div class="nfq-credit">
         <span class="nfq-credit__label">Hecho por</span>
-        <svg class="nfq-credit__isotipo" viewBox="0 0 484 610" xmlns="http://www.w3.org/2000/svg" aria-label="nfq" role="img">
-          <defs>
-            <linearGradient id="nfq-l" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0" stop-color="#EE6A3A"/>
-              <stop offset="1" stop-color="#CD3D60"/>
-            </linearGradient>
-            <linearGradient id="nfq-m" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0" stop-color="#CD3D60"/>
-              <stop offset="1" stop-color="#1D7CF4"/>
-            </linearGradient>
-            <linearGradient id="nfq-r" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0" stop-color="#1D7CF4"/>
-              <stop offset="1" stop-color="#217AEE"/>
-            </linearGradient>
-          </defs>
-          <path d="M 0,94 L 160,1 L 480,512 L 320,605 Z" fill="url(#nfq-m)"/>
-          <path d="M 0,94 L 160,1 L 160,510 L 0,601 Z" fill="url(#nfq-l)"/>
-          <path d="M 320,90 L 480,2 L 480,512 L 320,605 Z" fill="url(#nfq-r)"/>
-        </svg>
-        <span class="nfq-credit__logo">nfq</span>
+        <span class="nfq-credit__logo">n<span>f</span>q</span>
       </div>
     </footer>
 
@@ -504,20 +663,78 @@
         });
       }
 
-      document.querySelectorAll('[data-copy-url]').forEach(function (el) {
-        el.addEventListener('click', function () {
-          var url = el.getAttribute('data-copy-url');
-          if (!url || url.indexOf('PEGAR_AQUI') === 0) {
-            showToast('Falta pegar el enlace');
-            return;
+      // Estado global de los links cargados
+      var LINKS = null;
+      var LINKS_ERROR = null;
+
+      // Devuelve la URL de una clave si está disponible y no es un placeholder
+      function getUrl(key) {
+        if (!LINKS) return null;
+        var entry = LINKS[key];
+        if (!entry) return null;
+        var url = (typeof entry === 'string') ? entry : entry.url;
+        if (!url) return null;
+        // Detectar placeholders sin sustituir
+        if (url.indexOf('PEGAR_AQUI') !== -1) return null;
+        return url;
+      }
+
+      // Asigna handlers a todos los elementos con data-link-key
+      function bindLinks() {
+        document.querySelectorAll('[data-link-key]').forEach(function (el) {
+          var key = el.getAttribute('data-link-key');
+          var action = el.getAttribute('data-link-action') || 'copy';
+          // Para los <a data-link-action="open"> precargamos el href real
+          // así el usuario ve el enlace al pasar el ratón y "abrir en pestaña nueva" funciona nativamente
+          if (action === 'open' && el.tagName === 'A') {
+            var url = getUrl(key);
+            if (url) el.setAttribute('href', url);
           }
-          copyToClipboard(url).then(function () {
-            showToast('Enlace copiado al portapapeles');
-          }).catch(function () {
-            showToast('No se pudo copiar el enlace');
+          el.addEventListener('click', function (e) {
+            // Si hubo error cargando el JSON
+            if (LINKS_ERROR) {
+              e.preventDefault();
+              showToast('No se pudieron cargar los enlaces');
+              return;
+            }
+            var url = getUrl(key);
+            if (!url) {
+              e.preventDefault();
+              showToast('Enlace no disponible — revisa links.json');
+              return;
+            }
+            if (action === 'open') {
+              // Dejar que el navegador siga el href; ya está actualizado
+              return;
+            }
+            // Acción por defecto: copiar
+            e.preventDefault();
+            copyToClipboard(url).then(function () {
+              showToast('Enlace copiado al portapapeles');
+            }).catch(function () {
+              showToast('No se pudo copiar el enlace');
+            });
           });
         });
-      });
+      }
+
+      // Cargar el JSON. Se usa cache:'no-store' para que un cambio en links.json
+      // se refleje en el siguiente recargado sin esperar al caché del navegador.
+      fetch('links/links.json', { cache: 'no-store' })
+        .then(function (res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          LINKS = data;
+          bindLinks();
+        })
+        .catch(function (err) {
+          LINKS_ERROR = err;
+          // Aún así enlazamos los handlers para que muestren toast de error al hacer click
+          bindLinks();
+          console.error('Error cargando links.json:', err);
+        });
     })();
   </script>
 </body>
