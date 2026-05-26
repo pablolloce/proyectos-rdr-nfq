@@ -1,0 +1,124 @@
+{
+  "team": [
+    {
+      "id": "XE93412",
+      "nombre": "Ángela Montero",
+      "email": "angela.montero@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "XE48467",
+      "nombre": "José Luis Rodriguez",
+      "email": "jose.rodriguez@nter.es",
+      "track": "tecnico"
+    },
+    {
+      "id": "XE95681",
+      "nombre": "Chema Martinez",
+      "email": "chema.martinez@nter.es",
+      "track": "tecnico"
+    },
+    {
+      "id": "T022809",
+      "nombre": "Jesús Tejada",
+      "email": "jesus.tejada@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "T040429",
+      "nombre": "David Joel",
+      "email": "david.sanchez@nter.es",
+      "track": "tecnico"
+    },
+    {
+      "id": "T037244",
+      "nombre": "Dariel Suárez",
+      "email": "dariel.suarez@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "T045519",
+      "nombre": "Pablo Llorente",
+      "email": "pablo.llorente@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "T057120",
+      "nombre": "Víctor Gallego",
+      "email": "victor.gallego@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "T057121",
+      "nombre": "Miguel Saavedra",
+      "email": "miguel.saavedra@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "T030686",
+      "nombre": "Marta Trujillano",
+      "email": "marta.trujillano@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "T058095",
+      "nombre": "Irene Hermida",
+      "email": "irene.hermida@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "T060034",
+      "nombre": "Laura Stella",
+      "email": "laura.stella@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "T060787",
+      "nombre": "Verónica Fernández",
+      "email": "veronica.fernandez@nter.es",
+      "track": "tecnico"
+    },
+    {
+      "id": "T061576",
+      "nombre": "Iker Cid",
+      "email": "iker.cid@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "T021696",
+      "nombre": "Pilar Franco",
+      "email": "pilar.franco@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "T063396",
+      "nombre": "Juan Lucas Gordillo",
+      "email": "juan.gordillo@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "T063018",
+      "nombre": "Luis Antonio Bello",
+      "email": "luis.bello@nfq.mx",
+      "track": "tecnico"
+    },
+    {
+      "id": "T066180",
+      "nombre": "Fernando Tejada",
+      "email": "fernando.tejada@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "T060320",
+      "nombre": "Eduardo Varona",
+      "email": "eduardo.varona@nfq.es",
+      "track": "funcional"
+    },
+    {
+      "id": "T067605",
+      "nombre": "Álvaro Albelda",
+      "email": "alvaro.albelda@nfq.es",
+      "track": "funcional"
+    }
+  ]
+}

@@ -282,12 +282,49 @@
     .level__header { grid-template-columns: 1fr; gap: 8px; }
     .site-footer { padding: 24px; }
   }
+
+  /* Botón ver progreso del equipo */
+  .view-team {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bbva-canary);
+    color: var(--bbva-electric-blue);
+    padding: 8px 16px;
+    font-family: var(--bbva-font-body);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 9999px;
+    border: 1.5px solid transparent;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    transition: background 0.2s, transform 0.2s, border-color 0.2s;
+    z-index: 100;
+  }
+  .view-team:hover {
+    background: #FFD700;
+    transform: translateY(-1px);
+  }
+  .view-team svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
 <a href="index.html" class="back-to-main" title="Volver al hub principal RDR">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
   RDR Hub
+</a>
+<a href="formacion/equipo-formaciones.html" class="view-team" title="Ver progreso del equipo">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="17" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
+  Progreso del equipo
 </a>
 
 <header class="hero">

@@ -23,6 +23,11 @@
     "note": "Drive con documentación compartida del proyecto RDR"
   },
 
+  "driveCertificados": {
+    "url": "https://drive.google.com/drive/folders/1e5zysoDRyBIj30VrKtC6jLPhDzpRQDgl",
+    "note": "Carpeta de Drive donde el equipo sube los PDF de certificados de formación. Es la misma carpeta que monitoriza el Apps Script para sincronizar con equipo-formaciones.html"
+  },
+
   "githubBBVA": {
     "url": "https://bbva.ghe.com/XE93412/Proyectos-RDR-NFQ",
     "note": "Repositorio de código fuente RDR en GitHub BBVA"
