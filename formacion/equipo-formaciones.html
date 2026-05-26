@@ -426,7 +426,7 @@
   // URL del Apps Script Web App. Sustituye por la URL real cuando
   // hayas desplegado el script. Mientras esté en blanco, la web
   // mostrará el equipo sin progresos (0 badges en todos).
-  const APPS_SCRIPT_URL = "";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzAKr3NyT7Ppyip9Jh6c2adjXHbhXcxpZD8UawtBUcTuH0cnLtKjGN7VFgyhf_ACR_C/exec";
   // Ejemplo: "https://script.google.com/macros/s/AKfycby...../exec"
 
   // ============================================================
@@ -439,27 +439,39 @@
     return data.team || [];
   }
 
-  async function loadCatalog() {
-    const res = await fetch('../equipo/equipo-formaciones.json', { cache: 'no-cache' });
-    if (!res.ok) throw new Error('No se pudo cargar equipo-formaciones.json');
-    const data = await res.json();
-    return data.formaciones || [];
-  }
-
   async function loadProgress() {
     if (!APPS_SCRIPT_URL) {
       // Apps Script aún no configurado: devolvemos progreso vacío
-      return { records: [], configured: false };
+      return { records: [], catalog: [], configured: false };
     }
     try {
       const res = await fetch(APPS_SCRIPT_URL, { method: 'GET' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-      // Esperado: { records: [{userId, courseId, date}, ...] }
-      return { records: data.records || [], configured: true };
+      const records = data.records || [];
+
+      // Derivar catálogo: cada courseId único con su courseMeta
+      const catalogMap = new Map();
+      records.forEach(r => {
+        if (r.courseMeta && !catalogMap.has(r.courseId)) {
+          catalogMap.set(r.courseId, {
+            id: r.courseId,
+            nombre: r.courseMeta.nombre,
+            nivel: r.courseMeta.nivel,
+            track: r.courseMeta.track,
+            tag: r.courseMeta.tag,
+          });
+        }
+      });
+
+      return {
+        records: records,
+        catalog: Array.from(catalogMap.values()),
+        configured: true,
+      };
     } catch (e) {
       console.error('Error cargando progreso:', e);
-      return { records: [], configured: true, error: e.message };
+      return { records: [], catalog: [], configured: true, error: e.message };
     }
   }
 
@@ -567,13 +579,12 @@
   // ============================================================
   (async function init() {
     try {
-      const [team, catalog, progressData] = await Promise.all([
+      const [team, progressData] = await Promise.all([
         loadTeam(),
-        loadCatalog(),
         loadProgress(),
       ]);
 
-      renderTeam(team, catalog, progressData.records);
+      renderTeam(team, progressData.catalog, progressData.records);
       renderStatusPill({
         configured: progressData.configured,
         error: progressData.error,
@@ -585,7 +596,7 @@
       document.getElementById('team-grid').innerHTML = `
         <div class="status-card status-card--error">
           <h3>No se pudieron cargar los datos</h3>
-          <p>${e.message}<br><br>Verifica que <code>/equipo/equipo.json</code> y <code>/equipo/equipo-formaciones.json</code> existen.</p>
+          <p>${e.message}<br><br>Verifica que <code>/equipo/equipo.json</code> existe y que la URL del Apps Script es correcta.</p>
         </div>
       `;
     }
