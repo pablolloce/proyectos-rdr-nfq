@@ -291,6 +291,126 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: var(--bbva-gray-3); border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--bbva-gray-4); }
+
+    /* ========================================================
+       MOBILE TOPBAR (oculta en desktop)
+       ======================================================== */
+    #mobile-topbar {
+      display: none;
+      position: sticky; top: 0; z-index: 60;
+      background: var(--white);
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 12px;
+      align-items: center; justify-content: space-between; gap: 8px;
+      height: 56px;
+    }
+    .mb-btn {
+      background: var(--bbva-sand);
+      border: 1px solid var(--bbva-gray-2);
+      border-radius: 10px;
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; position: relative;
+      color: var(--bbva-midnight);
+      transition: background 0.15s;
+    }
+    .mb-btn:active { background: var(--bbva-gray-2); }
+    .mb-btn svg { width: 20px; height: 20px; }
+    #mobile-topbar .mb-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: var(--bbva-electric-blue);
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+    }
+
+    /* Overlay para drawers */
+    #drawer-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(7, 14, 70, 0.45);
+      z-index: 40;
+      animation: fadein 0.15s ease;
+    }
+    @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+    body.drawer-open #drawer-overlay { display: block; }
+    body.drawer-open { overflow: hidden; }
+
+    /* ========================================================
+       MEDIA QUERY: < 900px (móvil + tablet pequeña)
+       ======================================================== */
+    @media (max-width: 899px) {
+      body { flex-direction: column; height: 100vh; overflow: hidden; }
+
+      #mobile-topbar { display: flex; }
+
+      /* Cabeceras de los paneles nunca se comprimen */
+      #sidebar-header, #info-header { flex-shrink: 0; }
+
+      /* Overlay y drawers empiezan DEBAJO del topbar (siempre visible) */
+      #drawer-overlay { top: 56px; }
+
+      /* Sidebar izquierdo: off-canvas */
+      #sidebar {
+        position: fixed; top: 56px; left: 0; bottom: 0;
+        width: 85%; max-width: 320px;
+        z-index: 50;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        box-shadow: 0 0 20px rgba(7, 14, 70, 0.15);
+      }
+      #sidebar.open { transform: translateX(0); }
+
+      /* Panel derecho (info / formulario): off-canvas */
+      #info-panel {
+        position: fixed; top: 56px; right: 0; bottom: 0;
+        width: 88%; max-width: 360px;
+        z-index: 50;
+        transform: translateX(100%);
+        transition: transform 0.25s ease;
+        box-shadow: 0 0 20px rgba(7, 14, 70, 0.15);
+        border-left: none;
+      }
+      #info-panel.open { transform: translateX(0); }
+
+      #main-content {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        background: var(--bg-color);
+        min-height: 0;
+      }
+      #calendar-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .month-card { padding: 16px; }
+      .month-card.current-month { padding: 15px; }
+      .month-title { font-size: 1.2rem; }
+
+      .day-cell { min-height: 56px; }
+      .day-number { font-size: 0.82rem; }
+      .dot { width: 8px; height: 8px; }
+
+      .emp-name { font-size: 0.9rem; }
+      .emp-stats { font-size: 0.74rem; }
+      #leyenda { font-size: 0.78rem; }
+
+      .form-link { min-height: 44px; display: inline-flex; align-items: center; }
+
+      #loader { z-index: 1100; }
+    }
+
+    @media (max-width: 480px) {
+      #mobile-topbar { padding: 8px 10px; }
+      #mobile-topbar .mb-title { font-size: 0.95rem; }
+      .mb-btn { width: 38px; height: 38px; }
+      #main-content { padding: 12px; }
+      .month-card { padding: 14px; }
+      .month-title { font-size: 1.1rem; margin-bottom: 10px; }
+      .day-cell { min-height: 52px; padding: 3px; }
+      .weekdays { font-size: 0.6rem; }
+    }
   </style>
 </head>
 <body>
@@ -299,6 +419,20 @@
     <div class="loader-spinner"></div>
     <div id="loader-text">Cargando calendario…</div>
   </div>
+
+  <!-- ─────────── TOPBAR MÓVIL (oculta en desktop) ─────────── -->
+  <div id="mobile-topbar">
+    <button class="mb-btn" id="btn-open-sidebar" aria-label="Abrir equipo" title="Equipo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="mb-title">Vacaciones RDR</span>
+    <button class="mb-btn" id="btn-open-info" aria-label="Información y formulario" title="Información">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    </button>
+  </div>
+
+  <!-- Overlay para drawers móviles -->
+  <div id="drawer-overlay"></div>
 
   <div id="sidebar">
     <div id="sidebar-header">
@@ -383,7 +517,42 @@
       'BA': { texto: 'Baja',          bg: 'var(--motivo-ba)', textColor: '#ffffff' }
     };
 
-    window.onload = function() { cargarDatos(); };
+    window.onload = function() {
+      inicializarMobileUI();
+      cargarDatos();
+    };
+
+    /* ====== MOBILE UI ====== */
+    function inicializarMobileUI() {
+      const btnLeft  = document.getElementById('btn-open-sidebar');
+      const btnRight = document.getElementById('btn-open-info');
+      const overlay  = document.getElementById('drawer-overlay');
+
+      if (btnLeft)  btnLeft.addEventListener('click', () => toggleDrawer('left'));
+      if (btnRight) btnRight.addEventListener('click', () => toggleDrawer('right'));
+      if (overlay)  overlay.addEventListener('click', cerrarDrawers);
+
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarDrawers(); });
+    }
+    function toggleDrawer(lado) {
+      const el = document.getElementById(lado === 'left' ? 'sidebar' : 'info-panel');
+      if (!el) return;
+      if (el.classList.contains('open')) cerrarDrawers();
+      else abrirDrawer(lado);
+    }
+    function abrirDrawer(lado) {
+      cerrarDrawers();
+      const el = document.getElementById(lado === 'left' ? 'sidebar' : 'info-panel');
+      if (el) el.classList.add('open');
+      document.body.classList.add('drawer-open');
+    }
+    function cerrarDrawers() {
+      document.getElementById('sidebar')?.classList.remove('open');
+      document.getElementById('info-panel')?.classList.remove('open');
+      document.body.classList.remove('drawer-open');
+    }
+    function _esMovil() { return window.innerWidth < 900; }
+    function _autoCloseOnMobile() { if (_esMovil()) cerrarDrawers(); }
 
     function mostrarError(msg) {
       const banner = document.getElementById('error-banner');
@@ -479,8 +648,10 @@
     }
 
     function seleccionarEmpleado(nombre) {
-      if (nombre === null) filtrosSeleccionados.clear();
-      else {
+      if (nombre === null) {
+        filtrosSeleccionados.clear();
+        _autoCloseOnMobile();
+      } else {
         if (filtrosSeleccionados.has(nombre)) filtrosSeleccionados.delete(nombre);
         else filtrosSeleccionados.add(nombre);
       }
@@ -589,7 +760,9 @@
         placement: 'top',
         appendTo: document.body,
         animation: 'scale',
-        interactive: true
+        interactive: true,
+        touch: ['hold', 400],
+        maxWidth: 320
       });
     }
   </script>
