@@ -749,6 +749,14 @@ html, body { height: 100%; overflow: hidden; }
 .zoom-ctl { display: none; }
 
 /* ─── Responsive móvil ─────────────────────────────────────── */
+
+
+/* NFQ pull on dark slides: light background so isotipo is visible */
+.bbva-combo--electric .nfq-pull,
+.bbva-combo--midnight .nfq-pull {
+  background: rgba(255,255,255,0.15);
+}
+
 @media (max-width: 819px) {
   .nav-dots { display: none; }
   .deck { scroll-snap-type: x mandatory; }
@@ -854,6 +862,26 @@ html, body { height: 100%; overflow: hidden; }
   .nfq-footer-logo { height: 16px; }
 
   /* Hide desktop nav */
+  
+
+  /* NFQ note/pull: compact on mobile */
+  .nfq-note {
+    padding: var(--bbva-space-2) var(--bbva-space-3) !important;
+    gap: 8px !important;
+    font-size: clamp(13px, 3.5vw, 15px) !important;
+    overflow-wrap: break-word !important;
+  }
+  .nfq-note > div { min-width: 0 !important; overflow-wrap: break-word !important; }
+  .nfq-pull {
+    padding: var(--bbva-space-2) var(--bbva-space-3) !important;
+    gap: 8px !important;
+    grid-template-columns: auto 1fr !important;
+  }
+  .nfq-pull__quote { font-size: clamp(16px, 4.5vw, 22px) !important; }
+
+  /* Slide content: prevent clipping on mobile */
+  .slide main { overflow: visible !important; }
+
   .nav-arrows { display: none !important; }
 
   /* Back button smaller */
