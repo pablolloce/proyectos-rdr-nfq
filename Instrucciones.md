@@ -3,37 +3,16 @@
 
 Modifica los siguientes elementos sobre la presentación que-es-rdr.html
 
-## Diapositiva: Emisiones — Los activos que gestiona BBVA
+## Diapositiva: Relación entre Entidades
 
-No me convence los tipos de emisiones que están representados y las separaciones actuales. Los tipos que tenemos en RDR son:
-Ad-Hoc Index
-Bond
-Certificate of Deposit
-Commercial Mortgage Backed Security
-Commodities
-Common Stock
-Convertible Bond
-Convertible Preferred Stock
-Equity Index
-Exchange Traded Fund
-Fund
-Futures
-Hybrid/Structured Instrument
-Incomplete Future from Refinitiv
-Incomplete simple Issue from Refinitiv
-Limited Partnerships
-Miscellaneous
-Options
-Preferred Stock
-Real Estate
-Receipts
-Rights
-Spot index.
-Strip
-Treasury Bill
-Unit
-Warrants
-Zero Coupon
+La sección Data Related en contrapartidas, te permite acceder a:
+Settlement Instructions - Relacionadas con la contrapartida
+Confirmations & Notifications - Relacionadas con la contrapartida
+Legal Agreements - Firmados por la contrapartida
+Contacts - Relacionados con la contrapartida
 
-NO DEBEN APARECER TODOS, pero para que te hagas una idea de qué tenemos. Y, MUY IMPORTANTE: SOMOS EL MAESTRO DE RENTA VARIABLE, aunque tenemos renta fija, no somos el repositorio del banco que almacena esa información (Es Asset Control).
-
+Adicionalmente, LOS ROLES SON LA CLAVE:
+- Emisor -> Para poder actuar como Emisor en emisiones
+- Beneficiario -> Para poder actuar como Beneficiario en instrucciones de liquidación
+- Banco corresponsal -> Para poder actuar como Banco corresponsal en instrucciones de liquidación
+- Banco custodio -> Para poder actuar como Banco custodio en instrucciones de liquidación

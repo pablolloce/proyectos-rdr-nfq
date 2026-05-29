@@ -2154,49 +2154,51 @@ p { margin: 0; }
     <main>
       <p class="ante-title">ISSU · 12 millones de instrumentos</p>
       <h1 style="margin-bottom: var(--bbva-space-4);">Emisiones — Los activos que gestiona BBVA</h1>
-      <div class="arch-grid" style="grid-template-columns: repeat(3, 1fr); gap: var(--bbva-space-3);">
-        <div class="arch-box arch-box--highlight" style="padding: var(--bbva-space-3);">
-          <p class="arch-label">Renta Fija</p>
-          <h3 class="arch-title" style="font-size: var(--bbva-fs-body);">Bonos, letras y pagarés</h3>
-          <p class="arch-desc" style="font-size: var(--bbva-fs-caption);">Un bono es un préstamo que hace el inversor a una empresa o estado. Tiene fecha de vencimiento, cupón periódico y valor nominal. <em>Ej.: Bono del Estado español a 10 años.</em></p>
-          <span class="arch-tag">FIXED · RDR_FIX</span>
-        </div>
-        <div class="arch-box arch-box--highlight" style="padding: var(--bbva-space-3);">
-          <p class="arch-label">Renta Variable</p>
-          <h3 class="arch-title" style="font-size: var(--bbva-fs-body);">Acciones y ETFs</h3>
-          <p class="arch-desc" style="font-size: var(--bbva-fs-caption);">Una acción representa una fracción de la propiedad de una empresa. No tiene vencimiento ni rendimiento fijo. <em>Ej.: Acción de Telefónica en el IBEX 35.</em></p>
-          <span class="arch-tag">EQUITY · modelo vendor</span>
+      <div class="arch-grid" style="grid-template-columns: 2fr 1fr 1fr; gap: var(--bbva-space-3);">
+        <div class="arch-box arch-box--highlight" style="padding: var(--bbva-space-3); grid-row: span 2; border: 2px solid var(--bbva-electric-blue); display:flex; flex-direction:column; justify-content:center;">
+          <p class="arch-label" style="font-size: var(--bbva-fs-caption); letter-spacing: 0.1em;">⭐ MAESTRO EN EL BANCO</p>
+          <h3 class="arch-title" style="font-size: var(--bbva-fs-h3);">Renta Variable</h3>
+          <p class="arch-desc" style="font-size: var(--bbva-fs-body); line-height:1.5;">RDR es el <strong>repositorio maestro de Renta Variable</strong> del banco. Acciones, ETFs, preferentes, convertibles, warrants, derechos, ADRs/GDRs…</p>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+            <span class="arch-tag">Common Stock</span>
+            <span class="arch-tag">Preferred Stock</span>
+            <span class="arch-tag">ETF</span>
+            <span class="arch-tag">Warrants</span>
+            <span class="arch-tag">Rights</span>
+            <span class="arch-tag">Receipts (ADR/GDR)</span>
+          </div>
         </div>
         <div class="arch-box" style="padding: var(--bbva-space-3);">
           <p class="arch-label">Derivados</p>
-          <h3 class="arch-title" style="font-size: var(--bbva-fs-body);">Futuros, opciones y swaps</h3>
-          <p class="arch-desc" style="font-size: var(--bbva-fs-caption);">Contratos cuyo valor depende de un activo subyacente (índice, tipo de interés, divisa). Se usan para cubrir riesgos o especular. <em>Ej.: Futuro del EUROSTOXX50.</em></p>
-          <span class="arch-tag">FUTURES · OPTIONS · WARRANT</span>
-        </div>
-        <div class="arch-box" style="padding: var(--bbva-space-3);">
-          <p class="arch-label">Divisas</p>
-          <h3 class="arch-title" style="font-size: var(--bbva-fs-body);">Pares de moneda</h3>
-          <p class="arch-desc" style="font-size: var(--bbva-fs-caption);">El tipo de cambio entre dos divisas, modelado como un instrumento. Permite gestionar riesgo FX y registrar operaciones de cambio. <em>Ej.: EUR/USD.</em></p>
-          <span class="arch-tag">CURRENCY</span>
+          <h3 class="arch-title" style="font-size: var(--bbva-fs-body);">Futuros y opciones</h3>
+          <p class="arch-desc" style="font-size: var(--bbva-fs-caption);">Contratos cuyo valor depende de un activo subyacente.</p>
+          <span class="arch-tag">Futures · Options</span>
         </div>
         <div class="arch-box" style="padding: var(--bbva-space-3);">
           <p class="arch-label">Fondos</p>
-          <h3 class="arch-title" style="font-size: var(--bbva-fs-body);">Fondos de inversión</h3>
-          <p class="arch-desc" style="font-size: var(--bbva-fs-caption);">Vehículos de inversión colectiva que agrupan capital de varios inversores para invertir en una cartera diversificada. RDR gestiona NAV, series y clases. <em>Ej.: BBVA Bolsa USA.</em></p>
-          <span class="arch-tag">MUTUAL · REITS</span>
+          <h3 class="arch-title" style="font-size: var(--bbva-fs-body);">Fondos de inversión y REITs</h3>
+          <p class="arch-desc" style="font-size: var(--bbva-fs-caption);">Vehículos de inversión colectiva, partnerships, real estate.</p>
+          <span class="arch-tag">Fund · Limited Partnerships</span>
         </div>
         <div class="arch-box" style="padding: var(--bbva-space-3);">
-          <p class="arch-label">¿Qué identifica a cada emisión?</p>
-          <h3 class="arch-title" style="font-size: var(--bbva-fs-body);">84 millones de identificadores</h3>
-          <p class="arch-desc" style="font-size: var(--bbva-fs-caption);">Cada instrumento tiene múltiples códigos: <strong>ISIN</strong> (internacional), <strong>CUSIP</strong> (USA), <strong>SEDOL</strong> (UK), <strong>Ticker Bloomberg</strong>, <strong>RIC Refinitiv</strong>... RDR es el maestro de todos ellos.</p>
-          <span class="arch-tag">~7 identificadores por emisión</span>
+          <p class="arch-label">Índices</p>
+          <h3 class="arch-title" style="font-size: var(--bbva-fs-body);">Equity, Spot y Ad-Hoc</h3>
+          <p class="arch-desc" style="font-size: var(--bbva-fs-caption);">Índices de referencia y cestas personalizadas.</p>
+          <span class="arch-tag">Equity Index · Spot Index · Ad-Hoc</span>
+        </div>
+        <div class="arch-box" style="padding: var(--bbva-space-3); opacity: 0.75;">
+          <p class="arch-label">Renta Fija</p>
+          <h3 class="arch-title" style="font-size: var(--bbva-fs-body);">Bonos, letras y estructurados</h3>
+          <p class="arch-desc" style="font-size: var(--bbva-fs-caption);">RDR almacena RF por necesidades operativas, pero el <strong>maestro de RF es Asset Control</strong>.</p>
+          <span class="arch-tag">Bond · T-Bill · Zero Coupon · CMBS</span>
+        </div>
+        <div class="arch-box" style="padding: var(--bbva-space-3);">
+          <p class="arch-label">Otros</p>
+          <h3 class="arch-title" style="font-size: var(--bbva-fs-body);">Commodities, híbridos…</h3>
+          <p class="arch-desc" style="font-size: var(--bbva-fs-caption);">Instrumentos especiales y categorías complementarias.</p>
+          <span class="arch-tag">Commodities · Hybrid · Misc</span>
         </div>
       </div>
-    
-      <p style="font-size: var(--bbva-fs-caption); opacity: 0.7; margin-top: var(--bbva-space-3); text-align: center;">
-        <strong>Nota:</strong> RDR es el maestro de <strong>Renta Variable</strong>. El maestro de emisiones de <strong>Renta Fija</strong> es <strong>Asset Control</strong>,
-        aunque RDR almacena emisiones de RF por necesidades operativas de otros procesos.
-      </p>
     </main>
     <footer class="slide__footer">
       <span>03. Entidades en detalle · Emisiones</span>
@@ -2592,50 +2594,61 @@ p { margin: 0; }
     </header>
     <main>
       <p class="ante-title">Visión de conjunto</p>
-      <h1 style="margin-bottom: var(--bbva-space-4);">Relación entre Entidades</h1>
-      <p style="font-size: var(--bbva-fs-lead); margin-bottom: var(--bbva-space-4); max-width: 60ch;">
-        RDR es una <strong>base de datos relacional</strong>: todas las entidades que gestiona están conectadas entre sí.
+      <h1 style="margin-bottom: var(--bbva-space-3);">Relación entre Entidades</h1>
+      <p style="font-size: var(--bbva-fs-body); margin-bottom: var(--bbva-space-3); max-width: 65ch;">
+        RDR es una <strong>base de datos relacional</strong>: todas las entidades están conectadas entre sí con la <strong>Contrapartida</strong> como eje central.
       </p>
-      <div style="display: grid; grid-template-columns: 1fr; gap: var(--bbva-space-3);">
-        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--bbva-space-2); text-align: center;">
-          <div style="padding: var(--bbva-space-3); background: var(--bbva-electric-blue); color: var(--bbva-sand); border-radius: var(--bbva-radius-sm); grid-column: span 2;">
-            <p style="font-weight: 900; font-size: var(--bbva-fs-h3);">CONTRAPARTIDA</p>
-            <p style="font-size: var(--bbva-fs-caption); opacity: 0.8; margin-top: 4px;">FINS · 692K</p>
-          </div>
-          <div style="display: flex; align-items: center; justify-content: center; font-size: var(--bbva-fs-h2); color: var(--bbva-electric-blue);">→</div>
-          <div style="padding: var(--bbva-space-3); background: var(--bbva-serene-blue); border-radius: var(--bbva-radius-sm); grid-column: span 2;">
-            <p style="font-weight: 900; font-size: var(--bbva-fs-h3); color: var(--bbva-electric-blue);">EMISIÓN</p>
-            <p style="font-size: var(--bbva-fs-caption); margin-top: 4px;">ISSU · 12M <em>(vía rol Emisor)</em></p>
-          </div>
-          <div style="display: flex; align-items: center; justify-content: center; font-size: var(--bbva-fs-h2); color: var(--bbva-electric-blue);">←</div>
-          <div style="padding: var(--bbva-space-3); border: 2px solid var(--bbva-electric-blue); border-radius: var(--bbva-radius-sm);">
-            <p style="font-weight: 900; font-size: var(--bbva-fs-h3); color: var(--bbva-electric-blue);">DATOS RELATED</p>
-            <p style="font-size: var(--bbva-fs-caption); margin-top: 4px;">Datos de la CPTY en la emisión</p>
-          </div>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--bbva-space-2); text-align: center;">
-          <div style="padding: var(--bbva-space-3); border: 2px solid var(--bbva-electric-blue); border-radius: var(--bbva-radius-sm);">
-            <p style="font-weight: 900; color: var(--bbva-electric-blue);">AGREEMENT</p>
-            <p style="font-size: var(--bbva-fs-caption); margin-top: 4px;">LAGR · 96K</p>
-          </div>
-          <div style="padding: var(--bbva-space-3); border: 2px solid var(--bbva-electric-blue); border-radius: var(--bbva-radius-sm);">
-            <p style="font-weight: 900; color: var(--bbva-electric-blue);">LIQUIDACIÓN</p>
-            <p style="font-size: var(--bbva-fs-caption); margin-top: 4px;">SSIS · 857K</p>
-          </div>
-          <div style="padding: var(--bbva-space-3); border: 2px solid var(--bbva-electric-blue); border-radius: var(--bbva-radius-sm);">
-            <p style="font-weight: 900; color: var(--bbva-electric-blue);">CONFIRMACIÓN</p>
-            <p style="font-size: var(--bbva-fs-caption); margin-top: 4px;">SCIS · 55K</p>
-          </div>
-          <div style="padding: var(--bbva-space-3); border: 2px solid var(--bbva-electric-blue); border-radius: var(--bbva-radius-sm);">
-            <p style="font-weight: 900; color: var(--bbva-electric-blue);">CONTACTO</p>
-            <p style="font-size: var(--bbva-fs-caption); margin-top: 4px;">CNTC · Medios de comunicación</p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--bbva-space-3);">
+        <!-- Data Related -->
+        <div style="padding: var(--bbva-space-3); border: 2px solid var(--bbva-electric-blue); border-radius: var(--bbva-radius-sm);">
+          <p style="font-weight: 900; font-size: var(--bbva-fs-h3); color: var(--bbva-electric-blue); margin-bottom: 8px;">Data Related <span style="font-weight:400; font-size: var(--bbva-fs-caption);">(sección en Contrapartidas)</span></p>
+          <p style="font-size: var(--bbva-fs-caption); margin-bottom: 10px;">Desde una contrapartida, la sección <em>Data Related</em> da acceso a:</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div style="padding: 8px 12px; background: var(--bbva-serene-blue); border-radius: var(--bbva-radius-sm); text-align:center;">
+              <p style="font-weight: 700; font-size: var(--bbva-fs-caption); color: var(--bbva-electric-blue);">Settlement Instructions</p>
+              <p style="font-size: 11px; opacity:0.7;">Instrucciones de liquidación</p>
+            </div>
+            <div style="padding: 8px 12px; background: var(--bbva-serene-blue); border-radius: var(--bbva-radius-sm); text-align:center;">
+              <p style="font-weight: 700; font-size: var(--bbva-fs-caption); color: var(--bbva-electric-blue);">Confirmations</p>
+              <p style="font-size: 11px; opacity:0.7;">Confirmaciones y notificaciones</p>
+            </div>
+            <div style="padding: 8px 12px; background: var(--bbva-serene-blue); border-radius: var(--bbva-radius-sm); text-align:center;">
+              <p style="font-weight: 700; font-size: var(--bbva-fs-caption); color: var(--bbva-electric-blue);">Legal Agreements</p>
+              <p style="font-size: 11px; opacity:0.7;">Contratos firmados</p>
+            </div>
+            <div style="padding: 8px 12px; background: var(--bbva-serene-blue); border-radius: var(--bbva-radius-sm); text-align:center;">
+              <p style="font-weight: 700; font-size: var(--bbva-fs-caption); color: var(--bbva-electric-blue);">Contacts</p>
+              <p style="font-size: 11px; opacity:0.7;">Personas de contacto</p>
+            </div>
           </div>
         </div>
-        <p style="text-align: center; font-size: var(--bbva-fs-caption); opacity: 0.7;">
-          Todas estas entidades se relacionan con la <strong>Contrapartida</strong> como eje central.
-          Agreements, Liquidaciones y Confirmaciones requieren una contrapartida; las Emisiones se vinculan vía el rol Emisor.
-        </p>
-      </div></main>
+
+        <!-- Roles -->
+        <div style="padding: var(--bbva-space-3); background: var(--bbva-electric-blue); color: var(--bbva-sand); border-radius: var(--bbva-radius-sm);">
+          <p style="font-weight: 900; font-size: var(--bbva-fs-h3); margin-bottom: 8px;">⚡ Los Roles son LA CLAVE</p>
+          <p style="font-size: var(--bbva-fs-caption); opacity: 0.85; margin-bottom: 10px;">Los roles determinan <strong>cómo actúa</strong> una contrapartida en cada contexto:</p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: rgba(255,255,255,0.12); border-radius: var(--bbva-radius-sm);">
+              <span style="font-weight: 900; min-width: 140px;">Emisor</span>
+              <span style="font-size: var(--bbva-fs-caption); opacity: 0.85;">Actuar como emisor en <strong>Emisiones</strong></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: rgba(255,255,255,0.12); border-radius: var(--bbva-radius-sm);">
+              <span style="font-weight: 900; min-width: 140px;">Beneficiario</span>
+              <span style="font-size: var(--bbva-fs-caption); opacity: 0.85;">Actuar como beneficiario en <strong>Liquidaciones</strong></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: rgba(255,255,255,0.12); border-radius: var(--bbva-radius-sm);">
+              <span style="font-weight: 900; min-width: 140px;">Bco. Corresponsal</span>
+              <span style="font-size: var(--bbva-fs-caption); opacity: 0.85;">Actuar como banco corresponsal en <strong>Liquidaciones</strong></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: rgba(255,255,255,0.12); border-radius: var(--bbva-radius-sm);">
+              <span style="font-weight: 900; min-width: 140px;">Bco. Custodio</span>
+              <span style="font-size: var(--bbva-fs-caption); opacity: 0.85;">Actuar como banco custodio en <strong>Liquidaciones</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
     <footer class="slide__footer">
       <span>03. Entidades en detalle</span>
       <span class="pager">25 / 33</span>

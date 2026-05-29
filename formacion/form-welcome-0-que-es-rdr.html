@@ -755,8 +755,9 @@ html, body { height: 100%; overflow: hidden; }
   .slide-frame {
     flex: 0 0 100% !important;
     width: 100% !important;
-    height: 100vh !important;
-    height: 100dvh !important;
+    height: auto !important;
+    min-height: 100vh;
+    min-height: 100dvh;
     display: block !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
@@ -768,32 +769,100 @@ html, body { height: 100%; overflow: hidden; }
     min-height: 100dvh;
     height: auto !important;
     transform: none !important;
-    padding: 28px 20px 40px;
+    padding: 28px 16px 40px;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 14px;
     overflow: visible !important;
     box-sizing: border-box;
   }
+
+  /* Force ALL grid layouts inside slides to single column */
   .slide main,
+  .slide main > div,
+  .slide [style*="grid-template-columns"],
   .content-two-col,
-  .slide main[style*="grid-template-columns"] {
-    display: block !important;
-    grid-template-columns: 1fr !important;
+  .content-three-col,
+  .agenda-grid,
+  .section-index {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
     width: 100% !important;
   }
-  .slide main > * { margin-bottom: 16px; }
-  .slide h1 { font-size: clamp(26px, 7vw, 40px) !important; line-height: 1.1; }
-  .bbva-hero { font-size: clamp(40px, 13vw, 72px) !important; }
-  .slide p, .slide li, .slide td, .slide th { font-size: clamp(14px, 3.8vw, 17px) !important; line-height: 1.5; }
-  .ante-title { font-size: clamp(12px, 3.2vw, 14px) !important; }
-  .slide .bbva-table { font-size: clamp(12px, 3.4vw, 15px) !important; }
-  .slide table { display: block; overflow-x: auto; white-space: normal; }
+  .slide main > * { margin-bottom: 0; }
+
+  /* Agenda / index items fill width */
+  .agenda-item,
+  .section-index > * {
+    width: 100% !important;
+    min-height: auto !important;
+  }
+
+  /* Tables: horizontal scroll wrapper */
+  .slide table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    max-width: 100%;
+    font-size: clamp(11px, 3vw, 14px) !important;
+  }
+  .slide thead, .slide tbody, .slide tr {
+    display: revert;
+  }
+  .slide td, .slide th {
+    padding: 6px 8px !important;
+    font-size: inherit !important;
+    white-space: nowrap;
+  }
+
+  /* Compare tables: allow scroll */
+  .compare-table,
+  .compare-table--alt {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Cards and stat boxes: stack vertically */
+  .slide [style*="repeat("],
+  .color-cards {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  /* Typography */
+  .slide h1 { font-size: clamp(22px, 6vw, 36px) !important; line-height: 1.1; }
+  .slide h2 { font-size: clamp(18px, 5vw, 28px) !important; line-height: 1.15; }
+  .bbva-hero { font-size: clamp(36px, 12vw, 64px) !important; }
+  .slide p, .slide li { font-size: clamp(14px, 3.8vw, 17px) !important; line-height: 1.5; }
+  .ante-title { font-size: clamp(11px, 3vw, 13px) !important; }
+  .slide code { font-size: 0.85em !important; word-break: break-all; }
+
+  /* Images: constrain to viewport */
+  .slide img:not(.bbva-logo):not(.nfq-logo):not(.nfq-iso) {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Header and footer compact */
   .slide__header { margin-bottom: 4px; }
   .bbva-logo { height: 22px; }
-  .slide__footer { margin-top: auto; }
+  .slide__footer { margin-top: auto; padding-top: 8px; }
   .nfq-footer-logo { height: 16px; }
+
+  /* Hide desktop nav */
   .nav-arrows { display: none !important; }
+
+  /* Back button smaller */
+  .back-to-hub, .hub-back-btn {
+    font-size: 10px !important;
+    padding: 5px 10px 5px 8px !important;
+    top: 8px !important;
+    left: 8px !important;
+  }
 }
 
 /* ── Quiz styles ── */
