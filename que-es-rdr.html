@@ -1398,6 +1398,53 @@ p { margin: 0; }
       .nfq-footer-logo { height: 16px; }
 
       /* Botones de navegación ocultos en móvil: se usa el swipe */
+      
+      /* Images: constrain to viewport, exclude logos */
+      .slide img:not(.bbva-logo):not(.nfq-logo):not(.nfq-iso) {
+        max-width: 100% !important;
+        height: auto !important;
+      }
+
+      /* Inline grids: stack on mobile */
+      .slide [style*="grid-template-columns"] {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+      }
+
+      /* arch-grid specifically */
+      .arch-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+      }
+      .arch-grid > [style*="grid-row: span"] {
+        grid-row: auto !important;
+      }
+
+      /* Cards and stat boxes: stack vertically */
+      .slide [style*="repeat("] {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+      }
+
+      /* Slide content: prevent clipping */
+      .slide main { overflow: visible !important; }
+
+      /* Entity cards: stack on mobile */
+      .entity-cards {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+      }
+      .entity-card {
+        min-height: auto !important;
+        padding: 12px !important;
+      }
+
+      /* NFQ credit compact */
+      .nfq-credit img { height: 20px !important; }
+
       .nav-arrows { display: none !important; }
     }
 
