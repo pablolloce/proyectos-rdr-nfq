@@ -337,6 +337,91 @@
     body.drawer-open { overflow: hidden; }
 
     /* ========================================================
+       BOTTOM SHEET — detalles del día (uso táctil principalmente)
+       ======================================================== */
+    #day-sheet {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      max-height: 70vh;
+      background: var(--white);
+      border-radius: 20px 20px 0 0;
+      transform: translateY(105%);
+      transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+      z-index: 70;
+      box-shadow: 0 -8px 30px rgba(7, 14, 70, 0.18);
+      display: flex; flex-direction: column;
+      padding: 8px 0 16px 0;
+    }
+    #day-sheet.open { transform: translateY(0); }
+    .day-sheet-handle {
+      width: 40px; height: 4px;
+      background: var(--bbva-gray-3);
+      border-radius: 2px;
+      margin: 0 auto 8px;
+      flex-shrink: 0;
+    }
+    .day-sheet-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 8px 20px 16px;
+      border-bottom: 1px solid var(--border-light);
+      flex-shrink: 0;
+    }
+    .day-sheet-eyebrow {
+      font-size: 0.7rem; font-weight: 700;
+      color: var(--bbva-gray-5);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 2px;
+    }
+    .day-sheet-title {
+      font-family: var(--font-display);
+      font-size: 1.4rem; font-weight: 700;
+      color: var(--bbva-electric-blue);
+      letter-spacing: -0.01em;
+      text-transform: capitalize;
+      line-height: 1.15;
+    }
+    .day-sheet-close {
+      background: var(--bbva-sand);
+      border: 1px solid var(--bbva-gray-2);
+      border-radius: 50%;
+      width: 32px; height: 32px;
+      font-size: 16px; line-height: 1;
+      color: var(--bbva-midnight);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .day-sheet-close:active { background: var(--bbva-gray-2); }
+    .day-sheet-list {
+      flex: 1; overflow-y: auto;
+      padding: 12px 20px 8px;
+    }
+    .day-sheet-item {
+      display: flex; align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .day-sheet-item:last-child { border-bottom: 0; }
+    .day-sheet-color {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 2px var(--white);
+    }
+    .day-sheet-name {
+      flex: 1;
+      font-weight: 700; font-size: 0.92rem;
+      color: var(--bbva-midnight);
+    }
+    .day-sheet-tag {
+      font-size: 0.62rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      flex-shrink: 0;
+    }
+    .day-cell.has-people { cursor: pointer; }
+
+    /* ========================================================
        MEDIA QUERY: < 900px (móvil + tablet pequeña)
        ======================================================== */
     @media (max-width: 899px) {
@@ -433,6 +518,19 @@
 
   <!-- Overlay para drawers móviles -->
   <div id="drawer-overlay"></div>
+
+  <!-- Bottom sheet de día (móvil): aparece al tocar un día con ausencias -->
+  <div id="day-sheet">
+    <div class="day-sheet-handle"></div>
+    <div class="day-sheet-head">
+      <div>
+        <div class="day-sheet-eyebrow" id="day-sheet-eyebrow">—</div>
+        <h3 class="day-sheet-title" id="day-sheet-title">—</h3>
+      </div>
+      <button class="day-sheet-close" id="day-sheet-close" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="day-sheet-list" id="day-sheet-list"></div>
+  </div>
 
   <div id="sidebar">
     <div id="sidebar-header">
@@ -532,6 +630,10 @@
       if (btnRight) btnRight.addEventListener('click', () => toggleDrawer('right'));
       if (overlay)  overlay.addEventListener('click', cerrarDrawers);
 
+      // Cerrar bottom sheet con el botón ✕
+      const btnCloseSheet = document.getElementById('day-sheet-close');
+      if (btnCloseSheet) btnCloseSheet.addEventListener('click', cerrarDaySheet);
+
       document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarDrawers(); });
     }
     function toggleDrawer(lado) {
@@ -549,10 +651,54 @@
     function cerrarDrawers() {
       document.getElementById('sidebar')?.classList.remove('open');
       document.getElementById('info-panel')?.classList.remove('open');
+      document.getElementById('day-sheet')?.classList.remove('open');
       document.body.classList.remove('drawer-open');
     }
     function _esMovil() { return window.innerWidth < 900; }
     function _autoCloseOnMobile() { if (_esMovil()) cerrarDrawers(); }
+
+    // ¿Dispositivo táctil? Determina si usamos bottom sheet (tap) o
+    // tippy tooltip (hover) para los detalles de cada día.
+    const ES_TOUCH = ('ontouchstart' in window) ||
+                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+
+    /* ====== BOTTOM SHEET — detalles del día ====== */
+    const NOMBRES_DIA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+    function _formatearFechaLegible(dateStr) {
+      const partes = dateStr.split('-');
+      const d = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
+      return NOMBRES_DIA[d.getDay()] + ' ' + parseInt(partes[2]) + ' de ' + mesesNombres[parseInt(partes[1]) - 1].toLowerCase();
+    }
+
+    function abrirDaySheet(dateStr, ausencias) {
+      const num = ausencias.length;
+      document.getElementById('day-sheet-eyebrow').textContent =
+        num + (num === 1 ? ' persona ausente' : ' personas ausentes');
+      document.getElementById('day-sheet-title').textContent = _formatearFechaLegible(dateStr);
+
+      const list = document.getElementById('day-sheet-list');
+      list.innerHTML = ausencias.map(function(a) {
+        const emp = datosGlobales.empleadosMap[a.nombre];
+        const motivo = diccionarioMotivos[a.motivo] || { texto: a.motivo, bg: 'var(--bbva-gray-5)', textColor: '#fff' };
+        const tachado = (emp && emp.activo) ? '' : 'text-decoration: line-through; opacity: 0.6;';
+        return '<div class="day-sheet-item">' +
+                 '<div class="day-sheet-color" style="background: ' + ((emp && emp.color) || 'var(--bbva-serene-blue)') + '"></div>' +
+                 '<div class="day-sheet-name" style="' + tachado + '">' + (a.nombre || '') + '</div>' +
+                 '<span class="day-sheet-tag" style="background: ' + motivo.bg + '; color: ' + motivo.textColor + ';">' + motivo.texto + '</span>' +
+               '</div>';
+      }).join('');
+
+      document.getElementById('day-sheet').classList.add('open');
+      document.body.classList.add('drawer-open');
+    }
+
+    function cerrarDaySheet() {
+      document.getElementById('day-sheet').classList.remove('open');
+      if (!document.querySelector('#sidebar.open, #info-panel.open')) {
+        document.body.classList.remove('drawer-open');
+      }
+    }
 
     function mostrarError(msg) {
       const banner = document.getElementById('error-banner');
@@ -727,24 +873,36 @@
             if (ausenciasMostrar.length > MAX_DOTS) dotsContainer.innerHTML += `<div class="more-dots">+${ausenciasMostrar.length - MAX_DOTS}</div>`;
             cell.appendChild(dotsContainer);
 
-            let tooltipHtml = `<div class="tooltip-lista"><strong style="color:var(--tooltip-title); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;">Ausencias (${ausenciasMostrar.length})</strong><hr style="margin:8px 0; border:0; border-top:1px solid var(--tooltip-line);">`;
-            ausenciasMostrar.forEach(a => {
-              const emp = datosGlobales.empleadosMap[a.nombre];
-              const propMotivo = diccionarioMotivos[a.motivo] || { texto: a.motivo, bg: 'var(--bbva-gray-5)', textColor: '#fff' };
-              const nameStyle = emp && emp.activo ? '' : 'text-decoration:line-through;opacity:0.6;';
-              tooltipHtml += `
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px; gap:14px; align-items:center;">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <div style="width:8px; height:8px; border-radius:50%; background:${emp?.color || 'var(--bbva-serene-blue)'}"></div>
-                    <span style="font-size:0.82rem; color:var(--tooltip-text); ${nameStyle}">${emp?.nombre || a.nombre}</span>
-                  </div>
-                  <span style="font-size:0.62rem; padding:3px 8px; border-radius:9999px; text-transform:uppercase; font-weight:700; letter-spacing:0.04em; background-color:${propMotivo.bg}; color:${propMotivo.textColor};">${propMotivo.texto}</span>
-                </div>`;
-            });
-            tooltipHtml += '</div>';
+            if (ES_TOUCH) {
+              // Móvil: tap abre el bottom sheet con la lista de ausentes
+              cell.classList.add('has-people');
+              const ausCapturadas = ausenciasMostrar.slice();
+              const fechaCapturada = dateStr;
+              cell.onclick = function(e) {
+                e.stopPropagation();
+                abrirDaySheet(fechaCapturada, ausCapturadas);
+              };
+            } else {
+              // Desktop: tooltip con hover (comportamiento original)
+              let tooltipHtml = `<div class="tooltip-lista"><strong style="color:var(--tooltip-title); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em;">Ausencias (${ausenciasMostrar.length})</strong><hr style="margin:8px 0; border:0; border-top:1px solid var(--tooltip-line);">`;
+              ausenciasMostrar.forEach(a => {
+                const emp = datosGlobales.empleadosMap[a.nombre];
+                const propMotivo = diccionarioMotivos[a.motivo] || { texto: a.motivo, bg: 'var(--bbva-gray-5)', textColor: '#fff' };
+                const nameStyle = emp && emp.activo ? '' : 'text-decoration:line-through;opacity:0.6;';
+                tooltipHtml += `
+                  <div style="display:flex; justify-content:space-between; margin-bottom:8px; gap:14px; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <div style="width:8px; height:8px; border-radius:50%; background:${emp?.color || 'var(--bbva-serene-blue)'}"></div>
+                      <span style="font-size:0.82rem; color:var(--tooltip-text); ${nameStyle}">${emp?.nombre || a.nombre}</span>
+                    </div>
+                    <span style="font-size:0.62rem; padding:3px 8px; border-radius:9999px; text-transform:uppercase; font-weight:700; letter-spacing:0.04em; background-color:${propMotivo.bg}; color:${propMotivo.textColor};">${propMotivo.texto}</span>
+                  </div>`;
+              });
+              tooltipHtml += '</div>';
 
-            cell._tippyHtml = tooltipHtml;
-            cell.classList.add('has-tooltip');
+              cell._tippyHtml = tooltipHtml;
+              cell.classList.add('has-tooltip');
+            }
           }
           gridDOM.appendChild(cell);
         }
@@ -754,16 +912,17 @@
       }
 
       if (window.misTooltips) window.misTooltips.forEach(t => t.destroy());
-      window.misTooltips = tippy('.has-tooltip', {
-        content: (reference) => reference._tippyHtml,
-        allowHTML: true,
-        placement: 'top',
-        appendTo: document.body,
-        animation: 'scale',
-        interactive: true,
-        touch: ['hold', 400],
-        maxWidth: 320
-      });
+      if (!ES_TOUCH) {
+        window.misTooltips = tippy('.has-tooltip', {
+          content: (reference) => reference._tippyHtml,
+          allowHTML: true,
+          placement: 'top',
+          appendTo: document.body,
+          animation: 'scale',
+          interactive: true,
+          maxWidth: 320
+        });
+      }
     }
   </script>
 </body>
