@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SSI · Instrucciones de Liquidación</title>
+<style>
+:root{
+  --electric:#001391;
+  --serene:#85C8FF;
+  --midnight:#060E46;
+  --sand:#F7F8F8;
+  --white:#FFFFFF;
+  --aqua:#8BE1E9;
+  --lime:#88E783;
+  --canary:#FFE761;
+  --purple:#B68CFF;
+  --gray2:#E2E6EA;
+  --gray5:#6E7781;
+  --mandarin:#FFB56B;
+  --r:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0D0D0D;overflow:hidden;height:100vh;width:100vw}
+
+/* ---------- HEADER ---------- */
+.hdr{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-items:center;padding:0 32px;z-index:100;transition:opacity .3s}
+.hdr.light{background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--gray2)}
+.hdr.dark{background:rgba(6,14,70,.7);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.08)}
+.hdr.hide-on-cover{opacity:0;pointer-events:none}
+.hdr img{height:28px}
+.hdr-title{margin-left:16px;font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--electric)}
+
+/* ---------- PROGRESS ---------- */
+.pbar-wrap{position:fixed;bottom:0;left:0;right:0;height:4px;background:var(--gray2);z-index:100}
+.pbar{height:100%;background:linear-gradient(90deg,var(--electric),var(--serene));transition:width .4s}
+
+/* ---------- COUNTER ---------- */
+.counter{position:fixed;bottom:14px;right:32px;font-size:11px;color:var(--gray5);z-index:100}
+
+/* ---------- SLIDES ---------- */
+.slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;transform:translateX(40px);background:var(--white);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:auto;transform:translateX(0)}
+.slide.prev{transform:translateX(-40px)}
+.si{width:90%;max-width:1100px;padding:52px 0 32px}
+
+/* ---------- TYPOGRAPHY ---------- */
+h2{font-size:28px;font-weight:800;color:var(--electric);line-height:1.2;margin-bottom:8px}
+.label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--serene);margin-bottom:6px}
+.sub{font-size:14px;color:var(--gray5);line-height:1.6;max-width:700px}
+.body{font-size:13px;line-height:1.7;color:#333}
+.accent{color:var(--electric)}
+
+/* ---------- GRID ---------- */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
+
+/* ---------- CARDS ---------- */
+.card{background:var(--white);border-radius:var(--r);padding:22px 20px;border-top:3px solid var(--serene);box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.card h3{font-size:15px;font-weight:700;margin-bottom:8px}
+
+/* ---------- HIGHLIGHT ---------- */
+.highlight{background:linear-gradient(90deg,rgba(133,200,255,.12),rgba(139,225,233,.08));border-left:4px solid var(--serene);border-radius:0 var(--r) var(--r) 0;padding:16px 24px}
+
+/* ---------- TABLE ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:var(--electric);color:#fff;padding:12px 14px;text-align:left;font-weight:600}
+.tbl td{padding:10px 14px;border-bottom:1px solid var(--gray2)}
+.tbl tr:nth-child(even){background:var(--sand)}
+.tbl tr:hover td{background:rgba(133,200,255,.1)}
+
+/* ---------- FLOW / DIAGRAM ---------- */
+.flow{display:flex;align-items:center;gap:0;justify-content:center;flex-wrap:wrap}
+.flow-box{background:var(--white);border:2px solid var(--serene);border-radius:var(--r);padding:14px 20px;text-align:center;min-width:120px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
+.flow-box.origin{border-color:var(--canary);background:rgba(255,231,97,.08)}
+.flow-box.canonical{border-color:var(--electric);background:rgba(0,19,145,.04)}
+.flow-box.dest{border-color:var(--lime);background:rgba(136,231,131,.08)}
+.flow-box.error{border-color:#FF4D4D;background:rgba(255,77,77,.06)}
+.flow-arrow{font-size:24px;color:var(--electric);padding:0 8px;font-weight:700}
+
+/* ---------- COVER ---------- */
+.cover{background:linear-gradient(135deg,var(--midnight) 0%,var(--electric) 100%);color:#fff}
+.cover h1{font-size:42px;font-weight:800;line-height:1.15;margin-bottom:16px}
+.cover .sub{color:rgba(255,255,255,.7)}
+.cover .pill{display:inline-block;background:rgba(133,200,255,.15);border:1px solid rgba(133,200,255,.3);border-radius:20px;padding:6px 16px;font-size:12px;color:var(--serene);margin-right:8px;margin-top:12px}
+
+/* ---------- CLOSING ---------- */
+.closing{background:linear-gradient(135deg,var(--midnight) 0%,var(--electric) 100%);color:#fff;text-align:center}
+
+/* ---------- ANNEXE ---------- */
+.annexe-hdr{background:linear-gradient(135deg,var(--midnight) 0%,#1a237e 100%);color:#fff}
+
+/* ---------- STAT ---------- */
+.stat-n{font-size:36px;font-weight:800;color:var(--electric)}
+.stat-l{font-size:11px;color:var(--gray5);margin-top:4px}
+
+/* ---------- BADGE ---------- */
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.badge-blue{background:rgba(133,200,255,.15);color:var(--electric)}
+.badge-green{background:rgba(136,231,131,.15);color:#1B8C13}
+.badge-yellow{background:rgba(255,231,97,.15);color:#8B6914}
+.badge-purple{background:rgba(182,140,255,.15);color:#5B21B6}
+.badge-orange{background:rgba(255,181,107,.15);color:#C05621}
+
+.divider{height:1px;background:var(--gray2)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr light hide-on-cover" id="hdr">
+  <img id="hdr-bbva" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 28'%3E%3Ctext x='0' y='20' font-family='Arial' font-weight='bold' font-size='16' fill='%23001391'%3EBBVA%3C/text%3E%3C/svg%3E" alt="BBVA" style="height:24px">
+  <img id="hdr-nfq" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 28'%3E%3Ctext x='0' y='20' font-family='Arial' font-weight='bold' font-size='16' fill='%23001391'%3ENFQ%3C/text%3E%3C/svg%3E" alt="NFQ" style="height:24px;margin-left:12px">
+  <span class="hdr-title" id="hdr-title" style="margin-left:16px">SSI · Instrucciones de Liquidación</span>
+</div>
+
+<!-- PROGRESS BAR -->
+<div class="pbar-wrap"><div class="pbar" id="pbar" style="width:0%"></div></div>
+<div class="counter" id="counter">1 / 19</div>
+
+<!-- ========== SLIDES ========== -->
+
+<!-- ===== SLIDE 0 · COVER ===== -->
+<div class="slide cover active" data-slide="0" data-theme="dark">
+  <div class="si" style="text-align:center">
+    <p style="font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--serene);margin-bottom:20px">BBVA CIB · RDR · Instrucciones de Liquidación</p>
+    <h1>Settlement Instructions<br>(SSI / SDI)</h1>
+    <p class="sub" style="max-width:650px;margin:0 auto;margin-top:16px">Cómo RDR gestiona las instrucciones de liquidación: maestro de datos, publicación al BO y soporte a la migración de operaciones.</p>
+    <div style="margin-top:28px">
+      <span class="pill">~857K registros</span>
+      <span class="pill">Cash · Securities</span>
+      <span class="pill">Calypso · SWIFT</span>
+      <span class="pill">Migración</span>
+    </div>
+    <div style="font-size:12px;opacity:.6;margin-top:32px">BBVA CIB · NFQ Advisory · Confidencial</div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 1 · ¿QUÉ ES UNA SSI? ===== -->
+<div class="slide" data-slide="1" data-theme="light">
+  <div class="si">
+    <p class="label">01 · Introducción</p>
+    <h2>¿Qué es una SSI (Instrucción de Liquidación)?</h2>
+    <p class="sub" style="margin-bottom:24px">Una <strong>Settlement Instruction</strong> es una instrucción permanente que define <em>cómo</em> entregar cash o securities a una contraparte y mediante qué método de liquidación.</p>
+
+    <div class="g2" style="margin-bottom:24px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent">Liquidación según SDIs válidas</h3>
+        <p class="body" style="color:#5C5C5C">Cuando un trade llega al BO, el sistema liquida según las SDIs válidas que posea para la combinación <em>Contraparte + Divisa + Producto + Fechas</em>. No requiere intervención manual.</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--serene);border-top:none">
+        <h3 style="color:var(--electric)">Maestro en RDR</h3>
+        <p class="body" style="color:#5C5C5C">RDR es el <strong>sistema maestro</strong> de instrucciones de liquidación de BBVA CIB. En ellas se encuentra toda la información para la liquidación: contrapartida-divisa-producto-fechas. RDR suministra estas instrucciones al BO.</p>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Datos clave de una SSI:</strong> Contrapartidas/Participantes (quién liquida, beneficiario, corresponsal/custodio, intermediario), Producto, Intervalos de fecha (vigencia), STP (asignación automática Y/N), Branch (geografía), Divisa.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 2 · CONCEPTOS BÁSICOS ===== -->
+<div class="slide" data-slide="2" data-theme="light">
+  <div class="si">
+    <p class="label">01 · Conceptos</p>
+    <h2>Conceptos Básicos</h2>
+    <p class="sub" style="margin-bottom:24px">Elementos fundamentales para comprender las instrucciones de liquidación.</p>
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Liquidación</h3>
+        <p class="body" style="color:#5C5C5C">Proceso de cálculo final para cerrar o saldar una operación. Es el momento del <strong>intercambio definitivo</strong> entre el dinero y el activo.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--aqua)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Flujo de una Operación</h3>
+        <p class="body" style="color:#5C5C5C">Camino secuencial y cronológico que recorre una operación desde que se pacta hasta que se procesa, se paga definitivamente y se archiva.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--lime)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Sentido de Liquidación</h3>
+        <p class="body" style="color:#5C5C5C">Lo que para uno es un gasto, para el otro es un ingreso. El sentido <strong>siempre se define desde la entidad que origina</strong> la instrucción.</p>
+      </div>
+    </div>
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--purple)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">MIS (OWNENT)</h3>
+        <p class="body" style="color:#5C5C5C">Instrucción de liquidación de la <strong>PO</strong> (Processing Org). Es la instrucción propia de la entidad (SPAIN, MEXICO, BSI…).</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--canary)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">SUS (CPARTY)</h3>
+        <p class="body" style="color:#5C5C5C">Instrucción de liquidación de la <strong>contrapartida</strong>. La SDI que corresponde a la entidad con la que se opera.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--mandarin)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Liquidación a Terceros</h3>
+        <p class="body" style="color:#5C5C5C">Cuando la dueña de la instrucción y el beneficiario <strong>no coinciden</strong>. La contrapartida que opera y la que liquida no es la misma.</p>
+      </div>
+    </div>
+    <div class="highlight">
+      <p class="body"><strong>Regla fundamental:</strong> Si una operación liquida, debe existir instrucción tanto de la PO (<strong>MIS</strong>) como de la contraparte (<strong>SUS</strong>). Además, ambas deben tener el <strong>mismo tipo de método de liquidación</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 3 · CARACTERÍSTICAS PRINCIPALES ===== -->
+<div class="slide" data-slide="3" data-theme="light">
+  <div class="si">
+    <p class="label">01 · Características</p>
+    <h2>Características Principales</h2>
+    <p class="sub" style="margin-bottom:24px">Propiedades clave de una SSI que determinan su comportamiento y aplicación.</p>
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="text-align:center;border-top:3px solid var(--electric)">
+        <div style="font-size:28px;margin-bottom:8px">🔑</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Clave funcional</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">(Counterparty, Currency, Product, Asset Type) determina la SSI aplicable</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--serene)">
+        <div style="font-size:28px;margin-bottom:8px">📐</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Jerarquía de aplicación</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">SSI específica (divisa+producto) > SSI general (divisa) > SSI por defecto</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--aqua)">
+        <div style="font-size:28px;margin-bottom:8px">📅</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Vigencia temporal</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">START_TMS / END_TMS permiten planificar altas/bajas futuras sin intervención manual</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--lime)">
+        <div style="font-size:28px;margin-bottom:8px">⚡</div>
+        <h3 style="font-size:13px;margin-bottom:6px">STP (Straight-Through)</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">STP=Y asigna automáticamente la SDI a las operaciones (si no hay colisión de prioridad)</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--canary)">
+        <div style="font-size:28px;margin-bottom:8px">🔒</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Trazabilidad regulatoria</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">BCE/EMIR exigen conservar la SSI original. Cada cambio queda auditado</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--purple)">
+        <div style="font-size:28px;margin-bottom:8px">🏦</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Multi-país</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Reglas por branch: México (SPEI/SPID), España (A1), Colombia (C1)</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 4 · TIPOS DE PAGO ===== -->
+<div class="slide" data-slide="4" data-theme="light">
+  <div class="si">
+    <p class="label">02 · Tipos de Pago</p>
+    <h2>Tipos de SSI según Instrucción</h2>
+    <p class="sub" style="margin-bottom:24px">El campo <strong>Instruction Type</strong> discrimina dos grandes familias, cada una con su propia cadena de participantes y reglas de enrutamiento.</p>
+
+    <div class="g2" style="margin-bottom:24px">
+      <div class="card" style="border-left:4px solid var(--canary);border-top:none">
+        <h3 class="accent">💰 CASH (Pagos)</h3>
+        <p class="body" style="color:#5C5C5C;margin-bottom:8px">Instrucciones para liquidación de efectivo — transferencias de fondos entre cuentas bancarias.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• Genera mensajes SWIFT MT103 / MT202</li>
+          <li>• Requiere cuenta bancaria del beneficiario (IBAN/CLABE)</li>
+          <li>• Cadena: Ordenante → Banco Corresponsal → Banco Beneficiario</li>
+          <li>• Relevante Colombia: Client Cash obligatorio en C1</li>
+          <li>• Código ABA para enrutamiento USA</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--lime);border-top:none">
+        <h3 class="accent">📄 SECURITY (Valores)</h3>
+        <p class="body" style="color:#5C5C5C;margin-bottom:8px">Instrucciones para liquidación de valores — transferencia de títulos entre cuentas de custodia.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• Genera mensajes SWIFT MT540/541/542/543</li>
+          <li>• Requiere cuenta de custodia/valores (safekeep account)</li>
+          <li>• Cadena: Beneficiario → Clearing → Custodio → Depositario</li>
+          <li>• Security Account por sucursal</li>
+          <li>• Sujeta a penalización CSDR por settlement fails</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Impacto del tipo:</strong> El Instruction Type condiciona las sub-secciones visibles en pantalla, los lookups disponibles y los participantes obligatorios de la cadena de liquidación.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 5 · MÉTODOS DE LIQUIDACIÓN ===== -->
+<div class="slide" data-slide="5" data-theme="light">
+  <div class="si">
+    <p class="label">02 · Métodos</p>
+    <h2>Métodos de Liquidación</h2>
+    <p class="sub" style="margin-bottom:24px">El campo <strong>Settlement Method Type</strong> define el mecanismo por el cual se efectúa la liquidación y qué participantes son obligatorios.</p>
+
+    <table class="tbl" style="margin-bottom:20px">
+      <thead>
+        <tr>
+          <th>Método</th>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Tipo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-blue">CLS</span></td>
+          <td>Continuous Linked Settlement</td>
+          <td>Liquidación simultánea multi-divisa para FX (17 divisas principales).</td>
+          <td>Cash/FX</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">EBA / TARGET2</span></td>
+          <td>Euro Banking Association</td>
+          <td>Métodos exclusivos para divisa <strong>EUR</strong>.</td>
+          <td>Cash</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-yellow">CONTABLE/GDI</span></td>
+          <td>Account</td>
+          <td>Según cuenta beneficiario: si primeros 4 dígitos = 0182 y posiciones 11-13 ≠ 008/220/225/230 → GDI, sino → CONTABLE.</td>
+          <td>Cash</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">SWIFT</span></td>
+          <td>SWIFT</td>
+          <td>Método para divisa distinta a EUR vía red SWIFT.</td>
+          <td>Cash</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="highlight" style="border-left:4px solid var(--canary);margin-bottom:16px">
+      <p class="body"><strong>Nota:</strong> Existen más métodos de liquidación (DVP, RVP, FOP, CORRESP, CLEARING, CUSTODY…) aplicables principalmente a Securities. Los mostrados aquí son los más relevantes para la operativa Cash.</p>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Regla MIS/SUS:</strong> Para cada operación, la SDI MIS y la SDI SUS deben tener el <strong>mismo tipo de método</strong> de liquidación. Si no coinciden, Calypso no puede asignar correctamente.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 6 · CAMPOS PRINCIPALES ===== -->
+<div class="slide" data-slide="6" data-theme="light">
+  <div class="si">
+    <p class="label">03 · Modelo de Datos</p>
+    <h2>Campos Principales de la SSI</h2>
+    <p class="sub" style="margin-bottom:24px">La pantalla SSIS contiene <strong>258 controles</strong> en 8 páginas. Estos son los campos clave.</p>
+
+    <table class="tbl" style="font-size:12px">
+      <thead>
+        <tr><th>Campo</th><th>Tabla / Path</th><th>Oblig.</th><th>Descripción</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>ID</strong></td><td>ft_t_sai1.alt_id</td><td><span class="badge badge-green">Auto</span></td><td>Identificador único, generado al guardar</td></tr>
+        <tr><td><strong>Counterparty</strong></td><td>ft_t_fins.inst_mnem</td><td><span class="badge badge-yellow">Sí</span></td><td>Contraparte propietaria. No editable post-alta</td></tr>
+        <tr><td><strong>Settlement Method</strong></td><td>ssis.clrng_meth_typ</td><td><span class="badge badge-yellow">Sí</span></td><td>DVP, RVP, FOP, CORRESP, CLEARING, CLS…</td></tr>
+        <tr><td><strong>Side</strong></td><td>ssis.trans_dir_typ</td><td><span class="badge badge-yellow">Sí</span></td><td>Pay/Receive o Deliver/Receive</td></tr>
+        <tr><td><strong>Instruction Type</strong></td><td>ssis.trn_proc_instruc_typ</td><td><span class="badge badge-yellow">Sí</span></td><td>CASH o SECURITY</td></tr>
+        <tr><td><strong>Priority</strong></td><td>ssis.settle_instruc_prty_typ</td><td><span class="badge badge-yellow">Sí</span></td><td>Nivel de prioridad para selección automática</td></tr>
+        <tr><td><strong>Status</strong></td><td>ssis.data_stat_typ</td><td><span class="badge badge-yellow">Sí</span></td><td>ACTIVE, INACTIVE, LOCKED</td></tr>
+        <tr><td><strong>STP</strong></td><td>EAV (SETTATT2)</td><td>No</td><td>Straight-Through Processing (asignación automática)</td></tr>
+        <tr><td><strong>Calypso Method</strong></td><td>EAV (SETTATT8)</td><td><span class="badge badge-yellow">Sí</span></td><td>Método en nomenclatura Calypso</td></tr>
+        <tr><td><strong>Validity From/To</strong></td><td>EAV (SETTATT4/5)</td><td>No</td><td>Rango de fechas de vigencia</td></tr>
+        <tr><td><strong>Products</strong></td><td>ft_t_ssia.iss_typ</td><td>No</td><td>Productos financieros aplicables</td></tr>
+        <tr><td><strong>Branches</strong></td><td>ft_t_ssia.org_id</td><td>No</td><td>Sucursales donde es válida</td></tr>
+        <tr><td><strong>Currency</strong></td><td>ft_t_ssia.instr_id</td><td>No</td><td>Divisas aplicables</td></tr>
+        <tr><td><strong>External IDs</strong></td><td>stand_sett_alt_identif</td><td>No</td><td>IDs en sistemas externos (Calypso, CTM/DTCC)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== SLIDE 7 · CADENA DE PARTICIPANTES ===== -->
+<div class="slide" data-slide="7" data-theme="light">
+  <div class="si">
+    <p class="label">03 · Cadena</p>
+    <h2>Cadena de Participantes</h2>
+    <p class="sub" style="margin-bottom:24px">Cada SSI define la secuencia completa de entidades financieras que participan en el flujo de liquidación.</p>
+
+    <!-- Diagrama -->
+    <div style="background:var(--sand);border-radius:var(--r);padding:20px;font-family:'Courier New',monospace;font-size:12px;color:var(--electric);margin-bottom:20px;overflow-x:auto;white-space:pre;line-height:1.8">┌─────────────────── CADENA DE LIQUIDACIÓN ───────────────────┐
+│                                                              │
+│  BENEFICIARY ──► CLEARING AGENT ──► CORRESPONDENT           │
+│       │                                    │                 │
+│       │          ┌── INTERMEDIARY 1 ◄──────┘                 │
+│       │          │                                           │
+│       │          └── INTERMEDIARY 2                           │
+│       │                                                      │
+│       └──────► CUSTODY AGENT ──► LOCAL CUSTODIAN 1           │
+│                                       └── LOCAL CUSTODIAN 2  │
+│                                                              │
+│  ▬▬▬ = Obligatorio    --- = Opcional                         │
+└──────────────────────────────────────────────────────────────┘</div>
+
+    <table class="tbl" style="font-size:12px">
+      <thead><tr><th>Rol</th><th>Oblig.</th><th>Función</th><th>Datos clave</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Dueña (Counterparty)</strong></td><td><span class="badge badge-yellow">Siempre</span></td><td>Propietaria de la instrucción de liquidación</td><td>BIC, Cuenta</td></tr>
+        <tr><td><strong>Beneficiary</strong></td><td><span class="badge badge-yellow">Siempre</span></td><td>Receptor final de la operación</td><td>BIC, Cuenta, ABA</td></tr>
+        <tr><td><strong>Correspondent</strong></td><td><span class="badge badge-orange">Según método</span></td><td>Banco corresponsal. Obligatorio si método = CORRESPONDENT</td><td>BIC, Cuenta, "Message to"</td></tr>
+        <tr><td><strong>Custody Agent</strong></td><td><span class="badge badge-orange">Según método</span></td><td>Custodio de valores. Obligatorio si método = CUSTODY</td><td>BIC, Cuenta, "Message to"</td></tr>
+        <tr><td><strong>Intermediary 1/2</strong></td><td><span class="badge badge-blue">Opcional</span></td><td>Bancos intermediarios cross-border (siempre opcionales)</td><td>BIC, Cuenta</td></tr>
+        <tr><td><strong>Local Custodian 1/2</strong></td><td><span class="badge badge-blue">Opcional</span></td><td>Sub-custodios locales (mercados emergentes)</td><td>BIC, Cuenta</td></tr>
+      </tbody>
+    </table>
+
+    <div class="highlight" style="margin-top:16px">
+      <p class="body"><strong>Información por participante:</strong> Contrapartida (quién es), Account (safekeep/current), SWIFT BIC, ABA Code (USA), GL Account (libro mayor), Message to (flag SWIFT), Current Account Validation.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 8 · PROCESOS UI ===== -->
+<div class="slide" data-slide="8" data-theme="light">
+  <div class="si">
+    <p class="label">04 · Gestión</p>
+    <h2>Procesos de Interfaz de Usuario</h2>
+    <p class="sub" style="margin-bottom:24px">Operaciones principales de gestión de SSIs desde Workstation.</p>
+
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--serene);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">🔍</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Búsqueda</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Por contraparte, divisa, producto, método, estado. Filtro ACTIVE por defecto.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--electric);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">➕</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Alta</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Creación. Se selecciona contraparte (no editable después), método, side, tipo. Submit genera ID.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--aqua);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">✏️</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Modificación</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Una vez dada de alta, casi todos los campos quedan como no editables. Solo se pueden editar campos limitados.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--lime);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">🔄</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Inactivar + Nuevo</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Transacción atómica: inactiva la SSI actual y crea una nueva vinculada. Para cambios estructurales.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--canary);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">📋</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Copiar</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Clona SSI existente con nuevo ID. Todos los campos editables. Útil para variantes por divisa.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--purple);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">🔀</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Reasignar</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Variante para reasignar a otra contraparte. Inactiva la vieja, crea nueva apuntando a otra entity.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 9 · CICLO DE VIDA Y BATCH ===== -->
+<div class="slide" data-slide="9" data-theme="light">
+  <div class="si">
+    <p class="label">04 · Batch</p>
+    <h2>Procesos Batch y Ciclo de Vida</h2>
+    <p class="sub" style="margin-bottom:24px">32 procesos batch gestionan carga, validación, difusión y conciliación de SSIs.</p>
+
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <div style="font-size:20px;margin-bottom:8px">📥</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Carga desde feeds</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">ssis-account, ssis-cedro, ssis-clearing, ssis-corresp, ssis-euro — Alimentan SSIs desde ficheros externos.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--serene)">
+        <div style="font-size:20px;margin-bottom:8px">📤</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Difusión a sistemas</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">ssis-tradacc, ssis-tradced, ssis-tradcle, ssis-tradcor, ssis-tradeur, ssis-tradswift — Publican a Calypso, SWIFT, Datio.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--aqua)">
+        <div style="font-size:20px;margin-bottom:8px">🤖</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Auto-carga y difusión</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">ssis-autocarga, ssis-autocargamex, ssis-autodifu, ssis-autodifumex — Automáticos España y México.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--lime)">
+        <div style="font-size:20px;margin-bottom:8px">✅</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Validación de bajas</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">ssis-validar-bajas — Verifica y procesa inactivaciones programadas de SSIs expiradas.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--canary)">
+        <div style="font-size:20px;margin-bottom:8px">🔧</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Mantenimiento CLS</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">ssis-csaccount, ssis-csclearing, ssis-cscorresp — Gestión específica de SSIs para CLS.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--purple)">
+        <div style="font-size:20px;margin-bottom:8px">📊</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Reporting</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">ssis-autocargareporte, ssis-autodifureporte — Informes de ejecución.</p>
+      </div>
+    </div>
+
+    <!-- Ciclo de vida -->
+    <div style="background:var(--sand);border-radius:var(--r);padding:16px;font-family:'Courier New',monospace;font-size:11px;color:var(--electric);line-height:1.8;overflow-x:auto;white-space:pre">              Alta
+ (ninguno) ────────► ACTIVE
+                        │        UPDATE
+             ACTIVE ◄──────────► ACTIVE  (modificación in-place)
+                        │
+              Inactivar │
+                        ▼
+                     INACTIVE  (terminal — no reactivable)
+                        │
+              SSISDENE  │
+ ACTIVE ────────────► INACTIVE + nueva SSI ACTIVE (via REL_NEW)</div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 10 · ANNEXE HEADER ===== -->
+<div class="slide annexe-hdr" data-slide="10" data-theme="dark">
+  <div class="si" style="text-align:center">
+    <p style="font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--aqua);margin-bottom:20px">Anexo</p>
+    <h1 style="font-size:38px;font-weight:800;color:#fff;margin-bottom:16px">Instrucciones de Liquidación<br>en una Migración / Simulacro</h1>
+    <p class="sub" style="max-width:600px;margin:0 auto;color:rgba(255,255,255,.7)">Objetivos, análisis, proceso de alta y flujo de trabajo detallado antes, durante y después de los simulacros.</p>
+    <div style="margin-top:28px">
+      <span class="pill">Objetivos</span>
+      <span class="pill">Análisis</span>
+      <span class="pill">Alta SDIs</span>
+      <span class="pill">Pre-simulacro</span>
+      <span class="pill">Durante</span>
+      <span class="pill">Post-simulacro</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 11 · OBJETIVOS MIGRACIÓN SSI ===== -->
+<div class="slide" data-slide="11" data-theme="light">
+  <div class="si">
+    <p class="label">Anexo · Objetivos</p>
+    <h2>Objetivos de la Migración: Instrucciones de Liquidación</h2>
+    <p class="sub" style="margin-bottom:24px">Una vez las operaciones migran al nuevo BO a través de la caída de operaciones, deben seguir su curso de vida: <strong>liquidar, confirmar, notificar, reportar</strong>.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent">¿Cuándo es necesaria una SDI?</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8">Es totalmente necesario que <strong>todas las operaciones</strong> queden asignadas a una instrucción de liquidación siempre que al menos uno de sus flujos sea pasado.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• Una migración se realiza en un momento D concreto</li>
+          <li>• Una operación puede tener algún flujo realizado pero no todos</li>
+          <li>• Si todos los flujos son <strong>posteriores al GoLive</strong> → la necesidad se debe revisar</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--lime);border-top:none">
+        <h3 style="color:var(--electric)">Regla fundamental</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8">Para cada operación (combinación de <strong>contrapartida + producto + divisa + fecha</strong>) debe existir una SDI en RDR y el BO.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• Debe existir instrucción de la <strong>PO (MIS)</strong></li>
+          <li>• Debe existir instrucción de la <strong>contraparte (SUS)</strong></li>
+          <li>• MIS y SUS con <strong>mismo método</strong> de liquidación</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight" style="border-left:4px solid #FF4D4D">
+      <p class="body"><strong>⚠️ Importante:</strong> El análisis debe actualizarse periódicamente. Las migraciones se dilatan en el tiempo: instrucciones inicialmente válidas pueden acabar inactivándose, e instrucciones pendientes de alta puede que finalmente no sean necesarias.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 12 · TAREAS RDR - ANÁLISIS ===== -->
+<div class="slide" data-slide="12" data-theme="light">
+  <div class="si">
+    <p class="label">Anexo · Análisis</p>
+    <h2>Análisis de Instrucciones de Liquidación</h2>
+    <p class="sub" style="margin-bottom:24px">RDR como maestro de datos estáticos debe identificar el estado de las SDIs para la operativa viva que migra.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Papel de RDR en la migración</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>📌 <strong>Diccionario</strong> entre aplicativos (caída de operaciones)</li>
+          <li>📌 <strong>Maestro</strong> que suministra al BO las instrucciones de liquidación</li>
+          <li>📌 <strong>Facilitador</strong> de datos fijos para que la operación se liquide y confirme</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid var(--canary)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Análisis requerido</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>✅ Identificar operaciones que <strong>ya cuentan</strong> con SDI válida en RDR y BO</li>
+          <li>⚠️ Identificar operaciones que <strong>no cuentan</strong> con SDI válida</li>
+          <li>🔧 Para las que no tienen SDI → <strong>revisar cuál dar de alta</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:4px solid #FF4D4D;border-top:none;margin-bottom:16px;background:rgba(255,77,77,.03)">
+      <h3 style="font-size:14px;margin-bottom:8px;color:#CC0000">⚠️ Actualización continua</h3>
+      <p class="body" style="color:#5C5C5C">El análisis debe actualizarse periódicamente: <strong>antes de cada simulacro y posterior a él</strong>. Lo mismo para el GoLive. Las migraciones se dilatan y el estado de las instrucciones cambia con el tiempo.</p>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Recuerda:</strong> Del mismo modo que la operativa viva, las instrucciones de liquidación tienen que revisarse cíclicamente. Instrucciones válidas hoy pueden inactivarse mañana.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 13 · PROCESO DE ALTA ===== -->
+<div class="slide" data-slide="13" data-theme="light">
+  <div class="si">
+    <p class="label">Anexo · Alta de SDIs</p>
+    <h2>Proceso de Alta de SDIs</h2>
+    <p class="sub" style="margin-bottom:24px">Cuando se detecta la inexistencia de una SDI para una operación, se debe dar de alta mediante la plantilla de carga masiva de RDR.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:10px">Plantilla de carga</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8">En RDR existe una <strong>plantilla de carga de SDIs</strong> para cargas masivas.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• La responsabilidad de informar la plantilla es del <strong>usuario y/o el BO</strong></li>
+          <li>• Desde RDR se ofrece <strong>soporte</strong> para ayudar a informarla</li>
+          <li>• RDR prueba la carga y publicación al BO</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--canary);border-top:none">
+        <h3 style="color:var(--electric);font-size:14px;margin-bottom:10px">Responsabilidades claras</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8">Es muy importante <strong>no responsabilizarse</strong> de la tarea de informar la plantilla:</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>❌ Desde RDR IT <strong>no se tiene el conocimiento</strong> ni poder de decisión sobre el tipo de SDI</li>
+          <li>✅ Es tema de <strong>negocio</strong></li>
+          <li>✅ El <strong>usuario debe estar siempre presente</strong> en cada decisión de publicación</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Flujo simplificado de carga -->
+    <div class="flow" style="margin-bottom:16px">
+      <div class="flow-box origin">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">BO detecta</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">Falta SDI</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box canonical">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">BO/Usuario</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">Informa plantilla</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="border-color:var(--purple);background:rgba(182,140,255,.06)">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">RDR</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">Carga masiva</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box dest">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">RDR</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">Publica al BO</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="border-color:var(--lime);background:rgba(136,231,131,.08)">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">Calypso</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">ACK / NACK</p>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body">Tras la publicación, se debe revisar la respuesta <strong>ACK/NACK</strong>. Si todas reciben ACK de Calypso, se traslada a la plantilla de carga y <strong>se versiona</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 14 · PREVIO A SIMULACROS ===== -->
+<div class="slide" data-slide="14" data-theme="light">
+  <div class="si">
+    <p class="label">Anexo · Pre-Simulacro</p>
+    <h2>Flujo de Trabajo: Previo a los Simulacros</h2>
+    <p class="sub" style="margin-bottom:24px">Tareas secuenciales que RDR debe realizar antes de cada simulacro para asegurar que las SDIs están listas.</p>
+
+    <div style="margin-bottom:20px">
+      <table class="tbl">
+        <thead><tr><th style="width:5%">#</th><th style="width:15%">Responsable</th><th>Acción</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Extracción de <strong>PRO</strong> de las SDIs existentes para la operativa viva</td></tr>
+          <tr><td><strong>2</strong></td><td><span class="badge badge-green">BO</span></td><td>Extracción de las SDIs de su sistema para la operativa viva</td></tr>
+          <tr><td><strong>3</strong></td><td><span class="badge badge-green">BO</span></td><td>Detectar para qué contrapartida-divisa-producto-fechas <strong>necesita SDI a dar de alta</strong></td></tr>
+          <tr><td><strong>4</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Revisar si para lo detectado en paso 3 existe alguna SDI del paso 1 que cumpla</td></tr>
+          <tr><td><strong>5</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Las que existan en RDR → <strong>publicar</strong></td></tr>
+          <tr><td><strong>6</strong></td><td><span class="badge badge-green">BO</span></td><td>Las que no existan en RDR → informar la <strong>plantilla</strong> con las SDIs a dar de alta</td></tr>
+          <tr><td><strong>7</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Ejecutar <strong>carga y publicación</strong> de las SDIs necesarias</td></tr>
+          <tr><td><strong>8</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Publicar todas las SDIs al BO antes (o el mismo día) del simulacro</td></tr>
+          <tr><td><strong>9</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Revisar respuesta <strong>ACK/NACK</strong>. Si todo ACK → trasladar a plantilla y versionar</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="highlight" style="border-left:4px solid #FF4D4D">
+      <p class="body"><strong>⚠️ Atención a los tiempos:</strong> Muchas veces la publicación se realiza el día anterior, pero en ocasiones debe hacerse <strong>el mismo día del simulacro</strong>. Es una tarea que debe estar bien atada y probada — en simulacros y GoLive los tiempos van <strong>muy muy medidos</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 15 · DURANTE SIMULACROS ===== -->
+<div class="slide" data-slide="15" data-theme="light">
+  <div class="si">
+    <p class="label">Anexo · Durante Simulacro</p>
+    <h2>Flujo de Trabajo: Durante los Simulacros</h2>
+    <p class="sub" style="margin-bottom:24px">Acciones que RDR debe ejecutar durante el simulacro para asegurar cobertura completa de SDIs.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:10px">Tareas durante el simulacro</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>✅ Asegurar que el <strong>eepp</strong> donde se realiza está correctamente levantado</li>
+          <li>✅ Verificar que el <strong>handler está funcionando</strong></li>
+          <li>⚡ Si surge operación nueva → dar de alta SDI necesaria</li>
+          <li>📝 <strong>Apuntar</strong> todas las SDIs dadas de alta durante el simulacro</li>
+          <li>📝 <strong>Apuntar</strong> todas las publicaciones realizadas</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid #FF4D4D;border-top:none;background:rgba(255,77,77,.03)">
+        <h3 style="font-size:14px;margin-bottom:10px;color:#CC0000">⚠️ Regla de Oro</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8;font-size:13px"><strong>"De nada sirve solucionar un error si no queda inventariado"</strong></p>
+        <p class="body" style="color:#5C5C5C;line-height:1.8;margin-top:8px">Cada SDI dada de alta o publicada durante el simulacro debe quedar <strong>registrada inmediatamente</strong>. Si no se apunta en el momento, se pierde.</p>
+      </div>
+    </div>
+
+    <div class="highlight" style="border-left:4px solid var(--canary)">
+      <p class="body"><strong>Post-simulacro inmediato (lunes):</strong> Enviar correo con resumen de acciones realizadas de SDIs:</p>
+      <ul style="list-style:none;font-size:12px;line-height:2;color:#333;margin-top:8px">
+        <li>📧 <strong>Altas</strong> → Deben ser informadas en la plantilla por el BO</li>
+        <li>📧 <strong>Publicaciones</strong> → Deben quedar apuntadas en el inventario de tareas de RDR</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 16 · DESPUÉS DE SIMULACROS ===== -->
+<div class="slide" data-slide="16" data-theme="light">
+  <div class="si">
+    <p class="label">Anexo · Post-Simulacro</p>
+    <h2>Flujo de Trabajo: Después de un Simulacro</h2>
+    <p class="sub" style="margin-bottom:24px">Análisis de errores de asignación y plan de acción iterativo hasta el GoLive.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Evolución esperada</h3>
+        <p class="body" style="color:#5C5C5C;margin-bottom:8px">Dependiendo del momento y tipo de simulacro puede haber más o menos errores:</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>🔴 <strong>Primer simulacro:</strong> Normal que salgan más errores. Suele ser técnico: detectar gaps</li>
+          <li>🟡 <strong>Simulacros sucesivos:</strong> Deben ir limitándose los errores, depurando la plantilla</li>
+          <li>🟢 <strong>GoLive:</strong> Foto limpia de acciones de carga</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid var(--lime)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Acciones post-simulacro</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li><strong>1.</strong> BO saca listado de <strong>errores de asignación</strong></li>
+          <li><strong>2.</strong> BO analiza el <strong>tipo de error</strong></li>
+          <li><strong>3.</strong> RDR apoya: ¿existe en RDR? → <strong>Publicar</strong> (inventariando)</li>
+          <li><strong>4.</strong> ¿No existe? → BO informa la plantilla para <strong>dar de alta</strong></li>
+          <li><strong>5.</strong> Usuario siempre consultado → la SDI X correcta para subsanar</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Diagrama de iteración -->
+    <div class="flow" style="margin-bottom:16px">
+      <div class="flow-box origin">
+        <p style="font-size:11px;color:var(--gray5)">Simulacro N</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">Errores</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box canonical">
+        <p style="font-size:11px;color:var(--gray5)">Análisis</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">BO + RDR</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="border-color:var(--purple);background:rgba(182,140,255,.06)">
+        <p style="font-size:11px;color:var(--gray5)">Acciones</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">Alta / Publ.</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box dest">
+        <p style="font-size:11px;color:var(--gray5)">Simulacro N+1</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">Menos errores</p>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Objetivo final:</strong> A medida que avanzan los simulacros se va depurando la plantilla y las SDIs a publicar con el objetivo de tener una <strong>foto limpia de acciones de carga al GoLive</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 17 · FUNCIONAMIENTO BO CALYPSO ===== -->
+<div class="slide" data-slide="17" data-theme="light">
+  <div class="si">
+    <p class="label">Anexo · Calypso</p>
+    <h2>Funcionamiento de BO Calypso — Errores de Asignación</h2>
+    <p class="sub" style="margin-bottom:24px">Para agilizar el análisis, es fundamental entender cómo Calypso asigna las instrucciones y qué errores pueden producirse.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Requisitos de asignación</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>📌 Para cada operación (contrapartida-divisa-producto-fechas) se necesita <strong>SDI SUS + SDI MIS</strong></li>
+          <li>📌 MIS y SUS deben tener <strong>mismo tipo de método</strong></li>
+          <li>📌 <strong>STP = Y</strong> permite asignación automática (si no hay colisión de prioridad)</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid #FF4D4D">
+        <h3 style="font-size:14px;margin-bottom:10px;color:#CC0000">Tipos de errores de asignación</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>❌ <strong>Más de una SDI</strong> con misma prioridad válida → no puede elegir automáticamente</li>
+          <li>❌ <strong>No existe SDI válida</strong>, o la que existe no tiene STP o es a terceros</li>
+          <li>❌ <strong>No hay SDI MIS</strong> para la operación</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="g3" style="margin-bottom:16px">
+      <div class="card" style="border-top:3px solid var(--canary);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">⚠️</div>
+        <h3 style="font-size:12px;margin-bottom:6px">Colisión de prioridad</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Varias SDIs válidas con misma prioridad. Calypso no sabe cuál elegir.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--purple);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">🚫</div>
+        <h3 style="font-size:12px;margin-bottom:6px">Sin SDI válida / sin STP</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">No existe instrucción o la que existe no tiene flag automático.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--electric);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">🏢</div>
+        <h3 style="font-size:12px;margin-bottom:6px">Sin MIS (OWNENT)</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Falta la instrucción de la Processing Org para la operación.</p>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Acción:</strong> Tras cada simulacro, BO saca el listado de errores → BO analiza el tipo de error → RDR apoya: si la SDI existe en RDR hay que <strong>publicar</strong> (inventariándolo), si no existe se debe <strong>dar de alta</strong> y BO informa la plantilla.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 18 · CLOSING ===== -->
+<div class="slide closing" data-slide="18" data-theme="dark">
+  <div class="si" style="text-align:center">
+    <p style="font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--serene);margin-bottom:20px">Resumen</p>
+    <h1 style="font-size:36px;font-weight:800;color:#fff;margin-bottom:20px">Claves de las Instrucciones de Liquidación</h1>
+    <div style="max-width:650px;margin:0 auto;text-align:left">
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">1</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">RDR es el <strong>sistema maestro</strong> de instrucciones de liquidación. Suministra al BO las SDIs necesarias para que las operaciones se liquiden correctamente.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">2</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">Cada operación necesita <strong>SDI MIS + SDI SUS</strong> con el mismo método de liquidación para que Calypso la asigne automáticamente.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">3</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">La preparación para migración/simulacro requiere <strong>análisis cíclico</strong>: extraer, identificar faltantes, cargar y publicar.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">4</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6"><strong>"De nada sirve solucionar un error si no queda inventariado"</strong> — Todo cambio aplicado debe registrarse inmediatamente en el inventario para producción.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">5</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">La responsabilidad de decidir <strong>qué SDI dar de alta es de negocio/BO</strong>. RDR da soporte técnico: carga, publicación y verificación ACK/NACK.</p>
+      </div>
+    </div>
+    <div style="margin-top:28px">
+      <span class="pill">Maestro RDR</span>
+      <span class="pill">MIS + SUS</span>
+      <span class="pill">Inventario</span>
+      <span class="pill">ACK/NACK</span>
+    </div>
+    <div style="font-size:12px;opacity:.6;margin-top:32px">BBVA CIB · NFQ Advisory · Confidencial</div>
+  </div>
+</div>
+
+<!-- ========== END SLIDES ========== -->
+
+<script>
+const slides=document.querySelectorAll('.slide'),total=slides.length;
+let cur=0;
+const hdr=document.getElementById('hdr');
+const hdrBbva=document.getElementById('hdr-bbva');
+const hdrNfq=document.getElementById('hdr-nfq');
+const hdrTitle=document.getElementById('hdr-title');
+function goTo(i){
+  if(i<0||i>=total)return;
+  const p=cur;cur=i;
+  slides.forEach((s,j)=>{s.classList.remove('active','prev');if(j===cur)s.classList.add('active');else if(j===p)s.classList.add('prev')});
+  document.getElementById('counter').textContent=(cur+1)+' / '+total;
+  document.getElementById('pbar').style.width=((cur+1)/total*100)+'%';
+  // Hide header on cover, annexe header and closing
+  if(cur===0 || cur===total-1 || slides[cur].classList.contains('annexe-hdr')){
+    hdr.classList.add('hide-on-cover');
+  } else {
+    hdr.classList.remove('hide-on-cover');
+  }
+  const theme=slides[cur].dataset.theme;
+  if(theme==='dark'){
+    hdr.className='hdr dark';
+    hdrBbva.style.filter='brightness(0) invert(1)';
+    hdrNfq.style.filter='brightness(0) invert(1)';
+    hdrTitle.style.color='#FFFFFF';
+  } else {
+    hdr.className='hdr light';
+    hdrBbva.style.filter='none';
+    hdrNfq.style.filter='none';
+    hdrTitle.style.color='var(--electric)';
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ')goTo(cur+1);
+  if(e.key==='ArrowLeft')goTo(cur-1);
+  if(e.key==='Home')goTo(0);
+  if(e.key==='End')goTo(total-1);
+  if(e.key>='1'&&e.key<='9')goTo(parseInt(e.key)-1);
+  if(e.key==='0')goTo(9);
+});
+let tx=0;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX});
+document.addEventListener('touchend',e=>{const d=tx-e.changedTouches[0].clientX;if(Math.abs(d)>50)d>0?goTo(cur+1):goTo(cur-1)});
+document.addEventListener('click',e=>{const x=e.clientX/window.innerWidth;if(x>.85)goTo(cur+1);else if(x<.15)goTo(cur-1)});
+goTo(0);
+</script>
+</body>
+</html>

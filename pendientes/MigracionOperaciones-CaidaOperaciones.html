@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Migración de Operaciones · Caída de Operaciones</title>
+<style>
+:root{
+  --electric:#001391;
+  --serene:#85C8FF;
+  --midnight:#060E46;
+  --sand:#F7F8F8;
+  --white:#FFFFFF;
+  --aqua:#8BE1E9;
+  --lime:#88E783;
+  --canary:#FFE761;
+  --purple:#B68CFF;
+  --gray2:#E2E6EA;
+  --gray5:#6E7781;
+  --r:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0D0D0D;overflow:hidden;height:100vh;width:100vw}
+
+/* ---------- HEADER ---------- */
+.hdr{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-items:center;padding:0 32px;z-index:100;transition:opacity .3s}
+.hdr.light{background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--gray2)}
+.hdr.dark{background:rgba(6,14,70,.7);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.08)}
+.hdr.hide-on-cover{opacity:0;pointer-events:none}
+.hdr img{height:28px}
+.hdr-title{margin-left:16px;font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--electric)}
+
+/* ---------- PROGRESS ---------- */
+.pbar-wrap{position:fixed;bottom:0;left:0;right:0;height:4px;background:var(--gray2);z-index:100}
+.pbar{height:100%;background:linear-gradient(90deg,var(--electric),var(--serene));transition:width .4s}
+
+/* ---------- COUNTER ---------- */
+.counter{position:fixed;bottom:14px;right:32px;font-size:11px;color:var(--gray5);z-index:100}
+
+/* ---------- SLIDES ---------- */
+.slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;transform:translateX(40px);background:var(--white)}
+.slide.active{opacity:1;pointer-events:auto;transform:translateX(0)}
+.slide.prev{transform:translateX(-40px)}
+.si{width:90%;max-width:1100px;padding:52px 0 32px}
+
+/* ---------- TYPOGRAPHY ---------- */
+h2{font-size:28px;font-weight:800;color:var(--electric);line-height:1.2;margin-bottom:8px}
+.label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--serene);margin-bottom:6px}
+.sub{font-size:14px;color:var(--gray5);line-height:1.6;max-width:700px}
+.body{font-size:13px;line-height:1.7;color:#333}
+.accent{color:var(--electric)}
+
+/* ---------- GRID ---------- */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
+
+/* ---------- CARDS ---------- */
+.card{background:var(--white);border-radius:var(--r);padding:22px 20px;border-top:3px solid var(--serene);box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.card h3{font-size:15px;font-weight:700;margin-bottom:8px}
+
+/* ---------- HIGHLIGHT ---------- */
+.highlight{background:linear-gradient(90deg,rgba(133,200,255,.12),rgba(139,225,233,.08));border-left:4px solid var(--serene);border-radius:0 var(--r) var(--r) 0;padding:16px 24px}
+
+/* ---------- TABLE ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:var(--electric);color:#fff;padding:12px 14px;text-align:left;font-weight:600}
+.tbl td{padding:10px 14px;border-bottom:1px solid var(--gray2)}
+.tbl tr:nth-child(even){background:var(--sand)}
+.tbl tr:hover td{background:rgba(133,200,255,.1)}
+
+/* ---------- FLOW / DIAGRAM ---------- */
+.flow{display:flex;align-items:center;gap:0;justify-content:center;flex-wrap:wrap}
+.flow-box{background:var(--white);border:2px solid var(--serene);border-radius:var(--r);padding:14px 20px;text-align:center;min-width:120px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
+.flow-box.origin{border-color:var(--canary);background:rgba(255,231,97,.08)}
+.flow-box.canonical{border-color:var(--electric);background:rgba(0,19,145,.04)}
+.flow-box.dest{border-color:var(--lime);background:rgba(136,231,131,.08)}
+.flow-box.error{border-color:#FF4D4D;background:rgba(255,77,77,.06)}
+.flow-arrow{font-size:24px;color:var(--electric);padding:0 8px;font-weight:700}
+
+/* ---------- COVER ---------- */
+.cover{background:linear-gradient(135deg,var(--midnight) 0%,var(--electric) 100%);color:#fff}
+.cover h1{font-size:42px;font-weight:800;line-height:1.15;margin-bottom:16px}
+.cover .sub{color:rgba(255,255,255,.7)}
+.cover .pill{display:inline-block;background:rgba(133,200,255,.15);border:1px solid rgba(133,200,255,.3);border-radius:20px;padding:6px 16px;font-size:12px;color:var(--serene);margin-right:8px;margin-top:12px}
+
+/* ---------- CLOSING ---------- */
+.closing{background:linear-gradient(135deg,var(--midnight) 0%,var(--electric) 100%);color:#fff;text-align:center}
+
+/* ---------- STAT ---------- */
+.stat-n{font-size:36px;font-weight:800;color:var(--electric)}
+.stat-l{font-size:11px;color:var(--gray5);margin-top:4px}
+.divider{height:1px;background:var(--gray2)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr light hide-on-cover" id="hdr">
+  <img id="hdr-bbva" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 28'%3E%3Ctext x='0' y='20' font-family='Arial' font-weight='bold' font-size='16' fill='%23001391'%3EBBVA%3C/text%3E%3C/svg%3E" alt="BBVA" style="height:24px">
+  <img id="hdr-nfq" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 28'%3E%3Ctext x='0' y='20' font-family='Arial' font-weight='bold' font-size='16' fill='%23001391'%3ENFQ%3C/text%3E%3C/svg%3E" alt="NFQ" style="height:24px;margin-left:12px">
+  <span class="hdr-title" id="hdr-title" style="margin-left:16px">Migración de Operaciones · Caída de Operaciones</span>
+</div>
+
+<!-- PROGRESS BAR -->
+<div class="pbar-wrap"><div class="pbar" id="pbar" style="width:0%"></div></div>
+<div class="counter" id="counter">1 / 10</div>
+
+<!-- ========== SLIDES ========== -->
+
+<!-- ===== SLIDE 0 · COVER ===== -->
+<div class="slide cover active" data-slide="0" data-theme="dark">
+  <div class="si" style="text-align:center">
+    <p style="font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--serene);margin-bottom:20px">BBVA CIB · RDR · Migración de Operaciones</p>
+    <h1>Caída de Operaciones<br>en una Migración de Back Office</h1>
+    <p class="sub" style="max-width:650px;margin:0 auto;margin-top:16px">Cómo RDR asegura la continuidad operativa cuando se migra de un Back Office a otro.</p>
+    <div style="margin-top:28px">
+      <span class="pill">Día D · Migración en vivo</span>
+      <span class="pill">Modelo Canónico</span>
+      <span class="pill">Handler · Diccionario</span>
+    </div>
+    <div style="font-size:12px;opacity:.6;margin-top:32px">BBVA CIB · NFQ Advisory · Confidencial</div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 1 · INTRODUCCIÓN ===== -->
+<div class="slide" data-slide="1" data-theme="light">
+  <div class="si">
+    <p class="label">01 · Introducción</p>
+    <h2>¿Qué es una Migración de Operaciones?</h2>
+    <p class="sub" style="margin-bottom:24px">Trasladar operaciones vivas (trades) de un Back Office origen a un Back Office destino en un momento específico: el <strong>Día D</strong>.</p>
+    <div class="g2" style="margin-bottom:24px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent">Contexto actual</h3>
+        <ul style="list-style:none;padding-left:0;font-size:13px;line-height:2.2">
+          <li>• Back Office origen: <strong>Ábaco</strong></li>
+          <li>• Back Office destino: <strong>Calypso</strong></li>
+          <li>• Front Office: <strong>Murex</strong></li>
+          <li>• El Día D, las operaciones comienzan a fluir al nuevo BO</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--serene);border-top:none">
+        <h3 style="color:var(--electric)">Papel de RDR</h3>
+        <ul style="list-style:none;padding-left:0;font-size:13px;line-height:2.2">
+          <li>• Es la columna vertebral de la migración</li>
+          <li>• Asegura continuidad de los datos</li>
+          <li>• Normaliza mediante <strong>Modelo Canónico</strong></li>
+          <li>• Mitiga el riesgo operacional</li>
+        </ul>
+      </div>
+    </div>
+    <div class="highlight">
+      <p class="body">RDR actúa como <strong>diccionario central</strong> que traduce entre los distintos sistemas, garantizando que ninguna operación se pierda durante la transición.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 2 · CONCEPTOS BÁSICOS ===== -->
+<div class="slide" data-slide="2" data-theme="light">
+  <div class="si">
+    <p class="label">01 · Conceptos</p>
+    <h2>Conceptos Básicos</h2>
+    <p class="sub" style="margin-bottom:24px">Elementos fundamentales que participan en una migración de operaciones.</p>
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Trade (Operación)</h3>
+        <p class="body" style="color:#5C5C5C">Acuerdo financiero entre dos contrapartidas. Es la unidad fundamental que debe migrar correctamente entre Back Offices.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--aqua)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Productos Financieros</h3>
+        <p class="body" style="color:#5C5C5C">Derivados, FX, Renta Fija, Repos… Cada tipo tiene sus particularidades en la migración.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--lime)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Datos Estáticos (DDFF)</h3>
+        <p class="body" style="color:#5C5C5C">Información de referencia que no cambia con frecuencia: contrapartidas, portfolios, divisas, índices, calendarios.</p>
+      </div>
+    </div>
+    <div class="highlight">
+      <p class="body"><strong>Dato Maestro:</strong> Cada sistema (FO, BO origen, BO destino) tiene su propia codificación de datos estáticos. RDR mantiene la equivalencia entre todos ellos mediante el Modelo Canónico.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 3 · OBJETIVOS ===== -->
+<div class="slide" data-slide="3" data-theme="light">
+  <div class="si">
+    <p class="label">01 · Objetivos</p>
+    <h2>Objetivos de la Migración</h2>
+    <p class="sub" style="margin-bottom:28px">¿Por qué se migra de un Back Office a otro?</p>
+    <div class="g3" style="margin-bottom:24px">
+      <div class="card" style="text-align:center;border-top:3px solid var(--electric)">
+        <div style="font-size:36px;margin-bottom:12px">🔒</div>
+        <h3 style="font-size:14px;margin-bottom:8px">Decomisionar sistemas antiguos</h3>
+        <p class="body" style="color:#5C5C5C">Retirar Back Offices legacy (ej. Ábaco) que ya no cumplen los estándares actuales.</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--serene)">
+        <div style="font-size:36px;margin-bottom:12px">⚡</div>
+        <h3 style="font-size:14px;margin-bottom:8px">Eficiencia post-trade</h3>
+        <p class="body" style="color:#5C5C5C">Mejorar la gestión post-trade con plataformas modernas y más integradas.</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--lime)">
+        <div style="font-size:36px;margin-bottom:12px">✅</div>
+        <h3 style="font-size:14px;margin-bottom:8px">Integridad de datos</h3>
+        <p class="body" style="color:#5C5C5C">Garantizar que toda la información se traslada sin pérdidas ni inconsistencias.</p>
+      </div>
+    </div>
+    <div class="highlight" style="text-align:center">
+      <p class="body">El éxito de la migración se mide por <strong>cero operaciones perdidas</strong> y <strong>continuidad operativa total</strong> durante y después del Día D.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 4 · FLUJO GENERAL ===== -->
+<div class="slide" data-slide="4" data-theme="light">
+  <div class="si">
+    <p class="label">02 · Caída de Operaciones</p>
+    <h2>Flujo General: Del Front Office al Back Office</h2>
+    <p class="sub" style="margin-bottom:28px">Cómo viaja una operación desde el Front Office hasta el nuevo Back Office destino en el Día D.</p>
+
+    <!-- Diagrama de flujo con petición/respuesta -->
+    <div style="position:relative;margin-bottom:28px">
+      <!-- Flujo principal horizontal -->
+      <div class="flow" style="margin-bottom:0">
+        <div class="flow-box origin">
+          <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">Front Office</p>
+          <p style="font-size:15px;font-weight:700;color:var(--electric)">Murex</p>
+          <p style="font-size:10px;color:var(--gray5);margin-top:4px">Lanza operaciones</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box canonical">
+          <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">BUS (ESB)</p>
+          <p style="font-size:15px;font-weight:700;color:var(--electric)">Middleware</p>
+          <p style="font-size:10px;color:var(--gray5);margin-top:4px">Enruta operaciones</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box dest">
+          <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">Back Office Destino</p>
+          <p style="font-size:15px;font-weight:700;color:var(--electric)">Calypso</p>
+          <p style="font-size:10px;color:var(--gray5);margin-top:4px">Recibe operaciones</p>
+        </div>
+      </div>
+      <!-- Petición / Respuesta al Handler -->
+      <div style="display:flex;justify-content:center;margin-top:16px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:11px;color:var(--gray5);font-style:italic">Petición ↓</span>
+            <div class="flow-box canonical" style="border-color:var(--purple);background:rgba(182,140,255,.06)">
+              <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">Diccionario</p>
+              <p style="font-size:15px;font-weight:700;color:var(--electric)">RDR (Handler)</p>
+              <p style="font-size:10px;color:var(--gray5);margin-top:4px">Petición / Respuesta</p>
+            </div>
+            <span style="font-size:11px;color:var(--gray5);font-style:italic">↑ Respuesta</span>
+          </div>
+          <p style="font-size:11px;color:var(--gray5);text-align:center;max-width:320px">El ESB consulta al Handler para traducir los datos estáticos de cada operación</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="card" style="border-top:3px solid var(--purple)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Rol del Handler (RDR)</h3>
+        <p class="body" style="color:#5C5C5C">Servicio de consulta online de tipo <strong>petición/respuesta</strong>. El ESB envía una petición con el dato estático a traducir y el Handler responde con la equivalencia en el sistema destino. Actúa como <strong>diccionario en tiempo real</strong>.</p>
+      </div>
+      <div class="card" style="border-top:3px solid #FF4D4D">
+        <h3 style="font-size:14px;margin-bottom:10px;color:#CC0000">¿Qué pasa si falla la traducción?</h3>
+        <p class="body" style="color:#5C5C5C">Si el Handler no encuentra la traducción → la operación <strong>no llega ("no cae")</strong> al Back Office destino. Queda bloqueada en el ESB hasta que RDR registre la equivalencia y se solicite el reprocesamiento.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 5 · MODELO DE TRADUCCIÓN ===== -->
+<div class="slide" data-slide="5" data-theme="light">
+  <div class="si">
+    <p class="label">02 · Modelo de Traducción</p>
+    <h2>Modelo Canónico de Traducción</h2>
+    <p class="sub" style="margin-bottom:28px">RDR traduce en dos pasos: del sistema origen al canónico, y del canónico al sistema destino.</p>
+
+    <!-- Diagrama del modelo canónico -->
+    <div class="flow" style="margin-bottom:32px">
+      <div class="flow-box origin">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">Origen (FO)</p>
+        <p style="font-size:15px;font-weight:700;color:#B8860B">Murex</p>
+        <p style="font-size:11px;color:var(--gray5);margin-top:4px">Codificación FO</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box canonical">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">Canónico</p>
+        <p style="font-size:15px;font-weight:700;color:var(--electric)">RDR</p>
+        <p style="font-size:11px;color:var(--gray5);margin-top:4px">Código universal</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box dest">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">Destino (BO)</p>
+        <p style="font-size:15px;font-weight:700;color:#228B22">Calypso</p>
+        <p style="font-size:11px;color:var(--gray5);margin-top:4px">Codificación BO</p>
+      </div>
+    </div>
+
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--canary);text-align:center">
+        <h3 style="font-size:14px;margin-bottom:8px" class="accent">Paso 1</h3>
+        <p class="body" style="color:#5C5C5C">Traducción del código FO (Murex) al <strong>código canónico</strong> de RDR.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--electric);text-align:center">
+        <h3 style="font-size:14px;margin-bottom:8px" class="accent">Modelo Canónico</h3>
+        <p class="body" style="color:#5C5C5C">Código único y universal gestionado por RDR. Actúa como <strong>lingua franca</strong> entre sistemas.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--lime);text-align:center">
+        <h3 style="font-size:14px;margin-bottom:8px" class="accent">Paso 2</h3>
+        <p class="body" style="color:#5C5C5C">Traducción del canónico al <strong>código del BO destino</strong> (Calypso).</p>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body">Este modelo permite que un mismo Front Office pueda operar con <strong>múltiples Back Offices</strong> simplemente configurando las traducciones en RDR, sin modificar el FO ni el BO.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 6 · DATOS ESTÁTICOS QUE SE TRADUCEN ===== -->
+<div class="slide" data-slide="6" data-theme="light">
+  <div class="si">
+    <p class="label">02 · Datos Estáticos</p>
+    <h2>Datos Estáticos que se Traducen</h2>
+    <p class="sub" style="margin-bottom:24px">Entidades que RDR debe tener registradas para que la operación "caiga" correctamente en el BO destino.</p>
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="text-align:center;border-top:3px solid var(--electric)">
+        <div style="font-size:28px;margin-bottom:8px">🏢</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Contrapartida</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Entidad con la que se realiza la operación</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--serene)">
+        <div style="font-size:28px;margin-bottom:8px">📁</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Portfolio / Trading Book</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Cartera asociada a la operación</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--aqua)">
+        <div style="font-size:28px;margin-bottom:8px">📦</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Producto</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Tipo de instrumento financiero</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--lime)">
+        <div style="font-size:28px;margin-bottom:8px">💱</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Divisa</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Moneda en la que opera el trade</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--canary)">
+        <div style="font-size:28px;margin-bottom:8px">📅</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Calendario</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Festivos y días hábiles por mercado</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--purple)">
+        <div style="font-size:28px;margin-bottom:8px">📈</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Índice</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Referencias de tipo de interés o benchmark</p>
+      </div>
+    </div>
+    <div class="highlight" style="text-align:center">
+      <p class="body">Si <strong>cualquiera</strong> de estas entidades no está registrada en RDR → la operación <span style="color:#CC0000;font-weight:700">NO cae</span> en el Back Office destino.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 7 · PROCESO DE CARGA ===== -->
+<div class="slide" data-slide="7" data-theme="light">
+  <div class="si">
+    <p class="label">02 · Preparación</p>
+    <h2>Tareas de RDR: Preparar la Migración</h2>
+    <p class="sub" style="margin-bottom:24px">Antes del Día D, RDR debe garantizar que todos los datos estáticos están listos.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 style="font-size:14px;margin-bottom:12px" class="accent">1. Extracción de operaciones vivas</h3>
+        <p class="body" style="color:#5C5C5C;margin-bottom:8px">MUREX proporciona el universo completo de operaciones vivas. RDR extrae los datos estáticos asociados a cada operación.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2;color:#5C5C5C">
+          <li>• Identificar contrapartidas, portfolios, divisas, índices, calendarios y productos</li>
+          <li>• Verificar existencia de cada entidad en el diccionario de RDR</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--lime);border-top:none">
+        <h3 style="font-size:14px;margin-bottom:12px" class="accent">2. Identificar datos faltantes</h3>
+        <p class="body" style="color:#5C5C5C;margin-bottom:8px">Si una traducción no existe en RDR, se debe:</p>
+        <ul style="list-style:none;font-size:12px;line-height:2;color:#5C5C5C">
+          <li>• Registrar la equivalencia Origen → Canónico → Destino</li>
+          <li>• Validar con el equipo funcional la correspondencia</li>
+          <li>• Solicitar reprocesamiento de las operaciones bloqueadas</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Objetivo:</strong> Que al llegar el Día D, el 100% de las traducciones estén registradas para que las operaciones fluyan sin interrupciones hacia Calypso.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 8 · EXISTENCIA EN BO DESTINO ===== -->
+<div class="slide" data-slide="8" data-theme="light">
+  <div class="si">
+    <p class="label">03 · Persistencia</p>
+    <h2>Asegurar Existencia en el BO Destino</h2>
+    <p class="sub" style="margin-bottom:24px">No basta con traducir: los datos deben existir e integrarse correctamente en Calypso.</p>
+
+    <div class="highlight" style="margin-bottom:24px;border-left:4px solid var(--electric)">
+      <p class="body"><strong>Caída de operaciones:</strong> En el momento del lanzamiento (Día D), desde el Front Office se envían a través del BUS el <strong>100% de las operaciones extraídas</strong>, y éstas llegan ("caen") al Back Office destino (Calypso).</p>
+    </div>
+
+    <div class="g2" style="margin-bottom:24px">
+      <div class="card" style="border-top:3px solid var(--lime)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Fase de Persistencia</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8">Una vez traducidos los datos, deben integrarse en la base de datos de Calypso. El BO destino:</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C;margin-top:8px">
+          <li>• Valida los datos recibidos</li>
+          <li>• Aplica sus reglas de negocio</li>
+          <li>• Confirma las operaciones</li>
+          <li>• Gestiona las liquidaciones</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid var(--purple)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Validaciones de Calypso</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8">Para que las operaciones caigan correctamente, Calypso requiere que:</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C;margin-top:8px">
+          <li>• La contrapartida exista en su BBDD</li>
+          <li>• El portfolio esté configurado</li>
+          <li>• El índice tenga curvas asociadas</li>
+          <li>• El calendario tenga datos cargados</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight" style="text-align:center">
+      <p class="body">Si algún dato estático no existe en Calypso, la operación <strong>no se persiste</strong> y queda en error. RDR debe asegurar que los datos están dados de alta <strong>antes del Día D</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 9 · CESIÓN DE ENTIDADES ===== -->
+<div class="slide" data-slide="9" data-theme="light">
+  <div class="si">
+    <p class="label">04 · Cesión de Entidades</p>
+    <h2>Métodos de Cesión de Datos</h2>
+    <p class="sub" style="margin-bottom:24px">Cada tipo de entidad se cede al BO destino de forma diferente.</p>
+
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:30%">Entidad</th>
+          <th style="width:35%">Petición Diccionario (Handler)</th>
+          <th style="width:35%">Publicación Online</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:600">Contrapartida</td>
+          <td style="text-align:center;color:var(--electric);font-weight:700">✓</td>
+          <td style="text-align:center;color:var(--electric);font-weight:700">✓</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Portfolio / Trading Book</td>
+          <td style="text-align:center;color:var(--electric);font-weight:700">✓</td>
+          <td style="text-align:center;color:var(--gray5)">—</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Índice</td>
+          <td style="text-align:center;color:var(--electric);font-weight:700">✓</td>
+          <td style="text-align:center;color:var(--gray5)">—</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Calendario</td>
+          <td style="text-align:center;color:var(--electric);font-weight:700">✓</td>
+          <td style="text-align:center;color:var(--electric);font-weight:700">✓</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Divisa</td>
+          <td style="text-align:center;color:var(--electric);font-weight:700">✓</td>
+          <td style="text-align:center;color:var(--electric);font-weight:700">✓</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Instrucciones Liquidación (SSIS)</td>
+          <td style="text-align:center;color:var(--gray5)">—</td>
+          <td style="text-align:center;color:var(--electric);font-weight:700">✓</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Instrucciones Confirmación (SCIS)</td>
+          <td style="text-align:center;color:var(--gray5)">—</td>
+          <td style="text-align:center;color:var(--electric);font-weight:700">✓</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Legal Agreements</td>
+          <td style="text-align:center;color:var(--gray5)">—</td>
+          <td style="text-align:center;color:var(--electric);font-weight:700">✓</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="highlight" style="margin-top:20px">
+      <p class="body"><strong>Petición Diccionario (Handler):</strong> El ESB consulta a RDR en tiempo real cuando una operación necesita traducir ese dato. <br><strong>Publicación Online:</strong> RDR publica proactivamente el dato al BO destino cuando se registra o actualiza.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 10 · FLUJO TRABAJO RDR - INTRO ===== -->
+<div class="slide" data-slide="10" data-theme="light">
+  <div class="si">
+    <p class="label">05 · Flujo de Trabajo RDR</p>
+    <h2>Análisis de Operativa Viva</h2>
+    <p class="sub" style="margin-bottom:24px">RDR debe asegurar en primera instancia que para el <strong>100% de las operaciones</strong> de la operativa viva constan las traducciones FO vs BO.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:10px">¿Qué es la operativa viva?</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8">Es el conjunto de todas las operaciones vigentes (live trades) que deben migrar. Los datos fijos que la componen son:</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C;margin-top:8px">
+          <li>• Calendarios</li>
+          <li>• Índices</li>
+          <li>• Divisas</li>
+          <li>• Portfolios</li>
+          <li>• Contrapartidas</li>
+        </ul>
+        <p class="body" style="color:#5C5C5C;margin-top:8px">Todas nacen en el <strong>FO (Murex)</strong>. La operativa viva no es estática: varía con el tiempo.</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--canary);border-top:none">
+        <h3 style="font-size:14px;margin-bottom:10px;color:var(--electric)">¿Cuándo solicitar la extracción?</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8;margin-bottom:8px">Desde RDR se debe solicitar periódicamente una extracción de la operativa viva de Murex:</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>📌 <strong>Inicio del proyecto</strong></li>
+          <li>📌 <strong>2 semanas antes</strong> de cada simulacro / ciclo de pruebas</li>
+          <li>📌 <strong>2-3 semanas antes</strong> del GoLive</li>
+          <li>📌 <strong>1 semana antes</strong> del GoLive</li>
+        </ul>
+        <p class="body" style="color:#5C5C5C;margin-top:10px;font-size:11px;font-style:italic">Solicitar con antelación permite margen de maniobra para regularizar datos faltantes en los entornos.</p>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body">La operativa viva <strong>cambia con el tiempo</strong>. Es imprescindible solicitar extracciones periódicas para detectar nuevas operaciones, contrapartidas o productos que aún no existen en el diccionario de RDR.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 11 · PROCESO GENERAL VALIDACIÓN ===== -->
+<div class="slide" data-slide="11" data-theme="light">
+  <div class="si">
+    <p class="label">05 · Análisis Operativa Viva</p>
+    <h2>Proceso General de Validación por Entidad</h2>
+    <p class="sub" style="margin-bottom:24px">Para cada entidad de datos de referencia que forma parte de la operativa viva se debe verificar lo siguiente:</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <!-- Verificación FO -->
+      <div class="card" style="border-top:3px solid var(--canary)">
+        <h3 style="font-size:14px;margin-bottom:12px" class="accent">1. Verificar traducción FO (Murex)</h3>
+        <p class="body" style="color:#5C5C5C;margin-bottom:10px">A partir de la extracción de Murex, buscar en BBDD del entorno (eepp):</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>✅ <strong>ID Murex activo + entidad activa</strong> → OK, traducción FO validada</li>
+          <li>⚠️ <strong>ID Murex inactivo</strong> → Revisar en producción:
+            <ul style="list-style:none;padding-left:16px;margin-top:4px">
+              <li>↳ Si en PRO está activo → regularizar en el eepp</li>
+              <li>↳ Si en PRO está inactivo → consultar con usuario RDR para solución</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <!-- Verificación BO -->
+      <div class="card" style="border-top:3px solid var(--lime)">
+        <h3 style="font-size:14px;margin-bottom:12px" class="accent">2. Verificar traducción BO (Calypso)</h3>
+        <p class="body" style="color:#5C5C5C;margin-bottom:10px">Comprobar que existe el ID de Calypso correspondiente:</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>✅ <strong>ID Calypso activo</strong> → OK, no dará problema en la caída</li>
+          <li>⚠️ <strong>No tiene ID de Calypso</strong> → Asociar/crear según el tipo de entidad</li>
+          <li>⚠️ <strong>ID Calypso inactivo</strong> → Revisar motivo e iterar hasta regularizar</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight" style="border-left:4px solid #FF4D4D">
+      <p class="body"><strong>⚠️ Importante:</strong> Los entornos de prueba (eepp) no siempre tienen una foto actualizada de producción. Es imprescindible verificar periódicamente que los datos del eepp coinciden con producción. Si hay discrepancias (ej. una contrapartida inactivada), se debe reportar inmediatamente.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 12 · CALENDARIOS, ÍNDICES Y DIVISAS ===== -->
+<div class="slide" data-slide="12" data-theme="light">
+  <div class="si">
+    <p class="label">05 · Análisis por Entidad</p>
+    <h2>Calendarios, Índices y Divisas</h2>
+    <p class="sub" style="margin-bottom:24px">El proceso de validación es el mismo para estas tres entidades, con una particularidad importante para calendarios.</p>
+
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:13px;margin-bottom:10px" class="accent">Validación estándar</h3>
+        <ul style="list-style:none;font-size:11px;line-height:2.2;color:#5C5C5C">
+          <li><strong>ID Mx no existe</strong> → Crear hilo con usuario, Mx y Calypso para dar de alta</li>
+          <li><strong>ID Mx inactivo</strong> → Reactivar + crear hilo con usuario para replicar en PRO</li>
+          <li><strong>No tiene ID Calypso</strong> → Asociar el que Calypso defina + hilo con usuario para PRO</li>
+          <li><strong>ID Calypso inactivo</strong> → Reactivar (confirmando con Calypso) + hilo para PRO</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid #FF4D4D">
+        <h3 style="font-size:13px;margin-bottom:10px;color:#CC0000">⚠️ Calendarios Compuestos</h3>
+        <p class="body" style="color:#5C5C5C;font-size:12px;line-height:1.7">Murex en ocasiones tiene <strong>calendarios compuestos</strong> (llegan con un "+", ej: "TAR+NY").</p>
+        <p class="body" style="color:#5C5C5C;font-size:12px;line-height:1.7;margin-top:8px"><strong>En RDR no existen calendarios compuestos.</strong></p>
+        <p class="body" style="color:#5C5C5C;font-size:12px;line-height:1.7;margin-top:8px">Si llega "TAR+NY" → <strong>reportar a Murex</strong>. Es en origen donde deben corregir. A RDR deben llegar dos peticiones separadas: una por "TAR" y otra por "NY".</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--serene)">
+        <h3 style="font-size:13px;margin-bottom:10px" class="accent">Regla común</h3>
+        <p class="body" style="color:#5C5C5C;font-size:12px;line-height:1.7">Para <strong>Índices</strong> y <strong>Divisas</strong> el funcionamiento es exactamente el mismo que con calendarios (salvo la particularidad de los calendarios compuestos).</p>
+        <p class="body" style="color:#5C5C5C;font-size:12px;line-height:1.7;margin-top:10px">En todos los casos: <strong>cualquier cambio aplicado en eepp debe replicarse en producción</strong> antes del GoLive.</p>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body">Siempre que se aplique un cambio en un entorno de pruebas, se debe <strong>crear hilo con el usuario</strong> para que verifique y replique el cambio en producción una vez validado.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 13 · PORTFOLIOS Y CONTRAPARTIDAS ===== -->
+<div class="slide" data-slide="13" data-theme="light">
+  <div class="si">
+    <p class="label">05 · Análisis por Entidad</p>
+    <h2>Portfolios y Contrapartidas</h2>
+    <p class="sub" style="margin-bottom:24px">Estas dos entidades tienen particularidades específicas en la asociación del ID de Calypso.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--purple);border-top:none">
+        <h3 style="font-size:14px;margin-bottom:12px" class="accent">📁 Portfolios</h3>
+        <p class="body" style="color:#5C5C5C;font-size:12px;margin-bottom:8px"><strong>Verificación FO:</strong></p>
+        <ul style="list-style:none;font-size:11px;line-height:2;color:#5C5C5C">
+          <li>✅ ID Mx asociado y activo → OK</li>
+          <li>⚠️ Inactivo → Reactivar + hilo con usuario para PRO</li>
+          <li>❌ No existe → Hilo con usuario para dar de alta</li>
+        </ul>
+        <p class="body" style="color:#5C5C5C;font-size:12px;margin-top:12px;margin-bottom:8px"><strong>Verificación BO:</strong></p>
+        <ul style="list-style:none;font-size:11px;line-height:2;color:#5C5C5C">
+          <li>✅ ID Calypso activo → OK</li>
+          <li>⚠️ <strong>No tiene ID Calypso</strong> → El ID a asociar es el <strong>Trading Book</strong> al que está asociado el Portfolio (ej: si TB = "TESORMAD", ID Calypso = "TESORMAD")</li>
+          <li>⚠️ ID Calypso inactivo → Reactivar si coincide con el TB asociado</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 style="font-size:14px;margin-bottom:12px" class="accent">🏢 Contrapartidas</h3>
+        <p class="body" style="color:#5C5C5C;font-size:12px;margin-bottom:8px"><strong>Verificación FO:</strong></p>
+        <ul style="list-style:none;font-size:11px;line-height:2;color:#5C5C5C">
+          <li>✅ ID Mx asociado y activo → OK</li>
+          <li>⚠️ Inactivo → Reactivar + hilo con usuario para PRO</li>
+          <li>❌ No existe → Hilo con usuario para revisión</li>
+        </ul>
+        <p class="body" style="color:#5C5C5C;font-size:12px;margin-top:12px;margin-bottom:8px"><strong>Verificación BO:</strong></p>
+        <ul style="list-style:none;font-size:11px;line-height:2;color:#5C5C5C">
+          <li>✅ ID Calypso activo → OK</li>
+          <li>⚠️ <strong>No tiene ID Calypso</strong> → Se debe <strong>publicar la contrapartida</strong>. El ID de Calypso se recibe como respuesta ACK a la publicación</li>
+          <li>⚠️ ID Calypso inactivo → Publicar la contrapartida y reactivar el ID al recibir ACK</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Diferencia clave:</strong> En Portfolios el ID de Calypso es el Trading Book asociado. En Contrapartidas, el ID de Calypso se obtiene mediante <strong>publicación + ACK</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 14 · INVENTARIO Y GESTIÓN DE CAMBIOS ===== -->
+<div class="slide" data-slide="14" data-theme="light">
+  <div class="si">
+    <p class="label">05 · Regla de Oro</p>
+    <h2>Gestión de Inventario: La Regla Más Importante</h2>
+    <p class="sub" style="margin-bottom:24px">Los proyectos de migración se extienden en el tiempo. Sin un control riguroso de los cambios, el Día D fracasa.</p>
+
+    <div class="card" style="border-left:4px solid #FF4D4D;border-top:none;margin-bottom:20px;background:rgba(255,77,77,.03)">
+      <h3 style="font-size:16px;margin-bottom:12px;color:#CC0000">⚠️ "No sirve de nada que entre una operación en un simulacro, si el día del GoLive no entra"</h3>
+      <p class="body" style="color:#5C5C5C;line-height:1.8">Los análisis y cambios en eepp para asegurar que la operativa viva entra en los simulacros <strong>solo son útiles si quedan registrados</strong> para aplicarlos en producción el Día D.</p>
+    </div>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Principios del Inventario</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>📋 Mantener un <strong>inventario de cambios a aplicar en PRO</strong></li>
+          <li>🔄 Actualizarlo <strong>constantemente</strong>, cada vez que se aplique un cambio</li>
+          <li>⚡ <strong>Jamás</strong> pensar "ya lo apuntaré en el inventario"</li>
+          <li>🎯 Cada cambio en eepp = entrada inmediata en el inventario</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid var(--canary)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">¿Por qué es tan crítico?</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>• Los proyectos de migración se <strong>extienden en el tiempo</strong></li>
+          <li>• Se hacen múltiples simulacros y ciclos de pruebas</li>
+          <li>• Los cambios en eepp anticipan errores del GoLive</li>
+          <li>• Sin inventario, los cambios <strong>se pierden</strong> y la migración falla en PRO</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight" style="border-left:4px solid var(--electric)">
+      <p class="body" style="font-size:13px"><strong>Resumen:</strong> Ser ordenado es vital. Cada cambio, cuando se aplique en eepp, se debe trasladar <strong>inmediatamente</strong> al inventario de cambios para producción. Este inventario es el contrato del equipo con el Día D.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 15 · CLOSING ===== -->
+<div class="slide closing" data-slide="15" data-theme="dark">
+  <div class="si" style="text-align:center">
+    <p style="font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--serene);margin-bottom:20px">Resumen</p>
+    <h1 style="font-size:36px;font-weight:800;color:#fff;margin-bottom:20px">Claves de la Caída de Operaciones</h1>
+    <div style="max-width:600px;margin:0 auto;text-align:left">
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">1</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">RDR es el <strong>diccionario central</strong> que traduce los datos estáticos entre Front Office y Back Office destino.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">2</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">Si una traducción no existe, la operación <strong>no cae</strong>: queda bloqueada en el ESB.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">3</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">El <strong>Modelo Canónico</strong> (Origen → Canónico → Destino) permite operar con múltiples sistemas.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">4</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">La preparación anticipada (extraer, identificar, registrar) es <strong>crítica</strong> para el éxito del Día D.</p>
+      </div>
+    </div>
+    <div style="margin-top:28px">
+      <span class="pill">Continuidad operativa</span>
+      <span class="pill">Riesgo mitigado</span>
+      <span class="pill">0 operaciones perdidas</span>
+    </div>
+    <div style="font-size:12px;opacity:.6;margin-top:32px">BBVA CIB · NFQ Advisory · Confidencial</div>
+  </div>
+</div>
+
+<!-- ========== END SLIDES ========== -->
+
+<script>
+const slides=document.querySelectorAll('.slide'),total=slides.length;
+let cur=0;
+const hdr=document.getElementById('hdr');
+const hdrBbva=document.getElementById('hdr-bbva');
+const hdrNfq=document.getElementById('hdr-nfq');
+const hdrTitle=document.getElementById('hdr-title');
+function goTo(i){
+  if(i<0||i>=total)return;
+  const p=cur;cur=i;
+  slides.forEach((s,j)=>{s.classList.remove('active','prev');if(j===cur)s.classList.add('active');else if(j===p)s.classList.add('prev')});
+  document.getElementById('counter').textContent=(cur+1)+' / '+total;
+  document.getElementById('pbar').style.width=((cur+1)/total*100)+'%';
+  // Hide header on cover and closing
+  if(cur===0 || cur===total-1){
+    hdr.classList.add('hide-on-cover');
+  } else {
+    hdr.classList.remove('hide-on-cover');
+  }
+  const theme=slides[cur].dataset.theme;
+  if(theme==='dark'){
+    hdr.className='hdr dark';
+    hdrBbva.style.filter='brightness(0) invert(1)';
+    hdrNfq.style.filter='brightness(0) invert(1)';
+    hdrTitle.style.color='#FFFFFF';
+  } else {
+    hdr.className='hdr light';
+    hdrBbva.style.filter='none';
+    hdrNfq.style.filter='none';
+    hdrTitle.style.color='var(--electric)';
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ')goTo(cur+1);
+  if(e.key==='ArrowLeft')goTo(cur-1);
+  if(e.key==='Home')goTo(0);
+  if(e.key==='End')goTo(total-1);
+  if(e.key>='1'&&e.key<='9')goTo(parseInt(e.key)-1);
+  if(e.key==='0')goTo(9);
+});
+let tx=0;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX});
+document.addEventListener('touchend',e=>{const d=tx-e.changedTouches[0].clientX;if(Math.abs(d)>50)d>0?goTo(cur+1):goTo(cur-1)});
+document.addEventListener('click',e=>{const x=e.clientX/window.innerWidth;if(x>.85)goTo(cur+1);else if(x<.15)goTo(cur-1)});
+goTo(0);
+</script>
+</body>
+</html>

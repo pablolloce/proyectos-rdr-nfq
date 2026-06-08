@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SCIS · Instrucciones de Confirmación y Notificación</title>
+<style>
+:root{
+  --electric:#001391;
+  --serene:#85C8FF;
+  --midnight:#060E46;
+  --sand:#F7F8F8;
+  --white:#FFFFFF;
+  --aqua:#8BE1E9;
+  --lime:#88E783;
+  --canary:#FFE761;
+  --purple:#B68CFF;
+  --gray2:#E2E6EA;
+  --gray5:#6E7781;
+  --mandarin:#FFB56B;
+  --r:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0D0D0D;overflow:hidden;height:100vh;width:100vw}
+
+/* ---------- HEADER ---------- */
+.hdr{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-items:center;padding:0 32px;z-index:100;transition:opacity .3s}
+.hdr.light{background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--gray2)}
+.hdr.dark{background:rgba(6,14,70,.7);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.08)}
+.hdr.hide-on-cover{opacity:0;pointer-events:none}
+.hdr img{height:28px}
+.hdr-title{margin-left:16px;font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--electric)}
+
+/* ---------- PROGRESS ---------- */
+.pbar-wrap{position:fixed;bottom:0;left:0;right:0;height:4px;background:var(--gray2);z-index:100}
+.pbar{height:100%;background:linear-gradient(90deg,var(--electric),var(--serene));transition:width .4s}
+
+/* ---------- COUNTER ---------- */
+.counter{position:fixed;bottom:14px;right:32px;font-size:11px;color:var(--gray5);z-index:100}
+
+/* ---------- SLIDES ---------- */
+.slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;transform:translateX(40px);background:var(--white);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:auto;transform:translateX(0)}
+.slide.prev{transform:translateX(-40px)}
+.si{width:90%;max-width:1100px;padding:52px 0 32px}
+
+/* ---------- TYPOGRAPHY ---------- */
+h2{font-size:28px;font-weight:800;color:var(--electric);line-height:1.2;margin-bottom:8px}
+.label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--serene);margin-bottom:6px}
+.sub{font-size:14px;color:var(--gray5);line-height:1.6;max-width:700px}
+.body{font-size:13px;line-height:1.7;color:#333}
+.accent{color:var(--electric)}
+
+/* ---------- GRID ---------- */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
+
+/* ---------- CARDS ---------- */
+.card{background:var(--white);border-radius:var(--r);padding:22px 20px;border-top:3px solid var(--serene);box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.card h3{font-size:15px;font-weight:700;margin-bottom:8px}
+
+/* ---------- HIGHLIGHT ---------- */
+.highlight{background:linear-gradient(90deg,rgba(133,200,255,.12),rgba(139,225,233,.08));border-left:4px solid var(--serene);border-radius:0 var(--r) var(--r) 0;padding:16px 24px}
+
+/* ---------- TABLE ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:var(--electric);color:#fff;padding:12px 14px;text-align:left;font-weight:600}
+.tbl td{padding:10px 14px;border-bottom:1px solid var(--gray2)}
+.tbl tr:nth-child(even){background:var(--sand)}
+.tbl tr:hover td{background:rgba(133,200,255,.1)}
+
+/* ---------- FLOW / DIAGRAM ---------- */
+.flow{display:flex;align-items:center;gap:0;justify-content:center;flex-wrap:wrap}
+.flow-box{background:var(--white);border:2px solid var(--serene);border-radius:var(--r);padding:14px 20px;text-align:center;min-width:120px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
+.flow-box.origin{border-color:var(--canary);background:rgba(255,231,97,.08)}
+.flow-box.canonical{border-color:var(--electric);background:rgba(0,19,145,.04)}
+.flow-box.dest{border-color:var(--lime);background:rgba(136,231,131,.08)}
+.flow-box.error{border-color:#FF4D4D;background:rgba(255,77,77,.06)}
+.flow-arrow{font-size:24px;color:var(--electric);padding:0 8px;font-weight:700}
+
+/* ---------- COVER ---------- */
+.cover{background:linear-gradient(135deg,var(--midnight) 0%,var(--electric) 100%);color:#fff}
+.cover h1{font-size:42px;font-weight:800;line-height:1.15;margin-bottom:16px}
+.cover .sub{color:rgba(255,255,255,.7)}
+.cover .pill{display:inline-block;background:rgba(133,200,255,.15);border:1px solid rgba(133,200,255,.3);border-radius:20px;padding:6px 16px;font-size:12px;color:var(--serene);margin-right:8px;margin-top:12px}
+
+/* ---------- CLOSING ---------- */
+.closing{background:linear-gradient(135deg,var(--midnight) 0%,var(--electric) 100%);color:#fff;text-align:center}
+
+/* ---------- ANNEXE ---------- */
+.annexe-hdr{background:linear-gradient(135deg,var(--midnight) 0%,#1a237e 100%);color:#fff}
+
+/* ---------- STAT ---------- */
+.stat-n{font-size:36px;font-weight:800;color:var(--electric)}
+.stat-l{font-size:11px;color:var(--gray5);margin-top:4px}
+
+/* ---------- BADGE ---------- */
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.badge-blue{background:rgba(133,200,255,.15);color:var(--electric)}
+.badge-green{background:rgba(136,231,131,.15);color:#1B8C13}
+.badge-yellow{background:rgba(255,231,97,.15);color:#8B6914}
+.badge-purple{background:rgba(182,140,255,.15);color:#5B21B6}
+.badge-orange{background:rgba(255,181,107,.15);color:#C05621}
+
+.divider{height:1px;background:var(--gray2)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr light hide-on-cover" id="hdr">
+  <img id="hdr-bbva" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 28'%3E%3Ctext x='0' y='20' font-family='Arial' font-weight='bold' font-size='16' fill='%23001391'%3EBBVA%3C/text%3E%3C/svg%3E" alt="BBVA" style="height:24px">
+  <img id="hdr-nfq" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 28'%3E%3Ctext x='0' y='20' font-family='Arial' font-weight='bold' font-size='16' fill='%23001391'%3ENFQ%3C/text%3E%3C/svg%3E" alt="NFQ" style="height:24px;margin-left:12px">
+  <span class="hdr-title" id="hdr-title" style="margin-left:16px">SCIS · Instrucciones de Confirmación y Notificación</span>
+</div>
+
+<!-- PROGRESS BAR -->
+<div class="pbar-wrap"><div class="pbar" id="pbar" style="width:0%"></div></div>
+<div class="counter" id="counter">1 / 20</div>
+
+<!-- ========== SLIDES ========== -->
+
+<!-- ===== SLIDE 0 · COVER ===== -->
+<div class="slide cover active" data-slide="0" data-theme="dark">
+  <div class="si" style="text-align:center">
+    <p style="font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--serene);margin-bottom:20px">BBVA CIB · RDR · Instrucciones de Confirmación y Notificación</p>
+    <h1>Confirmation &amp; Notification<br>Instructions (SCIS)</h1>
+    <p class="sub" style="max-width:650px;margin:0 auto;margin-top:16px">Cómo RDR gestiona las instrucciones de confirmación y notificación: maestro de datos, canales de envío, publicación al BO y soporte a la migración de operaciones.</p>
+    <div style="margin-top:28px">
+      <span class="pill">~55K registros</span>
+      <span class="pill">Confirmation · Notification</span>
+      <span class="pill">EMAIL · SWIFT · FAX</span>
+      <span class="pill">Calypso</span>
+      <span class="pill">Migración</span>
+    </div>
+    <div style="font-size:12px;opacity:.6;margin-top:32px">BBVA CIB · NFQ Advisory · Confidencial</div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 1 · ¿QUÉ ES UNA SCIS? ===== -->
+<div class="slide" data-slide="1" data-theme="light">
+  <div class="si">
+    <p class="label">01 · Introducción</p>
+    <h2>¿Qué es una SCIS (Instrucción de Confirmación)?</h2>
+    <p class="sub" style="margin-bottom:24px">Una <strong>Standard Confirmation Instruction</strong> es un acuerdo operativo entre BBVA y una contraparte que codifica las instrucciones de confirmación/notificación de operaciones financieras.</p>
+
+    <div class="g2" style="margin-bottom:24px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent">Confirmación de operaciones</h3>
+        <p class="body" style="color:#5C5C5C">Cuando un trade se ejecuta, el sistema confirma según las SCIs válidas para la combinación <em>Contraparte + Producto + Branch + Fechas</em>. Define a quién se envía la confirmación, por qué medio y para qué productos.</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--serene);border-top:none">
+        <h3 style="color:var(--electric)">Maestro en RDR</h3>
+        <p class="body" style="color:#5C5C5C">RDR es el <strong>sistema maestro</strong> de instrucciones de confirmación y notificación de BBVA CIB. Suministra estas instrucciones al BO (Calypso, SWIFT, plataformas de post-trade matching).</p>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Analogía rápida:</strong> Si las <strong>SSI</strong> (Settlement Instructions) determinan <em>"por dónde paga el dinero"</em> (bancos, cuentas, rutas SWIFT), las <strong>SCIS</strong> determinan <em>"cómo se confirma que se hizo la operación"</em> — a quién, por qué medio y para qué productos.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 2 · 6 PREGUNTAS CLAVE ===== -->
+<div class="slide" data-slide="2" data-theme="light">
+  <div class="si">
+    <p class="label">01 · Concepto</p>
+    <h2>6 Preguntas que Responde una SCIS</h2>
+    <p class="sub" style="margin-bottom:24px">Cada instrucción de confirmación responde a estas preguntas fundamentales.</p>
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">¿Quién?</h3>
+        <p class="body" style="color:#5C5C5C">Quién envía y/o recibe la confirmación (indicadores <strong>Sender / Receiver</strong>).</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--aqua)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">¿Qué?</h3>
+        <p class="body" style="color:#5C5C5C">Qué productos financieros cubre (un tipo específico o <strong>ALL</strong>).</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--lime)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">¿Cuáles Branches?</h3>
+        <p class="body" style="color:#5C5C5C">Qué sucursales BBVA aplican esta instrucción (exactamente <strong>1 branch activa</strong>).</p>
+      </div>
+    </div>
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--purple)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">¿Cómo?</h3>
+        <p class="body" style="color:#5C5C5C">Por qué medio se envía: <strong>SWIFT, EMAIL, FAX</strong>, plataformas electrónicas...</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--canary)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">¿Cuándo?</h3>
+        <p class="body" style="color:#5C5C5C">Período de vigencia (<strong>Date From / Date To</strong>). Por defecto sin caducidad.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--mandarin)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">¿A quién?</h3>
+        <p class="body" style="color:#5C5C5C">El <strong>contacto</strong> responsable destinatario de la confirmación/notificación.</p>
+      </div>
+    </div>
+    <div class="highlight">
+      <p class="body"><strong>Datos clave de una SCIS:</strong> Contrapartida (counterparty), Producto, Branch, Sender/Receiver, Canal de envío (Media), Contacto destinatario, Fechas de vigencia, Códigos electrónicos de plataforma.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 3 · CONFIRMATION vs NOTIFICATION ===== -->
+<div class="slide" data-slide="3" data-theme="light">
+  <div class="si">
+    <p class="label">01 · Tipos</p>
+    <h2>Confirmation vs. Notification</h2>
+    <p class="sub" style="margin-bottom:24px">El campo <strong>CONFIRM_INSTRUC_DESC</strong> discrimina dos tipos de instrucción, cada uno con un propósito distinto.</p>
+
+    <div class="g2" style="margin-bottom:24px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent">CONFIRMATION</h3>
+        <p class="body" style="color:#5C5C5C;margin-bottom:8px">Confirmación de ejecución de operaciones (<strong>trade confirm</strong>). Es el tipo principal.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• Confirma que la operación se ha realizado</li>
+          <li>• Requiere matching / respuesta de la contraparte</li>
+          <li>• Campo TRADE_TYP vacío</li>
+          <li>• Canal típico: SWIFT (MT300/MT320/MT360), EMAIL</li>
+          <li>• Es indispensable para la operativa migrada</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--canary);border-top:none">
+        <h3 class="accent">NOTIFICATION</h3>
+        <p class="body" style="color:#5C5C5C;margin-bottom:8px">Notificación informativa — <strong>no requiere matching ni respuesta</strong>.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• Incluye sub-tipo en campo TRADE_TYP</li>
+          <li>• 3 eventos por los que se notifica:</li>
+          <li>&nbsp;&nbsp;— Evento de <strong>fixing</strong></li>
+          <li>&nbsp;&nbsp;— Evento de <strong>pago/liquidación</strong></li>
+          <li>&nbsp;&nbsp;— Evento de <strong>vencimiento</strong></li>
+          <li>• Una contrapartida puede tener de 0 a 3 tipos</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>En una migración:</strong> No se paraliza el GoLive si falta una SCI, pero es <strong>muy importante</strong> que todas las instrucciones de la operativa que migra se den de alta y publiquen <em>previo al GoLive</em> para que el flujo productivo continúe correctamente.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 4 · CARACTERÍSTICAS PRINCIPALES ===== -->
+<div class="slide" data-slide="4" data-theme="light">
+  <div class="si">
+    <p class="label">01 · Características</p>
+    <h2>Características Principales</h2>
+    <p class="sub" style="margin-bottom:24px">Propiedades clave de una SCIS que determinan su comportamiento y aplicación.</p>
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="text-align:center;border-top:3px solid var(--electric)">
+        <div style="font-size:28px;margin-bottom:8px">🔑</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Clave funcional</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">(Counterparty, Product, Branch, Media) determina la SCIS aplicable</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--serene)">
+        <div style="font-size:28px;margin-bottom:8px">📐</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Jerarquía padre-hijo</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">SCIS genérica (ALL) > SCIS específica por instrumento > override temporal</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--aqua)">
+        <div style="font-size:28px;margin-bottom:8px">📅</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Vigencia temporal</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">DATEFROM / DATETO permiten planificar altas y bajas futuras (default: sin caducidad)</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--lime)">
+        <div style="font-size:28px;margin-bottom:8px">⚡</div>
+        <h3 style="font-size:13px;margin-bottom:6px">STP (Straight-Through)</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Flag STPCONF: asignación automática de la SCIS a las confirmaciones sin intervención manual</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--canary)">
+        <div style="font-size:28px;margin-bottom:8px">↔️</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Sender / Receiver</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Indica si la contraparte envía o recibe la confirmación. Sender XOR Receiver, nunca ambos</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--purple)">
+        <div style="font-size:28px;margin-bottom:8px">🔒</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Trazabilidad</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Cada cambio queda auditado. Cadena SCISDENE (REL_NEW) reconstruye el historial completo</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 5 · CANALES DE CONFIRMACIÓN ===== -->
+<div class="slide" data-slide="5" data-theme="light">
+  <div class="si">
+    <p class="label">02 · Canales</p>
+    <h2>Canales de Confirmación</h2>
+    <p class="sub" style="margin-bottom:24px">Los canales reales por los que viaja la confirmación. Verificados en base de datos (~58K registros en <strong>FT_T_SCMO</strong>).</p>
+
+    <table class="tbl" style="margin-bottom:20px">
+      <thead>
+        <tr>
+          <th>Canal</th>
+          <th>Registros</th>
+          <th>%</th>
+          <th>Categoría</th>
+          <th>Uso</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-green">EMAIL</span></td>
+          <td>42,569</td>
+          <td>70.8%</td>
+          <td>Manual</td>
+          <td>Canal dominante — la mayoría de contrapartes</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-orange">FAX</span></td>
+          <td>8,488</td>
+          <td>14.1%</td>
+          <td>Manual</td>
+          <td>Contrapartes legacy</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">SWIFT</span></td>
+          <td>4,879</td>
+          <td>8.1%</td>
+          <td>Electrónico</td>
+          <td>OTC, repos, renta fija (MT300/MT320/MT360)</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">FX ALL</span></td>
+          <td>1,840</td>
+          <td>3.1%</td>
+          <td>Electrónico</td>
+          <td>Plataforma FX</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">MISYS</span></td>
+          <td>363</td>
+          <td>0.6%</td>
+          <td>Electrónico</td>
+          <td>Misys/Finastra</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">BBG / TRADENEXUS</span></td>
+          <td>142</td>
+          <td>0.2%</td>
+          <td>Electrónico</td>
+          <td>Bloomberg / TradeNexus (en implantación)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="highlight" style="margin-bottom:16px">
+      <p class="body"><strong>Conclusión clave:</strong> EMAIL (71%) + FAX (14%) = <strong>85% de las instrucciones</strong>. SWIFT, aunque es el estándar financiero de referencia, solo representa el 8% — concentrado en derivados OTC, repos y renta fija.</p>
+    </div>
+
+    <div class="highlight" style="border-left:4px solid var(--canary)">
+      <p class="body"><strong>Distinción crítica — Canal vs. Identificador electrónico:</strong> El <em>canal</em> (CONFIRM_MEDIA_TYP) es el transporte real. El <em>identificador electrónico</em> (DATA_SRC_ID) es el código de la contraparte en plataformas externas. Son dimensiones ortogonales que <strong>no deben confundirse</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 6 · ELECTRONIC CODES ===== -->
+<div class="slide" data-slide="6" data-theme="light">
+  <div class="si">
+    <p class="label">02 · Plataformas</p>
+    <h2>Electronic Codes (Identificadores de Plataforma)</h2>
+    <p class="sub" style="margin-bottom:24px">Los electronic codes son los <strong>identificadores de la contraparte</strong> en plataformas externas de post-trade. Se almacenan en STAND_CONF_ASSIGNMENT con PURP_TYP='ELEC_COD'.</p>
+
+    <table class="tbl" style="margin-bottom:20px">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Plataforma</th>
+          <th>Uso</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge badge-blue">DTCCID</span></td>
+          <td>DTCC ALERT / CTM</td>
+          <td>Matching renta variable y bonos (equipo Deal Manager)</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">FXALLBIC</span></td>
+          <td>FXAll</td>
+          <td>Plataforma de ejecución FX</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">ICELINKID</span></td>
+          <td>IceLink</td>
+          <td>Confirmación derivados ICE</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-orange">MISYSBIC</span></td>
+          <td>Misys/Finastra</td>
+          <td>Plataforma Misys</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-yellow">BBGBIC</span></td>
+          <td>Bloomberg</td>
+          <td>Confirmación vía Bloomberg</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">MARKITBIC</span></td>
+          <td>Markit Wire</td>
+          <td>Confirmación derivados OTC</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">REGISTRID</span></td>
+          <td>Regis TR</td>
+          <td>Trade repository europeo</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">SWIFT_CNT</span></td>
+          <td>SWIFT (contraparte)</td>
+          <td>BIC SWIFT a nivel de contacto</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="highlight" style="border-left:4px solid #FF4D4D">
+      <p class="body"><strong>Importante:</strong> DTCC no es un canal de confirmación de derivados OTC — El DTCCID almacena el identificador de participante en DTCC ALERT/CTM, plataforma usada para matching de <strong>renta variable y bonos</strong>. Los derivados OTC se confirman por SWIFT MT3xx o email.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 7 · CAMPOS PRINCIPALES ===== -->
+<div class="slide" data-slide="7" data-theme="light">
+  <div class="si">
+    <p class="label">03 · Modelo de Datos</p>
+    <h2>Campos Principales de la SCIS</h2>
+    <p class="sub" style="margin-bottom:24px">Tabla maestra <strong>FT_T_SCIS</strong> con PK: SCIS_OID. Contiene la cabecera de la instrucción de confirmación.</p>
+
+    <table class="tbl" style="font-size:12px">
+      <thead>
+        <tr><th>Campo</th><th>Tabla / Path</th><th>Oblig.</th><th>Descripción</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>SCIS_OID</strong></td><td>FT_T_SCIS</td><td><span class="badge badge-green">Auto</span></td><td>Identificador único, generado al guardar (OID)</td></tr>
+        <tr><td><strong>Counterparty</strong></td><td>FT_T_CUST.CST_ID</td><td><span class="badge badge-yellow">Sí</span></td><td>Contraparte propietaria de la instrucción</td></tr>
+        <tr><td><strong>Instruction Type</strong></td><td>CONFIRM_INSTRUC_DESC</td><td><span class="badge badge-yellow">Sí</span></td><td>CONFIRMATION o NOTIFICATION</td></tr>
+        <tr><td><strong>Sender</strong></td><td>CONFIRM_SENDER_IND</td><td><span class="badge badge-yellow">Sí</span></td><td>Y/N — la contraparte actúa como emisor</td></tr>
+        <tr><td><strong>Receiver</strong></td><td>CONFIRM_RECEIVER_IND</td><td><span class="badge badge-yellow">Sí</span></td><td>Y/N — la contraparte actúa como receptor</td></tr>
+        <tr><td><strong>Status</strong></td><td>DATA_STAT_TYP</td><td><span class="badge badge-yellow">Sí</span></td><td>ACTIVE, INACTIVE, DELETED</td></tr>
+        <tr><td><strong>Priority</strong></td><td>CONFIRM_INSTRUC_PRTY_SEQ</td><td>No</td><td>Prioridad (0 = más alta)</td></tr>
+        <tr><td><strong>STP</strong></td><td>COA (STPCONF)</td><td>No</td><td>Asignación automática (Y/N)</td></tr>
+        <tr><td><strong>Date From / To</strong></td><td>COA (DATEFROM/DATETO)</td><td>No</td><td>Vigencia temporal (default: sin caducidad)</td></tr>
+        <tr><td><strong>Products</strong></td><td>STAND_CONF_ASSIGNMENT</td><td><span class="badge badge-yellow">Sí</span></td><td>Tipos de producto cubiertos (o ALL)</td></tr>
+        <tr><td><strong>Branches</strong></td><td>STAND_CONF_ASSIGNMENT</td><td><span class="badge badge-yellow">Sí</span></td><td>Sucursal BBVA aplicable (exactamente 1)</td></tr>
+        <tr><td><strong>Media</strong></td><td>FT_T_SCMO</td><td><span class="badge badge-yellow">Sí</span></td><td>Canal de confirmación (EMAIL, SWIFT, FAX...)</td></tr>
+        <tr><td><strong>Contact</strong></td><td>FT_T_CNTC</td><td>No</td><td>Contacto destinatario</td></tr>
+        <tr><td><strong>External IDs</strong></td><td>CONFIRMATION_IDENTIF</td><td>No</td><td>IDs en sistemas externos (Mentor, Sentry, Calypso)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== SLIDE 8 · MODELO RELACIONAL ===== -->
+<div class="slide" data-slide="8" data-theme="light">
+  <div class="si">
+    <p class="label">03 · Relaciones</p>
+    <h2>Modelo Relacional y Tablas Satélite</h2>
+    <p class="sub" style="margin-bottom:24px">La SCIS se relaciona con múltiples entidades del ecosistema RDR.</p>
+
+    <!-- Diagrama -->
+    <div style="background:var(--sand);border-radius:var(--r);padding:20px;font-family:'Courier New',monospace;font-size:12px;color:var(--electric);margin-bottom:20px;overflow-x:auto;white-space:pre;line-height:1.8">FT_T_CUST (Counterparty)
+    │ CST_ID
+    ▼
+FT_T_SCIS ──ACCT_OID──────► FT_T_ACCT (Cuenta)
+    │        ──FINR_OID──────► FT_T_FINS (Institución Financiera)
+    │        ──INSTR_ID──────► FT_T_INSTR (Instrumento)
+    │        ──PRNT_SCIS_OID─► FT_T_SCIS (auto-referencia: padre)
+    │
+    ├──SCIS_OID──► FT_T_SCMO (Media Options)  ~58K registros
+    ├──SCIS_OID──► STAND_CONF_ASSIGNMENT (Asignaciones)  ~291K registros
+    ├──SCIS_OID──► CONFIRMATION_IDENTIF (Identificadores)  ~109K registros
+    ├──SCIS_OID──► CONFIRMATION_ATTRIBUTES (Atributos EAV)
+    └──SCIS_OID──► FT_T_SCIP (Payment Instructions)</div>
+
+    <div class="g2" style="margin-bottom:16px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Tabla polimórfica: STAND_CONF_ASSIGNMENT</h3>
+        <p class="body" style="color:#5C5C5C">Discriminada por PURP_TYP. Cada SCIS tiene ~5.25 asignaciones en media:</p>
+        <ul style="list-style:none;font-size:12px;line-height:2;color:#5C5C5C">
+          <li>• <strong>PRODUCT</strong> — Producto cubierto</li>
+          <li>• <strong>BRANCH</strong> — Branch BBVA aplicable</li>
+          <li>• <strong>OFFICE</strong> — Oficina/subdivisión</li>
+          <li>• <strong>ELEC_COD</strong> — Código electrónico de plataforma</li>
+          <li>• <strong>ELEC_COD_CNT</strong> — SWIFT contraparte</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid var(--serene)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Tablas EAV (atributos extendidos)</h3>
+        <p class="body" style="color:#5C5C5C"><strong>CONFIRMATION_ATTRIBUTES:</strong></p>
+        <ul style="list-style:none;font-size:12px;line-height:2;color:#5C5C5C">
+          <li>• <strong>STPCONF</strong> — Flag STP (Y/N)</li>
+          <li>• <strong>DATEFROM</strong> — Fecha desde</li>
+          <li>• <strong>DATETO</strong> — Fecha hasta (default 9999-12-31)</li>
+        </ul>
+        <p class="body" style="color:#5C5C5C;margin-top:8px"><strong>CONFIRMATION_IDENTIF:</strong></p>
+        <ul style="list-style:none;font-size:12px;line-height:2;color:#5C5C5C">
+          <li>• <strong>CONFIRMID</strong> — ID interno RDR</li>
+          <li>• <strong>REL_NEW</strong> — Vínculo SCISDENE antigua→nueva</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 9 · PROCESOS UI ===== -->
+<div class="slide" data-slide="9" data-theme="light">
+  <div class="si">
+    <p class="label">04 · Gestión</p>
+    <h2>Procesos de Interfaz de Usuario</h2>
+    <p class="sub" style="margin-bottom:24px">Operaciones principales de gestión de SCIs desde Workstation. 3 pantallas con 8 páginas cada una.</p>
+
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--serene);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">🔍</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Búsqueda</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Por contraparte, producto, branch, media, electronic code, sender/receiver, tipo, fechas. Estado ACTIVE por defecto.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--electric);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">➕</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Alta (SCIS)</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Creación: tipo, sender/receiver, contraparte, productos, branch, canal y contacto. OID generado al guardar.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--aqua);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">✏️</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Modificación</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">UPDATE in-place sobre la misma fila. Para cambios menores (prioridad, STP). Mismo SCIS_OID.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--lime);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">🔄</div>
+        <h3 style="font-size:13px;margin-bottom:6px">SCISDENE</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Transacción atómica: inactiva la SCIS actual y crea una nueva vinculada (REL_NEW). Para cambios estructurales.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--canary);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">📋</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Copia (SCIS1)</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Clona SCIS existente con nuevo OID. Hereda datos del original. Útil para variantes por producto.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--purple);text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">📜</div>
+        <h3 style="font-size:13px;margin-bottom:6px">Historial</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Muestra historial de cambios (FT_T_CHAL). Trazabilidad completa maker-checker.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 10 · CICLO DE VIDA ===== -->
+<div class="slide" data-slide="10" data-theme="light">
+  <div class="si">
+    <p class="label">04 · Ciclo de Vida</p>
+    <h2>Ciclo de Vida y Patrón SCISDENE</h2>
+    <p class="sub" style="margin-bottom:24px">Estados y transiciones de una instrucción de confirmación. La reactivación está prohibida — siempre se crea una nueva.</p>
+
+    <!-- Ciclo de vida -->
+    <div style="background:var(--sand);border-radius:var(--r);padding:16px;font-family:'Courier New',monospace;font-size:11px;color:var(--electric);line-height:1.8;overflow-x:auto;white-space:pre;margin-bottom:20px">              Alta
+ (ninguno) ────────► ACTIVE
+                        │        UPDATE
+             ACTIVE ◄──────────► ACTIVE  (modificación in-place via SCIS)
+                        │
+              Inactivar │
+              manual    ▼
+                     INACTIVE  (terminal — no reactivable)
+
+ ACTIVE ───SCISDENE───► INACTIVE (antigua) + ACTIVE (nueva)
+                         └── vinculadas vía REL_NEW</div>
+
+    <div class="g2" style="margin-bottom:16px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">¿Por qué existe SCISDENE?</h3>
+        <p class="body" style="color:#5C5C5C">Cuando los datos cambian de manera estructural (cambio de contacto, medio, electronic code), la práctica BBVA es <strong>NO actualizar la existente</strong> sino crear una nueva y marcar la antigua como INACTIVE. Esto preserva la <strong>trazabilidad histórica</strong>.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--lime)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Cadena de renovaciones</h3>
+        <div style="background:var(--sand);border-radius:8px;padding:12px;font-family:'Courier New',monospace;font-size:11px;color:var(--electric);line-height:1.6">SCIS-001 (INACTIVE) ──REL_NEW──►
+SCIS-002 (INACTIVE) ──REL_NEW──►
+SCIS-003 (ACTIVE)</div>
+        <p class="body" style="color:#5C5C5C;margin-top:8px;font-size:11px">Permite responder: <em>"¿Qué SCIS estaba vigente cuando se confirmó el trade X hace 2 años?"</em></p>
+      </div>
+    </div>
+
+    <div class="highlight" style="border-left:4px solid #FF4D4D">
+      <p class="body"><strong>Transición prohibida:</strong> INACTIVE → ACTIVE — No hay reactivación. Si se necesita una SCIS activa con datos similares a una inactiva, se crea una nueva.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 11 · VALIDACIONES ===== -->
+<div class="slide" data-slide="11" data-theme="light">
+  <div class="si">
+    <p class="label">05 · Reglas</p>
+    <h2>Validaciones de Negocio</h2>
+    <p class="sub" style="margin-bottom:24px"><strong>15 reglas de validación</strong> se aplican al guardar (tanto en alta como en modificación).</p>
+
+    <table class="tbl" style="font-size:11px;margin-bottom:16px">
+      <thead>
+        <tr><th>Regla</th><th>Validación</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>SENDER_RECEIVER</strong></td><td>Sender <strong>o</strong> Receiver = Y (al menos uno)</td></tr>
+        <tr><td><strong>SENDER_AND_RECEIVER</strong></td><td>NO ambos Sender Y Receiver = Y al mismo tiempo</td></tr>
+        <tr><td><strong>TRADETYP</strong></td><td>Si CONFIRMATION → TRADE_TYP vacío</td></tr>
+        <tr><td><strong>PRODUCTS</strong></td><td>Al menos 1 producto asignado</td></tr>
+        <tr><td><strong>PRODUCT</strong></td><td>Sin productos duplicados</td></tr>
+        <tr><td><strong>PRODUCT_ALL</strong></td><td>ALL excluye otros productos</td></tr>
+        <tr><td><strong>BRANCH</strong></td><td>Al menos 1 branch asignada</td></tr>
+        <tr><td><strong>UNIQUE_BRANCH</strong></td><td>Exactamente 1 branch activa</td></tr>
+        <tr><td><strong>UNIQ_BRANCH</strong></td><td>Sin branches duplicadas</td></tr>
+        <tr><td><strong>MEDIATYP</strong></td><td>Al menos 1 canal de media activo</td></tr>
+        <tr><td><strong>CTNC_INACTIVE_FAX</strong></td><td>Contact FAX debe estar activo</td></tr>
+        <tr><td><strong>CTNC_INACTIVATE_EMAIL</strong></td><td>Contact EMAIL debe estar activo</td></tr>
+        <tr><td><strong>SWIFT_INACTIVE</strong></td><td>SWIFT debe estar activo</td></tr>
+        <tr><td><strong>ELEC_CDE</strong></td><td>Electronic codes únicos (sin duplicados)</td></tr>
+        <tr><td><strong>DATE_FROM_TO</strong></td><td>DateTo ≥ DateFrom siempre</td></tr>
+      </tbody>
+    </table>
+
+    <div class="highlight">
+      <p class="body"><strong>Reglas de oro:</strong> Sender XOR Receiver (nunca ambos) · ALL excluye otros productos · Exactamente 1 branch activa · Al menos 1 canal media activo · No se puede reactivar → crear nueva.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 12 · DIFUSIÓN ===== -->
+<div class="slide" data-slide="12" data-theme="light">
+  <div class="si">
+    <p class="label">05 · Difusión</p>
+    <h2>Difusión a Sistemas Downstream</h2>
+    <p class="sub" style="margin-bottom:24px">Cuando una SCIS cambia, se notifica a los sistemas que la consumen para que actualicen sus datos.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Eventos de difusión</h3>
+        <table class="tbl" style="font-size:11px">
+          <thead><tr><th>Evento</th><th>Trigger</th></tr></thead>
+          <tbody>
+            <tr><td>SCIS_CREATED</td><td>Alta nueva SCIS</td></tr>
+            <tr><td>SCIS_MODIFIED</td><td>Cambio en campos clave</td></tr>
+            <tr><td>SCIS_SUSPENDED</td><td>Inhibit = Y</td></tr>
+            <tr><td>SCIS_ACTIVATED</td><td>Estado → ACTIVE</td></tr>
+            <tr><td>SCIS_CANCELLED</td><td>Baja / END_TMS alcanzado</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="border-top:3px solid var(--serene)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Consumidores principales</h3>
+        <table class="tbl" style="font-size:11px">
+          <thead><tr><th>Sistema</th><th>Uso de la SCIS</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Calypso</strong></td><td>Matching de confirmaciones</td></tr>
+            <tr><td><strong>SWIFT</strong></td><td>Envío automático MT300/MT320</td></tr>
+            <tr><td><strong>Mentor / Sentry</strong></td><td>Sistemas de confirmación</td></tr>
+            <tr><td><strong>DTCC CTM</strong></td><td>Matching renta variable y bonos</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Mecanismo:</strong> Publicación asíncrona vía <strong>cola MQ</strong> (SCIS_CHANGE_EVENT). Calypso responde con <strong>ACK</strong> en cola de respuesta. SLA: &lt;5 min para Calypso, &lt;30 min para SWIFT. Reintentos: hasta 3 veces antes de alerta SCIS_DIFF_FAILED.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 13 · VOLUMETRÍA ===== -->
+<div class="slide" data-slide="13" data-theme="light">
+  <div class="si">
+    <p class="label">06 · Volumetría</p>
+    <h2>Volumetría y Contexto en RDR</h2>
+    <p class="sub" style="margin-bottom:24px">SCIS es una de las 5 entidades principales del sistema RDR. Datos actualizados a abril 2026.</p>
+
+    <div class="g3" style="margin-bottom:20px">
+      <div class="card" style="text-align:center;border-top:3px solid var(--electric)">
+        <div class="stat-n">55,471</div>
+        <p class="stat-l">SCIS Totales</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--lime)">
+        <div class="stat-n">44,880</div>
+        <p class="stat-l">Activas (81%)</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--gray5)">
+        <div class="stat-n">10,590</div>
+        <p class="stat-l">Inactivas (19%)</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--serene)">
+        <div class="stat-n">58,310</div>
+        <p class="stat-l">Media Options</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--canary)">
+        <div class="stat-n">291,304</div>
+        <p class="stat-l">Asignaciones (SCA)</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--purple)">
+        <div class="stat-n">108,973</div>
+        <p class="stat-l">Identificadores</p>
+      </div>
+    </div>
+
+    <table class="tbl" style="font-size:12px">
+      <thead><tr><th>Entidad RDR</th><th>Tabla</th><th>Registros</th><th>Función</th></tr></thead>
+      <tbody>
+        <tr><td>FINS</td><td>FT_T_FINS</td><td>~692K</td><td>Contrapartidas (entidad central)</td></tr>
+        <tr><td>ISSU</td><td>FT_T_ISSU</td><td>~12M</td><td>Emisiones (instrumentos financieros)</td></tr>
+        <tr><td>LAGR</td><td>FT_T_LAGR</td><td>~96K</td><td>Acuerdos Legales</td></tr>
+        <tr><td>SSIS</td><td>FT_T_SSIS</td><td>~857K</td><td>Instrucciones de Liquidación</td></tr>
+        <tr style="background:rgba(133,200,255,.1)"><td><strong>SCIS</strong></td><td><strong>FT_T_SCIS</strong></td><td><strong>~55K</strong></td><td><strong>Instrucciones de Confirmación/Notificación</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===== SLIDE 14 · ANNEXE HEADER ===== -->
+<div class="slide annexe-hdr" data-slide="14" data-theme="dark">
+  <div class="si" style="text-align:center">
+    <p style="font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--aqua);margin-bottom:20px">Anexo</p>
+    <h1 style="font-size:38px;font-weight:800;color:#fff;margin-bottom:16px">Instrucciones de Confirmación<br>en una Migración / Simulacro</h1>
+    <p class="sub" style="max-width:600px;margin:0 auto;color:rgba(255,255,255,.7)">Objetivos, análisis, proceso de alta y flujo de trabajo detallado antes, durante y después de los simulacros.</p>
+    <div style="margin-top:28px">
+      <span class="pill">Objetivos</span>
+      <span class="pill">Análisis</span>
+      <span class="pill">Alta SCIs</span>
+      <span class="pill">Pre-simulacro</span>
+      <span class="pill">Durante</span>
+      <span class="pill">Post-simulacro</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 15 · OBJETIVOS MIGRACIÓN SCIS ===== -->
+<div class="slide" data-slide="15" data-theme="light">
+  <div class="si">
+    <p class="label">Anexo · Objetivos</p>
+    <h2>Objetivos de la Migración: Instrucciones de Confirmación</h2>
+    <p class="sub" style="margin-bottom:24px">Una vez las operaciones migran al nuevo BO, deben seguir su curso de vida: liquidar, <strong>confirmar</strong>, notificar, reportar.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent">¿Cuándo es necesaria una SCI?</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8">Para cada combinación de <strong>contrapartida + producto</strong> debe existir una instrucción de confirmación.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• La contrapartida dueña <strong>no sea sender</strong></li>
+          <li>• En caso de ser sender, no es indispensable</li>
+          <li>• Se dará de alta la SCI con un contacto por defecto para facilitar el flujo</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--lime);border-top:none">
+        <h3 style="color:var(--electric)">Criticidad en la migración</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8">No se paraliza el GoLive ni se considera KO si falta alguna SCI, pero:</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• Es <strong>muy importante</strong> dar de alta y publicar previo al GoLive</li>
+          <li>• Para que el flujo productivo continúe correctamente</li>
+          <li>• Tras la migración, la SCI debe estar disponible en BO</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight" style="border-left:4px solid #FF4D4D">
+      <p class="body"><strong>Notificaciones:</strong> Se dará de alta solo en el caso de que la contrapartida la tenga en el BO origen. Una contrapartida puede no tener notificación, tener de solo un tipo, de dos, o los tres (fixing, pago, vencimiento).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 16 · ANÁLISIS ===== -->
+<div class="slide" data-slide="16" data-theme="light">
+  <div class="si">
+    <p class="label">Anexo · Análisis</p>
+    <h2>Análisis de SCIs para la Migración</h2>
+    <p class="sub" style="margin-bottom:24px">RDR como maestro de datos estáticos debe identificar el estado de las SCIs para la operativa viva que migra.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Papel de RDR en la migración</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>📌 RDR es el maestro que suministra al BO las instrucciones de confirmación/notificación</li>
+          <li>📌 <strong>Facilitador</strong> de datos fijos para que la operación se confirme y notifique</li>
+          <li>📌 Identificar qué operaciones ya cuentan con SCI válida y cuáles no</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid var(--canary)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Análisis requerido</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>✅ Operaciones que <strong>ya cuentan</strong> con Confirmación en RDR y BO</li>
+          <li>⚠️ Operaciones que <strong>no cuentan</strong> con SCI válida</li>
+          <li>🔧 Para las que no tienen SCI → <strong>revisar cuál dar de alta</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:4px solid #FF4D4D;border-top:none;margin-bottom:16px;background:rgba(255,77,77,.03)">
+      <h3 style="font-size:14px;margin-bottom:8px;color:#CC0000">Actualización continua</h3>
+      <p class="body" style="color:#5C5C5C">El análisis debe actualizarse periódicamente: <strong>antes de cada simulacro y posterior a él</strong>. Las migraciones se dilatan y el estado de las instrucciones cambia con el tiempo. Instrucciones válidas hoy pueden inactivarse mañana.</p>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Nota:</strong> En los simulacros de IT no se valida nada de confirmaciones ni notificaciones. Sin embargo, si posterior al simulacro hay un ciclo de pruebas <strong>UAT/Realtime</strong>, se debe iterar con usuarios y BO para definir y validar la plantilla.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 17 · PROCESO DE ALTA ===== -->
+<div class="slide" data-slide="17" data-theme="light">
+  <div class="si">
+    <p class="label">Anexo · Alta de SCIs</p>
+    <h2>Proceso de Alta de SCIs</h2>
+    <p class="sub" style="margin-bottom:24px">Cuando se detecta la inexistencia de una SCI para una operación, se debe dar de alta mediante la plantilla de carga masiva de RDR.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:10px">Plantilla de carga</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8">En RDR existe una <strong>plantilla de carga de SCIs</strong> para cargas masivas (Excel/CSV).</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• La responsabilidad de informar la plantilla es del <strong>usuario y/o el BO</strong></li>
+          <li>• Desde RDR se ofrece <strong>soporte</strong> para ayudar a informarla</li>
+          <li>• RDR prueba la carga y publicación al BO</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--canary);border-top:none">
+        <h3 style="color:var(--electric);font-size:14px;margin-bottom:10px">Responsabilidades claras</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8">Es muy importante <strong>no responsabilizarse</strong> de informar la plantilla:</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>❌ Desde RDR IT <strong>no se tiene el conocimiento</strong> ni poder de decisión sobre la SCI</li>
+          <li>✅ Es tema de <strong>negocio</strong></li>
+          <li>✅ El <strong>usuario de confirmaciones</strong> debe facilitar la información</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Flujo simplificado de carga -->
+    <div class="flow" style="margin-bottom:16px">
+      <div class="flow-box origin">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">BO detecta</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">Falta SCI</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box canonical">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">BO/Usuario</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">Informa plantilla</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="border-color:var(--purple);background:rgba(182,140,255,.06)">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">RDR</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">Carga masiva</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box dest">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">RDR</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">Publica al BO</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="border-color:var(--lime);background:rgba(136,231,131,.08)">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">Calypso</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">ACK / NACK</p>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body">Tras la publicación, se debe revisar la respuesta <strong>ACK/NACK</strong>. Si todas reciben ACK de Calypso, se traslada a la plantilla de carga y <strong>se versiona</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 18 · FLUJO SIMULACROS ===== -->
+<div class="slide" data-slide="18" data-theme="light">
+  <div class="si">
+    <p class="label">Anexo · Simulacros</p>
+    <h2>Flujo de Trabajo: Pre / Durante / Post Simulacro</h2>
+    <p class="sub" style="margin-bottom:24px">Tareas secuenciales que RDR debe ejecutar para asegurar cobertura completa de SCIs en simulacros.</p>
+
+    <div style="margin-bottom:16px">
+      <table class="tbl" style="font-size:12px">
+        <thead><tr><th style="width:5%">#</th><th style="width:15%">Responsable</th><th>Acción</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1</strong></td><td><span class="badge badge-green">BO</span></td><td>Extracción de las SCIs de su sistema para la operativa viva</td></tr>
+          <tr><td><strong>2</strong></td><td><span class="badge badge-green">BO</span></td><td>Detectar para qué contrapartida-producto necesita <strong>SCI a dar de alta</strong></td></tr>
+          <tr><td><strong>3</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Revisar si existe alguna SCI que cumpla los requisitos</td></tr>
+          <tr><td><strong>4</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Las que existan en RDR → <strong>publicar</strong></td></tr>
+          <tr><td><strong>5</strong></td><td><span class="badge badge-green">BO</span></td><td>Las que no existan en RDR → informar la <strong>plantilla</strong></td></tr>
+          <tr><td><strong>6</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Ejecutar <strong>carga y publicación</strong> de las SCIs necesarias</td></tr>
+          <tr><td><strong>7</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Revisar respuesta <strong>ACK/NACK</strong>. Si todo ACK → versionar plantilla</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="g2" style="margin-bottom:16px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent" style="font-size:13px;margin-bottom:8px">Durante el simulacro</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>✅ Asegurar eepp levantado y handler funcionando</li>
+          <li>⚡ Si surge operación nueva → dar de alta SCI</li>
+          <li>📝 <strong>Apuntar</strong> todas las altas y publicaciones</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--canary);border-top:none">
+        <h3 style="color:var(--electric);font-size:13px;margin-bottom:8px">Post-simulacro (lunes)</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>📧 Revisar si ha salido operativa viva nueva</li>
+          <li>📧 Enviar correo con resumen de acciones</li>
+          <li>🔄 Volver a repetir el análisis si es necesario</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight" style="border-left:4px solid #FF4D4D">
+      <p class="body"><strong>"De nada sirve solucionar un error si no queda inventariado"</strong> — Cada SCI dada de alta o publicada durante el simulacro debe quedar registrada inmediatamente. Los tiempos van <strong>muy muy medidos</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 19 · CLOSING ===== -->
+<div class="slide closing" data-slide="19" data-theme="dark">
+  <div class="si" style="text-align:center">
+    <p style="font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--serene);margin-bottom:20px">Resumen</p>
+    <h1 style="font-size:36px;font-weight:800;color:#fff;margin-bottom:20px">Claves de las Instrucciones de Confirmación y Notificación</h1>
+    <div style="max-width:650px;margin:0 auto;text-align:left">
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">1</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">RDR es el <strong>sistema maestro</strong> de instrucciones de confirmación y notificación. Suministra al BO las SCIs necesarias para que las operaciones se confirmen correctamente.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">2</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">Cada SCIS responde a <strong>6 preguntas</strong>: quién, qué, cuáles branches, cómo, cuándo y a quién se envía la confirmación o notificación.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">3</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6"><strong>EMAIL (71%) + FAX (14%) = 85%</strong> de los canales. SWIFT (8%) se concentra en derivados OTC, repos y renta fija. No confundir canal con electronic code.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">4</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">El patrón <strong>SCISDENE</strong> (Inactivar + Nuevo) preserva la trazabilidad histórica completa. No existe reactivación — siempre se crea una nueva SCIS.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">5</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">La responsabilidad de decidir <strong>qué SCI dar de alta es de negocio/BO</strong>. RDR da soporte técnico: carga, publicación y verificación ACK/NACK. <strong>"De nada sirve solucionar un error si no queda inventariado"</strong>.</p>
+      </div>
+    </div>
+    <div style="margin-top:28px">
+      <span class="pill">Maestro RDR</span>
+      <span class="pill">CONFIRMATION</span>
+      <span class="pill">NOTIFICATION</span>
+      <span class="pill">SCISDENE</span>
+      <span class="pill">ACK/NACK</span>
+    </div>
+    <div style="font-size:12px;opacity:.6;margin-top:32px">BBVA CIB · NFQ Advisory · Confidencial</div>
+  </div>
+</div>
+
+<!-- ========== END SLIDES ========== -->
+
+<script>
+const slides=document.querySelectorAll('.slide'),total=slides.length;
+let cur=0;
+const hdr=document.getElementById('hdr');
+const hdrBbva=document.getElementById('hdr-bbva');
+const hdrNfq=document.getElementById('hdr-nfq');
+const hdrTitle=document.getElementById('hdr-title');
+function goTo(i){
+  if(i<0||i>=total)return;
+  const p=cur;cur=i;
+  slides.forEach((s,j)=>{s.classList.remove('active','prev');if(j===cur)s.classList.add('active');else if(j===p)s.classList.add('prev')});
+  document.getElementById('counter').textContent=(cur+1)+' / '+total;
+  document.getElementById('pbar').style.width=((cur+1)/total*100)+'%';
+  if(cur===0 || cur===total-1 || slides[cur].classList.contains('annexe-hdr')){
+    hdr.classList.add('hide-on-cover');
+  } else {
+    hdr.classList.remove('hide-on-cover');
+  }
+  const theme=slides[cur].dataset.theme;
+  if(theme==='dark'){
+    hdr.className='hdr dark';
+    hdrBbva.style.filter='brightness(0) invert(1)';
+    hdrNfq.style.filter='brightness(0) invert(1)';
+    hdrTitle.style.color='#FFFFFF';
+  } else {
+    hdr.className='hdr light';
+    hdrBbva.style.filter='none';
+    hdrNfq.style.filter='none';
+    hdrTitle.style.color='var(--electric)';
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ')goTo(cur+1);
+  if(e.key==='ArrowLeft')goTo(cur-1);
+  if(e.key==='Home')goTo(0);
+  if(e.key==='End')goTo(total-1);
+  if(e.key>='1'&&e.key<='9')goTo(parseInt(e.key)-1);
+  if(e.key==='0')goTo(9);
+});
+let tx=0;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX});
+document.addEventListener('touchend',e=>{const d=tx-e.changedTouches[0].clientX;if(Math.abs(d)>50)d>0?goTo(cur+1):goTo(cur-1)});
+document.addEventListener('click',e=>{const x=e.clientX/window.innerWidth;if(x>.85)goTo(cur+1);else if(x<.15)goTo(cur-1)});
+goTo(0);
+</script>
+</body>
+</html>
