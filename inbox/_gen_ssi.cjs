@@ -121,7 +121,7 @@ slides.push(slide('sand', 'Características principales', 'CONCEPTOS', '01 · Ca
     <div class="sg3">
       <div class="scard"><h3>Clave funcional</h3><p>(Counterparty, Currency, Product, Asset Type) determina la SSI aplicable.</p></div>
       <div class="scard" style="border-top-color:var(--bbva-serene-blue);"><h3>Jerarquía de aplicación</h3><p>SSI específica (divisa+producto) &gt; SSI general (divisa) &gt; SSI por defecto.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-aqua);"><h3>Vigencia temporal</h3><p><code>START_TMS</code>/<code>END_TMS</code> permiten planificar altas/bajas futuras sin intervención manual.</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-aqua);"><h3>Vigencia temporal</h3><p>Los campos <code>Date From</code>/<code>Date To</code> permiten planificar altas/bajas futuras sin intervención manual.</p></div>
       <div class="scard" style="border-top-color:var(--bbva-lime);"><h3>STP (Straight-Through)</h3><p><code>STP=Y</code> asigna automáticamente la SDI a las operaciones (si no hay colisión de prioridad).</p></div>
       <div class="scard" style="border-top-color:var(--bbva-canary);"><h3>Trazabilidad regulatoria</h3><p>BCE/EMIR exigen conservar la SSI original. Cada cambio queda auditado.</p></div>
       <div class="scard" style="border-top-color:var(--bbva-purple);"><h3>Multi-país</h3><p>Reglas por branch: México (SPEI/SPID), España (A1), Colombia (C1).</p></div>
@@ -177,7 +177,7 @@ slides.push(slide('sand', 'Campos principales de la SSI', 'MODELO DE DATOS', '03
         <tr><td><strong>Priority</strong></td><td>ssis.settle_instruc_prty_typ</td><td><span class="sbadge sbadge--y">Sí</span></td><td>Prioridad para selección automática</td></tr>
         <tr><td><strong>Status</strong></td><td>ssis.data_stat_typ</td><td><span class="sbadge sbadge--y">Sí</span></td><td>ACTIVE, INACTIVE, LOCKED</td></tr>
         <tr><td><strong>STP</strong></td><td>EAV (SETTATT2)</td><td>No</td><td>Straight-Through Processing</td></tr>
-        <tr><td><strong>Validity From/To</strong></td><td>EAV (SETTATT4/5)</td><td>No</td><td>Rango de fechas de vigencia</td></tr>
+        <tr><td><strong>Date From / Date To</strong></td><td>EAV (SETTATT4/5)</td><td>No</td><td>Rango de fechas de vigencia</td></tr>
         <tr><td><strong>Products / Branches / Currency</strong></td><td>ft_t_ssia (iss_typ / org_id / instr_id)</td><td>No</td><td>Productos, sucursales y divisas aplicables</td></tr>
       </tbody>
     </table>
@@ -476,7 +476,7 @@ const QUES = [
   {q:"Una SSI de tipo CASH genera típicamente mensajes SWIFT…",opts:["MT540 / MT541 / MT542","MT103 / MT202","MT300","MT535"],c:1,exp:"CASH genera MT103/MT202 (transferencias de fondos). Los MT54x son de Securities."},
   {q:"El método CLS (Continuous Linked Settlement) sirve para…",opts:["Liquidación de valores en custodia","Liquidación simultánea multi-divisa para FX","Reporting regulatorio","Confirmaciones por email"],c:1,exp:"CLS es liquidación simultánea multi-divisa para FX (17 divisas principales)."},
   {q:"Los métodos EBA / TARGET2 son exclusivos para…",opts:["Divisa EUR","Divisa USD","Valores","Operativa de México"],c:0,exp:"EBA y TARGET2 son métodos exclusivos para la divisa EUR."},
-  {q:"¿Qué campos definen la vigencia temporal de una SSI?",opts:["DATA_STAT_TYP únicamente","START_TMS / END_TMS","PRIORITY","INST_MNEM"],c:1,exp:"START_TMS / END_TMS definen la vigencia y permiten planificar altas/bajas futuras sin intervención manual."},
+  {q:"¿Qué campos definen la vigencia temporal de una SSI?",opts:["DATA_STAT_TYP únicamente","Date From / Date To","PRIORITY","INST_MNEM"],c:1,exp:"Los campos Date From / Date To definen la vigencia y permiten planificar altas/bajas futuras sin intervención manual."},
   {q:"En la cadena de participantes, ¿quién es siempre obligatorio?",opts:["El corresponsal","El intermediario","La dueña (Counterparty) y el Beneficiary","El local custodian"],c:2,exp:"La dueña (Counterparty) y el Beneficiary son siempre obligatorios; corresponsal/custodio dependen del método."},
   {q:"El Correspondent es obligatorio cuando…",opts:["Siempre","El método = CORRESPONDENT","La operación es de valores","Hay STP = N"],c:1,exp:"El banco corresponsal es obligatorio si el método de liquidación es CORRESPONDENT."},
   {q:"¿Qué es la operación de UI \"Inactivar + Nuevo\"?",opts:["Borra la SSI definitivamente","Una transacción atómica que inactiva la SSI actual y crea una nueva vinculada","Reactiva una SSI inactiva","Duplica la SSI sin cambios"],c:1,exp:"\"Inactivar + Nuevo\" es atómica: inactiva la SSI actual y crea una nueva vinculada. Se usa para cambios estructurales."},

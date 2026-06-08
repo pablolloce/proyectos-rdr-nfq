@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 484 610'%3E%3Cdefs%3E%3ClinearGradient id='l' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0' stop-color='%23EE6A3A'/%3E%3Cstop offset='1' stop-color='%23CD3D60'/%3E%3C/linearGradient%3E%3ClinearGradient id='m' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0' stop-color='%23CD3D60'/%3E%3Cstop offset='1' stop-color='%231D7CF4'/%3E%3C/linearGradient%3E%3ClinearGradient id='r' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0' stop-color='%231D7CF4'/%3E%3Cstop offset='1' stop-color='%23217AEE'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M 0,94 L 160,1 L 480,512 L 320,605 Z' fill='url(%23m)'/%3E%3Cpath d='M 0,94 L 160,1 L 160,510 L 0,601 Z' fill='url(%23l)'/%3E%3Cpath d='M 320,90 L 480,2 L 480,512 L 320,605 Z' fill='url(%23r)'/%3E%3C/svg%3E">
-  <title>Instrucciones de Liquidación · Formación BBVA × NFQ</title>
+  <title>Instrucciones de Confirmación · Formación BBVA × NFQ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,700;1,8..60,700&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
@@ -1279,12 +1279,15 @@ html, body { height: 100%; overflow: hidden; }
   .scard p{font-size:var(--bbva-fs-caption);line-height:1.55;color:var(--bbva-gray-5);}
   .scard--l{border-top:none;border-left:4px solid var(--bbva-electric-blue);}
   .scard code{font-family:monospace;font-size:.85em;background:color-mix(in srgb,var(--bbva-electric-blue) 9%,white);color:var(--bbva-electric-blue);padding:1px 5px;border-radius:5px;}
+  .statn{font-family:var(--bbva-font-display);font-weight:800;font-size:var(--bbva-fs-h2);color:var(--bbva-electric-blue);line-height:1;}
+  .statl{font-size:var(--bbva-fs-caption);color:var(--bbva-gray-5);margin-top:4px;}
   .slist{list-style:none;font-size:var(--bbva-fs-caption);line-height:1.85;color:var(--bbva-gray-5);margin-top:6px;}
   .stable{width:100%;border-collapse:collapse;font-size:var(--bbva-fs-caption);}
-  .stable th{background:var(--bbva-electric-blue);color:var(--bbva-sand);padding:9px 12px;text-align:left;font-weight:700;}
+  .stable th{background:var(--bbva-electric-blue);color:var(--bbva-sand);padding:8px 12px;text-align:left;font-weight:700;}
   .stable td{padding:7px 12px;border-bottom:1px solid var(--bbva-gray-2);color:var(--bbva-gray-5);vertical-align:top;}
   .stable tr:nth-child(even) td{background:var(--bbva-sand);}
   .stable td strong{color:var(--bbva-electric-blue);}
+  .scard .stable th{padding:6px 10px;}.scard .stable td{padding:5px 10px;}
   .sbadge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;}
   .sbadge--b{background:color-mix(in srgb,var(--bbva-serene-blue) 34%,white);color:var(--bbva-electric-blue);}
   .sbadge--g{background:color-mix(in srgb,var(--bbva-lime) 34%,white);color:#1B8C13;}
@@ -1293,7 +1296,7 @@ html, body { height: 100%; overflow: hidden; }
   .snote{background:color-mix(in srgb,var(--bbva-serene-blue) 14%,white);border-left:4px solid var(--bbva-serene-blue);border-radius:0 var(--bbva-radius-sm) var(--bbva-radius-sm) 0;padding:var(--bbva-space-2) var(--bbva-space-3);font-size:var(--bbva-fs-caption);line-height:1.55;color:var(--bbva-electric-blue);}
   .snote--warn{background:color-mix(in srgb,var(--bbva-mandarin) 15%,white);border-left-color:var(--bbva-mandarin);}
   .snote code{font-family:monospace;}
-  .scode{background:var(--bbva-sand);border:1px solid var(--bbva-gray-2);border-radius:var(--bbva-radius-md);padding:var(--bbva-space-3);font-family:monospace;font-size:11px;color:var(--bbva-electric-blue);line-height:1.65;overflow-x:auto;white-space:pre;}
+  .scode{background:var(--bbva-sand);border:1px solid var(--bbva-gray-2);border-radius:var(--bbva-radius-md);padding:var(--bbva-space-3);font-family:monospace;font-size:11px;color:var(--bbva-electric-blue);line-height:1.6;overflow-x:auto;white-space:pre;}
   .sflow{display:flex;align-items:center;gap:4px;justify-content:center;flex-wrap:wrap;}
   .sbox{background:var(--bbva-white);border:2px solid var(--bbva-serene-blue);border-radius:var(--bbva-radius-md);padding:9px 13px;text-align:center;min-width:104px;box-shadow:0 2px 10px rgba(0,0,0,.05);}
   .sbox small{display:block;font-size:10px;color:var(--bbva-gray-5);margin-bottom:3px;}
@@ -1325,11 +1328,11 @@ html, body { height: 100%; overflow: hidden; }
     <span class="lg lg-bbva--xl lg--white" role="img" aria-label="BBVA"></span>
   </header>
   <div style="align-self:center;">
-    <p class="ante-title" style="color:var(--bbva-canary);">RDR · INSTRUCCIONES DE LIQUIDACIÓN</p>
-    <h1 class="bbva-hero" style="line-height:.95;">Instrucciones<br>de Liquidación</h1>
-    <p style="font-size:var(--bbva-fs-h3);margin-top:var(--bbva-space-3);color:var(--bbva-sand);max-width:64ch;">Settlement Instructions (SSI / SDI): cómo RDR gestiona el maestro de datos de liquidación, lo publica al Back Office y da soporte a la migración de operaciones.</p>
+    <p class="ante-title" style="color:var(--bbva-canary);">RDR · CONFIRMACIÓN Y NOTIFICACIÓN</p>
+    <h1 class="bbva-hero" style="line-height:.95;">Instrucciones de<br>Confirmación</h1>
+    <p style="font-size:var(--bbva-fs-h3);margin-top:var(--bbva-space-3);color:var(--bbva-sand);max-width:66ch;">Standard Confirmation Instructions (SCIS): cómo RDR gestiona el maestro de datos de confirmación y notificación, sus canales de envío y el soporte a la migración.</p>
     <div style="margin-top:var(--bbva-space-4);display:flex;gap:8px;flex-wrap:wrap;">
-      <span class="pill">~857K registros</span><span class="pill">Cash · Securities</span><span class="pill">Calypso · SWIFT</span><span class="pill">Migración</span>
+      <span class="pill">~55K registros</span><span class="pill">Confirmation · Notification</span><span class="pill">EMAIL · SWIFT · FAX</span><span class="pill">Calypso</span>
     </div>
   </div>
   <footer class="slide__footer">
@@ -1340,7 +1343,7 @@ html, body { height: 100%; overflow: hidden; }
 
 <section class="slide bbva-combo--sand" aria-label="Índice">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>INSTRUCCIONES DE LIQUIDACIÓN</span><span class="breadcrumb__sub">ÍNDICE</span></nav>
+    <nav class="breadcrumb"><span>INSTRUCCIONES DE CONFIRMACIÓN</span><span class="breadcrumb__sub">ÍNDICE</span></nav>
     <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
   </header>
   
@@ -1348,13 +1351,13 @@ html, body { height: 100%; overflow: hidden; }
     <p class="ante-title">Qué vas a aprender</p>
     <h1 style="margin-bottom:var(--bbva-space-3);">Recorrido</h1>
     <div class="section-index">
-      <div class="section-index__item"><p class="section-index__label">01</p><p class="section-index__title">Qué es una SSI</p></div>
-      <div class="section-index__item"><p class="section-index__label">02</p><p class="section-index__title">Conceptos y características</p></div>
-      <div class="section-index__item"><p class="section-index__label">03</p><p class="section-index__title">Tipos y métodos</p></div>
-      <div class="section-index__item"><p class="section-index__label">04</p><p class="section-index__title">Datos y participantes</p></div>
-      <div class="section-index__item"><p class="section-index__label">05</p><p class="section-index__title">Gestión: UI y batch</p></div>
-      <div class="section-index__item"><p class="section-index__label">06</p><p class="section-index__title">Migración y simulacros</p></div>
-      <div class="section-index__item"><p class="section-index__label">07</p><p class="section-index__title">Resumen</p></div>
+      <div class="section-index__item"><p class="section-index__label">01</p><p class="section-index__title">Qué es una SCIS</p></div>
+      <div class="section-index__item"><p class="section-index__label">02</p><p class="section-index__title">Tipos y características</p></div>
+      <div class="section-index__item"><p class="section-index__label">03</p><p class="section-index__title">Canales y plataformas</p></div>
+      <div class="section-index__item"><p class="section-index__label">04</p><p class="section-index__title">Modelo de datos</p></div>
+      <div class="section-index__item"><p class="section-index__label">05</p><p class="section-index__title">Gestión y ciclo de vida</p></div>
+      <div class="section-index__item"><p class="section-index__label">06</p><p class="section-index__title">Difusión y volumetría</p></div>
+      <div class="section-index__item"><p class="section-index__label">07</p><p class="section-index__title">Migración y simulacros</p></div>
     </div>
   </main>
   <footer class="slide__footer">
@@ -1363,21 +1366,21 @@ html, body { height: 100%; overflow: hidden; }
   </footer>
 </section>
 
-<section class="slide bbva-combo--sand" aria-label="Qué es una SSI">
+<section class="slide bbva-combo--sand" aria-label="Qué es una SCIS">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>INSTRUCCIONES DE LIQUIDACIÓN</span><span class="breadcrumb__sub">01 · Introducción</span></nav>
+    <nav class="breadcrumb"><span>INSTRUCCIONES DE CONFIRMACIÓN</span><span class="breadcrumb__sub">01 · Introducción</span></nav>
     <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
   </header>
   
   <main>
     <p class="ante-title">01 · Introducción</p>
-    <h1>¿Qué es una SSI?</h1>
-    <p class="sub2" style="margin-top:var(--bbva-space-2);max-width:80ch;">Una <strong>Settlement Instruction</strong> es una instrucción permanente que define <em>cómo</em> entregar cash o securities a una contraparte y mediante qué <strong>método de liquidación</strong>.</p>
+    <h1>¿Qué es una SCIS?</h1>
+    <p class="sub2" style="margin-top:var(--bbva-space-2);max-width:82ch;">Una <strong>Standard Confirmation Instruction</strong> es un acuerdo operativo entre BBVA y una contraparte que codifica las instrucciones de <strong>confirmación / notificación</strong> de operaciones financieras.</p>
     <div class="sg2" style="margin-top:var(--bbva-space-3);">
-      <div class="scard scard--l"><h3>Liquidación según SDIs válidas</h3><p>Cuando un trade llega al BO, el sistema liquida según las SDIs válidas para la combinación <em>Contraparte + Divisa + Producto + Fechas</em>. Sin intervención manual.</p></div>
-      <div class="scard scard--l" style="border-left-color:var(--bbva-serene-blue);"><h3>RDR, el maestro</h3><p>RDR es el <strong>sistema maestro</strong> de instrucciones de liquidación de BBVA CIB. Contiene toda la información para liquidar (contrapartida-divisa-producto-fechas) y la suministra al BO.</p></div>
+      <div class="scard scard--l"><h3>Confirmación de operaciones</h3><p>Cuando un trade se ejecuta, el sistema confirma según las SCIs válidas para <em>Contraparte + Producto + Branch + Fechas</em>. Define a quién se envía, por qué medio y para qué productos.</p></div>
+      <div class="scard scard--l" style="border-left-color:var(--bbva-serene-blue);"><h3>RDR, el maestro</h3><p>RDR es el <strong>sistema maestro</strong> de instrucciones de confirmación y notificación. Las suministra al BO (Calypso, SWIFT, plataformas de post-trade matching).</p></div>
     </div>
-    <div class="snote" style="margin-top:var(--bbva-space-3);"><strong>Datos clave de una SSI:</strong> contrapartidas/participantes (quién liquida, beneficiario, corresponsal/custodio, intermediario), producto, intervalos de fecha (vigencia), STP (asignación automática Y/N), branch (geografía) y divisa.</div>
+    <div class="snote" style="margin-top:var(--bbva-space-3);"><strong>Analogía rápida:</strong> si las <strong>SSI</strong> determinan <em>"por dónde paga el dinero"</em> (bancos, cuentas, rutas SWIFT), las <strong>SCIS</strong> determinan <em>"cómo se confirma que se hizo la operación"</em> — a quién, por qué medio y para qué productos.</div>
   </main>
   <footer class="slide__footer">
     <span>01 · Introducción</span>
@@ -1385,34 +1388,56 @@ html, body { height: 100%; overflow: hidden; }
   </footer>
 </section>
 
-<section class="slide bbva-combo--sand" aria-label="Conceptos básicos">
+<section class="slide bbva-combo--sand" aria-label="Seis preguntas que responde una SCIS">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>CONCEPTOS</span><span class="breadcrumb__sub">01 · Conceptos</span></nav>
+    <nav class="breadcrumb"><span>CONCEPTO</span><span class="breadcrumb__sub">01 · Concepto</span></nav>
     <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
   </header>
   
   <main>
-    <p class="ante-title">01 · Conceptos</p>
-    <h1 style="margin-bottom:var(--bbva-space-2);">Conceptos básicos</h1>
+    <p class="ante-title">01 · Concepto</p>
+    <h1 style="margin-bottom:var(--bbva-space-2);">6 preguntas que responde una SCIS</h1>
     <div class="sg3">
-      <div class="scard"><h3>Liquidación</h3><p>Cálculo final para cerrar o saldar una operación: el <strong>intercambio definitivo</strong> entre el dinero y el activo.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-aqua);"><h3>Flujo de una operación</h3><p>Camino secuencial desde que se pacta hasta que se procesa, se paga definitivamente y se archiva.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-lime);"><h3>Sentido de liquidación</h3><p>Lo que para uno es un gasto, para otro es un ingreso. Se define <strong>desde la entidad que origina</strong> la instrucción.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-purple);"><h3>MIS (OWNENT)</h3><p>Instrucción de la <strong>PO</strong> (Processing Org): la instrucción propia de la entidad (SPAIN, MEXICO, BSI…).</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-canary);"><h3>SUS (CPARTY)</h3><p>Instrucción de la <strong>contrapartida</strong>: la SDI que corresponde a la entidad con la que se opera.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-mandarin);"><h3>Liquidación a terceros</h3><p>Cuando la dueña de la instrucción y el beneficiario <strong>no coinciden</strong>.</p></div>
+      <div class="scard"><h3>¿Quién?</h3><p>Quién envía y/o recibe la confirmación (indicadores <strong>Sender / Receiver</strong>).</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-aqua);"><h3>¿Qué?</h3><p>Qué productos financieros cubre (un tipo específico o <strong>ALL</strong>).</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-lime);"><h3>¿Cuáles branches?</h3><p>Qué sucursales BBVA aplican (exactamente <strong>1 branch activa</strong>).</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-purple);"><h3>¿Cómo?</h3><p>Por qué medio se envía: <strong>SWIFT, EMAIL, FAX</strong>, plataformas electrónicas…</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-canary);"><h3>¿Cuándo?</h3><p>Período de vigencia (<strong>Date From / Date To</strong>). Por defecto, sin caducidad.</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-mandarin);"><h3>¿A quién?</h3><p>El <strong>contacto</strong> responsable destinatario de la confirmación/notificación.</p></div>
     </div>
-    <div class="snote" style="margin-top:var(--bbva-space-2);"><strong>Regla fundamental:</strong> si una operación liquida, debe existir instrucción tanto de la PO (<strong>MIS</strong>) como de la contraparte (<strong>SUS</strong>), y ambas con el <strong>mismo tipo de método</strong> de liquidación.</div>
+    <div class="snote" style="margin-top:var(--bbva-space-2);"><strong>Datos clave:</strong> contrapartida, producto, branch, Sender/Receiver, canal de envío (media), contacto destinatario, fechas de vigencia y códigos electrónicos de plataforma.</div>
   </main>
   <footer class="slide__footer">
-    <span>01 · Conceptos</span>
+    <span>01 · Concepto</span>
+    <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
+  </footer>
+</section>
+
+<section class="slide bbva-combo--sand" aria-label="Confirmation vs Notification">
+  <header class="slide__header">
+    <nav class="breadcrumb"><span>TIPOS</span><span class="breadcrumb__sub">01 · Tipos</span></nav>
+    <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
+  </header>
+  
+  <main>
+    <p class="ante-title">01 · Tipos</p>
+    <h1>Confirmation vs. Notification</h1>
+    <p class="sub2" style="margin-top:var(--bbva-space-1);max-width:84ch;">El campo <code>CONFIRM_INSTRUC_DESC</code> discrimina dos tipos de instrucción con propósitos distintos.</p>
+    <div class="sg2" style="margin-top:var(--bbva-space-3);">
+      <div class="scard scard--l"><h3>CONFIRMATION</h3><p>Confirmación de ejecución de operaciones (<strong>trade confirm</strong>). Es el tipo principal.</p><ul class="slist"><li>• Confirma que la operación se ha realizado</li><li>• Requiere <strong>matching / respuesta</strong> de la contraparte</li><li>• Campo <code>TRADE_TYP</code> vacío</li><li>• Canal típico: SWIFT (MT300/320/360), EMAIL</li></ul></div>
+      <div class="scard scard--l" style="border-left-color:var(--bbva-canary);"><h3>NOTIFICATION</h3><p>Notificación informativa — <strong>no requiere matching ni respuesta</strong>.</p><ul class="slist"><li>• Incluye sub-tipo en <code>TRADE_TYP</code></li><li>• 3 eventos: <strong>fixing</strong>, <strong>pago/liquidación</strong>, <strong>vencimiento</strong></li><li>• Una contrapartida puede tener de 0 a 3 tipos</li></ul></div>
+    </div>
+    <div class="snote" style="margin-top:var(--bbva-space-2);"><strong>En una migración:</strong> no se paraliza el GoLive si falta una SCI, pero es <strong>muy importante</strong> dar de alta y publicar todas las de la operativa que migra <em>antes del GoLive</em> para que el flujo productivo continúe.</div>
+  </main>
+  <footer class="slide__footer">
+    <span>01 · Tipos</span>
     <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
   </footer>
 </section>
 
 <section class="slide bbva-combo--sand" aria-label="Características principales">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>CONCEPTOS</span><span class="breadcrumb__sub">01 · Características</span></nav>
+    <nav class="breadcrumb"><span>CONCEPTO</span><span class="breadcrumb__sub">01 · Características</span></nav>
     <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
   </header>
   
@@ -1420,12 +1445,12 @@ html, body { height: 100%; overflow: hidden; }
     <p class="ante-title">01 · Características</p>
     <h1 style="margin-bottom:var(--bbva-space-2);">Características principales</h1>
     <div class="sg3">
-      <div class="scard"><h3>Clave funcional</h3><p>(Counterparty, Currency, Product, Asset Type) determina la SSI aplicable.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-serene-blue);"><h3>Jerarquía de aplicación</h3><p>SSI específica (divisa+producto) &gt; SSI general (divisa) &gt; SSI por defecto.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-aqua);"><h3>Vigencia temporal</h3><p>Los campos <code>Date From</code>/<code>Date To</code> permiten planificar altas/bajas futuras sin intervención manual.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-lime);"><h3>STP (Straight-Through)</h3><p><code>STP=Y</code> asigna automáticamente la SDI a las operaciones (si no hay colisión de prioridad).</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-canary);"><h3>Trazabilidad regulatoria</h3><p>BCE/EMIR exigen conservar la SSI original. Cada cambio queda auditado.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-purple);"><h3>Multi-país</h3><p>Reglas por branch: México (SPEI/SPID), España (A1), Colombia (C1).</p></div>
+      <div class="scard"><h3>Clave funcional</h3><p>(Counterparty, Product, Branch, Media) determina la SCIS aplicable.</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-serene-blue);"><h3>Jerarquía padre-hijo</h3><p>SCIS genérica (ALL) &gt; SCIS específica por instrumento &gt; override temporal.</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-aqua);"><h3>Vigencia temporal</h3><p>Los campos <code>Date From</code>/<code>Date To</code> (DATEFROM/DATETO) planifican altas/bajas futuras. Por defecto, sin caducidad.</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-lime);"><h3>STP (Straight-Through)</h3><p>Flag <code>STPCONF</code>: asignación automática de la SCIS a las confirmaciones sin intervención manual.</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-canary);"><h3>Sender / Receiver</h3><p>Indica si la contraparte envía o recibe. <strong>Sender XOR Receiver</strong>, nunca ambos.</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-purple);"><h3>Trazabilidad</h3><p>Cada cambio queda auditado. La cadena <strong>SCISDENE</strong> (REL_NEW) reconstruye el historial completo.</p></div>
     </div>
   </main>
   <footer class="slide__footer">
@@ -1434,57 +1459,68 @@ html, body { height: 100%; overflow: hidden; }
   </footer>
 </section>
 
-<section class="slide bbva-combo--sand" aria-label="Tipos de SSI">
+<section class="slide bbva-combo--sand" aria-label="Canales de confirmación">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>TIPOS Y MÉTODOS</span><span class="breadcrumb__sub">02 · Tipos</span></nav>
+    <nav class="breadcrumb"><span>CANALES Y PLATAFORMAS</span><span class="breadcrumb__sub">02 · Canales</span></nav>
     <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
   </header>
   
   <main>
-    <p class="ante-title">02 · Tipos de pago</p>
-    <h1>Tipos de SSI según instrucción</h1>
-    <p class="sub2" style="margin-top:var(--bbva-space-1);max-width:84ch;">El campo <strong>Instruction Type</strong> discrimina dos grandes familias, cada una con su cadena de participantes y reglas de enrutamiento.</p>
-    <div class="sg2" style="margin-top:var(--bbva-space-3);">
-      <div class="scard scard--l" style="border-left-color:var(--bbva-canary);"><h3>CASH · Pagos</h3><p>Liquidación de efectivo — transferencias de fondos entre cuentas.</p><ul class="slist"><li>• Mensajes SWIFT <strong>MT103 / MT202</strong></li><li>• Cuenta bancaria del beneficiario (IBAN/CLABE)</li><li>• Cadena: Ordenante → Corresponsal → Beneficiario</li><li>• Colombia: Client Cash obligatorio en C1</li><li>• Código ABA para enrutamiento USA</li></ul></div>
-      <div class="scard scard--l" style="border-left-color:var(--bbva-lime);"><h3>SECURITY · Valores</h3><p>Liquidación de valores — transferencia de títulos entre cuentas de custodia.</p><ul class="slist"><li>• Mensajes SWIFT <strong>MT540/541/542/543</strong></li><li>• Cuenta de custodia (safekeep account)</li><li>• Cadena: Beneficiario → Clearing → Custodio → Depositario</li><li>• Security Account por sucursal</li><li>• Penalización CSDR por settlement fails</li></ul></div>
-    </div>
-    <div class="snote" style="margin-top:var(--bbva-space-2);"><strong>Impacto del tipo:</strong> condiciona las sub-secciones visibles en pantalla, los lookups disponibles y los participantes obligatorios de la cadena.</div>
-  </main>
-  <footer class="slide__footer">
-    <span>02 · Tipos de pago</span>
-    <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
-  </footer>
-</section>
-
-<section class="slide bbva-combo--sand" aria-label="Métodos de liquidación">
-  <header class="slide__header">
-    <nav class="breadcrumb"><span>TIPOS Y MÉTODOS</span><span class="breadcrumb__sub">02 · Métodos</span></nav>
-    <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
-  </header>
-  
-  <main>
-    <p class="ante-title">02 · Métodos</p>
-    <h1>Métodos de liquidación</h1>
-    <p class="sub2" style="margin-top:var(--bbva-space-1);max-width:84ch;">El campo <strong>Settlement Method Type</strong> define el mecanismo de liquidación y qué participantes son obligatorios.</p>
-    <table class="stable" style="margin-top:var(--bbva-space-3);">
-      <thead><tr><th>Método</th><th>Nombre</th><th>Descripción</th><th>Tipo</th></tr></thead>
+    <p class="ante-title">02 · Canales</p>
+    <h1>Canales de confirmación</h1>
+    <p class="sub2" style="margin-top:var(--bbva-space-1);max-width:84ch;">Los medios reales por los que viaja la confirmación (~58K registros en <code>FT_T_SCMO</code>).</p>
+    <table class="stable" style="margin-top:var(--bbva-space-2);">
+      <thead><tr><th>Canal</th><th>Registros</th><th>%</th><th>Categoría</th><th>Uso</th></tr></thead>
       <tbody>
-        <tr><td><span class="sbadge sbadge--b">CLS</span></td><td>Continuous Linked Settlement</td><td>Liquidación simultánea multi-divisa para FX (17 divisas principales).</td><td>Cash/FX</td></tr>
-        <tr><td><span class="sbadge sbadge--g">EBA / TARGET2</span></td><td>Euro Banking Association</td><td>Métodos exclusivos para divisa <strong>EUR</strong>.</td><td>Cash</td></tr>
-        <tr><td><span class="sbadge sbadge--y">CONTABLE/GDI</span></td><td>Account</td><td>Según cuenta beneficiario: si primeros 4 dígitos = 0182 y posiciones 11-13 ≠ 008/220/225/230 → GDI, si no → CONTABLE.</td><td>Cash</td></tr>
-        <tr><td><span class="sbadge sbadge--o">SWIFT</span></td><td>SWIFT</td><td>Método para divisa distinta a EUR vía red SWIFT.</td><td>Cash</td></tr>
+        <tr><td><span class="sbadge sbadge--g">EMAIL</span></td><td>42.569</td><td>70,8%</td><td>Manual</td><td>Canal dominante — la mayoría de contrapartes</td></tr>
+        <tr><td><span class="sbadge sbadge--o">FAX</span></td><td>8.488</td><td>14,1%</td><td>Manual</td><td>Contrapartes legacy</td></tr>
+        <tr><td><span class="sbadge sbadge--b">SWIFT</span></td><td>4.879</td><td>8,1%</td><td>Electrónico</td><td>OTC, repos, renta fija (MT300/320/360)</td></tr>
+        <tr><td><span class="sbadge sbadge--y">FX ALL</span></td><td>1.840</td><td>3,1%</td><td>Electrónico</td><td>Plataforma FX</td></tr>
+        <tr><td><span class="sbadge sbadge--y">MISYS</span></td><td>363</td><td>0,6%</td><td>Electrónico</td><td>Misys/Finastra</td></tr>
+        <tr><td><span class="sbadge sbadge--y">BBG / TRADENEXUS</span></td><td>142</td><td>0,2%</td><td>Electrónico</td><td>Bloomberg / TradeNexus (en implantación)</td></tr>
       </tbody>
     </table>
-    <div class="snote snote--warn" style="margin-top:var(--bbva-space-2);"><strong>Nota:</strong> existen más métodos (DVP, RVP, FOP, CORRESP, CLEARING, CUSTODY…) aplicables sobre todo a Securities. Los anteriores son los más relevantes para Cash.</div>
-    <div class="snote" style="margin-top:var(--bbva-space-1);"><strong>Regla MIS/SUS:</strong> para cada operación, la SDI MIS y la SDI SUS deben tener el <strong>mismo tipo de método</strong>. Si no coinciden, Calypso no asigna correctamente.</div>
+    <div class="snote" style="margin-top:var(--bbva-space-2);"><strong>Conclusión:</strong> EMAIL (71%) + FAX (14%) = <strong>85%</strong> de las instrucciones. SWIFT, pese a ser el estándar de referencia, es solo el 8% — concentrado en derivados OTC, repos y renta fija.</div>
+    <div class="snote snote--warn" style="margin-top:var(--bbva-space-1);"><strong>Canal ≠ identificador electrónico:</strong> el <em>canal</em> (<code>CONFIRM_MEDIA_TYP</code>) es el transporte real; el <em>identificador electrónico</em> (<code>DATA_SRC_ID</code>) es el código de la contraparte en plataformas externas. No confundirlos.</div>
   </main>
   <footer class="slide__footer">
-    <span>02 · Métodos</span>
+    <span>02 · Canales</span>
     <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
   </footer>
 </section>
 
-<section class="slide bbva-combo--sand" aria-label="Campos principales de la SSI">
+<section class="slide bbva-combo--sand" aria-label="Electronic codes">
+  <header class="slide__header">
+    <nav class="breadcrumb"><span>CANALES Y PLATAFORMAS</span><span class="breadcrumb__sub">02 · Plataformas</span></nav>
+    <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
+  </header>
+  
+  <main>
+    <p class="ante-title">02 · Plataformas</p>
+    <h1>Electronic codes (identificadores de plataforma)</h1>
+    <p class="sub2" style="margin-top:var(--bbva-space-1);max-width:86ch;">Identificadores de la contraparte en plataformas externas de post-trade. Se guardan en <code>STAND_CONF_ASSIGNMENT</code> con <code>PURP_TYP='ELEC_COD'</code>.</p>
+    <table class="stable" style="margin-top:var(--bbva-space-2);font-size:11px;">
+      <thead><tr><th>Código</th><th>Plataforma</th><th>Uso</th></tr></thead>
+      <tbody>
+        <tr><td><span class="sbadge sbadge--b">DTCCID</span></td><td>DTCC ALERT / CTM</td><td>Matching renta variable y bonos (Deal Manager)</td></tr>
+        <tr><td><span class="sbadge sbadge--y">FXALLBIC</span></td><td>FXAll</td><td>Plataforma de ejecución FX</td></tr>
+        <tr><td><span class="sbadge sbadge--g">ICELINKID</span></td><td>IceLink</td><td>Confirmación derivados ICE</td></tr>
+        <tr><td><span class="sbadge sbadge--o">MISYSBIC</span></td><td>Misys/Finastra</td><td>Plataforma Misys</td></tr>
+        <tr><td><span class="sbadge sbadge--y">BBGBIC</span></td><td>Bloomberg</td><td>Confirmación vía Bloomberg</td></tr>
+        <tr><td><span class="sbadge sbadge--y">MARKITBIC</span></td><td>Markit Wire</td><td>Confirmación derivados OTC</td></tr>
+        <tr><td><span class="sbadge sbadge--b">REGISTRID</span></td><td>Regis TR</td><td>Trade repository europeo</td></tr>
+        <tr><td><span class="sbadge sbadge--g">SWIFT_CNT</span></td><td>SWIFT (contraparte)</td><td>BIC SWIFT a nivel de contacto</td></tr>
+      </tbody>
+    </table>
+    <div class="snote snote--warn" style="margin-top:var(--bbva-space-2);"><strong>Importante:</strong> DTCC no es el canal de derivados OTC. El <code>DTCCID</code> es el identificador en DTCC ALERT/CTM, para matching de <strong>renta variable y bonos</strong>. Los derivados OTC se confirman por SWIFT MT3xx o email.</div>
+  </main>
+  <footer class="slide__footer">
+    <span>02 · Electronic codes</span>
+    <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
+  </footer>
+</section>
+
+<section class="slide bbva-combo--sand" aria-label="Campos principales de la SCIS">
   <header class="slide__header">
     <nav class="breadcrumb"><span>MODELO DE DATOS</span><span class="breadcrumb__sub">03 · Datos</span></nav>
     <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
@@ -1492,21 +1528,21 @@ html, body { height: 100%; overflow: hidden; }
   
   <main>
     <p class="ante-title">03 · Modelo de datos</p>
-    <h1>Campos principales de la SSI</h1>
-    <p class="sub2" style="margin-top:var(--bbva-space-1);">La pantalla SSIS contiene <strong>258 controles</strong> en 8 páginas. Estos son los campos clave.</p>
+    <h1>Campos principales de la SCIS</h1>
+    <p class="sub2" style="margin-top:var(--bbva-space-1);">Tabla maestra <code>FT_T_SCIS</code> con PK <code>SCIS_OID</code>: cabecera de la instrucción de confirmación.</p>
     <table class="stable" style="margin-top:var(--bbva-space-2);font-size:11px;">
       <thead><tr><th>Campo</th><th>Tabla / Path</th><th>Oblig.</th><th>Descripción</th></tr></thead>
       <tbody>
-        <tr><td><strong>ID</strong></td><td>ft_t_sai1.alt_id</td><td><span class="sbadge sbadge--g">Auto</span></td><td>Identificador único, generado al guardar</td></tr>
-        <tr><td><strong>Counterparty</strong></td><td>ft_t_fins.inst_mnem</td><td><span class="sbadge sbadge--y">Sí</span></td><td>Contraparte propietaria. No editable post-alta</td></tr>
-        <tr><td><strong>Settlement Method</strong></td><td>ssis.clrng_meth_typ</td><td><span class="sbadge sbadge--y">Sí</span></td><td>DVP, RVP, FOP, CORRESP, CLEARING, CLS…</td></tr>
-        <tr><td><strong>Side</strong></td><td>ssis.trans_dir_typ</td><td><span class="sbadge sbadge--y">Sí</span></td><td>Pay/Receive o Deliver/Receive</td></tr>
-        <tr><td><strong>Instruction Type</strong></td><td>ssis.trn_proc_instruc_typ</td><td><span class="sbadge sbadge--y">Sí</span></td><td>CASH o SECURITY</td></tr>
-        <tr><td><strong>Priority</strong></td><td>ssis.settle_instruc_prty_typ</td><td><span class="sbadge sbadge--y">Sí</span></td><td>Prioridad para selección automática</td></tr>
-        <tr><td><strong>Status</strong></td><td>ssis.data_stat_typ</td><td><span class="sbadge sbadge--y">Sí</span></td><td>ACTIVE, INACTIVE, LOCKED</td></tr>
-        <tr><td><strong>STP</strong></td><td>EAV (SETTATT2)</td><td>No</td><td>Straight-Through Processing</td></tr>
-        <tr><td><strong>Date From / Date To</strong></td><td>EAV (SETTATT4/5)</td><td>No</td><td>Rango de fechas de vigencia</td></tr>
-        <tr><td><strong>Products / Branches / Currency</strong></td><td>ft_t_ssia (iss_typ / org_id / instr_id)</td><td>No</td><td>Productos, sucursales y divisas aplicables</td></tr>
+        <tr><td><strong>SCIS_OID</strong></td><td>FT_T_SCIS</td><td><span class="sbadge sbadge--g">Auto</span></td><td>Identificador único (OID), generado al guardar</td></tr>
+        <tr><td><strong>Counterparty</strong></td><td>FT_T_CUST.CST_ID</td><td><span class="sbadge sbadge--y">Sí</span></td><td>Contraparte propietaria de la instrucción</td></tr>
+        <tr><td><strong>Instruction Type</strong></td><td>CONFIRM_INSTRUC_DESC</td><td><span class="sbadge sbadge--y">Sí</span></td><td>CONFIRMATION o NOTIFICATION</td></tr>
+        <tr><td><strong>Sender / Receiver</strong></td><td>CONFIRM_SENDER/RECEIVER_IND</td><td><span class="sbadge sbadge--y">Sí</span></td><td>Y/N — la contraparte emite o recibe</td></tr>
+        <tr><td><strong>Status</strong></td><td>DATA_STAT_TYP</td><td><span class="sbadge sbadge--y">Sí</span></td><td>ACTIVE, INACTIVE, DELETED</td></tr>
+        <tr><td><strong>STP</strong></td><td>COA (STPCONF)</td><td>No</td><td>Asignación automática (Y/N)</td></tr>
+        <tr><td><strong>Date From / Date To</strong></td><td>COA (DATEFROM/DATETO)</td><td>No</td><td>Vigencia temporal (default: sin caducidad)</td></tr>
+        <tr><td><strong>Products / Branches</strong></td><td>STAND_CONF_ASSIGNMENT</td><td><span class="sbadge sbadge--y">Sí</span></td><td>Productos (o ALL) y branch BBVA (exactamente 1)</td></tr>
+        <tr><td><strong>Media</strong></td><td>FT_T_SCMO</td><td><span class="sbadge sbadge--y">Sí</span></td><td>Canal de confirmación (EMAIL, SWIFT, FAX…)</td></tr>
+        <tr><td><strong>Contact / External IDs</strong></td><td>FT_T_CNTC · CONFIRMATION_IDENTIF</td><td>No</td><td>Contacto destinatario e IDs externos (Mentor, Sentry, Calypso)</td></tr>
       </tbody>
     </table>
   </main>
@@ -1516,37 +1552,34 @@ html, body { height: 100%; overflow: hidden; }
   </footer>
 </section>
 
-<section class="slide bbva-combo--sand" aria-label="Cadena de participantes">
+<section class="slide bbva-combo--sand" aria-label="Modelo relacional y satélites">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>CADENA</span><span class="breadcrumb__sub">03 · Cadena</span></nav>
+    <nav class="breadcrumb"><span>MODELO DE DATOS</span><span class="breadcrumb__sub">03 · Relaciones</span></nav>
     <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
   </header>
   
   <main>
-    <p class="ante-title">03 · Cadena</p>
-    <h1>Cadena de participantes</h1>
-    <div class="scode" style="margin-top:var(--bbva-space-2);">  BENEFICIARY ──► CLEARING AGENT ──► CORRESPONDENT
-       │                                  │
-       │          ┌── INTERMEDIARY 1 ◄────┘
-       │          └── INTERMEDIARY 2
-       │
-       └──────► CUSTODY AGENT ──► LOCAL CUSTODIAN 1 / 2
-
-  ▬▬▬ = Obligatorio     --- = Opcional</div>
-    <table class="stable" style="margin-top:var(--bbva-space-2);font-size:11px;">
-      <thead><tr><th>Rol</th><th>Oblig.</th><th>Función</th><th>Datos clave</th></tr></thead>
-      <tbody>
-        <tr><td><strong>Dueña (Counterparty)</strong></td><td><span class="sbadge sbadge--y">Siempre</span></td><td>Propietaria de la instrucción</td><td>BIC, Cuenta</td></tr>
-        <tr><td><strong>Beneficiary</strong></td><td><span class="sbadge sbadge--y">Siempre</span></td><td>Receptor final de la operación</td><td>BIC, Cuenta, ABA</td></tr>
-        <tr><td><strong>Correspondent</strong></td><td><span class="sbadge sbadge--o">Según método</span></td><td>Banco corresponsal (si método = CORRESPONDENT)</td><td>BIC, Cuenta, "Message to"</td></tr>
-        <tr><td><strong>Custody Agent</strong></td><td><span class="sbadge sbadge--o">Según método</span></td><td>Custodio de valores (si método = CUSTODY)</td><td>BIC, Cuenta, "Message to"</td></tr>
-        <tr><td><strong>Intermediary / Local Custodian</strong></td><td><span class="sbadge sbadge--b">Opcional</span></td><td>Bancos intermediarios / sub-custodios locales</td><td>BIC, Cuenta</td></tr>
-      </tbody>
-    </table>
-    <div class="snote" style="margin-top:var(--bbva-space-2);"><strong>Por participante:</strong> contrapartida, account (safekeep/current), SWIFT BIC, ABA (USA), GL Account, "Message to" (flag SWIFT) y validación de cuenta.</div>
+    <p class="ante-title">03 · Relaciones</p>
+    <h1>Modelo relacional y tablas satélite</h1>
+    <div class="scode" style="margin-top:var(--bbva-space-2);">FT_T_CUST (Counterparty)
+   │ CST_ID
+   ▼
+FT_T_SCIS ──ACCT_OID───► FT_T_ACCT (Cuenta)
+   │       ──FINR_OID───► FT_T_FINS (Institución Financiera)
+   │       ──INSTR_ID───► FT_T_INSTR (Instrumento)
+   │       ──PRNT_SCIS_OID─► FT_T_SCIS (padre)
+   ├──SCIS_OID──► FT_T_SCMO (Media Options)          ~58K
+   ├──SCIS_OID──► STAND_CONF_ASSIGNMENT (Asignaciones) ~291K
+   ├──SCIS_OID──► CONFIRMATION_IDENTIF (Identificadores) ~109K
+   ├──SCIS_OID──► CONFIRMATION_ATTRIBUTES (Atributos EAV)
+   └──SCIS_OID──► FT_T_SCIP (Payment Instructions)</div>
+    <div class="sg2" style="margin-top:var(--bbva-space-2);">
+      <div class="scard"><h3>Tabla polimórfica: STAND_CONF_ASSIGNMENT</h3><p>Discriminada por <code>PURP_TYP</code> (~5,25 asignaciones de media por SCIS):</p><ul class="slist"><li>• <strong>PRODUCT</strong> · producto cubierto</li><li>• <strong>BRANCH</strong> · branch BBVA · <strong>OFFICE</strong> · oficina</li><li>• <strong>ELEC_COD</strong> · código electrónico · <strong>ELEC_COD_CNT</strong> · SWIFT contraparte</li></ul></div>
+      <div class="scard" style="border-top-color:var(--bbva-serene-blue);"><h3>Tablas EAV (atributos)</h3><p><strong>CONFIRMATION_ATTRIBUTES:</strong> <code>STPCONF</code>, <code>DATEFROM</code>, <code>DATETO</code> (default 9999-12-31).</p><p style="margin-top:6px;"><strong>CONFIRMATION_IDENTIF:</strong> <code>CONFIRMID</code> (ID interno RDR), <code>REL_NEW</code> (vínculo SCISDENE antigua→nueva).</p></div>
+    </div>
   </main>
   <footer class="slide__footer">
-    <span>03 · Cadena de participantes</span>
+    <span>03 · Relaciones</span>
     <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
   </footer>
 </section>
@@ -1561,12 +1594,12 @@ html, body { height: 100%; overflow: hidden; }
     <p class="ante-title">04 · Gestión</p>
     <h1 style="margin-bottom:var(--bbva-space-2);">Procesos de interfaz de usuario</h1>
     <div class="sg3">
-      <div class="scard"><h3>Búsqueda</h3><p>Por contraparte, divisa, producto, método o estado. Filtro ACTIVE por defecto.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-electric-blue);"><h3>Alta</h3><p>Se selecciona contraparte (no editable después), método, side y tipo. El submit genera el ID.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-aqua);"><h3>Modificación</h3><p>Tras el alta, casi todos los campos quedan no editables. Solo se editan campos limitados.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-lime);"><h3>Inactivar + Nuevo</h3><p>Transacción atómica: inactiva la SSI actual y crea una nueva vinculada. Para cambios estructurales.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-canary);"><h3>Copiar</h3><p>Clona una SSI con nuevo ID y todos los campos editables. Útil para variantes por divisa.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-purple);"><h3>Reasignar</h3><p>Inactiva la vieja y crea una nueva apuntando a otra entity (otra contraparte).</p></div>
+      <div class="scard"><h3>Búsqueda</h3><p>Por contraparte, producto, branch, media, electronic code, sender/receiver, tipo o fechas. Estado ACTIVE por defecto.</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-electric-blue);"><h3>Alta (SCIS)</h3><p>Tipo, sender/receiver, contraparte, productos, branch, canal y contacto. OID generado al guardar.</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-aqua);"><h3>Modificación</h3><p>UPDATE in-place sobre la misma fila, para cambios menores (prioridad, STP). Mismo <code>SCIS_OID</code>.</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-lime);"><h3>SCISDENE</h3><p>Transacción atómica: inactiva la SCIS actual y crea una nueva vinculada (<code>REL_NEW</code>). Para cambios estructurales.</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-canary);"><h3>Copia (SCIS1)</h3><p>Clona una SCIS con nuevo OID, heredando datos. Útil para variantes por producto.</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-purple);"><h3>Historial</h3><p>Historial de cambios (<code>FT_T_CHAL</code>). Trazabilidad completa maker-checker.</p></div>
     </div>
   </main>
   <footer class="slide__footer">
@@ -1575,264 +1608,284 @@ html, body { height: 100%; overflow: hidden; }
   </footer>
 </section>
 
-<section class="slide bbva-combo--sand" aria-label="Batch y ciclo de vida">
+<section class="slide bbva-combo--sand" aria-label="Ciclo de vida y SCISDENE">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>GESTIÓN</span><span class="breadcrumb__sub">04 · Batch</span></nav>
+    <nav class="breadcrumb"><span>GESTIÓN</span><span class="breadcrumb__sub">04 · Ciclo de vida</span></nav>
     <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
   </header>
   
   <main>
-    <p class="ante-title">04 · Batch</p>
-    <h1 style="margin-bottom:var(--bbva-space-1);">Procesos batch y ciclo de vida</h1>
-    <p class="sub2" style="margin-bottom:var(--bbva-space-2);">32 procesos batch gestionan carga, validación, difusión y conciliación de SSIs.</p>
-    <div class="sg3" style="margin-bottom:var(--bbva-space-2);">
-      <div class="scard"><h3>Carga desde feeds</h3><p>ssis-account, -cedro, -clearing, -corresp, -euro: alimentan SSIs desde ficheros externos.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-serene-blue);"><h3>Difusión a sistemas</h3><p>ssis-trad*: publican a Calypso, SWIFT y Datio.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-aqua);"><h3>Auto-carga / difusión</h3><p>ssis-autocarga(mex), ssis-autodifu(mex): automáticos España y México.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-lime);"><h3>Validación de bajas</h3><p>ssis-validar-bajas: procesa inactivaciones programadas de SSIs expiradas.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-canary);"><h3>Mantenimiento CLS</h3><p>ssis-cs*: gestión específica de SSIs para CLS.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-purple);"><h3>Reporting</h3><p>ssis-autocargareporte, -autodifureporte: informes de ejecución.</p></div>
+    <p class="ante-title">04 · Ciclo de vida</p>
+    <h1>Ciclo de vida y patrón SCISDENE</h1>
+    <div class="scode" style="margin-top:var(--bbva-space-2);"> (ninguno) ──Alta──► ACTIVE ◄──UPDATE──► ACTIVE  (in-place)
+                              │
+                    Inactivar ▼
+                           INACTIVE  (terminal — no reactivable)
+
+ ACTIVE ──SCISDENE──► INACTIVE (antigua) + ACTIVE (nueva)
+                       └── vinculadas vía REL_NEW</div>
+    <div class="sg2" style="margin-top:var(--bbva-space-2);">
+      <div class="scard"><h3>¿Por qué existe SCISDENE?</h3><p>Ante cambios estructurales (contacto, medio, electronic code), la práctica BBVA es <strong>no actualizar</strong> la existente, sino crear una nueva y marcar la antigua INACTIVE. Preserva la <strong>trazabilidad histórica</strong>.</p></div>
+      <div class="scard" style="border-top-color:var(--bbva-lime);"><h3>Cadena de renovaciones</h3><div class="scode" style="font-size:10px;padding:var(--bbva-space-2);margin-top:4px;">SCIS-001 (INACTIVE) ──REL_NEW──►
+SCIS-002 (INACTIVE) ──REL_NEW──►
+SCIS-003 (ACTIVE)</div><p style="margin-top:6px;">Permite saber qué SCIS estaba vigente cuando se confirmó un trade años atrás.</p></div>
     </div>
-    <div class="scode">  (ninguno) ──► ACTIVE ◄──► ACTIVE  (UPDATE in-place)
-                      │
-            Inactivar ▼
-                   INACTIVE  (terminal — no reactivable)
-                      │  SSISDENE (REL_NEW)
-   ACTIVE ──────────► INACTIVE + nueva SSI ACTIVE</div>
+    <div class="snote snote--warn" style="margin-top:var(--bbva-space-2);"><strong>Transición prohibida:</strong> INACTIVE → ACTIVE. No hay reactivación: si se necesita una SCIS activa similar a una inactiva, se crea una nueva.</div>
   </main>
   <footer class="slide__footer">
-    <span>04 · Batch y ciclo de vida</span>
+    <span>04 · Ciclo de vida</span>
+    <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
+  </footer>
+</section>
+
+<section class="slide bbva-combo--sand" aria-label="Validaciones de negocio">
+  <header class="slide__header">
+    <nav class="breadcrumb"><span>REGLAS</span><span class="breadcrumb__sub">05 · Reglas</span></nav>
+    <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
+  </header>
+  
+  <main>
+    <p class="ante-title">05 · Reglas</p>
+    <h1>Validaciones de negocio</h1>
+    <p class="sub2" style="margin-top:var(--bbva-space-1);"><strong>15 reglas</strong> se aplican al guardar (alta y modificación). Una selección:</p>
+    <div class="sg2" style="margin-top:var(--bbva-space-2);align-items:start;">
+      <table class="stable" style="font-size:11px;">
+        <thead><tr><th>Regla</th><th>Validación</th></tr></thead>
+        <tbody>
+          <tr><td><strong>SENDER_RECEIVER</strong></td><td>Sender o Receiver = Y (al menos uno)</td></tr>
+          <tr><td><strong>SENDER_AND_RECEIVER</strong></td><td>Nunca ambos = Y a la vez</td></tr>
+          <tr><td><strong>TRADETYP</strong></td><td>Si CONFIRMATION → TRADE_TYP vacío</td></tr>
+          <tr><td><strong>PRODUCT_ALL</strong></td><td>ALL excluye otros productos</td></tr>
+          <tr><td><strong>UNIQUE_BRANCH</strong></td><td>Exactamente 1 branch activa</td></tr>
+          <tr><td><strong>MEDIATYP</strong></td><td>Al menos 1 canal de media activo</td></tr>
+          <tr><td><strong>ELEC_CDE</strong></td><td>Electronic codes únicos</td></tr>
+          <tr><td><strong>DATE_FROM_TO</strong></td><td>Date To ≥ Date From siempre</td></tr>
+        </tbody>
+      </table>
+      <div>
+        <div class="scard scard--l"><h3>Reglas de oro</h3><ul class="slist"><li>• <strong>Sender XOR Receiver</strong> (nunca ambos)</li><li>• <strong>ALL</strong> excluye otros productos</li><li>• Exactamente <strong>1 branch activa</strong></li><li>• Al menos <strong>1 canal media activo</strong></li><li>• Contactos (FAX/EMAIL) y SWIFT deben estar activos</li><li>• No se puede reactivar → crear nueva</li></ul></div>
+      </div>
+    </div>
+  </main>
+  <footer class="slide__footer">
+    <span>05 · Validaciones</span>
+    <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
+  </footer>
+</section>
+
+<section class="slide bbva-combo--sand" aria-label="Difusión a downstream">
+  <header class="slide__header">
+    <nav class="breadcrumb"><span>DIFUSIÓN</span><span class="breadcrumb__sub">06 · Difusión</span></nav>
+    <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
+  </header>
+  
+  <main>
+    <p class="ante-title">06 · Difusión</p>
+    <h1>Difusión a sistemas downstream</h1>
+    <p class="sub2" style="margin-top:var(--bbva-space-1);max-width:84ch;">Cuando una SCIS cambia, se notifica a los sistemas que la consumen para que actualicen sus datos.</p>
+    <div class="sg2" style="margin-top:var(--bbva-space-2);align-items:start;">
+      <div class="scard"><h3>Eventos de difusión</h3><table class="stable" style="font-size:11px;margin-top:6px;"><thead><tr><th>Evento</th><th>Trigger</th></tr></thead><tbody><tr><td>SCIS_CREATED</td><td>Alta nueva SCIS</td></tr><tr><td>SCIS_MODIFIED</td><td>Cambio en campos clave</td></tr><tr><td>SCIS_SUSPENDED</td><td>Inhibit = Y</td></tr><tr><td>SCIS_ACTIVATED</td><td>Estado → ACTIVE</td></tr><tr><td>SCIS_CANCELLED</td><td>Baja / Date To alcanzado</td></tr></tbody></table></div>
+      <div class="scard" style="border-top-color:var(--bbva-serene-blue);"><h3>Consumidores principales</h3><table class="stable" style="font-size:11px;margin-top:6px;"><thead><tr><th>Sistema</th><th>Uso</th></tr></thead><tbody><tr><td><strong>Calypso</strong></td><td>Matching de confirmaciones</td></tr><tr><td><strong>SWIFT</strong></td><td>Envío automático MT300/MT320</td></tr><tr><td><strong>Mentor / Sentry</strong></td><td>Sistemas de confirmación</td></tr><tr><td><strong>DTCC CTM</strong></td><td>Matching renta variable y bonos</td></tr></tbody></table></div>
+    </div>
+    <div class="snote" style="margin-top:var(--bbva-space-2);"><strong>Mecanismo:</strong> publicación asíncrona vía cola MQ (<code>SCIS_CHANGE_EVENT</code>). Calypso responde con ACK. SLA &lt;5 min (Calypso), &lt;30 min (SWIFT). Hasta 3 reintentos antes de alerta <code>SCIS_DIFF_FAILED</code>.</div>
+  </main>
+  <footer class="slide__footer">
+    <span>06 · Difusión</span>
+    <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
+  </footer>
+</section>
+
+<section class="slide bbva-combo--sand" aria-label="Volumetría y contexto">
+  <header class="slide__header">
+    <nav class="breadcrumb"><span>VOLUMETRÍA</span><span class="breadcrumb__sub">06 · Volumetría</span></nav>
+    <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
+  </header>
+  
+  <main>
+    <p class="ante-title">06 · Volumetría</p>
+    <h1>Volumetría y contexto en RDR</h1>
+    <p class="sub2" style="margin-top:var(--bbva-space-1);">SCIS es una de las <strong>5 entidades principales</strong> de RDR. Datos a abril 2026.</p>
+    <div class="sg3" style="margin-top:var(--bbva-space-2);">
+      <div class="scard" style="text-align:center;"><div class="statn">55.471</div><div class="statl">SCIS totales</div></div>
+      <div class="scard" style="text-align:center;border-top-color:var(--bbva-lime);"><div class="statn">44.880</div><div class="statl">Activas (81%)</div></div>
+      <div class="scard" style="text-align:center;border-top-color:var(--bbva-gray-5);"><div class="statn">10.590</div><div class="statl">Inactivas (19%)</div></div>
+      <div class="scard" style="text-align:center;border-top-color:var(--bbva-serene-blue);"><div class="statn">58.310</div><div class="statl">Media options</div></div>
+      <div class="scard" style="text-align:center;border-top-color:var(--bbva-canary);"><div class="statn">291.304</div><div class="statl">Asignaciones (SCA)</div></div>
+      <div class="scard" style="text-align:center;border-top-color:var(--bbva-purple);"><div class="statn">108.973</div><div class="statl">Identificadores</div></div>
+    </div>
+    <table class="stable" style="margin-top:var(--bbva-space-2);font-size:11px;">
+      <thead><tr><th>Entidad RDR</th><th>Tabla</th><th>Registros</th><th>Función</th></tr></thead>
+      <tbody>
+        <tr><td>FINS</td><td>FT_T_FINS</td><td>~692K</td><td>Contrapartidas (entidad central)</td></tr>
+        <tr><td>ISSU</td><td>FT_T_ISSU</td><td>~12M</td><td>Emisiones</td></tr>
+        <tr><td>LAGR</td><td>FT_T_LAGR</td><td>~96K</td><td>Acuerdos legales</td></tr>
+        <tr><td>SSIS</td><td>FT_T_SSIS</td><td>~857K</td><td>Instrucciones de liquidación</td></tr>
+        <tr style="background:color-mix(in srgb,var(--bbva-serene-blue) 18%,white);"><td><strong>SCIS</strong></td><td><strong>FT_T_SCIS</strong></td><td><strong>~55K</strong></td><td><strong>Instrucciones de confirmación / notificación</strong></td></tr>
+      </tbody>
+    </table>
+  </main>
+  <footer class="slide__footer">
+    <span>06 · Volumetría</span>
     <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
   </footer>
 </section>
 
 <section class="slide bbva-combo--electric" aria-label="Anexo migración">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>ANEXO · MIGRACIÓN</span><span class="breadcrumb__sub">05 · Anexo</span></nav>
+    <nav class="breadcrumb"><span>ANEXO · MIGRACIÓN</span><span class="breadcrumb__sub">07 · Anexo</span></nav>
     <span class="lg lg-bbva lg--white" role="img" aria-label="BBVA"></span>
   </header>
   
   <main style="display:grid;place-content:center;text-align:center;">
     <p class="ante-title" style="color:var(--bbva-canary);">Anexo</p>
-    <h1 class="bbva-hero" style="font-size:clamp(34px,4vw,64px);line-height:1.05;">Instrucciones de Liquidación<br>en una Migración / Simulacro</h1>
-    <p style="font-size:var(--bbva-fs-h3);margin-top:var(--bbva-space-3);color:var(--bbva-sand);max-width:70ch;margin-inline:auto;">Objetivos, análisis, alta de SDIs y el flujo de trabajo antes, durante y después de los simulacros.</p>
+    <h1 class="bbva-hero" style="font-size:clamp(34px,4vw,64px);line-height:1.05;">Instrucciones de Confirmación<br>en una Migración / Simulacro</h1>
+    <p style="font-size:var(--bbva-fs-h3);margin-top:var(--bbva-space-3);color:var(--bbva-sand);max-width:70ch;margin-inline:auto;">Objetivos, análisis, alta de SCIs y el flujo de trabajo antes, durante y después de los simulacros.</p>
     <div style="margin-top:var(--bbva-space-4);display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
-      <span class="pill">Objetivos</span><span class="pill">Análisis</span><span class="pill">Alta SDIs</span><span class="pill">Pre-simulacro</span><span class="pill">Durante</span><span class="pill">Post-simulacro</span>
+      <span class="pill">Objetivos</span><span class="pill">Análisis</span><span class="pill">Alta SCIs</span><span class="pill">Pre-simulacro</span><span class="pill">Durante</span><span class="pill">Post-simulacro</span>
     </div>
   </main>
   <footer class="slide__footer">
-    <span>05 · Migración y simulacros</span>
+    <span>07 · Migración y simulacros</span>
     <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
   </footer>
 </section>
 
 <section class="slide bbva-combo--sand" aria-label="Objetivos de la migración">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>ANEXO · MIGRACIÓN</span><span class="breadcrumb__sub">05 · Objetivos</span></nav>
+    <nav class="breadcrumb"><span>ANEXO · MIGRACIÓN</span><span class="breadcrumb__sub">07 · Objetivos</span></nav>
     <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
   </header>
   
   <main>
     <p class="ante-title">Anexo · Objetivos</p>
     <h1>Objetivos de la migración</h1>
-    <p class="sub2" style="margin-top:var(--bbva-space-1);max-width:84ch;">Cuando las operaciones migran al nuevo BO (caída de operaciones), deben seguir su curso: <strong>liquidar, confirmar, notificar, reportar</strong>.</p>
+    <p class="sub2" style="margin-top:var(--bbva-space-1);max-width:84ch;">Cuando las operaciones migran al nuevo BO, deben seguir su curso: liquidar, <strong>confirmar</strong>, notificar, reportar.</p>
     <div class="sg2" style="margin-top:var(--bbva-space-3);">
-      <div class="scard scard--l"><h3>¿Cuándo es necesaria una SDI?</h3><p>Todas las operaciones deben quedar asignadas a una instrucción de liquidación si al menos uno de sus flujos es pasado.</p><ul class="slist"><li>• La migración ocurre en un momento D concreto</li><li>• Una operación puede tener algún flujo hecho pero no todos</li><li>• Si todos los flujos son <strong>posteriores al GoLive</strong> → revisar la necesidad</li></ul></div>
-      <div class="scard scard--l" style="border-left-color:var(--bbva-lime);"><h3>Regla fundamental</h3><p>Por cada operación (<strong>contrapartida + producto + divisa + fecha</strong>) debe existir una SDI en RDR y el BO.</p><ul class="slist"><li>• Instrucción de la <strong>PO (MIS)</strong></li><li>• Instrucción de la <strong>contraparte (SUS)</strong></li><li>• MIS y SUS con el <strong>mismo método</strong></li></ul></div>
+      <div class="scard scard--l"><h3>¿Cuándo es necesaria una SCI?</h3><p>Por cada <strong>contrapartida + producto</strong> debe existir una instrucción de confirmación.</p><ul class="slist"><li>• Relevante cuando la contrapartida dueña <strong>no es sender</strong></li><li>• Si es sender, no es indispensable</li><li>• Se da de alta con un contacto por defecto para facilitar el flujo</li></ul></div>
+      <div class="scard scard--l" style="border-left-color:var(--bbva-lime);"><h3>Criticidad en la migración</h3><p>No paraliza el GoLive ni es KO si falta alguna SCI, pero:</p><ul class="slist"><li>• Es <strong>muy importante</strong> dar de alta y publicar antes del GoLive</li><li>• Para que el flujo productivo continúe</li><li>• Tras la migración, la SCI debe estar disponible en BO</li></ul></div>
     </div>
-    <div class="snote snote--warn" style="margin-top:var(--bbva-space-2);"><strong>Importante:</strong> el análisis se actualiza periódicamente. Las migraciones se dilatan: instrucciones válidas pueden inactivarse y otras pendientes pueden dejar de ser necesarias.</div>
+    <div class="snote snote--warn" style="margin-top:var(--bbva-space-2);"><strong>Notificaciones:</strong> se dan de alta solo si la contrapartida las tiene en el BO origen. Una contrapartida puede no tener notificación, o tener uno, dos o los tres tipos (fixing, pago, vencimiento).</div>
   </main>
   <footer class="slide__footer">
-    <span>05 · Objetivos</span>
+    <span>07 · Objetivos</span>
     <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
   </footer>
 </section>
 
-<section class="slide bbva-combo--sand" aria-label="Análisis de SDIs">
+<section class="slide bbva-combo--sand" aria-label="Análisis de SCIs">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>ANEXO · MIGRACIÓN</span><span class="breadcrumb__sub">05 · Análisis</span></nav>
+    <nav class="breadcrumb"><span>ANEXO · MIGRACIÓN</span><span class="breadcrumb__sub">07 · Análisis</span></nav>
     <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
   </header>
   
   <main>
     <p class="ante-title">Anexo · Análisis</p>
-    <h1>Análisis de instrucciones de liquidación</h1>
-    <p class="sub2" style="margin-top:var(--bbva-space-1);max-width:84ch;">RDR, como maestro de datos estáticos, identifica el estado de las SDIs para la operativa viva que migra.</p>
+    <h1>Análisis de SCIs para la migración</h1>
+    <p class="sub2" style="margin-top:var(--bbva-space-1);max-width:84ch;">RDR, como maestro de datos estáticos, identifica el estado de las SCIs para la operativa viva que migra.</p>
     <div class="sg2" style="margin-top:var(--bbva-space-3);">
-      <div class="scard"><h3>Papel de RDR</h3><ul class="slist"><li>• <strong>Diccionario</strong> entre aplicativos (caída de operaciones)</li><li>• <strong>Maestro</strong> que suministra las SDIs al BO</li><li>• <strong>Facilitador</strong> de datos fijos para liquidar y confirmar</li></ul></div>
-      <div class="scard" style="border-top-color:var(--bbva-canary);"><h3>Análisis requerido</h3><ul class="slist"><li>✓ Operaciones que <strong>ya tienen</strong> SDI válida en RDR y BO</li><li>• Operaciones que <strong>no tienen</strong> SDI válida</li><li>• Para las que no tienen → <strong>revisar cuál dar de alta</strong></li></ul></div>
+      <div class="scard"><h3>Papel de RDR</h3><ul class="slist"><li>• <strong>Maestro</strong> que suministra al BO las instrucciones de confirmación/notificación</li><li>• <strong>Facilitador</strong> de datos fijos para confirmar y notificar</li><li>• Identifica qué operaciones tienen SCI válida y cuáles no</li></ul></div>
+      <div class="scard" style="border-top-color:var(--bbva-canary);"><h3>Análisis requerido</h3><ul class="slist"><li>✓ Operaciones que <strong>ya tienen</strong> confirmación en RDR y BO</li><li>• Operaciones que <strong>no tienen</strong> SCI válida</li><li>• Para las que no tienen → <strong>revisar cuál dar de alta</strong></li></ul></div>
     </div>
-    <div class="snote snote--warn" style="margin-top:var(--bbva-space-2);"><strong>Actualización continua:</strong> el análisis se revisa antes y después de cada simulacro, y para el GoLive. Las migraciones se dilatan y el estado de las instrucciones cambia.</div>
+    <div class="snote snote--warn" style="margin-top:var(--bbva-space-2);"><strong>Nota:</strong> en los simulacros de IT no se valida confirmación/notificación. Si después hay un ciclo <strong>UAT/Realtime</strong>, se itera con usuarios y BO para definir y validar la plantilla. El análisis se actualiza antes y después de cada simulacro.</div>
   </main>
   <footer class="slide__footer">
-    <span>05 · Análisis</span>
+    <span>07 · Análisis</span>
     <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
   </footer>
 </section>
 
-<section class="slide bbva-combo--sand" aria-label="Proceso de alta de SDIs">
+<section class="slide bbva-combo--sand" aria-label="Proceso de alta de SCIs">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>ANEXO · MIGRACIÓN</span><span class="breadcrumb__sub">05 · Alta</span></nav>
+    <nav class="breadcrumb"><span>ANEXO · MIGRACIÓN</span><span class="breadcrumb__sub">07 · Alta</span></nav>
     <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
   </header>
   
   <main>
-    <p class="ante-title">Anexo · Alta de SDIs</p>
-    <h1>Proceso de alta de SDIs</h1>
-    <p class="sub2" style="margin-top:var(--bbva-space-1);max-width:84ch;">Si falta una SDI para una operación, se da de alta mediante la plantilla de carga masiva de RDR.</p>
+    <p class="ante-title">Anexo · Alta de SCIs</p>
+    <h1>Proceso de alta de SCIs</h1>
+    <p class="sub2" style="margin-top:var(--bbva-space-1);max-width:84ch;">Si falta una SCI para una operación, se da de alta mediante la plantilla de carga masiva de RDR (Excel/CSV).</p>
     <div class="sg2" style="margin-top:var(--bbva-space-2);">
-      <div class="scard scard--l"><h3>Plantilla de carga</h3><ul class="slist"><li>• Informar la plantilla es responsabilidad del <strong>usuario y/o BO</strong></li><li>• RDR ofrece <strong>soporte</strong> para ayudar a informarla</li><li>• RDR prueba la carga y publicación al BO</li></ul></div>
-      <div class="scard scard--l" style="border-left-color:var(--bbva-canary);"><h3>Responsabilidades claras</h3><ul class="slist"><li>✗ RDR IT <strong>no</strong> decide el tipo de SDI</li><li>✓ Es tema de <strong>negocio</strong></li><li>✓ El <strong>usuario</strong> debe estar presente en cada publicación</li></ul></div>
+      <div class="scard scard--l"><h3>Plantilla de carga</h3><ul class="slist"><li>• Informarla es responsabilidad del <strong>usuario y/o BO</strong></li><li>• RDR ofrece <strong>soporte</strong> para ayudar</li><li>• RDR prueba la carga y publicación al BO</li></ul></div>
+      <div class="scard scard--l" style="border-left-color:var(--bbva-canary);"><h3>Responsabilidades claras</h3><ul class="slist"><li>✗ RDR IT <strong>no</strong> decide la SCI</li><li>✓ Es tema de <strong>negocio</strong></li><li>✓ El <strong>usuario de confirmaciones</strong> facilita la información</li></ul></div>
     </div>
     <div class="sflow" style="margin-top:var(--bbva-space-3);">
-      <div class="sbox sbox--o"><small>BO detecta</small><b>Falta SDI</b></div><span class="sarrow">→</span>
+      <div class="sbox sbox--o"><small>BO detecta</small><b>Falta SCI</b></div><span class="sarrow">→</span>
       <div class="sbox"><small>BO/Usuario</small><b>Informa plantilla</b></div><span class="sarrow">→</span>
       <div class="sbox" style="border-color:var(--bbva-purple);"><small>RDR</small><b>Carga masiva</b></div><span class="sarrow">→</span>
       <div class="sbox sbox--d"><small>RDR</small><b>Publica al BO</b></div><span class="sarrow">→</span>
       <div class="sbox sbox--d"><small>Calypso</small><b>ACK / NACK</b></div>
     </div>
-    <div class="snote" style="margin-top:var(--bbva-space-2);">Tras publicar, se revisa la respuesta <strong>ACK/NACK</strong>. Si todas reciben ACK, se traslada a la plantilla de carga y <strong>se versiona</strong>.</div>
+    <div class="snote" style="margin-top:var(--bbva-space-2);">Tras publicar, se revisa el <strong>ACK/NACK</strong>. Si todas reciben ACK, se traslada a la plantilla de carga y <strong>se versiona</strong>.</div>
   </main>
   <footer class="slide__footer">
-    <span>05 · Alta de SDIs</span>
+    <span>07 · Alta de SCIs</span>
     <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
   </footer>
 </section>
 
-<section class="slide bbva-combo--sand" aria-label="Previo a los simulacros">
+<section class="slide bbva-combo--sand" aria-label="Flujo de simulacros">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>ANEXO · MIGRACIÓN</span><span class="breadcrumb__sub">05 · Pre-simulacro</span></nav>
+    <nav class="breadcrumb"><span>ANEXO · MIGRACIÓN</span><span class="breadcrumb__sub">07 · Simulacros</span></nav>
     <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
   </header>
   
   <main>
-    <p class="ante-title">Anexo · Pre-simulacro</p>
-    <h1>Flujo de trabajo: previo a los simulacros</h1>
+    <p class="ante-title">Anexo · Simulacros</p>
+    <h1>Flujo: pre / durante / post simulacro</h1>
     <table class="stable" style="margin-top:var(--bbva-space-2);font-size:11px;">
       <thead><tr><th style="width:5%">#</th><th style="width:14%">Responsable</th><th>Acción</th></tr></thead>
       <tbody>
-        <tr><td><strong>1</strong></td><td><span class="sbadge sbadge--b">RDR</span></td><td>Extracción de <strong>PRO</strong> de las SDIs existentes para la operativa viva</td></tr>
-        <tr><td><strong>2</strong></td><td><span class="sbadge sbadge--g">BO</span></td><td>Extracción de las SDIs de su sistema para la operativa viva</td></tr>
-        <tr><td><strong>3</strong></td><td><span class="sbadge sbadge--g">BO</span></td><td>Detectar para qué contrapartida-divisa-producto-fechas <strong>necesita SDI</strong></td></tr>
-        <tr><td><strong>4</strong></td><td><span class="sbadge sbadge--b">RDR</span></td><td>Revisar si para lo detectado existe alguna SDI del paso 1 que cumpla</td></tr>
-        <tr><td><strong>5</strong></td><td><span class="sbadge sbadge--b">RDR</span></td><td>Las que existan en RDR → <strong>publicar</strong></td></tr>
-        <tr><td><strong>6</strong></td><td><span class="sbadge sbadge--g">BO</span></td><td>Las que no existan → informar la <strong>plantilla</strong> con las SDIs a dar de alta</td></tr>
-        <tr><td><strong>7</strong></td><td><span class="sbadge sbadge--b">RDR</span></td><td>Ejecutar <strong>carga y publicación</strong> de las SDIs necesarias</td></tr>
-        <tr><td><strong>8</strong></td><td><span class="sbadge sbadge--b">RDR</span></td><td>Publicar todas las SDIs al BO antes (o el mismo día) del simulacro</td></tr>
-        <tr><td><strong>9</strong></td><td><span class="sbadge sbadge--b">RDR</span></td><td>Revisar <strong>ACK/NACK</strong>. Si todo ACK → trasladar a plantilla y versionar</td></tr>
+        <tr><td><strong>1</strong></td><td><span class="sbadge sbadge--g">BO</span></td><td>Extracción de las SCIs de su sistema para la operativa viva</td></tr>
+        <tr><td><strong>2</strong></td><td><span class="sbadge sbadge--g">BO</span></td><td>Detectar para qué contrapartida-producto <strong>necesita SCI</strong></td></tr>
+        <tr><td><strong>3</strong></td><td><span class="sbadge sbadge--b">RDR</span></td><td>Revisar si existe alguna SCI que cumpla los requisitos</td></tr>
+        <tr><td><strong>4</strong></td><td><span class="sbadge sbadge--b">RDR</span></td><td>Las que existan en RDR → <strong>publicar</strong></td></tr>
+        <tr><td><strong>5</strong></td><td><span class="sbadge sbadge--g">BO</span></td><td>Las que no existan → informar la <strong>plantilla</strong></td></tr>
+        <tr><td><strong>6</strong></td><td><span class="sbadge sbadge--b">RDR</span></td><td>Ejecutar <strong>carga y publicación</strong> de las SCIs necesarias</td></tr>
+        <tr><td><strong>7</strong></td><td><span class="sbadge sbadge--b">RDR</span></td><td>Revisar <strong>ACK/NACK</strong>. Si todo ACK → versionar plantilla</td></tr>
       </tbody>
     </table>
-    <div class="snote snote--warn" style="margin-top:var(--bbva-space-2);"><strong>Atención a los tiempos:</strong> a veces la publicación es el día anterior, pero en ocasiones debe hacerse <strong>el mismo día</strong>. En simulacros y GoLive los tiempos van muy medidos.</div>
-  </main>
-  <footer class="slide__footer">
-    <span>05 · Pre-simulacro</span>
-    <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
-  </footer>
-</section>
-
-<section class="slide bbva-combo--sand" aria-label="Durante los simulacros">
-  <header class="slide__header">
-    <nav class="breadcrumb"><span>ANEXO · MIGRACIÓN</span><span class="breadcrumb__sub">05 · Durante</span></nav>
-    <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
-  </header>
-  
-  <main>
-    <p class="ante-title">Anexo · Durante el simulacro</p>
-    <h1>Flujo de trabajo: durante los simulacros</h1>
-    <div class="sg2" style="margin-top:var(--bbva-space-3);">
-      <div class="scard scard--l"><h3>Tareas durante el simulacro</h3><ul class="slist"><li>✓ Asegurar que el <strong>eepp</strong> está correctamente levantado</li><li>✓ Verificar que el <strong>handler funciona</strong></li><li>• Si surge operación nueva → dar de alta la SDI necesaria</li><li>• <strong>Apuntar</strong> todas las SDIs dadas de alta</li><li>• <strong>Apuntar</strong> todas las publicaciones realizadas</li></ul></div>
-      <div class="scard scard--l" style="border-left-color:var(--bbva-mandarin);"><h3>Regla de oro</h3><p style="font-size:var(--bbva-fs-body);color:var(--bbva-electric-blue);font-weight:700;">"De nada sirve solucionar un error si no queda inventariado".</p><p style="margin-top:6px;">Cada SDI dada de alta o publicada debe quedar <strong>registrada en el momento</strong>. Si no se apunta, se pierde.</p></div>
-    </div>
-    <div class="snote" style="margin-top:var(--bbva-space-2);"><strong>Post-simulacro inmediato (lunes):</strong> correo con resumen de SDIs — <strong>altas</strong> (a informar en la plantilla por el BO) y <strong>publicaciones</strong> (al inventario de tareas de RDR).</div>
-  </main>
-  <footer class="slide__footer">
-    <span>05 · Durante el simulacro</span>
-    <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
-  </footer>
-</section>
-
-<section class="slide bbva-combo--sand" aria-label="Después de un simulacro">
-  <header class="slide__header">
-    <nav class="breadcrumb"><span>ANEXO · MIGRACIÓN</span><span class="breadcrumb__sub">05 · Post-simulacro</span></nav>
-    <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
-  </header>
-  
-  <main>
-    <p class="ante-title">Anexo · Post-simulacro</p>
-    <h1>Flujo de trabajo: después de un simulacro</h1>
     <div class="sg2" style="margin-top:var(--bbva-space-2);">
-      <div class="scard"><h3>Evolución esperada</h3><ul class="slist"><li>• <strong>Primer simulacro:</strong> normal que salgan más errores (técnicos: detectar gaps)</li><li>• <strong>Sucesivos:</strong> los errores se limitan, depurando la plantilla</li><li>• <strong>GoLive:</strong> foto limpia de acciones de carga</li></ul></div>
-      <div class="scard" style="border-top-color:var(--bbva-lime);"><h3>Acciones post-simulacro</h3><ul class="slist"><li><strong>1.</strong> BO saca listado de <strong>errores de asignación</strong></li><li><strong>2.</strong> BO analiza el <strong>tipo de error</strong></li><li><strong>3.</strong> ¿Existe en RDR? → <strong>publicar</strong> (inventariando)</li><li><strong>4.</strong> ¿No existe? → BO informa la plantilla para <strong>dar de alta</strong></li><li><strong>5.</strong> Usuario siempre consultado para la SDI correcta</li></ul></div>
+      <div class="scard scard--l"><h3>Durante el simulacro</h3><ul class="slist"><li>✓ eepp levantado y handler funcionando</li><li>• Si surge operación nueva → dar de alta SCI</li><li>• <strong>Apuntar</strong> todas las altas y publicaciones</li></ul></div>
+      <div class="scard scard--l" style="border-left-color:var(--bbva-mandarin);"><h3>Post-simulacro (lunes)</h3><ul class="slist"><li>• Revisar si ha salido operativa viva nueva</li><li>• Enviar correo con resumen de acciones</li><li>• Repetir el análisis si es necesario</li></ul></div>
     </div>
-    <div class="sflow" style="margin-top:var(--bbva-space-3);">
-      <div class="sbox sbox--o"><small>Simulacro N</small><b>Errores</b></div><span class="sarrow">→</span>
-      <div class="sbox"><small>BO + RDR</small><b>Análisis</b></div><span class="sarrow">→</span>
-      <div class="sbox" style="border-color:var(--bbva-purple);"><small>Acciones</small><b>Alta / Publ.</b></div><span class="sarrow">→</span>
-      <div class="sbox sbox--d"><small>Simulacro N+1</small><b>Menos errores</b></div>
-    </div>
-    <div class="snote" style="margin-top:var(--bbva-space-2);"><strong>Objetivo final:</strong> depurar la plantilla y las SDIs a publicar hasta una <strong>foto limpia de acciones de carga al GoLive</strong>.</div>
+    <div class="snote snote--warn" style="margin-top:var(--bbva-space-2);"><strong>"De nada sirve solucionar un error si no queda inventariado".</strong> Cada SCI dada de alta o publicada se registra en el momento. Los tiempos van muy medidos.</div>
   </main>
   <footer class="slide__footer">
-    <span>05 · Post-simulacro</span>
-    <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
-  </footer>
-</section>
-
-<section class="slide bbva-combo--sand" aria-label="Calypso · errores de asignación">
-  <header class="slide__header">
-    <nav class="breadcrumb"><span>ANEXO · MIGRACIÓN</span><span class="breadcrumb__sub">05 · Calypso</span></nav>
-    <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
-  </header>
-  
-  <main>
-    <p class="ante-title">Anexo · Calypso</p>
-    <h1>BO Calypso · errores de asignación</h1>
-    <div class="sg2" style="margin-top:var(--bbva-space-2);">
-      <div class="scard"><h3>Requisitos de asignación</h3><ul class="slist"><li>• Por operación se necesita <strong>SDI SUS + SDI MIS</strong></li><li>• MIS y SUS con <strong>mismo tipo de método</strong></li><li>• <strong>STP = Y</strong> permite asignación automática (sin colisión de prioridad)</li></ul></div>
-      <div class="scard" style="border-top-color:var(--bbva-mandarin);"><h3>Tipos de errores</h3><ul class="slist"><li>• <strong>Más de una SDI</strong> con misma prioridad válida → no puede elegir</li><li>• <strong>No existe SDI válida</strong>, o la que hay no tiene STP / es a terceros</li><li>• <strong>No hay SDI MIS</strong> para la operación</li></ul></div>
-    </div>
-    <div class="sg3" style="margin-top:var(--bbva-space-2);">
-      <div class="scard" style="border-top-color:var(--bbva-canary);"><h3 style="font-size:var(--bbva-fs-caption);">Colisión de prioridad</h3><p>Varias SDIs válidas con misma prioridad. Calypso no sabe cuál elegir.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-purple);"><h3 style="font-size:var(--bbva-fs-caption);">Sin SDI válida / sin STP</h3><p>No existe instrucción o la que hay no tiene flag automático.</p></div>
-      <div class="scard" style="border-top-color:var(--bbva-electric-blue);"><h3 style="font-size:var(--bbva-fs-caption);">Sin MIS (OWNENT)</h3><p>Falta la instrucción de la Processing Org para la operación.</p></div>
-    </div>
-  </main>
-  <footer class="slide__footer">
-    <span>05 · BO Calypso</span>
+    <span>07 · Simulacros</span>
     <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
   </footer>
 </section>
 
 <section class="slide bbva-combo--midnight" aria-label="Resumen">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>RESUMEN</span><span class="breadcrumb__sub">06 · Resumen</span></nav>
+    <nav class="breadcrumb"><span>RESUMEN</span><span class="breadcrumb__sub">08 · Resumen</span></nav>
     <span class="lg lg-bbva lg--white" role="img" aria-label="BBVA"></span>
   </header>
   
   <main>
     <p class="ante-title" style="color:var(--bbva-canary);">Claves</p>
-    <h1>Instrucciones de Liquidación en 5 ideas</h1>
+    <h1>Confirmación y Notificación en 5 ideas</h1>
     <div class="sg2" style="margin-top:var(--bbva-space-3);">
-      <div class="bridge"><p class="bridge__t">1 · RDR es el maestro</p><p class="bridge__d">Suministra al BO las SDIs necesarias para que las operaciones se liquiden correctamente.</p></div>
-      <div class="bridge"><p class="bridge__t">2 · MIS + SUS</p><p class="bridge__d">Cada operación necesita SDI MIS y SDI SUS con el <strong>mismo método</strong> para que Calypso la asigne.</p></div>
-      <div class="bridge"><p class="bridge__t">3 · Análisis cíclico</p><p class="bridge__d">Migración/simulacro: extraer, identificar faltantes, cargar y publicar — de forma repetida.</p></div>
-      <div class="bridge"><p class="bridge__t">4 · Todo se inventaría</p><p class="bridge__d">"De nada sirve solucionar un error si no queda inventariado": cada cambio se registra al momento.</p></div>
+      <div class="bridge"><p class="bridge__t">1 · RDR es el maestro</p><p class="bridge__d">Suministra al BO las SCIs para que las operaciones se confirmen correctamente.</p></div>
+      <div class="bridge"><p class="bridge__t">2 · 6 preguntas</p><p class="bridge__d">Quién, qué, cuáles branches, cómo, cuándo y a quién se envía la confirmación o notificación.</p></div>
+      <div class="bridge"><p class="bridge__t">3 · EMAIL + FAX = 85%</p><p class="bridge__d">SWIFT (8%) se concentra en OTC, repos y renta fija. No confundir canal con electronic code.</p></div>
+      <div class="bridge"><p class="bridge__t">4 · SCISDENE</p><p class="bridge__d">Inactivar + Nuevo preserva la trazabilidad. No hay reactivación: siempre una nueva SCIS.</p></div>
     </div>
-    <div class="snote" style="margin-top:var(--bbva-space-3);background:rgba(133,200,255,.16);border-left-color:var(--bbva-serene-blue);color:var(--bbva-sand);"><strong>5 · Decisión de negocio:</strong> qué SDI dar de alta lo decide negocio/BO. RDR da soporte técnico: carga, publicación y verificación ACK/NACK. <em>Ahora, el quiz.</em></div>
+    <div class="snote" style="margin-top:var(--bbva-space-3);background:rgba(133,200,255,.16);border-left-color:var(--bbva-serene-blue);color:var(--bbva-sand);"><strong>5 · Decisión de negocio:</strong> qué SCI dar de alta lo decide negocio/BO. RDR da soporte técnico: carga, publicación y ACK/NACK. <em>Ahora, el quiz.</em></div>
   </main>
   <footer class="slide__footer">
-    <span>06 · Resumen</span>
+    <span>08 · Resumen</span>
     <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
   </footer>
 </section>
 
 <section class="slide bbva-combo--sand" aria-label="Quiz de evaluación" style="min-height:100vh;">
   <header class="slide__header">
-    <nav class="breadcrumb"><span>INSTRUCCIONES DE LIQUIDACIÓN</span><span class="breadcrumb__sub">QUIZ</span></nav>
+    <nav class="breadcrumb"><span>INSTRUCCIONES DE CONFIRMACIÓN</span><span class="breadcrumb__sub">QUIZ</span></nav>
     <span class="lg lg-bbva lg--blue" role="img" aria-label="BBVA"></span>
   </header>
   <main style="max-width:760px;margin:0 auto;width:100%;">
-    <p class="ante-title">07 · Evaluación</p>
+    <p class="ante-title">08 · Evaluación</p>
     <h2 style="font-family:var(--bbva-font-display);">Quiz · 20 preguntas</h2>
     <div id="qz-quiz" style="margin-top:var(--bbva-space-4);">
       <div style="height:4px;border-radius:2px;background:var(--bbva-gray-2);margin-bottom:var(--bbva-space-2);overflow:hidden;">
@@ -1848,7 +1901,7 @@ html, body { height: 100%; overflow: hidden; }
     </div>
   </main>
   <footer class="slide__footer">
-    <span>07 · Quiz</span>
+    <span>08 · Quiz</span>
     <div class="nfq-credit"><span class="nfq-credit__label">Hecho por</span><span class="lg lg-nfq-iso" role="img" aria-label="NFQ"></span></div>
   </footer>
 </section>
@@ -2000,7 +2053,7 @@ html, body { height: 100%; overflow: hidden; }
   updateControls();
 </script>
 <script>
-const QUES = [{"q":"¿Qué es una SSI (Settlement Instruction)?","opts":["Una operación de trading puntual","Un mensaje SWIFT concreto","Una instrucción permanente que define cómo entregar cash o securities a una contraparte y con qué método","Un informe regulatorio mensual"],"c":2,"exp":"Una SSI es una instrucción permanente: define cómo liquidar (cash o securities) frente a una contraparte y mediante qué método."},{"q":"¿Cuál es el sistema maestro de las instrucciones de liquidación en BBVA CIB?","opts":["RDR","Calypso","Datio","SWIFT"],"c":0,"exp":"RDR es el sistema maestro de SDIs: contiene la información para liquidar y la suministra al Back Office."},{"q":"¿Qué combinación determina la SSI aplicable (clave funcional)?","opts":["Solo la divisa","La fecha de trade únicamente","El número de operación","Counterparty + Currency + Product + Asset Type"],"c":3,"exp":"La clave funcional es Contraparte + Divisa + Producto + Asset Type; determina qué SSI aplica a la operación."},{"q":"¿Qué es la instrucción MIS (OWNENT)?","opts":["La instrucción de la contrapartida","La instrucción de la PO (Processing Org), propia de la entidad","Un tipo de mensaje SWIFT","Un método de liquidación"],"c":1,"exp":"MIS (OWNENT) es la instrucción de liquidación de la Processing Org: la propia de la entidad (SPAIN, MEXICO, BSI…)."},{"q":"¿Qué es la instrucción SUS (CPARTY)?","opts":["La instrucción de la Processing Org","La instrucción de la contrapartida con la que se opera","Una SDI inactiva","La cuenta safekeeping"],"c":1,"exp":"SUS (CPARTY) es la SDI que corresponde a la contrapartida con la que se opera."},{"q":"Para que una operación liquide automáticamente, deben existir…","opts":["Solo la SDI MIS","Solo la SDI SUS","Cualquier SDI activa, sin más","SDI MIS y SDI SUS, con el mismo tipo de método de liquidación"],"c":3,"exp":"Regla fundamental: deben existir MIS y SUS, y ambas con el mismo tipo de método de liquidación."},{"q":"¿Qué significa STP = Y en una SSI?","opts":["Que asigna automáticamente la SDI a las operaciones (Straight-Through)","Que la SSI está inactiva","Que es una SDI a terceros","Que requiere validación manual obligatoria"],"c":0,"exp":"STP = Y (Straight-Through Processing) permite la asignación automática de la SDI, si no hay colisión de prioridad."},{"q":"Según el Instruction Type, ¿cuáles son las dos grandes familias de SSI?","opts":["MIS y SUS","Activa e inactiva","CASH y SECURITY","CLS y EBA"],"c":2,"exp":"El Instruction Type discrimina CASH (pagos/efectivo) y SECURITY (valores), cada una con su cadena y reglas."},{"q":"Una SSI de tipo CASH genera típicamente mensajes SWIFT…","opts":["MT540 / MT541 / MT542","MT535","MT300","MT103 / MT202"],"c":3,"exp":"CASH genera MT103/MT202 (transferencias de fondos). Los MT54x son de Securities."},{"q":"El método CLS (Continuous Linked Settlement) sirve para…","opts":["Liquidación de valores en custodia","Liquidación simultánea multi-divisa para FX","Reporting regulatorio","Confirmaciones por email"],"c":1,"exp":"CLS es liquidación simultánea multi-divisa para FX (17 divisas principales)."},{"q":"Los métodos EBA / TARGET2 son exclusivos para…","opts":["Valores","Divisa USD","Divisa EUR","Operativa de México"],"c":2,"exp":"EBA y TARGET2 son métodos exclusivos para la divisa EUR."},{"q":"¿Qué campos definen la vigencia temporal de una SSI?","opts":["Date From / Date To","DATA_STAT_TYP únicamente","PRIORITY","INST_MNEM"],"c":0,"exp":"Los campos Date From / Date To definen la vigencia y permiten planificar altas/bajas futuras sin intervención manual."},{"q":"En la cadena de participantes, ¿quién es siempre obligatorio?","opts":["La dueña (Counterparty) y el Beneficiary","El intermediario","El corresponsal","El local custodian"],"c":0,"exp":"La dueña (Counterparty) y el Beneficiary son siempre obligatorios; corresponsal/custodio dependen del método."},{"q":"El Correspondent es obligatorio cuando…","opts":["Siempre","La operación es de valores","El método = CORRESPONDENT","Hay STP = N"],"c":2,"exp":"El banco corresponsal es obligatorio si el método de liquidación es CORRESPONDENT."},{"q":"¿Qué es la operación de UI \"Inactivar + Nuevo\"?","opts":["Borra la SSI definitivamente","Una transacción atómica que inactiva la SSI actual y crea una nueva vinculada","Reactiva una SSI inactiva","Duplica la SSI sin cambios"],"c":1,"exp":"\"Inactivar + Nuevo\" es atómica: inactiva la SSI actual y crea una nueva vinculada. Se usa para cambios estructurales."},{"q":"El estado INACTIVE de una SSI es…","opts":["Temporal y reactivable","Equivalente a LOCKED","El estado por defecto al crearla","Terminal: no reactivable"],"c":3,"exp":"INACTIVE es un estado terminal: no se reactiva. Para volver a operar se crea una nueva SSI."},{"q":"En una migración, ¿quién decide qué SDI dar de alta?","opts":["RDR IT, de forma autónoma","Calypso automáticamente","Negocio / BO (RDR da soporte técnico)","El proveedor SWIFT"],"c":2,"exp":"La decisión es de negocio/BO. RDR IT no tiene el conocimiento ni la potestad; da soporte: carga, publicación y verificación."},{"q":"Tras publicar las SDIs al BO, ¿qué respuesta hay que revisar?","opts":["El log de SWIFT","El estado LOCKED","El informe EMIR","La respuesta ACK / NACK de Calypso"],"c":3,"exp":"Tras publicar se revisa el ACK/NACK. Si todas reciben ACK, se traslada a la plantilla y se versiona."},{"q":"¿Cuál es la \"regla de oro\" durante los simulacros?","opts":["De nada sirve solucionar un error si no queda inventariado","Publicar siempre el día anterior","Dar de alta todas las SDIs posibles","Evitar tocar las SDIs MIS"],"c":0,"exp":"Cada alta o publicación debe registrarse en el momento: \"de nada sirve solucionar un error si no queda inventariado\"."},{"q":"Un error de asignación por \"colisión de prioridad\" significa que…","opts":["No existe ninguna SDI","Hay varias SDIs válidas con la misma prioridad y Calypso no puede elegir","Falta la SDI MIS","La divisa no es EUR"],"c":1,"exp":"La colisión de prioridad es tener varias SDIs válidas con la misma prioridad: Calypso no sabe cuál asignar."}];
+const QUES = [{"q":"¿Qué es una SCIS (Standard Confirmation Instruction)?","opts":["Un acuerdo operativo que codifica las instrucciones de confirmación/notificación de operaciones","Una instrucción de liquidación de efectivo","Un mensaje SWIFT MT103","Un informe regulatorio EMIR"],"c":0,"exp":"Una SCIS es un acuerdo operativo entre BBVA y una contraparte que codifica cómo se confirman/notifican las operaciones."},{"q":"¿Qué determina una SCIS frente a una SSI?","opts":["Por dónde paga el dinero (bancos, cuentas, rutas)","La prioridad de liquidación","El tipo de cambio aplicable","Cómo se confirma que se hizo la operación: a quién, por qué medio y para qué productos"],"c":3,"exp":"La SSI define por dónde paga el dinero; la SCIS define cómo se confirma la operación (a quién, por qué medio y para qué productos)."},{"q":"¿Cuántas preguntas clave responde una SCIS?","opts":["3","6","10","15"],"c":1,"exp":"Responde a 6: quién, qué, cuáles branches, cómo, cuándo y a quién."},{"q":"¿Cuál es la diferencia entre CONFIRMATION y NOTIFICATION?","opts":["CONFIRMATION es informativa; NOTIFICATION requiere matching","Son sinónimos","CONFIRMATION requiere matching/respuesta; NOTIFICATION es informativa y no requiere respuesta","NOTIFICATION solo aplica a FX"],"c":2,"exp":"CONFIRMATION confirma la operación y requiere matching/respuesta; NOTIFICATION es informativa y no requiere respuesta."},{"q":"¿Qué campo discrimina entre confirmación y notificación?","opts":["DATA_STAT_TYP","SCIS_OID","CONFIRM_INSTRUC_DESC","TRADE_TYP"],"c":2,"exp":"CONFIRM_INSTRUC_DESC indica si la instrucción es CONFIRMATION o NOTIFICATION."},{"q":"¿Cuáles son los 3 eventos por los que se emite una NOTIFICATION?","opts":["Fixing, pago/liquidación y vencimiento","Alta, baja y modificación","CLS, EBA y SWIFT","Sender, Receiver y Branch"],"c":0,"exp":"Una notificación se emite por evento de fixing, de pago/liquidación o de vencimiento (de 0 a 3 por contrapartida)."},{"q":"¿Cuál es el canal de confirmación dominante?","opts":["SWIFT","FAX","Bloomberg","EMAIL (~71%)"],"c":3,"exp":"EMAIL es el canal dominante (~71%); con FAX (~14%) suman el 85% de las instrucciones."},{"q":"EMAIL + FAX representan aproximadamente…","opts":["50% de los canales","85% de los canales","8% de los canales","100% de los canales"],"c":1,"exp":"EMAIL (71%) + FAX (14%) = 85%. SWIFT es solo ~8%, concentrado en OTC, repos y renta fija."},{"q":"¿Qué distingue el canal del identificador electrónico?","opts":["Son lo mismo","El canal (CONFIRM_MEDIA_TYP) es el transporte real; el electronic code (DATA_SRC_ID) es el id de la contraparte en plataformas","El canal es interno y el electronic code regulatorio","El electronic code sustituye al canal"],"c":1,"exp":"El canal es el medio de transporte (CONFIRM_MEDIA_TYP); el electronic code (DATA_SRC_ID) identifica a la contraparte en plataformas externas. No se confunden."},{"q":"¿Para qué se usa el DTCCID?","opts":["Confirmar derivados OTC","Pagos en EUR","Matching de renta variable y bonos en DTCC ALERT/CTM","Enrutamiento SWIFT"],"c":2,"exp":"DTCCID identifica al participante en DTCC ALERT/CTM, para matching de renta variable y bonos — no es el canal de derivados OTC."},{"q":"¿Cuál es la tabla maestra de la SCIS y su PK?","opts":["FT_T_SCIS · SCIS_OID","FT_T_SCMO · SCMO_OID","STAND_CONF_ASSIGNMENT · SCA_OID","FT_T_CUST · CST_ID"],"c":0,"exp":"FT_T_SCIS es la tabla maestra; su clave primaria es SCIS_OID."},{"q":"¿Qué regla aplica a Sender / Receiver?","opts":["Ambos deben ser Y","Ninguno es obligatorio","Solo Receiver puede ser Y","Sender XOR Receiver: al menos uno, nunca ambos a la vez"],"c":3,"exp":"Sender XOR Receiver: debe haber al menos uno en Y, pero nunca ambos a la vez."},{"q":"¿Cuántas branches activas debe tener una SCIS?","opts":["Ninguna","Tantas como productos","Al menos 2","Exactamente 1"],"c":3,"exp":"Regla UNIQUE_BRANCH: exactamente 1 branch activa por SCIS."},{"q":"¿Qué implica asignar el producto ALL?","opts":["Se combina con productos específicos","Excluye a los demás productos","Desactiva la SCIS","Obliga a usar SWIFT"],"c":1,"exp":"La regla PRODUCT_ALL: ALL excluye otros productos (no se combina con productos específicos)."},{"q":"¿Qué campos definen la vigencia temporal de una SCIS?","opts":["START_TMS / END_TMS","PRIORITY","Date From / Date To (DATEFROM/DATETO)","SCIS_OID"],"c":2,"exp":"Date From / Date To (DATEFROM/DATETO) definen la vigencia; por defecto sin caducidad (DATETO 9999-12-31)."},{"q":"¿Qué hace el patrón SCISDENE?","opts":["Inactiva la SCIS actual y crea una nueva vinculada (REL_NEW), preservando la trazabilidad","Reactiva una SCIS inactiva","Borra la SCIS","Duplica la SCIS sin cambios"],"c":0,"exp":"SCISDENE inactiva la SCIS actual y crea una nueva vinculada por REL_NEW; preserva la trazabilidad histórica."},{"q":"¿Qué transición de estado está prohibida?","opts":["ACTIVE → INACTIVE","ninguno → ACTIVE","INACTIVE → ACTIVE (reactivación)","ACTIVE → ACTIVE"],"c":2,"exp":"No hay reactivación: INACTIVE → ACTIVE está prohibido. Se crea una nueva SCIS."},{"q":"¿Qué hace el flag STPCONF?","opts":["Permite la asignación automática de la SCIS a las confirmaciones (Straight-Through)","Marca la SCIS como inactiva","Define el canal de envío","Fija la prioridad"],"c":0,"exp":"STPCONF habilita el Straight-Through Processing: asignación automática de la SCIS sin intervención manual."},{"q":"En una migración, si falta una SCI…","opts":["Se paraliza el GoLive (KO)","No paraliza el GoLive, pero es muy importante darla de alta y publicar antes del GoLive","Se ignora siempre","La crea Calypso automáticamente"],"c":1,"exp":"Faltar una SCI no paraliza el GoLive, pero es muy importante darla de alta y publicarla antes del GoLive para que el flujo continúe."},{"q":"Tras publicar una SCI al BO, ¿qué se revisa?","opts":["El log de SWIFT","El estado DELETED","El informe EMIR","La respuesta ACK / NACK de Calypso"],"c":3,"exp":"Tras publicar se revisa el ACK/NACK; si todas reciben ACK, se traslada a la plantilla y se versiona."}];
 const PASS_THRESHOLD = 13;
 let cur = 0, score = 0, answered = false;
 function renderQ() {
@@ -2024,7 +2077,7 @@ function nextQ(){ cur++; if(cur>=QUES.length){showRes();return;} renderQ(); }
 function showRes(){ const pct=Math.round((score/QUES.length)*100); const passed=score>=PASS_THRESHOLD;
   const statusColor=passed?'#2e7d32':'#c62828'; const statusBg=passed?'#e8f5e9':'#ffebee';
   const statusLabel=passed?'FORMACIÓN SUPERADA':'FORMACIÓN NO SUPERADA';
-  const statusMsg=passed?'Enhorabuena - dominas las instrucciones de liquidación de RDR.':'Necesitas repasar. Vuelve sobre MIS/SUS, métodos y el flujo de migración, y repite el quiz.';
+  const statusMsg=passed?'Enhorabuena - dominas las instrucciones de confirmación y notificación de RDR.':'Necesitas repasar. Vuelve sobre los tipos, canales, SCISDENE y el flujo de migración, y repite el quiz.';
   const detailMsg='Has acertado <strong>'+score+'</strong> de <strong>'+QUES.length+'</strong> preguntas. El mínimo para superar la formación es <strong>'+PASS_THRESHOLD+'</strong>.';
   document.getElementById('qz-quiz').innerHTML='<div style="text-align:center;padding:var(--bbva-space-6) 0;">'+
     '<div style="font-family:var(--bbva-font-display);font-size:var(--bbva-fs-hero);font-weight:700;color:var(--bbva-electric-blue);">'+score+' / '+QUES.length+'</div>'+
@@ -2041,8 +2094,8 @@ function showRes(){ const pct=Math.round((score/QUES.length)*100); const passed=
 document.addEventListener('DOMContentLoaded',()=>{ document.getElementById('qz-next').onclick=nextQ; renderQ(); });
 </script>
 <script>
-window.COURSE_ID = "form-functional-2-instrucciones-liquidacion";
-window.COURSE_NAME = "Instrucciones de Liquidación";
+window.COURSE_ID = "form-functional-2-instrucciones-confirmacion";
+window.COURSE_NAME = "Instrucciones de Confirmación";
 window.COURSE_TAG = "Funcional";
 window.COURSE_LEVEL = "Nivel 2";
 </script>
