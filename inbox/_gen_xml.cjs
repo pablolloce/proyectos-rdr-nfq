@@ -114,7 +114,7 @@ slides.push(slide('sand', 'El ecosistema XML', 'FUNDAMENTOS XML', '01 · Ecosist
     <div class="sg3">
       <div class="scard scard--l"><h3>XSD · el guardián</h3><p>El esquema que define la estructura y las reglas. Responde: <em>¿cumple este archivo las reglas?</em></p></div>
       <div class="scard scard--l" style="border-left-color:var(--bbva-serene-blue);"><h3>XPath · el GPS</h3><p>El lenguaje de consulta para navegar y seleccionar nodos. Responde: <em>¿dónde está el dato que busco?</em></p></div>
-      <div class="scard scard--l" style="border-left-color:var(--bbva-lime);"><h3>XSLT · el camaleón</h3><p>El motor que transforma un XML en otro XML con distinto etiquetado. Responde: <em>¿cómo lo convierto al formato que necesita el destino?</em></p></div>
+      <div class="scard scard--l" style="border-left-color:var(--bbva-lime);"><h3>XSLT · el camaleón</h3><p>El motor que transforma un XML en otro formato (otro XML, JSON, CSV…). Responde: <em>¿cómo lo convierto al formato que necesita el destino?</em></p></div>
     </div>
     <div class="snote" style="margin-top:var(--bbva-space-3);"><strong>La idea:</strong> XML es el contenido; XSD lo valida, XPath lo navega y XSLT lo transforma. Juntos forman el <em>motor declarativo</em> que da flexibilidad a RDR.</div>
   </main>`));
@@ -163,9 +163,9 @@ slides.push(slide('sand', 'XSLT el camaleón', 'FUNDAMENTOS XML', '01 · XSLT', 
     <div>
       <p class="ante-title">01 · XSLT — el camaleón</p>
       <h1>XSLT · transformación</h1>
-      <p class="sub2" style="margin-top:var(--bbva-space-2);"><strong>XSLT</strong> transforma un documento XML en <strong>otro XML con un sistema de etiquetas distinto</strong>: normalmente, de un XML con cierto XSD al XML (con otro XSD) que necesita el sistema destino. Es la clave de la <strong>interoperabilidad</strong>.</p>
-      <p class="sub2" style="margin-top:var(--bbva-space-2);"><strong>Analogía:</strong> es un traductor — dice lo mismo con otro vocabulario de etiquetas. El contenido no cambia; cambia cómo se estructura y se nombra.</p>
-      <div class="snote" style="margin-top:var(--bbva-space-2);"><strong>XSLT vive de XPath:</strong> usa expresiones XPath para "apuntar" a los datos del XML original que quiere transformar o reordenar.</div>
+      <p class="sub2" style="margin-top:var(--bbva-space-2);"><strong>XSLT</strong> transforma un documento XML en <strong>otro formato</strong> y puede <strong>reordenar o modificar su contenido</strong>. La salida puede ser otro XML, pero también <strong>JSON, CSV</strong>, texto u HTML. Es la clave de la <strong>interoperabilidad</strong>.</p>
+      <p class="sub2" style="margin-top:var(--bbva-space-2);"><strong>Analogía:</strong> es un traductor — reescribe la información con otra estructura y vocabulario.</p>
+      <div class="snote" style="margin-top:var(--bbva-space-2);"><strong>En RDR</strong> se usa principalmente para <strong>re-estructurar el XML a otro sistema de etiquetas</strong>: el formato que necesita cada sistema destino. Vive de <strong>XPath</strong>, que usa para apuntar a los datos a transformar.</div>
     </div>
     <div class="scode">${E(`<xsl:template match="contrapartida">
   <party>
@@ -185,7 +185,7 @@ slides.push(slide('sand', 'Quién es quién', 'FUNDAMENTOS XML', '01 · Resumen'
         <tr><td><strong>XML</strong></td><td>El contenedor de los datos</td><td>¿Qué información tenemos?</td><td>JSON plano</td></tr>
         <tr><td><strong>XSD</strong></td><td>El validador y esquema</td><td>¿Cumple este archivo las reglas?</td><td>JSON Schema</td></tr>
         <tr><td><strong>XPath</strong></td><td>El buscador / navegador</td><td>¿Dónde está el dato que busco?</td><td>JSONPath</td></tr>
-        <tr><td><strong>XSLT</strong></td><td>El transformador de estructura</td><td>¿Cómo convierto este XML a otro etiquetado?</td><td>JOLT / scripts de mapeo</td></tr>
+        <tr><td><strong>XSLT</strong></td><td>El transformador de formato</td><td>¿Cómo convierto este XML a otro formato?</td><td>JOLT / scripts de mapeo</td></tr>
       </tbody>
     </table>
     <div class="snote" style="margin-top:var(--bbva-space-3);">Estas cuatro tecnologías no son solo formatos de datos: son el <strong>motor declarativo</strong> que permite la flexibilidad de GoldenSource 8.7 en BBVA.</div>
@@ -221,7 +221,7 @@ slides.push(slide('sand', 'XSLT en RDR', 'XML EN RDR', '02 · XSLT', '02 · XSLT
     <p class="ante-title">02 · XSLT — el motor de transformación</p>
     <h1>XSLT: adaptar el dato a cada consumidor</h1>
     <div class="sg3" style="margin-top:var(--bbva-space-3);">
-      <div class="scard"><h3>Transformaciones outbound</h3><p>Convierte los datos maestros de GoldenSource a los formatos que requieren consumidores como <strong>ABACO, Murex, Calypso</strong> o reporting regulatorio.</p></div>
+      <div class="scard"><h3>Re-estructuración a cada sistema</h3><p>Re-estructura el XML maestro de GoldenSource al <strong>sistema de etiquetas</strong> que requiere cada consumidor (<strong>ABACO, Murex, Calypso</strong>) o el reporting regulatorio.</p></div>
       <div class="scard" style="border-top-color:var(--bbva-serene-blue);"><h3>Pipeline servicesRDR</h3><p>En el framework de servicios síncronos, extrae dinámicamente el <strong>nombre de la query y sus parámetros</strong> a partir del mensaje de entrada.</p></div>
       <div class="scard" style="border-top-color:var(--bbva-lime);"><h3>Mapping</h3><p>Dualidad: los ficheros de mapeo <code>.mfl</code> definen la estructura y el XSLT define la <strong>salida final</strong> hacia vendors o clientes (p. ej. cestas al formato <strong>DUCO</strong>).</p></div>
     </div>
@@ -373,7 +373,7 @@ const QUES = [
   {q:"¿Qué es XML?",opts:["Un lenguaje de marcado en árbol de nodos","Un motor de base de datos relacional como Oracle","Un lenguaje de programación procedural","Un protocolo de transporte en red"],c:0,exp:"XML estructura la información en forma de árbol de etiquetas. Responde a '¿qué información tenemos?': es el contenedor de los datos."},
   {q:"¿Cuál es la función principal de un XSD?",opts:["Define la estructura y valida el XML","Transforma el XML a otro formato distinto","Navega y selecciona nodos del documento","Cifra el contenido del mensaje al enviarlo"],c:0,exp:"XSD (XML Schema Definition) define la gramática/reglas y valida que el XML las cumpla. Responde: '¿cumple este archivo las reglas?'."},
   {q:"¿Para qué sirve XPath?",opts:["Navegar y seleccionar nodos del XML","Validar los tipos de dato del documento","Transformar el XML a una página HTML","Comprimir el archivo para enviarlo"],c:0,exp:"XPath es el lenguaje de consultas para navegar el árbol y seleccionar nodos. Responde: '¿dónde está el dato que busco?'."},
-  {q:"¿Qué hace XSLT?",opts:["Transforma un XML en otro XML distinto","Define el esquema de validación del documento","Almacena los documentos XML en disco","Enruta los paquetes por la red"],c:0,exp:"XSLT transforma un XML (con cierto XSD) en otro XML con otro etiquetado — el que necesita el sistema destino. Es la clave de la interoperabilidad."},
+  {q:"¿Qué hace XSLT?",opts:["Transforma un XML en otro formato distinto","Define el esquema de validación del documento","Almacena los documentos XML en disco","Enruta los paquetes por la red"],c:0,exp:"XSLT transforma el XML en otro formato (otro XML, JSON, CSV…) y puede modificar su contenido. En RDR se usa sobre todo para re-estructurar el XML a otro sistema de etiquetas."},
   {q:"¿Qué puede definir un XSD sobre un documento XML?",opts:["Qué etiquetas son obligatorias, su orden y su tipo","El color y la fuente con que se mostrará en pantalla","La ruta de red por la que viajará el documento","El usuario con permiso para leer el archivo"],c:0,exp:"Un XSD define qué etiquetas son obligatorias u opcionales, el orden exacto de los elementos y el tipo de dato de cada uno (p. ej. que <fecha> siga AAAA-MM-DD)."},
   {q:"¿Con qué se generan los mensajes XML a partir de los datos de Oracle en RDR?",opts:["Con XMLELEMENT y XMLAGG (SQL/XML)","Con hojas de estilo XSLT aplicadas al vuelo","Con un esquema XSD de generación","Escribiéndolos a mano, uno por uno"],c:0,exp:"Las queries (.sql) y las Extracciones Genéricas usan funciones SQL/XML como XMLELEMENT y XMLAGG para extraer los datos de Oracle (FT_T_*) y formar los mensajes XML."},
   {q:"¿Qué selecciona la expresión XPath /catalogo/libro[precio < 20]?",opts:["Los libros que cuestan menos de 20","Todos los libros del catálogo entero","El primer libro de la lista de precios","Solo el atributo precio de cada libro"],c:0,exp:"El predicado [precio < 20] filtra: devuelve solo los libros que cuestan menos de 20."},
