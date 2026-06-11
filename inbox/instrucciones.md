@@ -1,52 +1,23 @@
-# CAMBIOS
+# Instrucciones Comidas
 
-## Cantidad de tablas
+## Objetivo
+Montar una web sobre un Google Sheet que permita a mis compañeros coordinarse para elegir un restaurante todos los jueves (no festivos o con teletrabajo). La web será en html en Github Pages, como el resto de webs del proyecto, que debe mantener homogeneidad visual. 
 
-~60 tablas son solo las principales, el modelo tiene MUCHAS MÁS
+## Google Sheets - Explicación
+El Google Sheets tiene 3 pestañas. La primera "Restaurantes" tiene un listado con los restaurantes a elegir (podrá ampliarse), cada uno con su descripción, link a su carta y un link con una foto -> la web debe tener un seleccionador, donde puedas ver las fotos y una descripción corta, y un link para que te lleve a la carta, que se pueda ver más y leer la descripción larga. La segunda pestaña "Equipo", recoge la opinión o selección de los compañeros, (2 elecciones, prioridad 1 y prioridad 2), se puede poder elegir "El que más se vote", las 2 opciones más votadas deben salir separadas, por si solo quiere unirse al resto. Y, siempre las dos opciones (No estoy, si ese jueves no estará en la oficina) (Taper/Glovo si decide no comer fuera). La tercera pestaña "Semana" recoge las 2 opciones más votadas por semana, están indicadas qué semanas (jueves) se va a la oficina y estará abierta la votación y el número de compañeros que ha elegido cada opción (Restaurante 1, 2, No estoy o Taper/Glovo). Importante, puede que todos quieran ir al mismo y el Restaurante 2 no se rellene. 
 
-## INDICE
+## Web - HTML
+Hay una primera versión "dummy" en la carpeta, pero peudes crear una de 0
+La web debe mostrar las distintas opciones:
+- Listado
+- Opciones más votadas (con cantidad de votos)
+- Taper/Glovo (con cantidad de votos)
+- No estoy (con cantidad de votos)
+Y, debe tener una segunda pestaña donde se puede ver el histórico de semanas anteriores.
+Para seleccionar quien eres, debe hacer fetch al json de equipo (como hicimos con las formaciones)
 
-Los textos en el índice se cortan (EL quiz se puede quitar del índice)
-
-## QUIZ
-
-Ninguna de las otras formaciones tiene una diapositiva como esta: "Quiz - 25 preguntas sobre el modelo de datos de RDR." quítala. Y quita la última tmb, que el quiz sea el final.
-
-En el propio quiz, muchas de las respuesta son la opción B; cambia un poco para que sea más aleatorio.
-
-## BACKGROUND
-
-Hay muchos cambios de color en el background, reduce la cantidad de cambios.
-
-## DOMINIOS
-
-"Los 7 dominios del modelo", realmente tenemos 4 entidades principales: LEgal Entities, Legal Agreements, Issues, Settlement Instructions y Settlement Confirmation Instructions. El resto son Auxiliares.
-
-## Blanco sobre acento
-
-Revisa porque hay textos en Blanco sobre color de acento que no se leen bien. (Ejemplo: Diapositiva. 03 · El patrón que se repite  Hub · Link · Satélite -> los nombres de las tablas: FT_T_FINS...)
-
-## Tabla FT_T_SSIA
-
-Pese a que se podría conectar con contrapartidas (INST_MNEM) o emisiones (INSTR_ID), solo se utiliza para informar los productos que tiene asociado la instrucción. No conecta con otras entidades principales (Solo con productos -> Que en RDR solo se usan de traducción a otros sistemas). Es la FT_T_SSIR la que une instrucciones con entidades a través de los roles que puede tener esa contrapartida conrespecto a la instrucción: Banco corresponsal, Banco Custodio, Beneficiario, Intermediario...
-
-## CCRF
-
-La tabla FT_T_CCRF no se utiliza para nada, podría conectar todo, pero la realidad es que no se usa. Se conecta todo a través de las entidades.
-
-## EMISIONES
-
-FT_T_MKIS es la tabla que conecta emisiones con mercados (Mercados es una entidad decundaria cuya tabla principal de definición es FT_T_MRKT)
-
-## INST_MNEM y INSTR_ID
-
-Son los OID principales de emisiones y entidades, pero no son más importantes que LEGAL_AGRMT_ID o que SSIS_OID, aunque se repitan más en el modelo.
-
-## Auditoría
-
-Haz algo más de foco en las columnas de auditoría que están en todas las tablas:
-START_TMS; END_TMS; LAST_CHG_TMS; LAST_CHG_USR_ID
-
-
-
-
+## En la carpeta inbox
+En la carpeta tienes:
+- La distribución de cada pestaña del Google Sheets en .csv
+- El Code.gs que será el backend y que estará en appscript sobre el Google Sheets (si consideras que debe cambiarse, puedes crear una nueva versión)
+- Una primera versión "dummy" de la web, debes crearla de 0, pero como base.

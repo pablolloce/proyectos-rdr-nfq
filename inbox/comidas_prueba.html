@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comidas Equipo Jueves</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; color: #333; max-width: 800px; margin: auto; padding: 20px; }
+        .card { background: white; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .restaurante-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .restaurante-card { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; text-align: center; background: #fff; }
+        .restaurante-card img { width: 100%; height: 150px; object-fit: cover; }
+        .restaurante-card h4 { margin: 10px 0 5px 0; }
+        .restaurante-card p { font-size: 14px; color: #666; margin: 0 10px 10px; }
+        .restaurante-card a { display: block; margin: 5px; color: #007bff; text-decoration: none; font-size: 14px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, input[type="text"] { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; }
+        button { background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; }
+        button:hover { background-color: #218838; }
+        .details { display: none; margin: 10px; font-size: 13px; color: #444; background: #f9f9f9; padding: 10px; border-radius: 4px;}
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>Votación: Comidas de los Jueves</h2>
+        <form id="votoForm">
+            <div class="form-group">
+                <label for="nombre">Tu Nombre:</label>
+                <input type="text" id="nombre" required placeholder="Ej: Pablo">
+            </div>
+
+            <div class="form-group">
+                <label for="semana">Semana (Jueves disponible):</label>
+                <select id="semana" required>
+                    <option value="">Cargando semanas...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>¿Qué vas a hacer?</label>
+                <select id="estado" onchange="toggleOpciones()">
+                    <option value="comer_fuera">Comer fuera (votar restaurante)</option>
+                    <option value="taper_glovo">Me traigo Taper / Pido Glovo</option>
+                    <option value="no_estoy">No estoy en la oficina</option>
+                </select>
+            </div>
+
+            <div id="opciones-restaurante">
+                <div class="form-group">
+                    <label for="eleccion1">Prioridad 1:</label>
+                    <select id="eleccion1">
+                        <option value="El que más se vote">El que más se vote</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="eleccion2">Prioridad 2:</label>
+                    <select id="eleccion2">
+                        <option value="">Ninguna</option>
+                        <option value="El que más se vote">El que más se vote</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit">Enviar mi elección</button>
+        </form>
+        <p id="mensaje" style="text-align:center; color: green; display:none; margin-top:10px;">¡Voto registrado con éxito!</p>
+    </div>
+
+    <div class="card">
+        <h3>Directorio de Restaurantes</h3>
+        <div class="restaurante-grid" id="galeria-restaurantes">
+            <p>Cargando restaurantes...</p>
+        </div>
+    </div>
+
+    <script>
+        // ¡REEMPLAZA ESTA URL POR LA TUYA!
+        const URL_APP_SCRIPT = 'TU_URL_DE_APPS_SCRIPT_AQUI';
+
+        let restaurantesGlobal = [];
+
+        // Cargar datos iniciales
+        fetch(URL_APP_SCRIPT)
+            .then(response => response.json())
+            .then(data => {
+                restaurantesGlobal = data.restaurantes;
+                
+                // Rellenar semanas
+                const selectSemana = document.getElementById('semana');
+                selectSemana.innerHTML = '<option value="">Selecciona una semana...</option>';
+                data.semanas.forEach(s => selectSemana.innerHTML += `<option value="${s}">${s}</option>`);
+
+                // Rellenar opciones de restaurantes (Formulario)
+                const eleccion1 = document.getElementById('eleccion1');
+                const eleccion2 = document.getElementById('eleccion2');
+                data.restaurantes.forEach(r => {
+                    eleccion1.innerHTML += `<option value="${r.nombre}">${r.nombre}</option>`;
+                    eleccion2.innerHTML += `<option value="${r.nombre}">${r.nombre}</option>`;
+                });
+
+                // Renderizar Galería
+                const galeria = document.getElementById('galeria-restaurantes');
+                galeria.innerHTML = '';
+                data.restaurantes.forEach((r, index) => {
+                    galeria.innerHTML += `
+                        <div class="restaurante-card">
+                            <img src="${r.foto}" alt="${r.nombre}" onerror="this.src='https://via.placeholder.com/200x150?text=Sin+Foto'">
+                            <h4>${r.nombre}</h4>
+                            <p>${r.descCorta}</p>
+                            <a href="${r.carta}" target="_blank">📄 Ver Carta</a>
+                            <a href="javascript:void(0)" onclick="toggleDetails(${index})">Más info ▼</a>
+                            <div class="details" id="desc-${index}">${r.descLarga}</div>
+                        </div>
+                    `;
+                });
+            })
+            .catch(error => console.error('Error cargando datos:', error));
+
+        function toggleDetails(index) {
+            const el = document.getElementById(`desc-${index}`);
+            el.style.display = el.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function toggleOpciones() {
+            const estado = document.getElementById('estado').value;
+            const opcionesRestaurante = document.getElementById('opciones-restaurante');
+            opcionesRestaurante.style.display = estado === 'comer_fuera' ? 'block' : 'none';
+        }
+
+        // Enviar formulario
+        document.getElementById('votoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const btn = this.querySelector('button');
+            btn.disabled = true;
+            btn.textContent = "Enviando...";
+
+            const estado = document.getElementById('estado').value;
+            
+            const payload = {
+                nombre: document.getElementById('nombre').value,
+                semana: document.getElementById('semana').value,
+                eleccion1: estado === 'comer_fuera' ? document.getElementById('eleccion1').value : '',
+                eleccion2: estado === 'comer_fuera' ? document.getElementById('eleccion2').value : '',
+                taperGlovo: estado === 'taper_glovo',
+                noEstoy: estado === 'no_estoy'
+            };
+
+            fetch(URL_APP_SCRIPT, {
+                method: 'POST',
+                // Evitamos CORS preflight mandando texto en lugar de application/json en la cabecera
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
+                document.getElementById('mensaje').style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = "Enviar mi elección";
+                this.reset();
+                toggleOpciones(); // reset visual
+                setTimeout(() => document.getElementById('mensaje').style.display = 'none', 4000);
+            })
+            .catch(err => {
+                alert("Error enviando el voto");
+                btn.disabled = false;
+                btn.textContent = "Enviar mi elección";
+            });
+        });
+    </script>
+</body>
+</html>

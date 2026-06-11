@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comidas RDR · BBVA × NFQ</title>
+  <meta name="description" content="Coordinación de las comidas de los jueves del equipo RDR.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 484 610'%3E%3Cdefs%3E%3ClinearGradient id='l' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0' stop-color='%23EE6A3A'/%3E%3Cstop offset='1' stop-color='%23CD3D60'/%3E%3C/linearGradient%3E%3ClinearGradient id='m' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0' stop-color='%23CD3D60'/%3E%3Cstop offset='1' stop-color='%231D7CF4'/%3E%3C/linearGradient%3E%3ClinearGradient id='r' x1='0%25' y1='100%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0' stop-color='%231D7CF4'/%3E%3Cstop offset='1' stop-color='%23217AEE'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M 0,94 L 160,1 L 480,512 L 320,605 Z' fill='url(%23m)'/%3E%3Cpath d='M 0,94 L 160,1 L 160,510 L 0,601 Z' fill='url(%23l)'/%3E%3Cpath d='M 320,90 L 480,2 L 480,512 L 320,605 Z' fill='url(%23r)'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,700;1,8..60,700&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --electric:#001391; --serene:#85C8FF; --sand:#F7F8F8; --midnight:#070E46;
+      --canary:#FFE761; --lime:#88E783; --aqua:#8BE1E9; --purple:#9694FF; --mandarin:#FFB56B;
+      --font-display:"Source Serif 4",Georgia,"Times New Roman",serif;
+      --font-body:"Lato","Helvetica Neue",Arial,sans-serif;
+      --surface:rgba(247,248,248,0.05); --surface-2:rgba(247,248,248,0.09);
+      --line:rgba(247,248,248,0.14);
+    }
+    *{box-sizing:border-box;}
+    html,body{margin:0;padding:0;font-family:var(--font-body);font-weight:400;color:var(--sand);background:var(--midnight);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+    body{min-height:100vh;display:flex;flex-direction:column;}
+    h1,h2,h3{font-family:var(--font-display);font-weight:700;margin:0;line-height:1.05;letter-spacing:-0.01em;}
+    p{margin:0;} a{color:inherit;text-decoration:none;}
+    button{font:inherit;}
+
+    .page{flex:1;display:flex;flex-direction:column;padding:22px clamp(16px,3vw,40px);gap:18px;max-width:1180px;width:100%;margin:0 auto;}
+
+    /* topbar */
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:24px;}
+    .topbar__left{display:flex;align-items:baseline;gap:16px;min-width:0;}
+    .topbar__title{font-family:var(--font-display);font-weight:700;font-size:clamp(22px,2.4vw,32px);line-height:1.05;letter-spacing:-0.02em;white-space:nowrap;}
+    .topbar__subtitle{font-size:clamp(11px,0.85vw,13px);font-weight:400;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .topbar__logo{font-family:var(--font-body);font-weight:900;font-size:clamp(18px,1.6vw,22px);letter-spacing:-0.02em;flex-shrink:0;}
+    .back{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.7;display:inline-flex;align-items:center;gap:6px;}
+    .back:hover{opacity:1;}
+
+    /* tabs */
+    .tabs{display:inline-flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;align-self:flex-start;}
+    .tab{border:0;background:transparent;color:var(--sand);opacity:.7;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:8px 18px;border-radius:999px;cursor:pointer;transition:all .15s ease;}
+    .tab:hover{opacity:1;}
+    .tab.is-active{background:var(--serene);color:var(--electric);opacity:1;}
+
+    /* section heads */
+    .shead{display:flex;align-items:baseline;gap:12px;margin:6px 0 2px;}
+    .shead__title{font-family:var(--font-display);font-size:clamp(15px,1.3vw,19px);font-weight:700;}
+    .shead__line{flex:1;height:1px;background:var(--line);}
+    .shead__hint{font-size:11px;opacity:.55;white-space:nowrap;}
+
+    /* panel (dark card) */
+    .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 18px 20px;}
+    .panel h2{font-size:clamp(17px,1.6vw,22px);margin-bottom:4px;}
+    .panel__sub{font-size:12.5px;opacity:.7;margin-bottom:14px;}
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+    @media(max-width:780px){.grid2{grid-template-columns:1fr;}}
+
+    /* form controls */
+    .field{margin-bottom:13px;}
+    .field>label{display:block;font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;opacity:.6;margin-bottom:6px;}
+    .control{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:rgba(7,14,70,.45);color:var(--sand);font-family:var(--font-body);font-size:14px;appearance:none;cursor:pointer;}
+    select.control{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23F7F8F8' stroke-width='3'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;}
+    .control:focus{outline:2px solid var(--serene);outline-offset:1px;}
+    .control option{color:#111;}
+
+    /* segmented */
+    .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+    .seg button{padding:11px 8px;border-radius:10px;border:1px solid var(--line);background:rgba(7,14,70,.45);color:var(--sand);font-size:12.5px;font-weight:700;cursor:pointer;transition:all .15s ease;line-height:1.2;}
+    .seg button:hover{border-color:var(--serene);}
+    .seg button.is-on{background:var(--serene);color:var(--electric);border-color:var(--serene);}
+    @media(max-width:480px){.seg{grid-template-columns:1fr;}}
+
+    .cta{margin-top:6px;width:100%;padding:13px;border-radius:999px;border:0;background:var(--lime);color:var(--electric);font-weight:800;font-size:15px;letter-spacing:.02em;cursor:pointer;transition:transform .15s ease,filter .15s ease;}
+    .cta:hover{transform:translateY(-1px);filter:brightness(1.04);}
+    .cta:disabled{opacity:.6;cursor:default;transform:none;}
+    .hint{font-size:12px;opacity:.65;margin-top:9px;line-height:1.5;}
+    .hint code{font-family:monospace;background:rgba(255,255,255,.1);padding:1px 5px;border-radius:5px;}
+
+    /* results */
+    .results{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+    @media(max-width:820px){.results{grid-template-columns:1fr 1fr;}}
+    @media(max-width:460px){.results{grid-template-columns:1fr;}}
+    .rcard{border-radius:14px;padding:15px;color:var(--electric);min-height:118px;display:flex;flex-direction:column;}
+    .rcard--1{background:var(--serene);} .rcard--2{background:var(--aqua);}
+    .rcard--taper{background:var(--canary);} .rcard--no{background:var(--sand);}
+    .rcard__tag{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;opacity:.72;}
+    .rcard__name{font-family:var(--font-display);font-weight:700;font-size:19px;line-height:1.1;margin:8px 0 auto;}
+    .rcard__votes{display:flex;align-items:baseline;gap:6px;margin-top:10px;}
+    .rcard__num{font-family:var(--font-display);font-weight:700;font-size:30px;line-height:1;}
+    .rcard__lbl{font-size:11px;font-weight:700;opacity:.7;text-transform:uppercase;letter-spacing:.06em;}
+    .rcard__extra{font-size:11px;opacity:.75;margin-top:6px;}
+    .rcard--empty{background:rgba(247,248,248,.06);color:var(--sand);border:1px dashed var(--line);}
+    .rcard--empty .rcard__name{opacity:.6;}
+
+    .voters{font-size:11.5px;opacity:.7;margin-top:14px;line-height:1.6;}
+    .voters b{color:var(--serene);font-weight:700;}
+
+    /* restaurantes */
+    .resto-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+    .resto{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:transform .16s ease,box-shadow .16s ease;}
+    .resto:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.3);}
+    .resto__photo{height:130px;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;}
+    .resto__ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:42px;color:rgba(7,14,70,.55);background:linear-gradient(135deg,var(--serene),var(--aqua));}
+    .resto__body{padding:13px 14px;display:flex;flex-direction:column;gap:8px;flex:1;}
+    .resto__name{font-family:var(--font-display);font-size:17px;font-weight:700;}
+    .resto__desc{font-size:12.5px;opacity:.72;line-height:1.45;flex:1;}
+    .resto__links{display:flex;gap:8px;flex-wrap:wrap;padding-top:4px;}
+    .chip{font-size:11px;font-weight:700;letter-spacing:.04em;padding:6px 11px;border-radius:999px;background:rgba(133,200,255,.16);color:var(--serene);border:0;cursor:pointer;}
+    .chip:hover{background:rgba(133,200,255,.28);}
+    .resto__long{display:none;font-size:12px;opacity:.78;line-height:1.5;background:rgba(7,14,70,.4);border-radius:10px;padding:10px 12px;margin-top:2px;}
+    .resto__long.is-open{display:block;}
+
+    /* histórico */
+    .hist{display:flex;flex-direction:column;gap:10px;}
+    .hrow{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+    .hrow__date{font-family:var(--font-display);font-weight:700;font-size:16px;min-width:96px;}
+    .hrow__win{flex:1;min-width:180px;font-size:13px;}
+    .hrow__win b{color:var(--serene);}
+    .hrow__stats{display:flex;gap:8px;flex-wrap:wrap;}
+    .badge{font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;background:rgba(247,248,248,.08);}
+
+    .empty{opacity:.55;font-size:13px;padding:20px 0;text-align:center;}
+    .banner{background:rgba(255,181,107,.14);border:1px solid var(--mandarin);border-radius:12px;padding:12px 15px;font-size:12.5px;line-height:1.5;}
+    .banner b{color:var(--mandarin);}
+
+    /* footer + toast */
+    .footer{display:flex;justify-content:space-between;align-items:center;gap:16px;font-size:11px;opacity:.7;padding-top:10px;border-top:1px solid var(--line);margin-top:6px;}
+    .nfq-credit{display:flex;align-items:center;gap:8px;}
+    .nfq-credit__label{font-size:10px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;}
+    .nfq-credit__logo{font-family:var(--font-body);font-weight:900;font-size:14px;letter-spacing:-0.02em;}
+    .nfq-credit__logo span{color:var(--mandarin);}
+    .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--sand);color:var(--electric);padding:11px 22px;border-radius:999px;font-size:12px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .22s ease,transform .22s ease;z-index:1000;}
+    .toast.is-visible{opacity:1;transform:translateX(-50%) translateY(0);}
+    .toast.is-error{background:#FFE1E1;color:#B00020;}
+
+    .hide{display:none!important;}
+    @media(max-width:560px){.topbar{flex-wrap:wrap;row-gap:4px;}.topbar__subtitle{display:none;}.footer{flex-direction:column;align-items:flex-start;gap:6px;}}
+  </style>
+</head>
+<body>
+  <main class="page">
+
+    <header class="topbar">
+      <div class="topbar__left">
+        <h1 class="topbar__title">Comidas de los Jueves</h1>
+        <p class="topbar__subtitle">Coordinación del equipo RDR · BBVA × NFQ</p>
+      </div>
+      <a class="back" href="index.html" title="Volver al hub">← Hub</a>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab is-active" id="tab-btn-semana" role="tab" onclick="switchTab('semana')">Esta semana</button>
+      <button class="tab" id="tab-btn-historico" role="tab" onclick="switchTab('historico')">Histórico</button>
+    </nav>
+
+    <div id="config-banner" class="banner hide">
+      <b>Falta configurar el backend.</b> Edita <code>comidas.html</code> y pega la URL del Apps Script en <code>APP_SCRIPT_URL</code>. Mientras tanto se muestran los restaurantes de ejemplo y la votación está deshabilitada.
+    </div>
+
+    <!-- ============ TAB · ESTA SEMANA ============ -->
+    <div id="tab-semana">
+
+      <div class="grid2" style="margin-bottom:18px;">
+        <!-- Votación -->
+        <section class="panel">
+          <h2>Tu voto</h2>
+          <p class="panel__sub">Elige quién eres y qué harás este jueves.</p>
+
+          <div class="field">
+            <label for="quien">¿Quién eres?</label>
+            <select id="quien" class="control"><option value="">Cargando equipo…</option></select>
+          </div>
+
+          <div class="field">
+            <label for="semana">Jueves</label>
+            <select id="semana" class="control"><option value="">Cargando semanas…</option></select>
+          </div>
+
+          <div class="field">
+            <label>¿Qué vas a hacer?</label>
+            <div class="seg" id="seg-estado">
+              <button type="button" data-estado="fuera" class="is-on">🍽️ Comer fuera</button>
+              <button type="button" data-estado="taper">🥡 Taper / Glovo</button>
+              <button type="button" data-estado="no">🏠 No estoy</button>
+            </div>
+          </div>
+
+          <div id="opciones-fuera">
+            <div class="field">
+              <label for="eleccion1">Prioridad 1</label>
+              <select id="eleccion1" class="control"></select>
+            </div>
+            <div class="field">
+              <label for="eleccion2">Prioridad 2 <span style="opacity:.6;text-transform:none;letter-spacing:0;">(opcional)</span></label>
+              <select id="eleccion2" class="control"></select>
+            </div>
+          </div>
+
+          <button id="enviar" class="cta" onclick="enviarVoto()">Enviar mi elección</button>
+          <p class="hint">¿Te da igual? Elige <b>«El que más se vote»</b> y te unes a la opción ganadora. Si ya votaste esta semana, tu elección se actualizará.</p>
+        </section>
+
+        <!-- Resultados -->
+        <section class="panel">
+          <h2>Resultados</h2>
+          <p class="panel__sub" id="res-sub">—</p>
+          <div class="results" id="resultados"></div>
+          <p class="voters" id="voters"></p>
+        </section>
+      </div>
+
+      <!-- Directorio de restaurantes -->
+      <div class="shead">
+        <span class="shead__title">Restaurantes</span>
+        <span class="shead__line"></span>
+        <span class="shead__hint">Fotos, carta y descripción</span>
+      </div>
+      <div class="resto-grid" id="resto-grid"><p class="empty">Cargando restaurantes…</p></div>
+    </div>
+
+    <!-- ============ TAB · HISTÓRICO ============ -->
+    <div id="tab-historico" class="hide">
+      <div class="shead">
+        <span class="shead__title">Semanas anteriores</span>
+        <span class="shead__line"></span>
+        <span class="shead__hint">Qué se eligió cada jueves</span>
+      </div>
+      <div class="hist" id="hist"><p class="empty">Cargando histórico…</p></div>
+    </div>
+
+    <footer class="footer">
+      <span>Comidas RDR · jueves no festivos ni de teletrabajo</span>
+      <span class="nfq-credit">
+        <span class="nfq-credit__label">Hecho por</span>
+        <span class="nfq-credit__logo">n<span>f</span>q</span>
+      </span>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  /* ===========================================================================
+     CONFIG · pega aquí la URL del despliegue del Apps Script (termina en /exec)
+     =========================================================================== */
+  const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9X7g3kH3jgr1FeLdUDDjjEx2h-fFpQ33aWKQ0X0dLeQuAhMUcx8ApcqZoC1__j801/exec';
+  const EQUIPO_URL = 'equipo/equipo.json';
+
+  // Fallback (solo si no hay backend): restaurantes base para previsualizar
+  const FALLBACK_RESTAURANTES = [
+    {nombre:'Beefius', descCorta:'', carta:'https://www.beefcious.com/menu-beefcious/', foto:'https://www.beefcious.com/wp-content/uploads/2025/07/interior-las-tablas-1024x683.webp', descLarga:''},
+    {nombre:'Kyoka', descCorta:'', carta:'https://kyoka.es/madrid-las-tablas/', foto:'', descLarga:''},
+    {nombre:'Thai',descCorta:'',carta:'',foto:'',descLarga:''},{nombre:'Indio',descCorta:'',carta:'',foto:'',descLarga:''},
+    {nombre:'Mano de pablo',descCorta:'',carta:'',foto:'',descLarga:''},{nombre:'Goiko',descCorta:'',carta:'',foto:'',descLarga:''},
+    {nombre:'Macao',descCorta:'',carta:'',foto:'',descLarga:''},{nombre:'Peruano',descCorta:'',carta:'',foto:'',descLarga:''},
+    {nombre:'Auten',descCorta:'',carta:'',foto:'',descLarga:''},{nombre:'80 Grados',descCorta:'',carta:'',foto:'',descLarga:''}
+  ];
+  const FLEX = 'El que más se vote';
+
+  let RESTAURANTES = [], SEMANAS = [], VOTOS = [], EQUIPO = [];
+  let estado = 'fuera';
+
+  /* ---------- utilidades ---------- */
+  const $ = id => document.getElementById(id);
+  function parseDMY(s){ const [d,m,y] = String(s).split('/').map(Number); return new Date(y, m-1, d); }
+  function hoy0(){ const t = new Date(); t.setHours(0,0,0,0); return t; }
+  function fmtLargo(s){ const dt = parseDMY(s); return dt.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'}); }
+  const norm = b => (b===true || String(b).toLowerCase()==='sí' || String(b).toLowerCase()==='si');
+  function toast(msg, err){ const t=$('toast'); t.textContent=msg; t.className='toast is-visible'+(err?' is-error':''); setTimeout(()=>t.className='toast',3200); }
+
+  /* ---------- carga inicial ---------- */
+  async function init(){
+    // 1) Equipo (siempre desde el repo, como las formaciones)
+    try{
+      const eq = await fetch(EQUIPO_URL).then(r=>r.json());
+      EQUIPO = (eq.team||[]).map(p=>p.nombre).sort((a,b)=>a.localeCompare(b,'es'));
+    }catch(e){ EQUIPO = []; }
+    const selQ = $('quien');
+    selQ.innerHTML = '<option value="">Selecciona tu nombre…</option>' + EQUIPO.map(n=>`<option value="${n}">${n}</option>`).join('');
+
+    // 2) Datos del Sheet (restaurantes, semanas, votos)
+    const configured = APP_SCRIPT_URL && !APP_SCRIPT_URL.startsWith('TU_URL');
+    if(!configured){ $('config-banner').classList.remove('hide'); }
+    try{
+      if(!configured) throw new Error('sin backend');
+      const data = await fetch(APP_SCRIPT_URL).then(r=>r.json());
+      RESTAURANTES = data.restaurantes || [];
+      SEMANAS = data.semanas || [];
+      VOTOS = data.votos || [];
+    }catch(e){
+      RESTAURANTES = FALLBACK_RESTAURANTES;
+      // semanas de ejemplo (próximos jueves de oficina) si no hay backend
+      SEMANAS = ['18/06/2026','25/06/2026','03/09/2026','10/09/2026'].map(f=>({fecha:f,oficina:true}));
+      VOTOS = [];
+      if(configured) toast('No se pudieron cargar los datos del Sheet', true);
+    }
+
+    renderRestaurantes();
+    fillEleccionSelects();
+    fillSemanaSelect();
+    renderHistorico();
+    // preseleccionar la semana más próxima y pintar resultados
+    onChangeContext();
+
+    $('quien').addEventListener('change', prefillVoto);
+    $('semana').addEventListener('change', ()=>{ onChangeContext(); prefillVoto(); });
+    document.querySelectorAll('#seg-estado button').forEach(b=>b.addEventListener('click',()=>setEstado(b.dataset.estado)));
+    if(!configured) $('enviar').disabled = true;
+  }
+
+  /* ---------- restaurantes ---------- */
+  function renderRestaurantes(){
+    const g = $('resto-grid');
+    if(!RESTAURANTES.length){ g.innerHTML = '<p class="empty">No hay restaurantes todavía.</p>'; return; }
+    g.innerHTML = RESTAURANTES.map((r,i)=>{
+      const photo = r.foto
+        ? `<div class="resto__photo" style="background-image:url('${r.foto}')"></div>`
+        : `<div class="resto__photo"><div class="resto__ph">${(r.nombre||'?').charAt(0)}</div></div>`;
+      const desc = r.descCorta ? r.descCorta : 'Sin descripción todavía.';
+      const carta = r.carta ? `<a class="chip" href="${r.carta}" target="_blank" rel="noopener">📄 Ver carta</a>` : '';
+      const masInfo = r.descLarga ? `<button class="chip" type="button" onclick="toggleLong(${i})">Más info ▼</button>` : '';
+      const long = r.descLarga ? `<div class="resto__long" id="long-${i}">${r.descLarga}</div>` : '';
+      return `<article class="resto">${photo}<div class="resto__body">
+        <div class="resto__name">${r.nombre}</div>
+        <div class="resto__desc">${desc}</div>
+        <div class="resto__links">${carta}${masInfo}</div>${long}
+      </div></article>`;
+    }).join('');
+  }
+  function toggleLong(i){ $('long-'+i)?.classList.toggle('is-open'); }
+
+  function fillEleccionSelects(){
+    const opts = `<option value="${FLEX}">⭐ ${FLEX}</option>` + RESTAURANTES.map(r=>`<option value="${r.nombre}">${r.nombre}</option>`).join('');
+    $('eleccion1').innerHTML = opts;
+    $('eleccion2').innerHTML = '<option value="">— Ninguna —</option>' + opts;
+  }
+
+  /* ---------- semanas ---------- */
+  function semanasVotables(){ const t=hoy0(); return SEMANAS.filter(s=>s.oficina && parseDMY(s.fecha) >= t); }
+  function fillSemanaSelect(){
+    const sel = $('semana');
+    const list = semanasVotables();
+    if(!list.length){ sel.innerHTML = '<option value="">No hay jueves de oficina próximos</option>'; return; }
+    sel.innerHTML = list.map(s=>`<option value="${s.fecha}">${capitaliza(fmtLargo(s.fecha))} · ${s.fecha}</option>`).join('');
+  }
+  const capitaliza = s => s.charAt(0).toUpperCase()+s.slice(1);
+
+  /* ---------- estado del formulario ---------- */
+  function setEstado(e){
+    estado = e;
+    document.querySelectorAll('#seg-estado button').forEach(b=>b.classList.toggle('is-on', b.dataset.estado===e));
+    $('opciones-fuera').style.display = (e==='fuera') ? 'block' : 'none';
+  }
+
+  /* ---------- recuento de una semana ---------- */
+  function computeWeek(semana){
+    const v = VOTOS.filter(x=>x.semana===semana);
+    const count = {}; const whoRest = {}; let flex=0, taper=0, no=0; const whoTaper=[], whoNo=[], whoFlex=[];
+    v.forEach(x=>{
+      if(norm(x.noEstoy)){ no++; whoNo.push(x.companero); return; }
+      if(norm(x.taperGlovo)){ taper++; whoTaper.push(x.companero); return; }
+      const e1 = (x.eleccion1||'').trim();
+      if(!e1 || e1===FLEX){ flex++; whoFlex.push(x.companero); }
+      else { count[e1]=(count[e1]||0)+1; (whoRest[e1]=whoRest[e1]||[]).push(x.companero); }
+    });
+    const sorted = Object.entries(count).sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
+    return {
+      total:v.length,
+      r1: sorted[0] ? {nombre:sorted[0][0], n:sorted[0][1], quien:whoRest[sorted[0][0]]} : null,
+      r2: sorted[1] ? {nombre:sorted[1][0], n:sorted[1][1], quien:whoRest[sorted[1][0]]} : null,
+      flex, taper, no, whoTaper, whoNo, whoFlex
+    };
+  }
+
+  function onChangeContext(){
+    const semana = $('semana').value;
+    const sub = $('res-sub'), box = $('resultados'), voters = $('voters');
+    if(!semana){ sub.textContent='—'; box.innerHTML=''; voters.textContent=''; return; }
+    const c = computeWeek(semana);
+    sub.innerHTML = `${capitaliza(fmtLargo(semana))} · <b>${c.total}</b> ${c.total===1?'voto':'votos'}`;
+    box.innerHTML =
+      cardOpcion('1ª opción · más votada','rcard--1', c.r1, c.flex) +
+      cardOpcion('2ª opción','rcard--2', c.r2, 0) +
+      cardSimple('Taper / Glovo','rcard--taper', c.taper, '🥡') +
+      cardSimple('No estoy','rcard--no', c.no, '🏠');
+    // detalle de quién va a qué
+    const lines=[];
+    if(c.r1) lines.push(`<b>${c.r1.nombre}:</b> ${c.r1.quien.join(', ')}` + (c.flex?` <span style="opacity:.7">(+${c.flex} flexibles)</span>`:''));
+    if(c.r2) lines.push(`<b>${c.r2.nombre}:</b> ${c.r2.quien.join(', ')}`);
+    if(c.whoTaper.length) lines.push(`<b>Taper/Glovo:</b> ${c.whoTaper.join(', ')}`);
+    if(c.whoNo.length) lines.push(`<b>No estoy:</b> ${c.whoNo.join(', ')}`);
+    voters.innerHTML = lines.join('<br>');
+  }
+  function cardOpcion(tag,cls,r,flex){
+    if(!r) return `<div class="rcard rcard--empty"><span class="rcard__tag">${tag}</span><div class="rcard__name">Sin votos aún</div></div>`;
+    const extra = flex ? `<div class="rcard__extra">+ ${flex} flexible${flex>1?'s':''} se unirán</div>` : '';
+    return `<div class="rcard ${cls}"><span class="rcard__tag">${tag}</span><div class="rcard__name">${r.nombre}</div>
+      <div class="rcard__votes"><span class="rcard__num">${r.n}</span><span class="rcard__lbl">${r.n===1?'voto':'votos'}</span></div>${extra}</div>`;
+  }
+  function cardSimple(tag,cls,n,icon){
+    return `<div class="rcard ${cls}"><span class="rcard__tag">${tag}</span><div class="rcard__name">${icon}</div>
+      <div class="rcard__votes"><span class="rcard__num">${n}</span><span class="rcard__lbl">${n===1?'persona':'personas'}</span></div></div>`;
+  }
+
+  /* ---------- prefill si ya votó ---------- */
+  function prefillVoto(){
+    const q=$('quien').value, s=$('semana').value;
+    if(!q||!s) return;
+    const prev = VOTOS.find(x=>x.companero===q && x.semana===s);
+    if(!prev){ setEstado('fuera'); $('eleccion1').value=FLEX; $('eleccion2').value=''; return; }
+    if(norm(prev.noEstoy)) setEstado('no');
+    else if(norm(prev.taperGlovo)) setEstado('taper');
+    else { setEstado('fuera'); $('eleccion1').value=prev.eleccion1||FLEX; $('eleccion2').value=prev.eleccion2||''; }
+  }
+
+  /* ---------- enviar voto ---------- */
+  async function enviarVoto(){
+    const nombre=$('quien').value, semana=$('semana').value;
+    if(!nombre){ toast('Elige quién eres', true); return; }
+    if(!semana){ toast('Elige un jueves', true); return; }
+    const payload = {
+      nombre, semana,
+      eleccion1: estado==='fuera' ? $('eleccion1').value : '',
+      eleccion2: estado==='fuera' ? $('eleccion2').value : '',
+      taperGlovo: estado==='taper',
+      noEstoy: estado==='no'
+    };
+    const btn=$('enviar'); btn.disabled=true; const old=btn.textContent; btn.textContent='Enviando…';
+    try{
+      await fetch(APP_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+        .then(r=>r.json());
+      // actualizar estado local (upsert) para refrescar sin recargar
+      const idx = VOTOS.findIndex(x=>x.companero===nombre && x.semana===semana);
+      const local = {semana, companero:nombre, eleccion1:payload.eleccion1, eleccion2:payload.eleccion2, taperGlovo:payload.taperGlovo, noEstoy:payload.noEstoy};
+      if(idx>=0) VOTOS[idx]=local; else VOTOS.push(local);
+      onChangeContext(); renderHistorico();
+      toast('¡Voto registrado! 🎉');
+    }catch(e){ toast('Error al enviar el voto', true); }
+    finally{ btn.disabled=false; btn.textContent=old; }
+  }
+
+  /* ---------- histórico ---------- */
+  function renderHistorico(){
+    const t=hoy0();
+    const pasadas = SEMANAS.filter(s=>s.oficina && parseDMY(s.fecha) < t).sort((a,b)=>parseDMY(b.fecha)-parseDMY(a.fecha));
+    const box=$('hist');
+    const conVotos = pasadas.filter(s=>VOTOS.some(v=>v.semana===s.fecha));
+    if(!conVotos.length){ box.innerHTML='<p class="empty">Aún no hay semanas pasadas con votos.</p>'; return; }
+    box.innerHTML = conVotos.map(s=>{
+      const c=computeWeek(s.fecha);
+      const win = c.r1 ? `<b>${c.r1.nombre}</b> (${c.r1.n})${c.r2?` · 2ª: ${c.r2.nombre} (${c.r2.n})`:''}` : 'Sin restaurante';
+      return `<div class="hrow">
+        <span class="hrow__date">${s.fecha}</span>
+        <span class="hrow__win">🍽️ ${win}</span>
+        <span class="hrow__stats">
+          ${c.flex?`<span class="badge">⭐ ${c.flex} flexibles</span>`:''}
+          <span class="badge">🥡 ${c.taper}</span>
+          <span class="badge">🏠 ${c.no}</span>
+          <span class="badge">${c.total} votos</span>
+        </span></div>`;
+    }).join('');
+  }
+
+  /* ---------- tabs ---------- */
+  function switchTab(t){
+    $('tab-semana').classList.toggle('hide', t!=='semana');
+    $('tab-historico').classList.toggle('hide', t!=='historico');
+    $('tab-btn-semana').classList.toggle('is-active', t==='semana');
+    $('tab-btn-historico').classList.toggle('is-active', t==='historico');
+    if(t==='historico') renderHistorico();
+  }
+
+  init();
+  </script>
+</body>
+</html>
