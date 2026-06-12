@@ -31,5 +31,10 @@
   "githubBBVA": {
     "url": "https://bbva.ghe.com/XE93412/Proyectos-RDR-NFQ",
     "note": "Repositorio de código fuente RDR en GitHub BBVA"
+  },
+
+  "planificacionNFQ": {
+    "url": "https://docs.google.com/spreadsheets/d/1WPa5jr4J16ly2q65p88RBPzaIO6O3D6b/edit?gid=1289430084#gid=1289430084",
+    "note": "Planificación de proyectos equipo RDR-NFQ"
   }
 }
