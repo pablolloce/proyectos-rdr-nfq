@@ -432,7 +432,7 @@ button { cursor: pointer; }
      4 Cód.       — fijo razonable
      5 US         — flexible, crece y luego envuelve
      6 Resp.      — fijo razonable
-     7 Release    — auto (un checkbox)
+     7 tech-kytl  — fijo (un checkbox, alineado con su cabecera)
      8 Comentarios — flexible, crece y luego envuelve
      9 Acciones   — auto (2 botones)
   */
@@ -443,9 +443,9 @@ button { cursor: pointer; }
     minmax(120px, 1.2fr)
     minmax(140px, 1.6fr)
     minmax(110px, 1fr)
-    auto
+    72px
     minmax(140px, 1.5fr)
-    auto;
+    80px;
   gap: 6px;
   padding: 6px 12px;
   align-items: start;   /* antes center → con textareas variables, mejor align-start */
@@ -1351,6 +1351,12 @@ const ICONS = {
 
 // Prefijo fijo para Historias de usuario y Feature de proyecto.
 const CIBRDR_PREFIX = "CIBRDR-";
+// Normaliza un campo multivalor separado por ";" (Historias de usuario, Features):
+// quita espacios, entradas vacías y el prefijo suelto, y une el resto con "; ".
+function limpiarMulti(v) {
+  return String(v == null ? '' : v).split(';').map(s => s.trim())
+    .filter(s => s && s !== CIBRDR_PREFIX.trim()).join('; ');
+}
 
 /* ════════════════════════════════════════════════════════════════════
    BIBLIOTECA DE COMANDOS DE COMPROBACIÓN POST-IMPLANTACIÓN
@@ -1965,7 +1971,7 @@ function actualizarValidador() {
   if (proyOk) it(idTraspasoOk, idTraspasoOk
       ? "Todos los proyectos tienen ID de Traspaso (YYYY-…)"
       : "Falta ID de Traspaso en: " + proysSinIdT.join(", "));
-  if (compOk) it(relOk,  "Todos los componentes tienen el check 'Release'");
+  if (compOk) it(relOk,  "Todas las historias de usuario tienen el 'tech-kytl' informado");
   it(ruleRdrOk, rdrRuleMsg);
   it(seqOk,  msgSeq);
 
@@ -2063,7 +2069,8 @@ function pintarProyectos() {
       '<div class="project-header__title">' +
         '<span class="project-header__dot"></span>' +
         '<span class="project-header__name">' + esc(p.nombre) + '</span>' +
-        '<span class="project-header__feat">' + esc(p.feature) + '</span>' +
+        String(p.feature || '').split(';').map(f => f.trim()).filter(Boolean)
+          .map(f => '<span class="project-header__feat">' + esc(f) + '</span>').join('') +
       '</div>' +
       '<div class="project-header__meta">' +
         '<span>Resp. BBVA: <strong>' + esc(p.cliente) + '</strong></span>' +
@@ -2082,7 +2089,7 @@ function pintarProyectos() {
     headerRow.className = 'comp-header comp-grid';
     headerRow.innerHTML =
       '<div>Componente</div><div>Tipo</div><div>Subida</div><div>Cód.</div>' +
-      '<div>Historias usuario</div><div>Resp.</div><div>Release</div><div>Comentarios</div><div></div>';
+      '<div>Historias usuario</div><div>Resp.</div><div style="text-align:center">tech-kytl</div><div>Comentarios</div><div></div>';
     tableWrap.appendChild(headerRow);
 
     (p.componentes || []).forEach(c => {
@@ -2223,6 +2230,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 0);
     // Si es textarea autosize, refrescar su alto (aunque para un prefijo cortito no cambia).
     if (t.tagName === 'TEXTAREA' && t.classList.contains('autosize')) autosizeTextarea(t);
+  });
+
+  // Al salir de un campo multivalor (Historias de usuario / Feature), si tiene
+  // contenido se normaliza y se añade "; " para poder escribir otra entrada.
+  // Si no se escribe nada más, el "; " sobrante se ignora al guardar (limpiarMulti).
+  document.addEventListener('focusout', (ev) => {
+    const t = ev.target;
+    if (!t.matches || !t.matches('input[type="text"][data-autofill="cibrdr"], textarea[data-autofill="cibrdr"]')) return;
+    const limpio = limpiarMulti(t.value);
+    const nuevo = limpio ? limpio + '; ' : '';
+    if (nuevo === t.value) return;
+    t.value = nuevo;
+    if (t.tagName === 'TEXTAREA' && t.classList.contains('autosize')) autosizeTextarea(t);
+    if (t.dataset.act === 'editComp') t.dispatchEvent(new Event('input', { bubbles: true })); // dispara autosave del componente
   });
 
   // Delegación para listas de orden y mergeos (existen siempre en el DOM).
@@ -2803,7 +2824,7 @@ async function addProyecto() {
   if (!n) return showToast("El nombre del proyecto es obligatorio", "error");
   const t = showToast("Creando proyecto…", "loading", 0);
   try {
-    const feat = $('add-p-feat').value.trim();
+    const feat = limpiarMulti($('add-p-feat').value);
     const resp = $('add-p-resp').value;
     const data = await llamarBackend("guardarNuevoProyecto", { fechaStr: E.fechaSeleccionada, nombre: n, feature: feat, respBBVA: resp });
     $('add-p-nom').value = ''; $('add-p-feat').value = '';
@@ -2945,7 +2966,7 @@ async function updComp(fila) {
     subida:  $('s-' + fila).value,
     resp:    $('r-' + fila).value,
     cod:     $('c-' + fila).value,
-    us:      $('u-' + fila).value,
+    us:      limpiarMulti($('u-' + fila).value),
     release: $('rel-' + fila).checked,
     com:     $('com-' + fila).value,
   };
