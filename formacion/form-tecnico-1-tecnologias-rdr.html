@@ -1331,7 +1331,7 @@ html, body { height: 100%; overflow: hidden; }
       <div class="stat-box"><div class="stat-box__value">23</div><div class="stat-box__label">Slides de contenido</div></div>
       <div class="stat-box"><div class="stat-box__value">25</div><div class="stat-box__label">Preguntas de evaluación</div></div>
       <div class="stat-box" style="background: var(--bbva-canary);">
-        <div class="stat-box__value" style="color: var(--bbva-electric-blue);">20/30</div>
+        <div class="stat-box__value" style="color: var(--bbva-electric-blue);">17/25</div>
         <div class="stat-box__label" style="color: var(--bbva-electric-blue);">Mínimo para superar</div>
       </div>
     </div>
@@ -2231,7 +2231,7 @@ aria-label="Cierre">
   <main style="max-width:760px;margin:0 auto;width:100%;">
     <p class="ante-title">Comprueba tu conocimiento</p>
     <h2>Quiz · 25 preguntas</h2>
-    <p style="font-size:var(--bbva-fs-caption);color:var(--bbva-gray-5);margin-top:6px;">Mínimo para superar: 20 aciertos.</p>
+    <p style="font-size:var(--bbva-fs-caption);color:var(--bbva-gray-5);margin-top:6px;">Mínimo para superar: 17 aciertos.</p>
     <div id="qz-quiz" style="margin-top:var(--bbva-space-4);">
       <div style="height:4px;border-radius:2px;background:var(--bbva-gray-2);margin-bottom:var(--bbva-space-2);overflow:hidden;">
         <div id="qz-bar" style="height:100%;width:0;background:var(--bbva-electric-blue);border-radius:2px;transition:width 300ms;"></div>
@@ -2463,9 +2463,9 @@ function showRes() {
     '<button onclick="location.reload()" style="cursor:pointer;margin-top:var(--bbva-space-3);background:var(--bbva-electric-blue);color:var(--bbva-sand);border:0;border-radius:var(--bbva-radius-full);font-family:var(--bbva-font-body);font-weight:700;padding:var(--bbva-space-2) var(--bbva-space-4);">Repetir quiz</button>'+
     '</div>';
   // === Hook: si aprueba, muestra el bloque de certificado ===
-  if (score >= 20) {
+  if (score >= PASS_THRESHOLD) {
     if (window.CertSystem) {
-      window.CertSystem.showCertBlock({ score: score, total: 30 });
+      window.CertSystem.showCertBlock({ score: score, total: QUES.length });
     }
   }
 

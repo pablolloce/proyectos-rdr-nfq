@@ -1784,7 +1784,7 @@ function showRes() {
   // === Hook: si aprueba, muestra el bloque de certificado ===
   if (score >= 10) {
     if (window.CertSystem) {
-      window.CertSystem.showCertBlock({ score: score, total: 15 });
+      window.CertSystem.showCertBlock({ score: score, total: QUES.length });
     }
   }
 
