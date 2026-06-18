@@ -5,14 +5,22 @@
      · Lun 12 y 17 · Mar 12 y 17
      · Mié 12 → aviso final: la reserva se hace en 30 min; quien no vote se
                 asume "No estoy" o "Taper / Glovo".
-   Envía desde noreply@tu-dominio (Workspace): sin alias, sin admin.
+   Envía desde tu cuenta (nombre visible "Comidas RDR"): un correo individual por
+   compañero, con su dirección en el PARA (sin CC, sin "Responder a" a noreply).
+   Las respuestas, si las hay, te llegan a ti.
    Puesta en marcha: rellena WEB_URL y ejecuta crearTriggers() una vez.
-   Prueba: enviarRecordatorioPrueba() (envía a PRUEBA_TO desde noreply).
+   Prueba: enviarRecordatorioPrueba() (envía a PRUEBA_TO).
    =========================================================================== */
 
-const WEB_URL   = 'https://TU_USUARIO.github.io/TU_REPO/comidas.html'; // ← rellena
+const WEB_URL   = 'https://TU_USUARIO.github.io/TU_REPO/comidas.html'; // ← rellena (enlace para el botón del correo)
 const REMITE    = 'Comidas RDR';
 const PRUEBA_TO = 'pablo.llorente@nfq.es';
+
+// El JSON del equipo se lee SIEMPRE desde la URL "raw" de GitHub: devuelve text/plain
+// sin redirecciones ni páginas HTML de error. NO usar la URL de GitHub Pages: puede
+// redirigir (307) o, en red corporativa, ser bloqueada por el proxy y devolver HTML,
+// lo que rompe el JSON.parse ("Unexpected token '<', <!doctype...").
+const EQUIPO_JSON_URL = 'https://raw.githubusercontent.com/pablolloce/proyectos-rdr-nfq/main/equipo/equipo.json'; // ← ajusta usuario/repo/rama si cambian
 
 // ── Disparadores (ejecutar una vez) ───────────────────────────────────────
 function crearTriggers() {
@@ -47,10 +55,12 @@ function enviarRecordatorio() {
   pendientes.forEach(p => p.email && enviarMail_(p.email, asunto, cuerpo_(p.nombre, fecha, esFinal, lider)));
 }
 
-// ── Envío (siempre desde noreply, con nombre genérico) ────────────────────
+// ── Envío: UN correo individual por compañero, desde tu cuenta (nombre visible
+//    "Comidas RDR"). Sin noReply → no hay "Responder a: noreply"; cada compañero
+//    va en el PARA (individual, sin CC). Las respuestas llegan a tu cuenta.
 function enviarMail_(to, subject, htmlBody) {
   GmailApp.sendEmail(to, subject, 'Vota dónde comer el jueves: ' + WEB_URL,
-    { htmlBody: htmlBody, name: REMITE, noReply: true });
+    { htmlBody: htmlBody, name: REMITE });
 }
 
 // ── Datos ─────────────────────────────────────────────────────────────────
@@ -65,8 +75,12 @@ function noVotantes_(ss, fecha) {
     .forEach((r, i) => { if (i && r[0] === fecha && r[1]) voto[r[1]] = true; });
   let team = [];
   try {
-    const url = WEB_URL.replace(/comidas\.html.*$/, 'equipo/equipo.json');
-    team = JSON.parse(UrlFetchApp.fetch(url).getContentText()).team || [];
+    const resp = UrlFetchApp.fetch(EQUIPO_JSON_URL, { muteHttpExceptions: true, followRedirects: true });
+    const code = resp.getResponseCode();
+    const body = resp.getContentText();
+    if (code !== 200) throw new Error('HTTP ' + code + ' al leer equipo.json');
+    if (body.trim().charAt(0) !== '{') throw new Error('respuesta no-JSON (¿URL redirige a HTML?): ' + body.slice(0, 60));
+    team = JSON.parse(body).team || [];
   } catch (e) { Logger.log('equipo.json: ' + e); }
   return team.filter(p => !voto[p.nombre]).map(p => ({ nombre: p.nombre, email: p.email }));
 }
@@ -102,7 +116,7 @@ function cuerpo_(nombre, fecha, esFinal, lider) {
     +   '<p style="margin:18px 0 0;font-size:12px;color:#8a8a8a;">Si el botón no va: <a href="' + WEB_URL + '" style="color:#001391;">' + WEB_URL + '</a></p></div></div>';
 }
 
-// ── Prueba: envía a PRUEBA_TO (pablo.llorente@nfq.es) desde noreply ────────
+// ── Prueba: envía a PRUEBA_TO (pablo.llorente@nfq.es) desde tu cuenta, en el PARA ──
 function enviarRecordatorioPrueba() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const tz = ss.getSpreadsheetTimeZone();
@@ -112,5 +126,5 @@ function enviarRecordatorioPrueba() {
   const fecha = Utilities.formatDate(j, tz, 'dd/MM/yyyy');
   enviarMail_(PRUEBA_TO, '[PRUEBA] 🍽️ ¿Dónde comemos el jueves ' + fecha + '?',
     cuerpo_('Pablo', fecha, false, lider_(ss, fecha)));
-  Logger.log('Prueba enviada a ' + PRUEBA_TO + ' desde noreply.');
+  Logger.log('Prueba enviada a ' + PRUEBA_TO + '.');
 }

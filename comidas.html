@@ -273,6 +273,12 @@
   const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9X7g3kH3jgr1FeLdUDDjjEx2h-fFpQ33aWKQ0X0dLeQuAhMUcx8ApcqZoC1__j801/exec';
   const EQUIPO_URL = 'equipo/equipo.json';
 
+  /* Autenticación: se hace en index.html (puerta de entrada). Aquí solo leemos el
+     correo validado que index dejó en localStorage; si no hay, se redirige a la
+     entrada para iniciar sesión. Una vez logueado, se navega sin fricción. */
+  const AUTH_KEY = 'rdr_auth_email';
+  const AUTH_EMAIL = (localStorage.getItem(AUTH_KEY) || '').toLowerCase();
+
   // Fallback (solo si no hay backend): restaurantes base para previsualizar
   const FALLBACK_RESTAURANTES = [
     {nombre:'Beefius', descCorta:'', carta:'https://www.beefcious.com/menu-beefcious/', foto:'https://www.beefcious.com/wp-content/uploads/2025/07/interior-las-tablas-1024x683.webp', descLarga:''},
@@ -295,15 +301,27 @@
   const norm = b => (b===true || String(b).toLowerCase()==='sí' || String(b).toLowerCase()==='si');
   function toast(msg, err){ const t=$('toast'); t.textContent=msg; t.className='toast is-visible'+(err?' is-error':''); setTimeout(()=>t.className='toast',3200); }
 
+  /* ---------- equipo (memoizado: lo usan la puerta y la app) ---------- */
+  let EQUIPO_FULL = null;
+  async function loadEquipo(){
+    if(EQUIPO_FULL) return EQUIPO_FULL;
+    try{ const eq = await fetch(EQUIPO_URL).then(r=>r.json()); EQUIPO_FULL = eq.team || []; }
+    catch(e){ EQUIPO_FULL = []; }
+    return EQUIPO_FULL;
+  }
+
   /* ---------- carga inicial ---------- */
   async function init(){
     // 1) Equipo (siempre desde el repo, como las formaciones)
-    try{
-      const eq = await fetch(EQUIPO_URL).then(r=>r.json());
-      EQUIPO = (eq.team||[]).map(p=>p.nombre).sort((a,b)=>a.localeCompare(b,'es'));
-    }catch(e){ EQUIPO = []; }
+    const team = await loadEquipo();
+    EQUIPO = team.map(p=>p.nombre).sort((a,b)=>a.localeCompare(b,'es'));
     const selQ = $('quien');
     selQ.innerHTML = '<option value="">Selecciona tu nombre…</option>' + EQUIPO.map(n=>`<option value="${n}">${n}</option>`).join('');
+    // si el usuario entró con su correo, preselecciona su nombre
+    if(AUTH_EMAIL){
+      const yo = team.find(p=>[p.email,p.emailBBVA].map(x=>String(x||'').toLowerCase()).includes(AUTH_EMAIL));
+      if(yo){ selQ.value = yo.nombre; }
+    }
 
     // 2) Datos del Sheet (restaurantes, semanas, votos)
     const configured = APP_SCRIPT_URL && !APP_SCRIPT_URL.startsWith('TU_URL');
@@ -328,6 +346,7 @@
     renderHistorico();
     // preseleccionar la semana más próxima y pintar resultados
     onChangeContext();
+    prefillVoto(); // si el usuario quedó preseleccionado por su login, carga su voto
 
     $('quien').addEventListener('change', prefillVoto);
     $('semana').addEventListener('change', ()=>{ onChangeContext(); prefillVoto(); });
@@ -423,6 +442,10 @@
     if(c.r2) lines.push(`<b>${c.r2.nombre}:</b> ${c.r2.quien.join(', ')}`);
     if(c.whoTaper.length) lines.push(`<b>Taper/Glovo:</b> ${c.whoTaper.join(', ')}`);
     if(c.whoNo.length) lines.push(`<b>No estoy:</b> ${c.whoNo.join(', ')}`);
+    // quién falta por votar = equipo menos quienes ya han votado esta semana
+    const votaron = new Set(VOTOS.filter(x=>x.semana===semana).map(x=>x.companero));
+    const faltan = EQUIPO.filter(n=>!votaron.has(n));
+    if(faltan.length) lines.push(`<b style="color:#b26a00">Faltan por votar (${faltan.length}):</b> <span style="opacity:.7">${faltan.join(', ')}</span>`);
     voters.innerHTML = lines.join('<br>');
   }
   function cardOpcion(tag,cls,r,flex){
@@ -506,7 +529,11 @@
 
   document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeResto(); });
 
-  init();
+  /* Guardián de acceso: la autenticación se realiza en index.html. Si no hay un
+     correo validado en localStorage, se vuelve a la entrada para iniciar sesión;
+     si lo hay, la app arranca con normalidad. */
+  if(!AUTH_EMAIL){ location.replace('index.html'); }
+  else { init(); }
   </script>
 </body>
 </html>
