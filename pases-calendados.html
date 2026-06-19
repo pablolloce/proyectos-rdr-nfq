@@ -1318,9 +1318,28 @@ textarea.inline-input {
    =========================================================== */
 
 // ════ CONFIG ══════════════════════════════════════════════
-const API_URL = "https://script.google.com/macros/s/AKfycbwZ5Sx4TlJnJ4I1sFntjG9dNyfSFeqRu29vNEKowD1wysLjmVT9fr0m9hNvQZOqE7C9hA/exec";
+// URLs resueltas desde links/links.json en runtime (resolverLinks_). Fuente única.
+let API_URL = "";
+let JIRA_TPL = "";
+let ENOA_TPL = "";
 const CACHE_KEY_PREFIX = "rdr_hub_state_v3_";
 const CACHE_TTL_MS = 1000 * 60 * 30;
+
+// Carga las 3 URLs desde links/links.json. Debe ejecutarse antes de usarlas.
+async function resolverLinks_(){
+  try{
+    const L = await fetch('links/links.json', {cache:'no-store'}).then(r=>r.json());
+    if(L){
+      if(L.pasesBackend && L.pasesBackend.url) API_URL = L.pasesBackend.url;
+      if(L.jiraBrowse && L.jiraBrowse.url) JIRA_TPL = L.jiraBrowse.url;
+      if(L.despliegueENOA && L.despliegueENOA.url) ENOA_TPL = L.despliegueENOA.url;
+    }
+  }catch(e){ console.warn('links.json:', e); }
+  // Propagar las plantillas a los bloques de comandos (txt con {COD}).
+  COMANDOS.DP_KYTL.pasos[0].txt = ENOA_TPL;
+  COMANDOS.SS.pasos[0].txt = JIRA_TPL;
+  COMANDOS.ARQDAT.pasos[0].txt = JIRA_TPL;
+}
 
 // ════ ESTADO ══════════════════════════════════════════════
 let E = {};
@@ -1434,19 +1453,19 @@ const COMANDOS = {
   DP_KYTL: {
     titulo: "Link DP-KYTL",
     pasos: [
-      { txt: "https://cibdesktop.es.igrupobbva/ENOA/com.bbva.ecdy-deploymentfront-deploymentmgr-1/#/KYTL/deployment/{COD}", desc: "Abrir el link para verificar el deployment", esLink: true },
+      { txt: "", desc: "Abrir el link para verificar el deployment", esLink: true }, // txt: ENOA_TPL ({COD}), inyectado en resolverLinks_ desde links.json (despliegueENOA)
     ],
   },
   SS: {
     titulo: "Link JIRA SS",
     pasos: [
-      { txt: "https://cibproducts.grupobbva.com/JIRA/browse/{COD}", desc: "Abrir el JIRA para verificar el estado", esLink: true },
+      { txt: "", desc: "Abrir el JIRA para verificar el estado", esLink: true }, // txt: JIRA_TPL ({COD}), inyectado en resolverLinks_ desde links.json (jiraBrowse)
     ],
   },
   ARQDAT: {
     titulo: "Link JIRA ARQDAT",
     pasos: [
-      { txt: "https://cibproducts.grupobbva.com/JIRA/browse/{COD}", desc: "Abrir el JIRA para verificar el estado", esLink: true },
+      { txt: "", desc: "Abrir el JIRA para verificar el estado", esLink: true }, // txt: JIRA_TPL ({COD}), inyectado en resolverLinks_ desde links.json (jiraBrowse)
     ],
   },
   // ─── Pasos del sistema (no dependen del componente) ───
@@ -1797,7 +1816,8 @@ async function revalidar(fecha) {
   } catch {}
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await resolverLinks_(); // Resuelve API_URL / JIRA_TPL / ENOA_TPL antes de cualquier uso.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && E && E.fechaSeleccionada) {
       revalidar(E.fechaSeleccionada).catch(() => {});

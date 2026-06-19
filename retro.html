@@ -417,9 +417,16 @@
 /* ================================================================
    CONFIGURACIÓN — RELLENA ESTO TRAS DESPLEGAR Code.gs
    ================================================================ */
-// Pega aquí la URL de tu Apps Script Web App (la que termina en /exec).
-// Despliegue: Deploy → New deployment → Web app → "Anyone".
-const GAS_URL = "https://script.google.com/macros/s/AKfycbx1sGjHUH9LPw1qF4nOBPOCcP1T9eW-zbMg8FQznqTWOd4yipqpke_8ynNxdu4Gsza2/exec";
+// La URL del backend Apps Script se lee de links/links.json (clave retroBackend).
+// Para cambiarla, edita SOLO links.json — nunca este HTML.
+let GAS_URL = "";
+
+async function resolverLinks_(){
+  try{
+    const L = await fetch('links/links.json', {cache:'no-store'}).then(r=>r.json());
+    if(L && L.retroBackend && L.retroBackend.url) GAS_URL = L.retroBackend.url;
+  }catch(e){ console.warn('links.json:', e); }
+}
 
 /* ================================================================
    ESTADO GLOBAL
@@ -538,7 +545,8 @@ async function gasPost(action, payload) {
 /* ================================================================
    TABS DEL MENÚ INICIAL
    ================================================================ */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await resolverLinks_();
   setTab('join');
   const hoy = new Date().toISOString().split('T')[0];
   document.getElementById('new-session-date').value = hoy;

@@ -829,9 +829,22 @@
         try{ return JSON.parse(decodeURIComponent(escape(atob(tok.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))))); }
         catch(e){ return null; }
       }
+      function esCoordinador(email){
+        const e = String(email||'').trim().toLowerCase();
+        const m = TEAM.find(p => String(p.email||'').toLowerCase()===e || String(p.emailBBVA||'').toLowerCase()===e);
+        return !!(m && m.coordinador);
+      }
+      // Muestra el contenido solo-coordinadores: los elementos con clase "coord-only"
+      // están ocultos por defecto (inline style="display:none"); aquí se revelan.
+      function aplicarRol(email){
+        const coord = esCoordinador(email);
+        document.body.classList.toggle('is-coordinador', coord);
+        if(coord) document.querySelectorAll('.coord-only').forEach(el => el.style.removeProperty('display'));
+      }
       function entrar(email){
         localStorage.setItem(AUTH_KEY, email.toLowerCase());
         document.body.classList.add('authed');
+        aplicarRol(email);
       }
       window.cerrarSesion = function(){
         localStorage.removeItem(AUTH_KEY);
@@ -865,7 +878,7 @@
         await loadTeam();
         // 1) ¿sesión ya validada? (localStorage compartido entre todas las páginas)
         const cached = localStorage.getItem(AUTH_KEY);
-        if(cached && emailPermitido(cached)){ document.body.classList.add('authed'); return; }
+        if(cached && emailPermitido(cached)){ document.body.classList.add('authed'); aplicarRol(cached); return; }
         // si había una sesión inválida (correo ya no autorizado), límpiala
         if(cached){ localStorage.removeItem(AUTH_KEY); }
         // 2) ¿está configurado el Client ID?

@@ -423,11 +423,19 @@
   // ============================================================
   //  CONFIGURACIÓN
   // ============================================================
-  // URL del Apps Script Web App. Sustituye por la URL real cuando
-  // hayas desplegado el script. Mientras esté en blanco, la web
-  // mostrará el equipo sin progresos (0 badges en todos).
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzAKr3NyT7Ppyip9Jh6c2adjXHbhXcxpZD8UawtBUcTuH0cnLtKjGN7VFgyhf_ACR_C/exec";
-  // Ejemplo: "https://script.google.com/macros/s/AKfycby...../exec"
+  // La URL del backend se lee de /links/links.json (clave formacionesBackend).
+  // Para cambiarla, edita SOLO links.json — nunca este HTML. Si está en blanco
+  // (links.json no disponible), la web muestra el equipo sin progresos.
+  let APPS_SCRIPT_URL = "";
+
+  // Resuelve la URL del backend desde /links/links.json (fuente única).
+  // Si falla, APPS_SCRIPT_URL queda "" y se usa el fallback "sin backend".
+  async function resolverLinks_(){
+    try{
+      const L = await fetch('../links/links.json', {cache:'no-store'}).then(r=>r.json());
+      if(L && L.formacionesBackend && L.formacionesBackend.url) APPS_SCRIPT_URL = L.formacionesBackend.url;
+    }catch(e){ console.warn('links.json:', e); }
+  }
 
   // ============================================================
   //  CARGA DE DATOS
@@ -579,6 +587,7 @@
   // ============================================================
   (async function init() {
     try {
+      await resolverLinks_();
       const [team, progressData] = await Promise.all([
         loadTeam(),
         loadProgress(),

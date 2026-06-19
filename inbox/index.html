@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hub de Control · Proyectos, Economía y Capacidad</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: {
+      brand: { 50:'#eef4ff',100:'#d9e6ff',500:'#3b6ef5',600:'#2f59d6',700:'#2545ad' }
+    }}}}
+  </script>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .nav-link.active { background:#2545ad; color:#fff; }
+    table input, table select { background: transparent; }
+    table input:focus, table select:focus { background:#fff; outline:2px solid #3b6ef5; border-radius:4px; }
+    .cell-input { width:100%; padding:2px 4px; border:1px solid transparent; border-radius:4px; }
+    .cell-input:hover { border-color:#e2e8f0; }
+    tbody tr.zebra:nth-child(even) { background:#fafbfc; }
+    thead.sticky-h th { position:sticky; top:0; background:#f1f5f9; z-index:5; }
+    tfoot.sticky-f td { position:sticky; bottom:0; background:#e7edf5; z-index:5; }
+    ::-webkit-scrollbar { height:9px; width:9px; }
+    ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:9999px; }
+    ::-webkit-scrollbar-track { background:#f1f5f9; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+  <div class="flex min-h-screen">
+
+    <!-- ============ MENÚ LATERAL ============ -->
+    <aside class="w-60 shrink-0 bg-slate-900 text-slate-200 flex flex-col fixed h-screen">
+      <div class="px-6 py-5 border-b border-slate-700">
+        <h1 class="text-lg font-bold text-white">⬡ Hub de Control</h1>
+        <p class="text-xs text-slate-400 mt-1">Gestión · Rentabilidad · Capacidad</p>
+      </div>
+      <nav class="flex-1 px-3 py-4 space-y-1">
+        <button data-view="proyectos"    class="nav-link active w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-700 transition">📦 Proyectos</button>
+        <button data-view="coordinacion" class="nav-link w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-700 transition">🧭 Coordinación</button>
+        <button data-view="capacidad"    class="nav-link w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-700 transition">📊 Capacidad</button>
+        <button data-view="ejecucion"    class="nav-link w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-700 transition">📅 Ejecución</button>
+        <button data-view="economia"     class="nav-link w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-700 transition">💶 Economía</button>
+        <button data-view="bolsas"       class="nav-link w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-slate-700 transition">🏦 Bolsas</button>
+      </nav>
+      <div class="px-4 py-3 border-t border-slate-700 space-y-2">
+        <button id="btn-reset" class="w-full text-xs text-slate-400 hover:text-white border border-slate-700 rounded-lg py-2">↺ Restaurar datos ejemplo</button>
+        <p class="text-[10px] text-slate-600">v0.3 · prototipo en memoria</p>
+      </div>
+    </aside>
+
+    <!-- ============ CONTENIDO ============ -->
+    <div class="flex-1 flex flex-col min-w-0 ml-60">
+
+      <header class="bg-white border-b border-slate-200 px-8 py-3.5 flex flex-wrap items-center gap-x-6 gap-y-2 justify-between sticky top-0 z-20">
+        <h2 id="page-title" class="text-xl font-semibold">Proyectos</h2>
+        <div class="flex items-center gap-5 text-sm">
+          <label class="flex items-center gap-2">
+            <span class="text-slate-500 font-medium">Trimestre</span>
+            <select id="q-selector" data-entity="config" data-field="activeQ" class="border border-slate-300 rounded-lg px-3 py-1.5 bg-white"></select>
+          </label>
+          <label class="flex items-center gap-2">
+            <span class="text-slate-500 font-medium">Tarifa €/h</span>
+            <input id="tarifa-input" type="number" step="0.5" data-entity="config" data-field="tariff" data-type="num"
+              class="w-24 border border-slate-300 rounded-lg px-3 py-1.5 text-right" />
+          </label>
+          <span class="text-xs text-slate-400 hidden xl:inline">El Q afecta a Economía y Capacidad</span>
+        </div>
+      </header>
+
+      <main class="p-6 lg:p-8 flex-1">
+        <section id="view-proyectos"    class="view active"></section>
+        <section id="view-coordinacion" class="view"></section>
+        <section id="view-capacidad"    class="view"></section>
+        <section id="view-ejecucion"    class="view"></section>
+        <section id="view-economia"     class="view"></section>
+        <section id="view-bolsas"       class="view"></section>
+      </main>
+    </div>
+  </div>
+
+<script>
+/* =================================================================
+   1. ESTADO (datos de ejemplo)
+   ================================================================= */
+const ESTADOS  = ['Pendiente','Aprobada','En curso','Terminada','Cancelada'];
+const ACTIVOS  = ['Pendiente','Aprobada','En curso'];
+const PERFILES = ['Funcional','Técnico'];
+const ROLES_EQUIPO = ['Responsable','Responsabilizado','Técnico Cross'];
+
+function seed() {
+  return {
+    config: {
+      quarters: ['2025-Q4','2026-Q1','2026-Q2','2026-Q3','2026-Q4'],
+      activeQ: '2026-Q2',
+      tariffByQ: { '2025-Q4':60,'2026-Q1':62,'2026-Q2':65,'2026-Q3':65,'2026-Q4':68 },
+      marginFuncional: 0.25,
+      marginTecnico: 0.20,
+    },
+    people: [
+      mkPerson('p1','Ana López','Funcional','Responsable',     42,160,1.0,8),
+      mkPerson('p2','Diego Mas','Funcional','Responsabilizado', 45,160,0.5,0),
+      mkPerson('p6','Iván Paz','Funcional','Técnico Cross',     40,160,0.7,4),
+      mkPerson('p3','Beto Ruiz','Técnico','Técnico Cross',      38,160,0.8,0),
+      mkPerson('p4','Carla Gil','Técnico','Técnico Cross',      35,160,1.0,16),
+      mkPerson('p5','Eva Soto','Técnico','Técnico Cross',       37,160,1.0,0),
+    ],
+    initiatives: [
+      mkIni('i1','Portal Cliente v2','Banco Sur',  '2026-Q1','En curso', 320,300,'PED-1042',{'2026-Q1':40,'2026-Q2':280},true),
+      mkIni('i2','Migración ERP',    'Retail Norte','2026-Q1','En curso', 400,400,'PED-1043',{'2026-Q2':350,'2026-Q3':50},true),
+      mkIni('i3','App Logística',    'LogiCorp',    '2026-Q2','En curso', 220,150,'PED-1051',{'2026-Q2':200},true),
+      mkIni('i4','Dashboard BI',     'Banco Sur',   '2026-Q2','Pendiente',180,0,'',          {},true),
+      mkIni('i6','CRM Móvil',        'Retail Norte','2026-Q2','Aprobada', 260,260,'PED-1060',{},false),
+      mkIni('i5','Integración Pagos','PayFast',     '2026-Q1','Cancelada',120,0,'',          {},false),
+      mkIni('i7','Web Corporativa',  'MediaCo',     '2025-Q4','Terminada',90, 90,'PED-0980', {'2025-Q4':60,'2026-Q1':30},false),
+    ],
+    assignments: [
+      mkAsg('a1','i1','p1','Responsable',40), mkAsg('a2','i1','p3','Ejecutor',30),
+      mkAsg('a3','i2','p2','Responsable',30), mkAsg('a4','i2','p3','Ejecutor',50), mkAsg('a5','i2','p5','Ejecutor',40),
+      mkAsg('a6','i3','p1','Responsable',20), mkAsg('a7','i3','p4','Ejecutor',70),
+      mkAsg('a8','i4','p2','Responsable',20), mkAsg('a9','i4','p4','Ejecutor',45),
+    ],
+    expenses: [
+      mkExp('e1','2026-Q2','i3','Guardias','Soporte 24x7 logística',1200),
+      mkExp('e2','2026-Q2','i2','Horas extra','Pico migración',850),
+      mkExp('e3','2026-Q2','','Servicios','Licencias y cloud',2100),
+    ],
+    bolsas: [   // cada bolsa pertenece a un proyecto (Aporte +). Otros proyectos la vacían (Consumo -).
+      mkBol('b1','Oficial','i2','Aporte','',160,'2026-Q1','Saldo heredado de Migración ERP'),
+      mkBol('b2','Oficial','i2','Aporte','', 50,'2026-Q2','Elevación sin ejecutar'),
+      mkBol('b3','Oficial','i2','Consumo','i3',50,'2026-Q2','App Logística consume de la bolsa de ERP'),
+      mkBol('b4','Adelantos','i1','Aporte','',35,'2026-Q1','Saldo heredado'),
+      mkBol('b5','Adelantos','i1','Aporte','',20,'2026-Q2','Horas adelantadas Portal Cliente'),
+    ],
+    seqs: { p:7, i:7, a:9, e:3, b:5 },
+  };
+}
+function mkPerson(id,name,perfil,rol,costeHora,horasMes,pct,vac){
+  return { id,name,perfil,rol, econ:{ '2026-Q2':{costeHora,horasMes,pctDedicacion:pct,horasVacForm:vac} } };
+}
+function mkIni(id,nombre,cliente,qAlta,estado,est,elev,ped,ejec,cap){
+  return { id,nombre,cliente,qAlta,estado, horasEstimadas:est,horasElevadas:elev,idPedido:ped,
+    ejecucion:ejec||{}, consideradaCapacidad:cap };
+}
+function mkAsg(id,iniId,personId,rol,pct){ return {id,iniId,personId,rol,pctTrabajo:pct}; }
+function mkExp(id,q,iniId,concepto,desc,importe){ return {id,q,iniId,concepto,descripcion:desc,importe}; }
+function mkBol(id,tipo,proyectoId,mov,contraId,horas,q,nota){ return {id,tipo,proyectoId,mov,contraId,horas,q,nota}; }
+
+let S = seed();
+
+/* =================================================================
+   2. HELPERS
+   ================================================================= */
+const $  = s => document.querySelector(s);
+const eur = new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+const num = new Intl.NumberFormat('es-ES',{maximumFractionDigits:0});
+const pct = n => (isFinite(n)? (n*100).toFixed(1):'0.0')+'%';
+const Q   = () => S.config.activeQ;
+const tariff = () => S.config.tariffByQ[Q()] || 0;
+
+const PAL = ['#3b6ef5','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#14b8a6','#a855f7','#0ea5e9'];
+function colorOf(id){ let h=0; for(let i=0;i<id.length;i++) h=(h*31+id.charCodeAt(i))>>>0; return PAL[h%PAL.length]; }
+const dot   = id => `<span class="inline-block w-2.5 h-2.5 rounded-full mr-2 align-middle" style="background:${colorOf(id)}"></span>`;
+const lstyle= id => `style="border-left:4px solid ${colorOf(id)}"`;
+
+function getEcon(p){ if(!p.econ[Q()]) p.econ[Q()]={costeHora:0,horasMes:160,pctDedicacion:1,horasVacForm:0}; return p.econ[Q()]; }
+const iniName = id => (S.initiatives.find(i=>i.id===id)||{}).nombre || '—';
+const personName = id => (S.people.find(p=>p.id===id)||{}).name || '—';
+const asgsOf  = id => S.assignments.filter(a=>a.iniId===id);
+const totalEjec = i => Object.values(i.ejecucion).reduce((s,v)=>s+(+v||0),0);
+const ejecQ   = i => +(i.ejecucion[Q()]||0);
+const expsQ   = () => S.expenses.filter(e=>e.q===Q());
+const activos = () => S.initiatives.filter(i=>ACTIVOS.includes(i.estado));
+const historicos = () => S.initiatives.filter(i=>!ACTIVOS.includes(i.estado));
+
+/* ---- cálculos económicos del Q ---- */
+function calcPerson(p){
+  const e=getEcon(p);
+  const horasImputadas=Math.max(0,e.horasMes*e.pctDedicacion-e.horasVacForm);
+  const costeMensual=horasImputadas*e.costeHora;
+  return {...e,horasImputadas,costeMensual,costeTrimestral:costeMensual*3};
+}
+function calcEconomia(){
+  let cFunc=0,cTec=0;
+  S.people.forEach(p=>{const c=calcPerson(p); if(p.perfil==='Funcional')cFunc+=c.costeTrimestral; else cTec+=c.costeTrimestral;});
+  const cTotal=cFunc+cTec;
+  const otros=expsQ().reduce((s,x)=>s+(+x.importe||0),0);
+  const costeTotalFinal=cTotal+otros;
+  const horasEjec=S.initiatives.reduce((s,i)=>s+ejecQ(i),0);
+  const ganancias=horasEjec*tariff();
+  const rentReal=ganancias?(ganancias-costeTotalFinal)/ganancias:0;
+  const ingObjFunc=cFunc/(1-S.config.marginFuncional);
+  const ingObjTec =cTec /(1-S.config.marginTecnico);
+  const ingObjetivo=ingObjFunc+ingObjTec;
+  const rentObjetivo=ingObjetivo?(ingObjetivo-cTotal)/ingObjetivo:0;
+  const horasObjetivo=tariff()?ingObjetivo/tariff():0;
+  return {cFunc,cTec,cTotal,otros,costeTotalFinal,horasEjec,ganancias,rentReal,ingObjFunc,ingObjTec,ingObjetivo,rentObjetivo,horasObjetivo};
+}
+/* ---- capacidad ---- */
+function consideradas(){ return S.initiatives.filter(i=>i.consideradaCapacidad && ACTIVOS.includes(i.estado)); }
+function calcCapacidad(){
+  const ids=new Set(consideradas().map(i=>i.id));
+  return S.people.map(p=>{
+    const c=calcPerson(p); const capH=c.horasImputadas*3;
+    const asgs=S.assignments.filter(a=>a.personId===p.id && ids.has(a.iniId));
+    const ocup=asgs.reduce((s,a)=>s+(+a.pctTrabajo||0),0)/100;
+    return {p,capH,ocup,horasAsig:ocup*capH,porProyecto:asgs.map(a=>({ini:S.initiatives.find(i=>i.id===a.iniId),pct:a.pctTrabajo}))};
+  });
+}
+/* ---- bolsa: saldo por proyecto (Aporte - Consumo) ---- */
+function signed(b){ return (b.mov==='Aporte'?1:-1)*(+b.horas||0); }
+function saldoProyecto(tipo,pid){ return S.bolsas.filter(b=>b.tipo===tipo&&b.proyectoId===pid).reduce((s,b)=>s+signed(b),0); }
+function saldoBolsa(tipo){ return S.bolsas.filter(b=>b.tipo===tipo).reduce((s,b)=>s+signed(b),0); }
+
+/* =================================================================
+   3. RENDER UTILS
+   ================================================================= */
+function badge(t,cls){ return `<span class="px-2 py-0.5 rounded-full text-xs font-medium ${cls}">${t}</span>`; }
+const ESTADO_CLS={'Pendiente':'bg-amber-100 text-amber-700','Aprobada':'bg-emerald-100 text-emerald-700','En curso':'bg-brand-100 text-brand-700','Terminada':'bg-slate-200 text-slate-600','Cancelada':'bg-rose-100 text-rose-700'};
+const estadoBadge = e => badge(e,ESTADO_CLS[e]||'bg-slate-200');
+const perfilBadge = p => badge(p,p==='Funcional'?'bg-brand-100 text-brand-700':'bg-emerald-100 text-emerald-700');
+function selOpts(arr,val){ return arr.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join(''); }
+function iniOpts(val,empty){ return `<option value="">${empty}</option>`+S.initiatives.map(i=>`<option value="${i.id}" ${i.id===val?'selected':''}>${i.nombre}</option>`).join(''); }
+function inp(entity,id,field,val,type='num',extra=''){ return `<input class="cell-input text-right" data-entity="${entity}" data-id="${id}" data-field="${field}" data-type="${type}" value="${val}" ${extra}>`; }
+function inpTxt(entity,id,field,val){ return `<input class="cell-input text-left" data-entity="${entity}" data-id="${id}" data-field="${field}" data-type="text" value="${val??''}">`; }
+function sel(entity,id,field,arr,val){ return `<select class="cell-input" data-entity="${entity}" data-id="${id}" data-field="${field}" data-type="text">${selOpts(arr,val)}</select>`; }
+function delBtn(action,id){ return `<button data-action="${action}" data-id="${id}" class="text-rose-400 hover:text-rose-600 text-sm px-1" title="Eliminar">✕</button>`; }
+function card(title,body,extra=''){ return `<div class="bg-white rounded-xl shadow-sm ${extra}"><div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between"><h3 class="font-semibold">${title}</h3></div>${body}</div>`; }
+function kpi(label,val,cls=''){ return `<div class="bg-white rounded-xl shadow-sm p-4"><p class="text-xs uppercase tracking-wide text-slate-400">${label}</p><p class="text-2xl font-bold mt-1 ${cls}">${val}</p></div>`; }
+function addBtn(action,id,txt){ return `<button data-action="${action}" ${id?`data-id="${id}"`:''} class="text-sm bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-3 py-1.5">${txt}</button>`; }
+
+/* =================================================================
+   4. VISTAS
+   ================================================================= */
+function iniRow(i){
+  return `<tr class="zebra hover:bg-brand-50" ${lstyle(i.id)}>
+    <td class="px-2 py-1.5 min-w-[150px] font-medium">${dot(i.id)}${inpTxt('initiative',i.id,'nombre',i.nombre)}</td>
+    <td class="px-2 py-1.5 min-w-[120px]">${inpTxt('initiative',i.id,'cliente',i.cliente)}</td>
+    <td class="px-2 py-1.5 w-24">${sel('initiative',i.id,'qAlta',S.config.quarters,i.qAlta)}</td>
+    <td class="px-2 py-1.5 w-32">${sel('initiative',i.id,'estado',ESTADOS,i.estado)}</td>
+    <td class="px-2 py-1.5 w-24">${inp('initiative',i.id,'horasEstimadas',i.horasEstimadas)}</td>
+    <td class="px-2 py-1.5 w-24">${inp('initiative',i.id,'horasElevadas',i.horasElevadas)}</td>
+    <td class="px-2 py-1.5 w-28">${inpTxt('initiative',i.id,'idPedido',i.idPedido)}</td>
+    <td class="px-2 py-1.5 text-right font-medium text-brand-600">${num.format(totalEjec(i))}</td>
+    <td class="px-2 py-1.5 text-center">${delBtn('del-initiative',i.id)}</td>
+  </tr>`;
+}
+function tablaIni(list){
+  const head=`<thead class="sticky-h text-slate-500 text-left text-xs uppercase"><tr>
+      <th class="px-2 py-2 font-medium">Iniciativa</th><th class="px-2 py-2 font-medium">Cliente</th>
+      <th class="px-2 py-2 font-medium">Q alta</th><th class="px-2 py-2 font-medium">Estado</th>
+      <th class="px-2 py-2 font-medium text-right">Estim.</th><th class="px-2 py-2 font-medium text-right">Elevadas</th>
+      <th class="px-2 py-2 font-medium">ID Pedido</th><th class="px-2 py-2 font-medium text-right">Ejec. total</th><th></th></tr></thead>`;
+  return `<div class="overflow-auto max-h-[55vh]"><table class="w-full text-sm">${head}
+    <tbody class="divide-y divide-slate-100">${list.map(iniRow).join('')||'<tr><td class="p-4 text-slate-400" colspan="9">Sin iniciativas.</td></tr>'}</tbody></table></div>`;
+}
+function renderProyectos(){
+  const act=activos(), hist=historicos();
+  const tEst=act.reduce((s,i)=>s+ +i.horasEstimadas,0), tElev=act.reduce((s,i)=>s+ +i.horasElevadas,0);
+  $('#view-proyectos').innerHTML=`
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      ${kpi('Iniciativas activas',act.length)}
+      ${kpi('Horas estimadas',num.format(tEst))}
+      ${kpi('Horas elevadas',num.format(tElev),'text-brand-600')}
+      ${kpi('En histórico',hist.length,'text-slate-500')}
+    </div>
+    ${card('Iniciativas activas <span class="text-slate-400 font-normal text-sm">· pendientes / aprobadas / en curso</span>',
+      tablaIni(act)+`<div class="px-5 py-3 border-t border-slate-100 flex items-center justify-between">${addBtn('add-initiative','','+ Añadir iniciativa')}<span class="text-xs text-slate-400">El reparto de ejecución por Q está en 📅 Ejecución</span></div>`)}
+    <div class="mt-6">${card('Histórico <span class="text-slate-400 font-normal text-sm">· terminadas / canceladas</span>',tablaIni(hist))}</div>
+    <div class="grid md:grid-cols-2 gap-6 mt-6">
+      ${card('Estimadas vs Elevadas vs Ejecutadas','<div class="p-4"><canvas id="chart-proj" height="150"></canvas></div>')}
+      ${card('Estado de iniciativas','<div class="p-4"><canvas id="chart-estado" height="150"></canvas></div>')}
+    </div>`;
+}
+
+/* ---------- COORDINACIÓN ---------- */
+function grupoEquipo(perfil){
+  const ppl=S.people.filter(p=>p.perfil===perfil);
+  const rows=ppl.map(p=>`<tr class="zebra hover:bg-brand-50" ${lstyle(p.id)}>
+    <td class="px-3 py-1.5 font-medium">${dot(p.id)}${inpTxt('person',p.id,'name',p.name)}</td>
+    <td class="px-3 py-1.5 w-32">${sel('person',p.id,'perfil',PERFILES,p.perfil)}</td>
+    <td class="px-3 py-1.5 w-44">${sel('person',p.id,'rol',ROLES_EQUIPO,p.rol)}</td>
+    <td class="px-3 py-1.5 text-center">${delBtn('del-person',p.id)}</td></tr>`).join('');
+  const c = perfil==='Funcional'?'text-brand-700 bg-brand-50':'text-emerald-700 bg-emerald-50';
+  return `<tr><td colspan="4" class="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide ${c}">${perfil} · ${ppl.length} personas</td></tr>${rows}`;
+}
+function renderCoordinacion(){
+  const peopleOpt=(val)=>S.people.map(p=>`<option value="${p.id}" ${p.id===val?'selected':''}>${p.name}</option>`).join('');
+  const asgBlocks=activos().map(i=>{
+    const rows=asgsOf(i.id).map(a=>`<tr class="hover:bg-brand-50" ${lstyle(a.personId)}>
+      <td class="px-3 py-1.5"><select class="cell-input" data-entity="assignment" data-id="${a.id}" data-field="personId" data-type="text">${peopleOpt(a.personId)}</select></td>
+      <td class="px-3 py-1.5 w-36">${sel('assignment',a.id,'rol',['Responsable','Ejecutor'],a.rol)}</td>
+      <td class="px-3 py-1.5 w-24">${inp('assignment',a.id,'pctTrabajo',a.pctTrabajo,'num','min=0 max=100')}<span class="text-slate-400 text-xs">%</span></td>
+      <td class="px-3 py-1.5 text-center">${delBtn('del-assignment',a.id)}</td></tr>`).join('');
+    const hasResp=asgsOf(i.id).some(a=>a.rol==='Responsable');
+    return `<div class="border border-slate-200 rounded-lg overflow-hidden" ${lstyle(i.id)}>
+      <div class="px-4 py-2 bg-slate-50 flex items-center justify-between">
+        <span class="font-medium text-sm">${dot(i.id)}${i.nombre} ${estadoBadge(i.estado)}</span>
+        ${hasResp?'':'<span class="text-xs text-amber-600">⚠ sin responsable</span>'}</div>
+      <table class="w-full text-sm"><tbody class="divide-y divide-slate-100">${rows||'<tr><td class="px-3 py-2 text-slate-400" colspan="4">Sin asignaciones.</td></tr>'}</tbody></table>
+      <div class="px-4 py-2 border-t border-slate-100">${addBtn('add-assignment',i.id,'+ Añadir persona')}</div></div>`;
+  }).join('');
+  $('#view-coordinacion').innerHTML=`
+    ${card('Estructura del equipo en el Q <span class="text-slate-400 font-normal text-sm">· funcional y técnico separados</span>',`
+      <table class="w-full text-sm">
+        <thead class="text-slate-500 text-left text-xs uppercase"><tr><th class="px-3 py-2 font-medium">Persona</th><th class="px-3 py-2 font-medium">Perfil</th><th class="px-3 py-2 font-medium">Rol</th><th></th></tr></thead>
+        <tbody class="divide-y divide-slate-100">${grupoEquipo('Funcional')}${grupoEquipo('Técnico')}</tbody>
+      </table>
+      <div class="px-4 py-3 border-t border-slate-100">${addBtn('add-person','','+ Añadir persona')}</div>`)}
+    <div class="mt-6">${card('Asignación · 1 responsable + N ejecutores por proyecto',`<div class="p-4 grid md:grid-cols-2 gap-4">${asgBlocks||'<p class="text-slate-400 text-sm">Sin iniciativas activas.</p>'}</div>`)}</div>`;
+}
+
+/* ---------- CAPACIDAD ---------- */
+function renderCapacidad(){
+  const data=calcCapacidad();
+  const selector=activos().map(i=>`<label class="flex items-center gap-2 px-3 py-1.5 rounded-lg border ${i.consideradaCapacidad?'border-brand-500 bg-brand-50':'border-slate-200'} cursor-pointer text-sm" ${lstyle(i.id)}>
+    <input type="checkbox" data-action="toggle-capacity" data-id="${i.id}" ${i.consideradaCapacidad?'checked':''}><span>${i.nombre}</span></label>`).join('');
+  const rows=data.map(d=>{const o=d.ocup;const st=o>1?['Sobrecarga','text-rose-600']:o<0.7?['Ociosidad','text-amber-600']:['OK','text-emerald-600'];
+    return `<tr class="zebra hover:bg-brand-50" ${lstyle(d.p.id)}>
+      <td class="px-3 py-1.5 font-medium">${dot(d.p.id)}${d.p.name}</td>
+      <td class="px-3 py-1.5">${perfilBadge(d.p.perfil)}</td>
+      <td class="px-3 py-1.5 text-right">${num.format(Math.round(d.capH))} h</td>
+      <td class="px-3 py-1.5 text-right">${num.format(Math.round(d.horasAsig))} h</td>
+      <td class="px-3 py-1.5 text-right font-medium ${st[1]}">${pct(o)}</td>
+      <td class="px-3 py-1.5 ${st[1]} text-sm">${st[0]}</td></tr>`;}).join('');
+  $('#view-capacidad').innerHTML=`
+    ${card('Iniciativas consideradas para capacidad',`<div class="p-4 flex flex-wrap gap-2">${selector||'<span class="text-slate-400 text-sm">Sin iniciativas activas.</span>'}</div>
+      <p class="px-4 pb-3 text-xs text-slate-400">Decisión manual: marca las iniciativas a incluir. Solo las marcadas suman a la ocupación de cada persona.</p>`)}
+    <div class="grid lg:grid-cols-2 gap-6 my-6">
+      ${card('Ocupación por persona (% del Q)','<div class="p-4"><canvas id="chart-ocup" height="170"></canvas></div>')}
+      ${card('Composición de carga por proyecto','<div class="p-4"><canvas id="chart-stack" height="170"></canvas></div>')}
+    </div>
+    <div class="grid lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2">${card('Detalle de capacidad',`<div class="overflow-auto max-h-[45vh]"><table class="w-full text-sm">
+        <thead class="sticky-h text-slate-500 text-left text-xs uppercase"><tr>
+          <th class="px-3 py-2 font-medium">Persona</th><th class="px-3 py-2 font-medium">Perfil</th>
+          <th class="px-3 py-2 font-medium text-right">Capacidad</th><th class="px-3 py-2 font-medium text-right">Asignadas</th>
+          <th class="px-3 py-2 font-medium text-right">Ocupación</th><th class="px-3 py-2 font-medium">Estado</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">${rows}</tbody></table></div>`)}</div>
+      ${card('Reparto total de horas','<div class="p-4"><canvas id="chart-distrib" height="220"></canvas></div>')}
+    </div>`;
+}
+
+/* ---------- EJECUCIÓN (matriz proyecto × Q) ---------- */
+function renderEjecucion(){
+  const qs=S.config.quarters; const list=S.initiatives;
+  const colTot=qs.map(q=>list.reduce((s,i)=>s+ +(i.ejecucion[q]||0),0));
+  const rows=list.map(i=>`<tr class="zebra hover:bg-brand-50" ${lstyle(i.id)}>
+    <td class="px-2 py-1.5 font-medium sticky left-0 bg-white min-w-[160px]">${dot(i.id)}${i.nombre} ${estadoBadge(i.estado)}</td>
+    ${qs.map(q=>`<td class="px-1 py-1 w-20 ${q===Q()?'bg-brand-50':''}">${inp('ejec',i.id,q,(i.ejecucion[q]||0))}</td>`).join('')}
+    <td class="px-2 py-1.5 text-right font-medium text-brand-600">${num.format(totalEjec(i))}</td></tr>`).join('');
+  $('#view-ejecucion').innerHTML=`
+    <div class="bg-brand-50 border border-brand-100 rounded-xl p-4 mb-6 text-sm text-brand-700">📅 Un proyecto se eleva un Q y su ejecución se reparte entre varios Qs. Edita aquí cuántas horas se ejecutan en cada trimestre. La columna del Q activo (<b>${Q()}</b>) es la que alimenta Economía.</div>
+    ${card('Reparto de ejecución por trimestre',`<div class="overflow-auto max-h-[60vh]"><table class="w-full text-sm">
+      <thead class="sticky-h text-slate-500 text-left text-xs uppercase"><tr>
+        <th class="px-2 py-2 font-medium sticky left-0 bg-slate-100">Iniciativa</th>
+        ${qs.map(q=>`<th class="px-2 py-2 font-medium text-right ${q===Q()?'text-brand-700':''}">${q}</th>`).join('')}
+        <th class="px-2 py-2 font-medium text-right">Total</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">${rows}</tbody>
+      <tfoot class="sticky-f font-semibold"><tr><td class="px-2 py-2 sticky left-0 bg-[#e7edf5]">TOTAL ejecutado</td>
+        ${colTot.map((t,k)=>`<td class="px-2 py-2 text-right ${qs[k]===Q()?'text-brand-700':''}">${num.format(t)}</td>`).join('')}
+        <td class="px-2 py-2 text-right">${num.format(colTot.reduce((a,b)=>a+b,0))}</td></tr></tfoot>
+    </table></div>`)}
+    <div class="mt-6">${card('Ejecución por trimestre (apilado por proyecto)','<div class="p-4"><canvas id="chart-ejec" height="120"></canvas></div>')}</div>`;
+}
+
+/* ---------- ECONOMÍA ---------- */
+function grupoCoste(perfil){
+  const ppl=S.people.filter(p=>p.perfil===perfil); let sub=0;
+  const rows=ppl.map(p=>{const c=calcPerson(p);sub+=c.costeTrimestral;
+    return `<tr class="zebra hover:bg-brand-50" ${lstyle(p.id)}>
+      <td class="px-2 py-1 font-medium sticky left-0 bg-white min-w-[120px]">${dot(p.id)}${inpTxt('person',p.id,'name',p.name)}</td>
+      <td class="px-2 py-1 w-20">${inp('econ',p.id,'costeHora',c.costeHora)}</td>
+      <td class="px-2 py-1 w-20">${inp('econ',p.id,'horasMes',c.horasMes)}</td>
+      <td class="px-2 py-1 w-20">${inp('econ',p.id,'pctDedicacion',c.pctDedicacion,'num','step=0.05 min=0 max=1')}</td>
+      <td class="px-2 py-1 w-20">${inp('econ',p.id,'horasVacForm',c.horasVacForm)}</td>
+      <td class="px-2 py-1 text-right text-slate-600">${num.format(Math.round(c.horasImputadas))}</td>
+      <td class="px-2 py-1 text-right text-slate-600">${eur.format(c.costeMensual)}</td>
+      <td class="px-2 py-1 text-right font-medium">${eur.format(c.costeTrimestral)}</td>
+      <td class="px-2 py-1 text-center">${delBtn('del-person',p.id)}</td></tr>`;}).join('');
+  const c=perfil==='Funcional'?'text-brand-700 bg-brand-50':'text-emerald-700 bg-emerald-50';
+  const head=`<tr><td colspan="9" class="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide ${c} sticky left-0">${perfil} · ${ppl.length} personas</td></tr>`;
+  const subt=`<tr class="bg-slate-50 font-medium"><td class="px-2 py-1.5 sticky left-0 bg-slate-50" colspan="7">Subtotal ${perfil}</td><td class="px-2 py-1.5 text-right">${eur.format(sub)}</td><td></td></tr>`;
+  return {html:head+rows+subt, sub};
+}
+function renderEconomia(){
+  const ec=calcEconomia();
+  const gF=grupoCoste('Funcional'), gT=grupoCoste('Técnico');
+  const exp=expsQ().map(x=>`<tr class="zebra hover:bg-brand-50">
+    <td class="px-2 py-1 w-32">${sel('expense',x.id,'concepto',['Guardias','Horas extra','Servicios','Otros'],x.concepto)}</td>
+    <td class="px-2 py-1">${inpTxt('expense',x.id,'descripcion',x.descripcion)}</td>
+    <td class="px-2 py-1 w-28"><select class="cell-input" data-entity="expense" data-id="${x.id}" data-field="iniId" data-type="text">${iniOpts(x.iniId,'— equipo —')}</select></td>
+    <td class="px-2 py-1 w-24">${inp('expense',x.id,'importe',x.importe)}</td>
+    <td class="px-2 py-1 text-center">${delBtn('del-expense',x.id)}</td></tr>`).join('');
+  const rentClass=ec.rentReal<0?'text-rose-600':ec.rentReal<ec.rentObjetivo?'text-amber-600':'text-emerald-600';
+  $('#view-economia').innerHTML=`
+    <div class="grid lg:grid-cols-3 gap-6 items-start">
+      <div class="lg:col-span-2 space-y-6">
+        ${card(`Coste del equipo <span class="text-slate-400 font-normal text-sm">· ${Q()} · ${S.people.length} personas</span>`,`
+          <div class="overflow-auto max-h-[55vh]"><table class="w-full text-sm">
+            <thead class="sticky-h text-slate-500 text-left text-xs uppercase"><tr>
+              <th class="px-2 py-2 font-medium sticky left-0 bg-slate-100">Persona</th>
+              <th class="px-2 py-2 font-medium text-right">Coste/h</th><th class="px-2 py-2 font-medium text-right">H.mes</th>
+              <th class="px-2 py-2 font-medium text-right">%Ded.</th><th class="px-2 py-2 font-medium text-right">Vac/For</th>
+              <th class="px-2 py-2 font-medium text-right">H.imput</th><th class="px-2 py-2 font-medium text-right">Coste mes</th>
+              <th class="px-2 py-2 font-medium text-right">Coste trim.</th><th></th></tr></thead>
+            <tbody class="divide-y divide-slate-100">${gF.html}${gT.html}</tbody>
+            <tfoot class="sticky-f font-semibold"><tr><td class="px-2 py-2 sticky left-0 bg-[#e7edf5]" colspan="7">Coste trimestral del equipo</td><td class="px-2 py-2 text-right text-brand-600">${eur.format(ec.cTotal)}</td><td></td></tr></tfoot>
+          </table></div>
+          <div class="px-5 py-3 border-t border-slate-100">${addBtn('add-person','','+ Añadir persona')}</div>`)}
+        ${card('Otros gastos imputados',`
+          <table class="w-full text-sm">
+            <thead class="text-slate-500 text-left text-xs uppercase"><tr><th class="px-2 py-2 font-medium">Concepto</th><th class="px-2 py-2 font-medium">Descripción</th><th class="px-2 py-2 font-medium">Proyecto</th><th class="px-2 py-2 font-medium text-right">Importe</th><th></th></tr></thead>
+            <tbody class="divide-y divide-slate-100">${exp||'<tr><td class="px-2 py-2 text-slate-400" colspan="5">Sin gastos.</td></tr>'}</tbody>
+            <tfoot class="font-semibold"><tr><td class="px-2 py-2 border-t border-slate-200" colspan="3">Total otros gastos</td><td class="px-2 py-2 border-t border-slate-200 text-right">${eur.format(ec.otros)}</td><td></td></tr></tfoot>
+          </table>
+          <div class="px-5 py-3 border-t border-slate-100">${addBtn('add-expense','','+ Añadir gasto')}</div>`)}
+      </div>
+      <div class="space-y-6 lg:sticky lg:top-24">
+        <div class="grid grid-cols-2 gap-3">
+          ${kpi('Coste total final',eur.format(ec.costeTotalFinal))}
+          ${kpi('Ganancias Q',eur.format(ec.ganancias),'text-emerald-600')}
+          ${kpi('Rentab. real',pct(ec.rentReal),rentClass)}
+          ${kpi('Rentab. objetivo',pct(ec.rentObjetivo),'text-brand-600')}
+        </div>
+        ${card('Simulador de rentabilidad ponderada',`<div class="p-4 space-y-3">
+          <table class="w-full text-sm"><tbody class="divide-y divide-slate-100">
+            <tr><td class="py-1.5 text-brand-700 font-medium">Coste funcional</td><td class="py-1.5 text-right">${eur.format(ec.cFunc)}</td></tr>
+            <tr><td class="py-1.5">Ingresos obj. /(1−<input class="cell-input inline w-14 text-right border border-slate-200" data-entity="config" data-field="marginFuncional" data-type="num" step="0.01" value="${S.config.marginFuncional}">)</td><td class="py-1.5 text-right">${eur.format(ec.ingObjFunc)}</td></tr>
+            <tr><td class="py-1.5 text-emerald-700 font-medium">Coste técnico</td><td class="py-1.5 text-right">${eur.format(ec.cTec)}</td></tr>
+            <tr><td class="py-1.5">Ingresos obj. /(1−<input class="cell-input inline w-14 text-right border border-slate-200" data-entity="config" data-field="marginTecnico" data-type="num" step="0.01" value="${S.config.marginTecnico}">)</td><td class="py-1.5 text-right">${eur.format(ec.ingObjTec)}</td></tr>
+            <tr class="font-semibold"><td class="py-1.5">Ingresos objetivo</td><td class="py-1.5 text-right text-brand-600">${eur.format(ec.ingObjetivo)}</td></tr>
+            <tr class="font-semibold"><td class="py-1.5">Horas objetivo a ejecutar</td><td class="py-1.5 text-right text-brand-600">${num.format(Math.round(ec.horasObjetivo))} h</td></tr>
+          </tbody></table>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-lg border border-slate-200 p-3"><p class="text-xs text-slate-400">Bolsa oficial total</p><p class="text-xl font-bold">${num.format(saldoBolsa('Oficial'))} h</p></div>
+            <div class="rounded-lg border border-slate-200 p-3"><p class="text-xs text-slate-400">Δ a bolsa (ejec−obj)</p><p class="text-xl font-bold ${ec.horasEjec-ec.horasObjetivo>=0?'text-emerald-600':'text-amber-600'}">${num.format(Math.round(ec.horasEjec-ec.horasObjetivo))} h</p></div>
+          </div></div>`)}
+        ${card('Coste funcional vs técnico','<div class="p-4"><canvas id="chart-eco-dona" height="160"></canvas></div>')}
+      </div>
+    </div>`;
+}
+
+/* ---------- BOLSAS (por proyecto, Aporte/Consumo) ---------- */
+function renderBolsas(){
+  function tipoBlock(tipo){
+    const items=S.bolsas.filter(b=>b.tipo===tipo);
+    const projIds=[...new Set(items.map(b=>b.proyectoId))];
+    const total=items.reduce((s,b)=>s+signed(b),0);
+    const groups=projIds.map(pid=>{
+      const movs=items.filter(b=>b.proyectoId===pid);
+      const bal=saldoProyecto(tipo,pid);
+      const rows=movs.map(b=>`<tr class="hover:bg-brand-50 ${b.mov==='Consumo'?'opacity-90':''}">
+        <td class="px-2 py-1 w-24">${sel('bolsa',b.id,'q',S.config.quarters,b.q)}</td>
+        <td class="px-2 py-1 w-28">${sel('bolsa',b.id,'mov',['Aporte','Consumo'],b.mov)}</td>
+        <td class="px-2 py-1">${b.mov==='Consumo'?`<select class="cell-input" data-entity="bolsa" data-id="${b.id}" data-field="contraId" data-type="text">${iniOpts(b.contraId,'— proyecto que saca —')}</select>`:'<span class="text-slate-300 text-xs pl-2">(aporta el propio proyecto)</span>'}</td>
+        <td class="px-2 py-1 w-24">${inp('bolsa',b.id,'horas',b.horas,'num','step=1')}</td>
+        <td class="px-2 py-1 text-right font-medium ${b.mov==='Aporte'?'text-emerald-600':'text-rose-600'}">${b.mov==='Aporte'?'+':'−'}${num.format(b.horas)}</td>
+        <td class="px-2 py-1">${inpTxt('bolsa',b.id,'nota',b.nota)}</td>
+        <td class="px-2 py-1 text-center">${delBtn('del-bolsa',b.id)}</td></tr>`).join('');
+      return `<div class="rounded-lg border border-slate-200 overflow-hidden mb-3" ${lstyle(pid)}>
+        <div class="px-4 py-2 bg-slate-50 flex items-center justify-between">
+          <span class="font-medium text-sm">${dot(pid)}Bolsa de ${iniName(pid)}</span>
+          <span class="text-sm">saldo <b class="${bal<0?'text-rose-600':'text-brand-600'}">${num.format(bal)} h</b></span></div>
+        <table class="w-full text-sm"><tbody class="divide-y divide-slate-100">${rows}</tbody></table>
+        <div class="px-4 py-2 border-t border-slate-100">${addBtn('add-bolsa-mov',tipo+'|'+pid,'+ Movimiento en esta bolsa')}</div></div>`;
+    }).join('');
+    return card(`Bolsa ${tipo} · <span class="text-brand-600 font-bold">total ${num.format(total)} h</span>`,
+      `<div class="p-4">${groups||'<p class="text-slate-400 text-sm">Sin movimientos.</p>'}
+        <div class="pt-1">${addBtn('add-bolsa-proj',tipo,'+ Nueva bolsa de proyecto')}</div></div>`);
+  }
+  $('#view-bolsas').innerHTML=`
+    <div class="bg-brand-50 border border-brand-100 rounded-xl p-4 mb-6 text-sm text-brand-700">
+      🏦 Las bolsas son <b>cross-trimestre</b>. Cada bolsa <b>pertenece a un proyecto</b> que la alimenta con <b>Aportes (+)</b>; otros proyectos la <b>Consumen (−)</b> indicando quién saca. Saldo por proyecto = aportes − consumos, y el total de la bolsa.
+    </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      ${kpi('Total Bolsa Oficial',num.format(saldoBolsa('Oficial'))+' h','text-brand-600')}
+      ${kpi('Total Bolsa Adelantos',num.format(saldoBolsa('Adelantos'))+' h','text-emerald-600')}
+      ${kpi('Movimientos',S.bolsas.length)}
+      ${kpi('Valor total (× tarifa)',eur.format((saldoBolsa('Oficial')+saldoBolsa('Adelantos'))*tariff()))}
+    </div>
+    <div class="space-y-6">${tipoBlock('Oficial')}${tipoBlock('Adelantos')}</div>`;
+}
+
+/* =================================================================
+   5. GRÁFICAS
+   ================================================================= */
+let charts={};
+function chart(id,cfg){ if(charts[id])charts[id].destroy(); const el=document.getElementById(id); if(el)charts[id]=new Chart(el,cfg); }
+function buildCharts(view){
+  Object.values(charts).forEach(c=>c.destroy()); charts={};
+  if(view==='proyectos'){
+    const l=activos();
+    chart('chart-proj',{type:'bar',data:{labels:l.map(i=>i.nombre),datasets:[
+      {label:'Estimadas',data:l.map(i=>+i.horasEstimadas),backgroundColor:'#cbd5e1'},
+      {label:'Elevadas',data:l.map(i=>+i.horasElevadas),backgroundColor:'#3b6ef5'},
+      {label:'Ejecutadas',data:l.map(i=>totalEjec(i)),backgroundColor:'#10b981'}]},
+      options:{plugins:{legend:{position:'bottom'}}}});
+    const cnt={}; S.initiatives.forEach(i=>cnt[i.estado]=(cnt[i.estado]||0)+1);
+    chart('chart-estado',{type:'doughnut',data:{labels:Object.keys(cnt),datasets:[{data:Object.values(cnt),backgroundColor:PAL}]},options:{plugins:{legend:{position:'bottom'}}}});
+  }
+  if(view==='capacidad'){
+    const d=calcCapacidad();
+    chart('chart-ocup',{type:'bar',data:{labels:d.map(x=>x.p.name),datasets:[{label:'Ocupación %',
+      data:d.map(x=>+(x.ocup*100).toFixed(0)),backgroundColor:d.map(x=>x.ocup>1?'#ef4444':x.ocup<0.7?'#f59e0b':'#10b981')}]},
+      options:{plugins:{legend:{display:false}},scales:{y:{suggestedMax:120,grid:{color:'#eee'}}}}});
+    const inis=consideradas();
+    chart('chart-stack',{type:'bar',data:{labels:d.map(x=>x.p.name),datasets:inis.map(ini=>({
+      label:ini.nombre,backgroundColor:colorOf(ini.id),
+      data:d.map(x=>{const f=x.porProyecto.find(pp=>pp.ini&&pp.ini.id===ini.id);return f?+f.pct:0;})}))},
+      options:{plugins:{legend:{position:'bottom'}},scales:{x:{stacked:true},y:{stacked:true,suggestedMax:120}}}});
+    chart('chart-distrib',{type:'doughnut',data:{labels:d.map(x=>x.p.name),datasets:[{data:d.map(x=>Math.round(x.horasAsig)),backgroundColor:d.map(x=>colorOf(x.p.id))}]},options:{plugins:{legend:{position:'bottom'}}}});
+  }
+  if(view==='ejecucion'){
+    const qs=S.config.quarters;
+    chart('chart-ejec',{type:'bar',data:{labels:qs,datasets:S.initiatives.filter(i=>totalEjec(i)>0).map(i=>({
+      label:i.nombre,backgroundColor:colorOf(i.id),data:qs.map(q=>+(i.ejecucion[q]||0))}))},
+      options:{plugins:{legend:{position:'bottom'}},scales:{x:{stacked:true},y:{stacked:true}}}});
+  }
+  if(view==='economia'){
+    const ec=calcEconomia();
+    chart('chart-eco-dona',{type:'doughnut',data:{labels:['Funcional','Técnico'],datasets:[{data:[Math.round(ec.cFunc),Math.round(ec.cTec)],backgroundColor:['#3b6ef5','#10b981']}]},options:{plugins:{legend:{position:'bottom'}}}});
+  }
+}
+
+/* =================================================================
+   6. NAVEGACIÓN + EVENTOS
+   ================================================================= */
+const TITLES={proyectos:'Proyectos',coordinacion:'Coordinación',capacidad:'Capacidad',ejecucion:'Ejecución',economia:'Economía',bolsas:'Bolsas'};
+const RENDERERS={proyectos:renderProyectos,coordinacion:renderCoordinacion,capacidad:renderCapacidad,ejecucion:renderEjecucion,economia:renderEconomia,bolsas:renderBolsas};
+let currentView='proyectos';
+function renderActive(){ RENDERERS[currentView](); buildCharts(currentView); }
+function navigate(v){
+  currentView=v;
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
+  $('#view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+  $('#page-title').textContent=TITLES[v];
+  renderActive();
+}
+function syncHeader(){
+  $('#q-selector').innerHTML=S.config.quarters.map(x=>`<option ${x===Q()?'selected':''}>${x}</option>`).join('');
+  $('#tarifa-input').value=tariff();
+}
+
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.dataset && el.dataset.action==='toggle-capacity'){ const i=S.initiatives.find(x=>x.id===el.dataset.id); if(i){i.consideradaCapacidad=el.checked; renderActive();} return; }
+  if(!el.dataset || !el.dataset.entity) return;
+  applyChange(el);
+});
+function applyChange(el){
+  const {entity,id,field,type}=el.dataset;
+  let val=el.value; if(type==='num') val=parseFloat(val)||0;
+  switch(entity){
+    case 'config':
+      if(field==='activeQ') S.config.activeQ=val;
+      else if(field==='tariff') S.config.tariffByQ[Q()]=val;
+      else S.config[field]=val;
+      syncHeader(); renderActive(); return;
+    case 'person':{const p=S.people.find(x=>x.id===id); if(p)p[field]=val; break;}
+    case 'econ':{const p=S.people.find(x=>x.id===id); if(p)getEcon(p)[field]=val; break;}
+    case 'initiative':{const i=S.initiatives.find(x=>x.id===id); if(i)i[field]=val; break;}
+    case 'ejec':{const i=S.initiatives.find(x=>x.id===id); if(i)i.ejecucion[field]=val; break;}
+    case 'assignment':{const a=S.assignments.find(x=>x.id===id); if(!a)break;
+      if(field==='rol'&&val==='Responsable') S.assignments.filter(x=>x.iniId===a.iniId&&x.id!==id&&x.rol==='Responsable').forEach(x=>x.rol='Ejecutor');
+      a[field]=val; break;}
+    case 'expense':{const x=S.expenses.find(z=>z.id===id); if(x)x[field]=val; break;}
+    case 'bolsa':{const b=S.bolsas.find(z=>z.id===id); if(b)b[field]=val; break;}
+  }
+  renderActive();
+}
+
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('[data-action]'); if(!btn||btn.tagName==='INPUT') return;
+  const {action,id}=btn.dataset;
+  switch(action){
+    case 'add-initiative': S.initiatives.unshift(mkIni('i'+(++S.seqs.i),'Nueva iniciativa','',Q(),'Pendiente',0,0,'',{},false)); break;
+    case 'del-initiative': if(!confirm('¿Eliminar iniciativa, sus asignaciones y bolsas?'))return; S.initiatives=S.initiatives.filter(x=>x.id!==id); S.assignments=S.assignments.filter(a=>a.iniId!==id); S.bolsas=S.bolsas.filter(b=>b.proyectoId!==id); break;
+    case 'add-person': S.people.push(mkPerson('p'+(++S.seqs.p),'Nueva persona','Técnico','Técnico Cross',35,160,1,0)); break;
+    case 'del-person': if(!confirm('¿Eliminar persona y sus asignaciones?'))return; S.people=S.people.filter(x=>x.id!==id); S.assignments=S.assignments.filter(a=>a.personId!==id); break;
+    case 'add-assignment':{const hasR=S.assignments.some(a=>a.iniId===id&&a.rol==='Responsable'); S.assignments.push(mkAsg('a'+(++S.seqs.a),id,S.people[0]&&S.people[0].id,hasR?'Ejecutor':'Responsable',10)); break;}
+    case 'del-assignment': S.assignments=S.assignments.filter(x=>x.id!==id); break;
+    case 'add-expense': S.expenses.push(mkExp('e'+(++S.seqs.e),Q(),'','Otros','Nuevo gasto',0)); break;
+    case 'del-expense': S.expenses=S.expenses.filter(x=>x.id!==id); break;
+    case 'add-bolsa-mov':{const [tipo,pid]=id.split('|'); S.bolsas.push(mkBol('b'+(++S.seqs.b),tipo,pid,'Aporte','',0,Q(),'')); break;}
+    case 'add-bolsa-proj':{const pid=(S.initiatives[0]||{}).id||''; S.bolsas.push(mkBol('b'+(++S.seqs.b),id,pid,'Aporte','',0,Q(),'Nueva bolsa')); break;}
+    case 'del-bolsa': S.bolsas=S.bolsas.filter(x=>x.id!==id); break;
+    default: return;
+  }
+  renderActive();
+});
+
+$('#btn-reset').addEventListener('click',()=>{ if(confirm('¿Restaurar los datos de ejemplo? Se perderán los cambios.')){ S=seed(); syncHeader(); renderActive(); }});
+document.querySelectorAll('.nav-link').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.view)));
+
+syncHeader();
+navigate('proyectos');
+</script>
+</body>
+</html>

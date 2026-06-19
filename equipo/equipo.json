@@ -5,140 +5,160 @@
       "nombre": "Ángela Montero",
       "email": "angela.montero@nfq.es",
       "emailBBVA": "angela.montero.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": true
     },
     {
       "id": "XE48467",
       "nombre": "José Luis Rodriguez",
       "email": "jose.rodriguez@nter.es",
       "emailBBVA": "joseluis.rodriguez.paez.contractor@bbva.com",
-      "track": "tecnico"
+      "track": "tecnico",
+      "coordinador": false
     },
     {
       "id": "XE95681",
       "nombre": "Chema Martinez",
       "email": "chema.martinez@nter.es",
       "emailBBVA": "chema.martinezbarqv.contractor@bbva.com",
-      "track": "tecnico"
+      "track": "tecnico",
+      "coordinador": true
     },
     {
       "id": "T022809",
       "nombre": "Jesús Tejada",
       "email": "jesus.tejada@nfq.es",
       "emailBBVA": "jesus.tejada.andres.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": true
     },
     {
       "id": "T040429",
       "nombre": "David Joel Sanchez",
       "email": "david.sanchez@nter.es",
       "emailBBVA": "davidjoel.sanchez.contractor@bbva.com",
-      "track": "tecnico"
+      "track": "tecnico",
+      "coordinador": false
     },
     {
       "id": "T037244",
       "nombre": "Dariel Suárez",
       "email": "dariel.suarez@nfq.es",
       "emailBBVA": "dariel.suarez.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": false
     },
     {
       "id": "T045519",
       "nombre": "Pablo Llorente",
       "email": "pablo.llorente@nfq.es",
       "emailBBVA": "pablo.llorentec.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": true
     },
     {
       "id": "T057120",
       "nombre": "Víctor Gallego",
       "email": "victor.gallego@nfq.es",
       "emailBBVA": "victor.gallego.yan.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": false
     },
     {
       "id": "T057121",
       "nombre": "Miguel Saavedra",
       "email": "miguel.saavedra@nfq.es",
       "emailBBVA": "miguel.saavedragom.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": false
     },
     {
       "id": "T030686",
       "nombre": "Marta Trujillano",
       "email": "marta.trujillano@nfq.es",
       "emailBBVA": "marta.trujillano.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": true
     },
     {
       "id": "T058095",
       "nombre": "Irene Hermida",
       "email": "irene.hermida@nfq.es",
       "emailBBVA": "irene.hermida.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": false
     },
     {
       "id": "T060034",
       "nombre": "Laura Stella",
       "email": "laura.stella@nfq.es",
       "emailBBVA": "laura.stella.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": false
     },
     {
       "id": "T060787",
       "nombre": "Verónica Fernández",
       "email": "veronica.fernandez@nter.es",
       "emailBBVA": "veronica.fernandezg.contractor@bbva.com",
-      "track": "tecnico"
+      "track": "tecnico",
+      "coordinador": false
     },
     {
       "id": "T061576",
       "nombre": "Iker Cid",
       "email": "iker.cid@nfq.es",
       "emailBBVA": "iker.cid.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": false
     },
     {
       "id": "T021696",
       "nombre": "Pilar Franco",
       "email": "pilar.franco@nfq.es",
       "emailBBVA": "pilar.franco.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": false
     },
     {
       "id": "T063396",
       "nombre": "Juan Lucas Gordillo",
       "email": "juan.gordillo@nfq.es",
       "emailBBVA": "juanlucas.gordillo.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": false
     },
     {
       "id": "T063018",
       "nombre": "Luis Antonio Bello",
       "email": "luis.bello@nfq.mx",
       "emailBBVA": "luisantonio.bello.gonzalez.contractor@bbva.com",
-      "track": "tecnico"
+      "track": "tecnico",
+      "coordinador": false
     },
     {
       "id": "T066180",
       "nombre": "Fernando Tejada",
       "email": "fernando.tejada@nfq.es",
       "emailBBVA": "fernando.tejada.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": false
     },
     {
       "id": "T060320",
       "nombre": "Eduardo Varona",
       "email": "eduardo.varona@nfq.es",
       "emailBBVA": "eduardo.varona.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": false
     },
     {
       "id": "T067605",
       "nombre": "Álvaro Albelda",
       "email": "alvaro.albelda@nfq.es",
       "emailBBVA": "alvaro.albelda.contractor@bbva.com",
-      "track": "funcional"
+      "track": "funcional",
+      "coordinador": false
     }
   ]
 }

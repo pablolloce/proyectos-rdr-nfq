@@ -268,10 +268,21 @@
 
   <script>
   /* ===========================================================================
-     CONFIG · pega aquí la URL del despliegue del Apps Script (termina en /exec)
+     CONFIG · las URLs viven en /links/links.json (fuente única). No edites aquí:
+     si cambia el backend, edita la entrada "comidasBackend" en links.json.
      =========================================================================== */
-  const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9X7g3kH3jgr1FeLdUDDjjEx2h-fFpQ33aWKQ0X0dLeQuAhMUcx8ApcqZoC1__j801/exec';
+  const LINKS_URL = 'links/links.json';
+  let APP_SCRIPT_URL = ''; // se rellena desde links.json (comidasBackend) en resolverLinks_()
   const EQUIPO_URL = 'equipo/equipo.json';
+
+  // Carga la URL del backend desde links.json. Si falla, APP_SCRIPT_URL queda vacío
+  // y la app sigue su camino de "falta backend" (banner + datos de ejemplo).
+  async function resolverLinks_(){
+    try{
+      const L = await fetch(LINKS_URL, {cache:'no-store'}).then(r=>r.json());
+      if(L && L.comidasBackend && L.comidasBackend.url) APP_SCRIPT_URL = L.comidasBackend.url;
+    }catch(e){ console.warn('links.json:', e); }
+  }
 
   /* Autenticación: se hace en index.html (puerta de entrada). Aquí solo leemos el
      correo validado que index dejó en localStorage; si no hay, se redirige a la
@@ -312,6 +323,8 @@
 
   /* ---------- carga inicial ---------- */
   async function init(){
+    // 0) URLs centralizadas (backend) desde links.json
+    await resolverLinks_();
     // 1) Equipo (siempre desde el repo, como las formaciones)
     const team = await loadEquipo();
     EQUIPO = team.map(p=>p.nombre).sort((a,b)=>a.localeCompare(b,'es'));
