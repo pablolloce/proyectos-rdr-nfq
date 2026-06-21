@@ -3,6 +3,7 @@
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Html, Environment, RoundedBox } from "@react-three/drei";
+import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 import { pointer } from "@/lib/pointerStore";
 import { useLinks } from "@/lib/links";
@@ -55,12 +56,12 @@ const SLOTS = (() => {
   return s;
 })();
 
-function activate(item, getUrl, copyLink) {
-  if (item.copy) { copyLink(item.key); return; } // copia URL + toast
+function activate(item, getUrl, copyLink, navInternal) {
+  if (item.copy) { copyLink(item.key); return; }              // copia URL + toast
   const u = item.href || getUrl(item.key) || "#";
   if (!u || u === "#") return;
-  if (item.key || /^https?:/i.test(u)) window.open(u, "_blank", "noopener");
-  else window.location.href = u;
+  if (item.key || /^https?:/i.test(u)) window.open(u, "_blank", "noopener"); // externo: nueva pestaña
+  else navInternal(u, item);                                  // interno: con transición
 }
 
 function SubCube({ local, item, on, setOn, onAct }) {
@@ -150,7 +151,8 @@ export default function FacetIndex() {
   const { getUrl, copyLink } = useLinks();
   const { isCoordinador } = useAuth();
   const [active, setActive] = useState(null);
-  const onAct = (item) => activate(item, getUrl, copyLink);
+  const [nav, setNav] = useState(null); // transición de salida a otra página
+  const onAct = (item) => activate(item, getUrl, copyLink, (url, it) => setNav({ url, label: it.label, color: it.color }));
   const sections = useMemo(() => SECTIONS.filter((s) => !s.coordOnly || isCoordinador), [isCoordinador]);
 
   return (
@@ -197,6 +199,26 @@ export default function FacetIndex() {
           </div>
         ))}
       </aside>
+
+      {/* Transición de salida hacia otra página (fundido + spinner) */}
+      <AnimatePresence>
+        {nav && (
+          <motion.div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-midnight"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.45, ease: "easeInOut" }}
+            onAnimationComplete={() => { window.location.href = nav.url; }}>
+            <motion.div className="text-center"
+              initial={{ opacity: 0, y: 12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.35, delay: 0.05 }}>
+              <div className="mx-auto mb-5 h-10 w-10 animate-spin rounded-full border-2 border-serene/25"
+                style={{ borderTopColor: nav.color }} />
+              <p className="font-grotesk text-xs uppercase tracking-[0.3em] text-serene/60">Abriendo</p>
+              <p className="mt-1 font-grotesk text-2xl font-bold" style={{ color: nav.color }}>{nav.label}</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
