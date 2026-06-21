@@ -23,8 +23,9 @@ export default function DistortedSphere() {
     if (group.current) {
       group.current.rotation.y += delta * 0.08;
       group.current.rotation.x = MathUtils.lerp(group.current.rotation.x, pointer.y * 0.2, 0.04);
-      group.current.position.x = MathUtils.lerp(group.current.position.x, pointer.x * 0.5, 0.03);
-      group.current.position.y = 0.35 + Math.sin(t * 0.4) * 0.12; // flota, ligeramente alta
+      // Desplazada a la IZQUIERDA (protagonista de esa mitad) + parallax ratón.
+      group.current.position.x = MathUtils.lerp(group.current.position.x, -1.6 + pointer.x * 0.4, 0.03);
+      group.current.position.y = 0.1 + Math.sin(t * 0.4) * 0.12; // flotación leve
     }
     if (wire.current) {
       wire.current.rotation.y -= delta * 0.05; // contra-rota respecto al núcleo
