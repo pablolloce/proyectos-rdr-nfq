@@ -34,11 +34,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
+          cache-dependency-path: beyond-the-grid/package-lock.json
 
-      # Sin package-lock.json usamos npm install (no npm ci).
-      # Si más adelante commiteas el lockfile, cambia a "npm ci" + cache.
       - name: Instalar dependencias
-        run: npm install
+        run: npm ci
 
       - name: Build (next build -> export a out/)
         run: npm run build

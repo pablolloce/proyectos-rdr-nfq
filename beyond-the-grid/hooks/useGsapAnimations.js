@@ -97,6 +97,23 @@ export function useGsapAnimations(scope, enabled) {
         });
       });
 
+      // 4) TARJETAS del hub: aparecen escalonadas al entrar en viewport.
+      //    Las ocultamos primero (gsap.set) y ScrollTrigger.batch las anima en
+      //    grupos según van entrando -> el stagger se respeta por fila.
+      gsap.set("[data-card]", { opacity: 0, y: 40 });
+      ScrollTrigger.batch("[data-card]", {
+        start: "top 90%",
+        onEnter: (batch) =>
+          gsap.to(batch, {
+            opacity: 1,
+            y: 0,
+            duration: 0.7,
+            ease: "power3.out",
+            stagger: 0.08,
+            overwrite: true,
+          }),
+      });
+
       // Recalcula posiciones tras inyectar los spans del split.
       ScrollTrigger.refresh();
     }, scope);

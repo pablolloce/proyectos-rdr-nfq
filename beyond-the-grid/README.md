@@ -23,8 +23,12 @@ components/
   DistortedSphere.jsx  Esfera perlin (MeshDistortMaterial) reactiva en useFrame
   LoadingScreen.jsx Loader brutalista + salida con timeline GSAP
   CustomCursor.jsx  Cursor con spring (Framer Motion), crece en [data-hover]
-  Hero.jsx          Overlay 100vh con el título "BEYOND THE GRID"
-  ContentSection.jsx  Secciones con texto [data-reveal] (staggered)
+  Hero.jsx          Overlay 100vh con el título de marca "RDR KNOWLEDGE"
+  AuthGate.jsx      Puerta de acceso Google Sign-In (equipo/equipo.json)
+  HubSections.jsx   Contenido REAL del hub: 3 secciones + tarjetas
+  Card.jsx          Tarjeta (enlace interno / abrir externo / copiar / pills)
+  Footer.jsx        Pie + sesión + cerrar sesión
+  Toast.jsx         Avisos flotantes
 hooks/
   useLenis.js          Smooth scroll + sync con ScrollTrigger/ticker GSAP
   useGsapAnimations.js Coreografía de scroll + split de texto + puente a Three
@@ -66,6 +70,19 @@ Configurado para **project page** `https://rdr-nfq.github.io/team-hub/`:
   que toque `beyond-the-grid/**`.
 
 **Paso manual único:** en GitHub → *Settings → Pages → Source* = **GitHub Actions**.
+
+## Contenido migrado y autenticación
+
+- **Hub real**: las 3 secciones y tarjetas viven en `components/HubSections.jsx`;
+  las URLs externas en `public/links/links.json` (fuente única).
+- **Subpáginas** (`que-es-rdr.html`, `vacaciones.html`, `formacion/`, `pendientes/`…)
+  se sirven tal cual desde `public/` y se publican junto al export.
+- **Login Google**: `AuthGate.jsx` valida contra `public/equipo/equipo.json` y
+  comparte sesión (`localStorage` `rdr_auth_email`) con las subpáginas.
+
+> ⚠️ **OAuth**: el `GOOGLE_CLIENT_ID` debe tener autorizados los *Orígenes de
+> JavaScript* en Google Cloud Console: `https://rdr-nfq.github.io` (producción)
+> y `http://localhost:3000` (desarrollo). Si no, el botón de Google fallará.
 
 `npm run build` genera `out/` (export estático). El workflow lo sube como
 artefacto de Pages; no se commitea (está en `.gitignore`).

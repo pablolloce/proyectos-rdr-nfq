@@ -5,32 +5,39 @@ import dynamic from "next/dynamic";
 import { useLenis } from "@/hooks/useLenis";
 import { useGsapAnimations } from "@/hooks/useGsapAnimations";
 import { scrollStore } from "@/lib/scrollStore";
+import { LinksProvider } from "@/lib/links";
 import LoadingScreen from "./LoadingScreen";
 import CustomCursor from "./CustomCursor";
+import AuthGate from "./AuthGate";
 import Hero from "./Hero";
-import ContentSection from "./ContentSection";
+import HubSections from "./HubSections";
+import Footer from "./Footer";
 
-// El Canvas usa WebGL/window -> lo cargamos solo en cliente (sin SSR).
+// El Canvas usa WebGL/window -> solo cliente (sin SSR).
 const Scene = dynamic(() => import("./Scene"), { ssr: false });
 
 /**
- * Orquestador de toda la experiencia (client component).
+ * Orquestador de la experiencia (client component).
  *
- * Capas (de atrás hacia delante por z-index):
- *   z-0     -> Scene 3D fija a pantalla completa (fondo)
- *   z-10    -> Contenido HTML scrolleable (Hero + secciones)
+ * Capas (por z-index):
+ *   z-0     -> Scene 3D fija a pantalla completa (fondo, siempre visible)
+ *   z-10    -> Contenido del hub (Hero + secciones + footer), tras login
+ *   z-90    -> Puerta de acceso (AuthGate) hasta autenticarse
  *   z-100   -> Pantalla de carga
  *   z-9999  -> Cursor personalizado
+ *
+ * Las animaciones GSAP se arman cuando loader terminó Y el usuario está
+ * autenticado (el contenido ya está en el DOM para que ScrollTrigger mida bien).
  */
 export default function Experience() {
-  const scope = useRef(null); // contenedor para acotar los selectores de GSAP
+  const scope = useRef(null);
   const [loaded, setLoaded] = useState(false);
+  const [authed, setAuthed] = useState(false);
 
-  useLenis(); // smooth scroll global
-  useGsapAnimations(scope, loaded); // coreografía (se arma al terminar la carga)
+  useLenis();
+  useGsapAnimations(scope, loaded && authed);
 
-  // Listener de ratón -> escribe en scrollStore para el parallax del objeto 3D.
-  // (No usa estado de React: lectura directa en el useFrame de la escena.)
+  // Ratón -> scrollStore (parallax del 3D, sin estado de React).
   useEffect(() => {
     const onMove = (e) => {
       scrollStore.mouseX = (e.clientX / window.innerWidth) * 2 - 1;
@@ -41,20 +48,23 @@ export default function Experience() {
   }, []);
 
   return (
-    <>
+    <LinksProvider>
       <CustomCursor />
       <LoadingScreen onComplete={() => setLoaded(true)} />
 
-      {/* Fondo 3D fijo */}
+      {/* Fondo 3D fijo (visible también tras el login) */}
       <div className="fixed inset-0 z-0">
         <Scene />
       </div>
 
-      {/* Contenido por encima del Canvas */}
-      <main ref={scope} className="relative z-10">
-        <Hero />
-        <ContentSection />
-      </main>
-    </>
+      {/* Puerta de acceso: hasta autenticar muestra el login; luego, el hub */}
+      <AuthGate onAuthed={() => setAuthed(true)}>
+        <main ref={scope} className="relative z-10">
+          <Hero />
+          <HubSections />
+          <Footer />
+        </main>
+      </AuthGate>
+    </LinksProvider>
   );
 }

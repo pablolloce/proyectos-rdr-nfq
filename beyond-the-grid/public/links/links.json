@@ -1,0 +1,80 @@
+{
+  "_comment": "Hub RDR · FUENTE ÚNICA de enlaces. Si un link cambia, edítalo SOLO aquí y haz commit: las páginas lo recogen al cargar (no hay que tocar ningún .html). Las claves *Backend son las URLs /exec de los Apps Script (cambian en cada despliegue). Los valores con {COD} son plantillas: la web sustituye {COD} por el código real.",
+  "_updated": "2026-06-19",
+
+  "portalBBVACIB": {
+    "url": "https://sites.google.com/bbva.com/portal-nfq-bbva-cib/",
+    "note": "Portal interno del equipo NFQ-BBVA CIB"
+  },
+
+  "githubBBVA": {
+    "url": "https://bbva.ghe.com/XE93412/Proyectos-RDR-NFQ",
+    "note": "Repositorio de código fuente RDR en GitHub BBVA"
+  },
+
+  "planificacionNFQ": {
+    "url": "https://docs.google.com/spreadsheets/d/1WPa5jr4J16ly2q65p88RBPzaIO6O3D6b/edit?gid=1289430084#gid=1289430084",
+    "note": "Planificación de proyectos del equipo RDR-NFQ"
+  },
+
+  "driveBBVA": {
+    "url": "https://drive.google.com/drive/folders/0AEkC6lvF0dGAUk9PVA",
+    "note": "Drive con documentación compartida del proyecto RDR"
+  },
+
+  "driveCertificados": {
+    "url": "https://drive.google.com/drive/folders/1e5zysoDRyBIj30VrKtC6jLPhDzpRQDgl",
+    "note": "Carpeta de Drive donde el equipo sube los PDF de certificados de formación. La monitoriza el Apps Script para sincronizar con equipo-formaciones.html"
+  },
+
+  "timeReportBBVA": {
+    "url": "https://docs.google.com/spreadsheets/d/1dZsJcMsrVg3WnjwwLSQnve616uxYDaio5isa28dnNYU/edit?gid=218660641#gid=218660641",
+    "note": "Time Report de BBVA — link estable"
+  },
+
+  "timeReportNFQ": {
+    "url": "https://docs.google.com/spreadsheets/d/1d3Ssa1EHPWlaynrmh6gdV5WnfSRZrcTe7GWMNncM-ZU/edit?gid=0#gid=0",
+    "note": "Time Report de NFQ — cambia cada 3 meses, recordar actualizar",
+    "expires": "2026-08-26"
+  },
+
+  "comidasBackend": {
+    "url": "https://script.google.com/macros/s/AKfycby9X7g3kH3jgr1FeLdUDDjjEx2h-fFpQ33aWKQ0X0dLeQuAhMUcx8ApcqZoC1__j801/exec",
+    "note": "Backend Apps Script de comidas.html (restaurantes, semanas y votos). Cambia en cada despliegue."
+  },
+
+  "formacionesBackend": {
+    "url": "https://script.google.com/macros/s/AKfycbzAKr3NyT7Ppyip9Jh6c2adjXHbhXcxpZD8UawtBUcTuH0cnLtKjGN7VFgyhf_ACR_C/exec",
+    "note": "Backend Apps Script de equipo-formaciones.html (progreso de formaciones por persona). Cambia en cada despliegue."
+  },
+
+  "pasesBackend": {
+    "url": "https://script.google.com/macros/s/AKfycbwZ5Sx4TlJnJ4I1sFntjG9dNyfSFeqRu29vNEKowD1wysLjmVT9fr0m9hNvQZOqE7C9hA/exec",
+    "note": "Backend Apps Script de pases-calendados.html (pases, proyectos, componentes). Cambia en cada despliegue."
+  },
+
+  "retroBackend": {
+    "url": "https://script.google.com/macros/s/AKfycbx1sGjHUH9LPw1qF4nOBPOCcP1T9eW-zbMg8FQznqTWOd4yipqpke_8ynNxdu4Gsza2/exec",
+    "note": "Backend Apps Script de retro.html (retrospectivas). Cambia en cada despliegue."
+  },
+
+  "vacacionesBackend": {
+    "url": "https://script.google.com/a/macros/nfq.es/s/AKfycbw0Fl7SwR-jtV5iUdoVYj4CXhCVFlXUaSjw9g8b0Aem3WfUXLxLLAS_fKd6WDjj2Mo/exec",
+    "note": "Backend Apps Script de vacaciones.html (dominio nfq.es). Cambia en cada despliegue."
+  },
+
+  "jiraBrowse": {
+    "url": "https://cibproducts.grupobbva.com/JIRA/browse/{COD}",
+    "note": "Plantilla de enlace a una incidencia de JIRA BBVA. {COD} se sustituye por el código (p.ej. CIBRDR-768)."
+  },
+
+  "despliegueENOA": {
+    "url": "https://cibdesktop.es.igrupobbva/ENOA/com.bbva.ecdy-deploymentfront-deploymentmgr-1/#/KYTL/deployment/{COD}",
+    "note": "Plantilla de enlace a la herramienta de despliegue ENOA/KYTL. {COD} se sustituye por el código del despliegue."
+  },
+
+  "formularioVacaciones": {
+    "url": "https://docs.google.com/forms/d/e/1FAIpQLSeJC5PN7LP2OEwTthrbcbeFM_wOltrr6TcNwm8MhYbjYTCU2Q/viewform",
+    "note": "Google Form para solicitar/registrar vacaciones (usado en vacaciones.html)"
+  }
+}
