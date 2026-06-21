@@ -645,9 +645,9 @@ function renderEconomia(){
 }
 function pickTarifa(q){ const t=state.data.tarifas||{}; return t[q] || t[q.slice(0,4)] || t["2026"] || 51.22; }
 
-/* ---------- CAPACIDAD: simulador (sandbox local) — proyectos compactos,
-   creador de sub-equipos y gráfica de capacidad ---------- */
-let _capChart = null;
+/* ---------- CAPACIDAD: MATRIZ de asignación (personas × proyectos) ----------
+   Celdas = % de cada persona en cada proyecto · columna derecha = capacidad de
+   la persona · fila inferior = cobertura del proyecto. Compacto, sin estirarse. */
 function renderCapacidad(){
   const blocks = (state.data.capacidad && state.data.capacidad.bloques) || [];
   if(!blocks.length){ panel.innerHTML=`<div class="glass rounded-2xl p-6 text-sand/70">No hay bloques de Capacidad.</div>`; return; }
@@ -656,118 +656,106 @@ function renderCapacidad(){
   state._capHoras = state._capHoras || {};
   const hq = state._capHoras[qSel]!=null ? state._capHoras[qSel] : (num(b.horasQ)||500);
   const esc = s => String(s==null?'':s).replace(/"/g,'&quot;');
-  const noAlex = n => !/casal/i.test(String(n||"")); // Alex Casal = Manager, no ejecuta
-  // Sub-equipos EDITABLES (sandbox). Miembros = {persona, peso} (peso = % en el equipo:
-  // 100% = dedicado; un % = recurso compartido, p. ej. el equipo Cross/técnico o Ángela).
+  const fnName = s => String(s||'').split(' ')[0];
+  const noAlex = n => !/casal/i.test(String(n||""));
   state._capTeams = state._capTeams || {};
   if(!state._capTeams[qSel]) state._capTeams[qSel] = (b.equipos||[]).map(e=>({ lider:e.lider||"", capExcel:e.capacidadCubierta,
     miembros:(e.miembros||[]).map(m=>({ persona:(m&&m.persona)||m, nivel:(m&&m.nivel)||"", peso:1 })).filter(x=>noAlex(x.persona)) }));
   const equipos = state._capTeams[qSel];
+  const projs = b.proyectos || [];
 
   const people = (()=>{ const s=new Set();
     equipos.forEach(e=>e.miembros.forEach(m=>s.add(m.persona)));
-    (b.proyectos||[]).forEach(p=>(p.asignaciones||[]).forEach(a=>a.persona&&s.add(a.persona)));
+    projs.forEach(p=>(p.asignaciones||[]).forEach(a=>a.persona&&s.add(a.persona)));
     return Array.from(s).filter(n=>n&&noAlex(n)).sort(); })();
   const cob = p => { const s=(p.asignaciones||[]).reduce((a,x)=>a+num(x.pct),0); return p.horas? s*hq/num(p.horas):0; };
-  const capP = nombre => { let hh=0; (b.proyectos||[]).forEach(p=>(p.asignaciones||[]).forEach(a=>{ if(a.persona===nombre) hh+=num(p.horas)*num(a.pct); })); return hq? hh/hq:0; };
-  const col = v => v>1.05?"mandarin": v>=0.8?"lime":"serene";
-  const fn = s => String(s||'').split(' ')[0]; // primer nombre (compacto)
-
-  // ---- Proyectos COMPACTOS (chips) ----
-  const proj = (b.proyectos||[]).map((p,pi)=>{ const c=cob(p);
-    const chips=(p.asignaciones||[]).map((a,ai)=>`<span class="chip inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]" title="${esc(a.persona)} · ${a.rol||''}">
-      <span class="text-sand/80">${fn(a.persona)}</span>
-      <input type="number" class="w-8 bg-transparent text-right focus:outline-none" value="${Math.round(num(a.pct)*100)}" data-cap="pct" data-pi="${pi}" data-ai="${ai}"><span class="text-sand/40">%</span>
-      <button data-cap="rm" data-pi="${pi}" data-ai="${ai}" class="text-mandarin">✕</button></span>`).join("");
-    return `<div class="glass rounded-xl p-3">
-      <div class="flex items-center justify-between gap-2">
-        <span class="truncate font-display text-sm font-bold text-sand" title="${esc(p.nombre)}">${p.nombre||'—'}</span>
-        <span class="shrink-0 text-[11px] text-sand/60">cob <b class="text-${col(c)}">${pct(c)}</b></span>
-      </div>
-      <div class="mt-1 flex items-center gap-1 text-[11px] text-sand/50"><span>Horas</span>
-        <input type="number" class="w-16 rounded bg-white/5 px-1 text-right focus:outline-none" value="${num(p.horas)}" data-cap="phoras" data-pi="${pi}"></div>
-      <div class="mt-2 flex flex-wrap items-center gap-1">${chips}
-        <span class="inline-flex items-center gap-1">
-          <select data-cap="addsel" data-pi="${pi}" class="text-[11px]"><option value="">+ persona</option>${people.map(n=>`<option>${n}</option>`).join("")}</select>
-          <input type="number" placeholder="%" class="w-9 text-[11px]" data-cap="addpct" data-pi="${pi}">
-          <button data-cap="add" data-pi="${pi}" class="text-serene" title="Añadir">＋</button>
-        </span>
-      </div></div>`; }).join("");
-
-  // ---- Sub-equipos (creador) ----
+  const capP = per => { let hh=0; projs.forEach(p=>(p.asignaciones||[]).forEach(a=>{ if(a.persona===per) hh+=num(p.horas)*num(a.pct); })); return hq? hh/hq:0; };
   const teamCap = e => { let w=0,s=0; e.miembros.forEach(m=>{ const p=num(m.peso); w+=p; s+=capP(m.persona)*p; }); return w? s/w:0; };
-  const teamHTML = equipos.map((e,ei)=>{ const avg=teamCap(e);
-    return `<div class="mb-2 border-b border-serene/10 pb-2 last:border-0">
+  const col = v => v>1.05?"mandarin": v>=0.8?"lime":"serene";
+  const getA = (p,per)=> (p.asignaciones||[]).find(a=>a.persona===per);
+  const short = s => { s=String(s||''); const m=s.match(/SDATOOL-?(\d+)/i); return m? ('SDA'+m[1].slice(-3)) : s.split(/[ ·\-]/)[0]; };
+  const heat = f => f<=0?'' : `background:rgba(133,200,255,${Math.min(0.55,0.12+f*0.45)})`;
+  const SL = 'position:sticky;left:0;z-index:1;background:#0b1450';
+  const SR = 'position:sticky;right:0;background:#0b1450';
+
+  const matriz = `<div class="glass overflow-auto rounded-2xl p-2" style="max-height:62vh">
+    <table class="text-xs" style="border-collapse:separate;border-spacing:0">
+      <thead><tr class="text-serene/80">
+        <th class="px-2 py-1 text-left" style="${SL}">Persona</th>
+        ${projs.map(p=>`<th class="px-1 py-1 align-bottom" title="${esc(p.nombre)} · ${h(p.horas)}"><div class="mx-auto truncate" style="max-width:48px">${short(p.nombre)}</div></th>`).join("")}
+        <th class="px-2 py-1 text-right" style="${SR}">Cap.</th>
+      </tr></thead>
+      <tbody>
+        ${people.map((per,pix)=>{ const cp=capP(per);
+          return `<tr class="border-t border-serene/10">
+            <td class="px-2 py-0.5 whitespace-nowrap text-sand/85" style="${SL}">${per}</td>
+            ${projs.map((p,pi)=>{ const a=getA(p,per); const v=a?Math.round(num(a.pct)*100):''; const f=a?num(a.pct):0;
+              return `<td class="p-0 text-center" style="${heat(f)}"><input type="number" class="w-11 bg-transparent py-0.5 text-center focus:outline-none" value="${v}" data-mx="cell" data-pi="${pi}" data-pix="${pix}"></td>`; }).join("")}
+            <td class="px-2 py-0.5 text-right font-bold text-${col(cp)}" style="${SR}">${pct(cp)}</td>
+          </tr>`; }).join("")}
+        <tr class="border-t-2 border-serene/30">
+          <td class="px-2 py-1 font-bold text-sand" style="${SL}">Cobertura</td>
+          ${projs.map(p=>{ const c=cob(p); return `<td class="px-1 py-1 text-center text-[11px] font-bold text-${col(c)}">${Math.round(c*100)}</td>`; }).join("")}
+          <td style="${SR}"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>`;
+
+  const showT = !!state._capShowTeams;
+  const teamStrip = `<div class="mt-4 flex flex-wrap items-center gap-2">
+    <span class="text-xs text-serene/70">Sub-equipos:</span>
+    ${equipos.map(e=>{ const v=teamCap(e); return `<span class="chip rounded-full px-3 py-1 text-xs"><b class="text-sand">${e.lider||'—'}</b> <span class="text-${col(v)}">${pct(v)}</span></span>`; }).join("")||'<span class="text-xs text-sand/40">—</span>'}
+    <button id="cap-edit" class="chip rounded-full px-3 py-1 text-xs text-serene">${showT?'Ocultar editor':'Editar equipos'}</button>
+  </div>`;
+
+  const teamEditor = showT ? `<div class="glass mt-3 rounded-2xl p-4">
+    <div class="mb-2 flex items-center justify-between"><span class="text-xs uppercase tracking-wider text-serene/70">Editor de sub-equipos · <span class="text-aqua">Tech/cross</span> en aqua</span>
+      <button id="cap-tadd" class="chip rounded-full px-3 py-1 text-xs font-bold">+ Sub-equipo</button></div>
+    ${equipos.map((e,ei)=>`<div class="mb-2 border-b border-serene/10 pb-2 last:border-0">
       <div class="flex items-center gap-2">
         <input value="${esc(e.lider)}" placeholder="Responsable (N2)" class="flex-1 bg-transparent text-sm font-bold text-sand focus:outline-none" data-cap="tname" data-ei="${ei}">
-        <span class="text-xs text-${col(avg)}">${pct(avg)}</span>
-        ${e.capExcel!=null?`<span class="text-[10px] text-sand/35" title="Capacidad cubierta en el Excel">xls ${pct(num(e.capExcel))}</span>`:''}
-        <button data-cap="trm" data-ei="${ei}" class="text-mandarin" title="Eliminar sub-equipo">✕</button>
+        <span class="text-xs text-${col(teamCap(e))}">${pct(teamCap(e))}</span>
+        ${e.capExcel!=null?`<span class="text-[10px] text-sand/35" title="Capacidad cubierta (Excel)">xls ${pct(num(e.capExcel))}</span>`:''}
+        <button data-cap="trm" data-ei="${ei}" class="text-mandarin">✕</button>
       </div>
       <div class="mt-1 flex flex-wrap items-center gap-1">
-        ${e.miembros.map((m,mi)=>`<span class="chip inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${m.nivel==='Tech'?'text-aqua':'text-sand/80'}" title="${esc(m.persona)} · ${m.nivel||''} · ${Math.round(num(m.peso)*100)}%">${fn(m.persona)}
+        ${e.miembros.map((m,mi)=>`<span class="chip inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${m.nivel==='Tech'?'text-aqua':'text-sand/80'}" title="${esc(m.persona)} · ${m.nivel||''}">${fnName(m.persona)}
           <input type="number" class="w-8 bg-transparent text-right focus:outline-none" value="${Math.round(num(m.peso)*100)}" data-cap="mpeso" data-ei="${ei}" data-mi="${mi}"><span class="text-sand/40">%</span>
           <button data-cap="mrm" data-ei="${ei}" data-mi="${mi}" class="text-mandarin">✕</button></span>`).join("")}
         <select data-cap="madd" data-ei="${ei}" class="text-[11px]"><option value="">+ miembro</option>${people.map(n=>`<option>${n}</option>`).join("")}</select>
-      </div></div>`; }).join("");
+      </div></div>`).join("")}
+  </div>` : '';
 
   panel.innerHTML = `
-    <div class="mb-4 flex flex-wrap items-end gap-4">
+    <div class="mb-3 flex flex-wrap items-center gap-4">
       <label class="text-xs text-serene/80">Trimestre <select id="cap-q" class="ml-2">${blocks.map(x=>`<option ${x.q===qSel?"selected":""}>${x.q}</option>`).join("")}</select></label>
       <label class="text-xs text-serene/80">Horas/persona Q <input id="cap-hq" type="number" class="ml-2 w-24" value="${hq}"></label>
-      <span class="text-xs text-sand/40">Simulación local (no escribe en el Excel).</span>
+      <span class="text-xs text-sand/40">Celda = % persona·proyecto · Cap. = carga persona · Cobertura = % cubierto · <span class="text-lime">ok</span>/<span class="text-mandarin">excede</span></span>
     </div>
-    <div class="grid gap-5 lg:grid-cols-3">
-      <div class="lg:col-span-2">
-        <h3 class="mb-3 font-display text-lg font-bold text-sand">Proyectos · cobertura</h3>
-        <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">${proj||'<p class="text-sm text-sand/40">Sin proyectos.</p>'}</div>
-      </div>
-      <div class="space-y-5">
-        <div>
-          <div class="mb-2 flex items-center justify-between"><h3 class="font-display text-lg font-bold text-sand">Sub-equipos</h3>
-            <button id="cap-tadd" class="chip rounded-full px-3 py-1 text-xs font-bold hover:bg-white/10">+ Sub-equipo</button></div>
-          <div class="glass rounded-2xl p-4">${teamHTML||'<p class="text-sm text-sand/40">Sin sub-equipos. Crea uno.</p>'}</div>
-        </div>
-        <div>
-          <h3 class="mb-3 font-display text-lg font-bold text-sand">Capacidad por persona</h3>
-          <div class="glass rounded-2xl p-3"><div style="height:${Math.max(140, people.length*26)}px"><canvas id="cap-chart"></canvas></div></div>
-        </div>
-      </div>
-    </div>`;
+    ${matriz}${teamStrip}${teamEditor}`;
 
   document.getElementById("cap-q").onchange = e=>{ state._capQ=e.target.value; renderCapacidad(); };
   document.getElementById("cap-hq").addEventListener("change", e=>{ state._capHoras[qSel]=num(e.target.value); renderCapacidad(); });
-  document.getElementById("cap-tadd").onclick = ()=>{ equipos.push({ lider:"Nuevo sub-equipo", miembros:[] }); renderCapacidad(); };
-  panel.querySelectorAll("[data-cap]").forEach(el=>{ const t=el.getAttribute("data-cap");
-    if(t==="phoras") el.addEventListener("change",()=>{ b.proyectos[+el.dataset.pi].horas=num(el.value); renderCapacidad(); });
-    else if(t==="pct") el.addEventListener("change",()=>{ b.proyectos[+el.dataset.pi].asignaciones[+el.dataset.ai].pct=num(el.value)/100; renderCapacidad(); });
-    else if(t==="rm") el.addEventListener("click",()=>{ b.proyectos[+el.dataset.pi].asignaciones.splice(+el.dataset.ai,1); renderCapacidad(); });
-    else if(t==="add") el.addEventListener("click",()=>{ const pi=+el.dataset.pi;
-      const sel=panel.querySelector(`select[data-cap="addsel"][data-pi="${pi}"]`), pc=panel.querySelector(`input[data-cap="addpct"][data-pi="${pi}"]`);
-      const persona=sel.value, v=num(pc.value)/100; if(!persona||!v){ flash("Elige persona y %",true); return; }
-      (b.proyectos[pi].asignaciones=b.proyectos[pi].asignaciones||[]).push({rol:"ejecutor",persona,pct:v}); renderCapacidad(); });
-    else if(t==="tname") el.addEventListener("change",()=>{ equipos[+el.dataset.ei].lider=el.value; renderCapacidad(); });
-    else if(t==="trm") el.addEventListener("click",()=>{ equipos.splice(+el.dataset.ei,1); renderCapacidad(); });
-    else if(t==="mrm") el.addEventListener("click",()=>{ equipos[+el.dataset.ei].miembros.splice(+el.dataset.mi,1); renderCapacidad(); });
-    else if(t==="mpeso") el.addEventListener("change",()=>{ equipos[+el.dataset.ei].miembros[+el.dataset.mi].peso=num(el.value)/100; renderCapacidad(); });
-    else if(t==="madd") el.addEventListener("change",()=>{ if(el.value){ equipos[+el.dataset.ei].miembros.push({persona:el.value, peso:1}); renderCapacidad(); } });
-  });
-  drawCapChart(people.map(fn), people.map(capP));
-}
-
-function drawCapChart(labels, values){
-  if(!window.Chart) return;
-  const cv=document.getElementById("cap-chart"); if(!cv) return;
-  if(_capChart){ try{_capChart.destroy();}catch(e){} }
-  const colors = values.map(v=> v>1.05?"#FFB56B": v>=0.8?"#88E783":"#85C8FF");
-  _capChart = new Chart(cv, {
-    type:"bar",
-    data:{ labels, datasets:[{ data:values.map(v=>Math.round(v*100)), backgroundColor:colors, borderRadius:4, barThickness:14 }] },
-    options:{ indexAxis:"y", responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>c.parsed.x+"%"}} },
-      scales:{ x:{ suggestedMax:150, ticks:{color:"rgba(247,248,248,.6)", callback:v=>v+"%"}, grid:{color:"rgba(133,200,255,.12)"} },
-               y:{ ticks:{color:"rgba(247,248,248,.85)", font:{size:10}}, grid:{display:false} } } }
-  });
+  document.getElementById("cap-edit").onclick = ()=>{ state._capShowTeams=!state._capShowTeams; renderCapacidad(); };
+  panel.querySelectorAll('input[data-mx="cell"]').forEach(inp=>inp.addEventListener("change",()=>{
+    const pi=+inp.dataset.pi, per=people[+inp.dataset.pix], v=num(inp.value)/100;
+    const p=b.proyectos[pi]; p.asignaciones=p.asignaciones||[];
+    const a=p.asignaciones.find(x=>x.persona===per);
+    if(v>0){ if(a) a.pct=v; else p.asignaciones.push({rol:"ejecutor",persona:per,pct:v}); }
+    else if(a) p.asignaciones.splice(p.asignaciones.indexOf(a),1);
+    renderCapacidad();
+  }));
+  if(showT){
+    document.getElementById("cap-tadd").onclick = ()=>{ equipos.push({ lider:"Nuevo sub-equipo", miembros:[] }); renderCapacidad(); };
+    panel.querySelectorAll("[data-cap]").forEach(el=>{ const t=el.getAttribute("data-cap");
+      if(t==="tname") el.addEventListener("change",()=>{ equipos[+el.dataset.ei].lider=el.value; renderCapacidad(); });
+      else if(t==="trm") el.addEventListener("click",()=>{ equipos.splice(+el.dataset.ei,1); renderCapacidad(); });
+      else if(t==="mrm") el.addEventListener("click",()=>{ equipos[+el.dataset.ei].miembros.splice(+el.dataset.mi,1); renderCapacidad(); });
+      else if(t==="mpeso") el.addEventListener("change",()=>{ equipos[+el.dataset.ei].miembros[+el.dataset.mi].peso=num(el.value)/100; renderCapacidad(); });
+      else if(t==="madd") el.addEventListener("change",()=>{ if(el.value){ equipos[+el.dataset.ei].miembros.push({persona:el.value, peso:1}); renderCapacidad(); } });
+    });
+  }
 }
 
 /* ===========================================================================
