@@ -39,8 +39,13 @@ const SECTIONS = [
   ] },
 ];
 
-// Posición de cada figura (cuadrado sobre el plano del suelo, bien para isométrica).
-const FIG_POS = [[-S, 0, S], [S, 0, S], [-S, 0, -S], [S, 0, -S]];
+// Distribución de las figuras según cuántas haya:
+//  - 4 (coordinador): cuadrado (diamante en isométrica).
+//  - 3 (no coordinador): fila diagonal centrada (se ve horizontal en isométrica).
+function figPositions(n) {
+  if (n <= 3) return [[-S, 0, S], [0, 0, 0], [S, 0, -S]].slice(0, n);
+  return [[-S, 0, S], [S, 0, S], [-S, 0, -S], [S, 0, -S]];
+}
 
 // 8 huecos de un cubo 2×2×2, ordenados "más visibles primero" (cámara +x+y+z).
 const SLOTS = (() => {
@@ -130,10 +135,11 @@ function Sculpture({ sections, active, setActive, onAct }) {
     grp.current.rotation.y = THREE.MathUtils.lerp(grp.current.rotation.y, pointer.x * 0.14, 0.05);
     grp.current.rotation.x = THREE.MathUtils.lerp(grp.current.rotation.x, pointer.y * 0.07, 0.05);
   });
+  const POS = figPositions(sections.length);
   return (
     <group ref={grp}>
       {sections.map((sec, fi) => (
-        <Figure key={sec.num} pos={FIG_POS[fi]} section={sec} fi={fi}
+        <Figure key={sec.num} pos={POS[fi]} section={sec} fi={fi}
           active={active} setActive={setActive} onAct={onAct} />
       ))}
     </group>
