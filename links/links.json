@@ -63,6 +63,11 @@
     "note": "Backend Apps Script de vacaciones.html (dominio nfq.es). Cambia en cada despliegue."
   },
 
+  "controlBackend": {
+    "url": "https://script.google.com/macros/s/AKfycbxIzhFh6mys5RHvrzbaqvlm0z_x_qK3X20SjZC92G_WXs1yf4Z6W9LLda7peU71RPA/exec",
+    "note": "Backend Apps Script de control.html (dominio nfq.es). Cambia en cada despliegue."
+  },
+
   "jiraBrowse": {
     "url": "https://cibproducts.grupobbva.com/JIRA/browse/{COD}",
     "note": "Plantilla de enlace a una incidencia de JIRA BBVA. {COD} se sustituye por el código (p.ej. CIBRDR-768)."

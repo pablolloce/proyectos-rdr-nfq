@@ -415,6 +415,206 @@ function searchAll(query, opts) {
 }
 
 /* ===========================================================================
+ * 7B. LECTURA ESTRUCTURADA POR MÓDULO
+ *     Convierte la estructura "de hoja de cálculo" (listas + bloques por Q con
+ *     cabeceras combinadas y fórmulas) en JSON limpio listo para el frontend y
+ *     sus SIMULACIONES (que corren en cliente, sin volver al backend).
+ *     Apps Script lee VALORES calculados (incl. funciones externas de vacaciones),
+ *     así que aquí sí obtenemos los números reales que openpyxl no veía.
+ * =========================================================================== */
+
+// Localiza bloques por Q buscando un patrón en una columna. Devuelve [{q,row,end}].
+function _qBlocks(sh, colIdx, regex) {
+  var last = sh.getLastRow();
+  if (last < 1) return [];
+  var col = sh.getRange(1, colIdx, last, 1).getValues();
+  var starts = [];
+  for (var r = 0; r < last; r++) {
+    var v = col[r][0];
+    if (v !== null && v !== '' && regex.test(String(v).trim()))
+      starts.push({ q: String(v).trim(), row: r + 1 });
+  }
+  for (var i = 0; i < starts.length; i++)
+    starts[i].end = (i + 1 < starts.length) ? starts[i + 1].row - 1 : last;
+  return starts;
+}
+
+// Igual pero el marcador de Q puede estar en varias columnas (Capacidad: A o B).
+function _qBlocksMulti(sh, cols, regex) {
+  var last = sh.getLastRow();
+  if (last < 1) return [];
+  var maxC = Math.max.apply(null, cols);
+  var data = sh.getRange(1, 1, last, maxC).getValues();
+  var starts = [];
+  for (var r = 0; r < last; r++) {
+    for (var ci = 0; ci < cols.length; ci++) {
+      var v = data[r][cols[ci] - 1];
+      if (v !== null && v !== '' && regex.test(String(v).trim())) {
+        starts.push({ q: String(v).trim().replace('_', ''), row: r + 1 });
+        break;
+      }
+    }
+  }
+  for (var i = 0; i < starts.length; i++)
+    starts[i].end = (i + 1 < starts.length) ? starts[i + 1].row - 1 : last;
+  return starts;
+}
+
+/** Tarifas de proveedor por año/Q (cabecera de "1) Iniciativas", filas 2-3). */
+function getTarifas() {
+  var sh = _sheet('1) Iniciativas');
+  var years = sh.getRange(2, 3, 1, 5).getValues()[0];   // C2..G2
+  var tarifas = sh.getRange(3, 3, 1, 5).getValues()[0]; // C3..G3
+  var out = {};
+  for (var i = 0; i < years.length; i++) {
+    if (years[i] !== '' && years[i] !== null) out[String(years[i])] = tarifas[i];
+  }
+  return out;
+}
+
+/** Iniciativas como registros (incluye P/Q/R ya calculados). */
+function getIniciativas() {
+  return getTable('1) Iniciativas').records;
+}
+
+/**
+ * Ejecución Real: registros + columnas de Q + el dato clave para economía:
+ * el sumatorio de horas por cada Q (totalesHorasQ).
+ */
+function getEjecucion() {
+  var t = getTable('2)Ejecución Real');
+  var qCols = t.columns.filter(function (c) { return /^\d{4}Q[1-4]$/.test(String(c)); });
+  var totalesHorasQ = {};
+  qCols.forEach(function (q) { totalesHorasQ[q] = 0; });
+  t.records.forEach(function (rec) {
+    qCols.forEach(function (q) {
+      var v = Number(rec.data[q]);
+      if (!isNaN(v)) totalesHorasQ[q] += v;
+    });
+  });
+  return { sheet: t.sheet, qColumns: qCols, totalesHorasQ: totalesHorasQ, records: t.records };
+}
+
+/**
+ * Control Económico ('3) Control Economico.'): un objeto por trimestre con la
+ * lista de personas (NFQ/NTER) y sus datos, costes por equipo y rentabilidades
+ * objetivo. Suficiente para simular costes/rentabilidad de un Q en cliente.
+ */
+function getControlEconomico() {
+  var sh = _sheet('3) Control Economico.');
+  var blocks = _qBlocks(sh, 3, /^\d{4}Q[1-4]$/); // col C
+  var LASTC = 21; // U
+  var out = [];
+  blocks.forEach(function (b) {
+    var n = b.end - b.row + 1;
+    var vals = sh.getRange(b.row, 1, n, LASTC).getValues(); // A..U
+    var meses = (n > 1) ? [vals[1][4], vals[1][5], vals[1][6]] : []; // E,F,G de la fila cabecera
+    var team = null, personas = [], objetivos = {};
+    for (var i = 0; i < n; i++) {
+      var C = vals[i][2], D = vals[i][3];
+      var cs = (C === null ? '' : String(C).trim());
+      var low = cs.toLowerCase();
+      if (low === 'nfq') { team = 'NFQ'; continue; }
+      if (low === 'nter') { team = 'NTER'; continue; }
+      if (/^rentabilidad objetivo/i.test(cs)) {
+        if (objetivos.NFQ === undefined) objetivos.NFQ = D; else objetivos.NTER = D;
+        continue;
+      }
+      // Persona: nombre "Apellido, Nombre" (lleva coma) y coste numérico en D.
+      if (cs.indexOf(',') >= 0 && typeof D === 'number' && team) {
+        personas.push({
+          equipo: team, nombre: cs, costeHora: D,
+          horasTeoricas: [vals[i][4], vals[i][5], vals[i][6]],
+          dedicacion:    [vals[i][7], vals[i][8], vals[i][9]],
+          ausencias:     [vals[i][10], vals[i][11], vals[i][12]],
+          horasImputadas:[vals[i][13], vals[i][14], vals[i][15]],
+          horasQ:        vals[i][16],
+          costeMes:      [vals[i][17], vals[i][18], vals[i][19]],
+          costeQ:        vals[i][20]
+        });
+      }
+    }
+    var costeNFQ = 0, costeNTER = 0;
+    personas.forEach(function (p) {
+      var c = Number(p.costeQ) || 0;
+      if (p.equipo === 'NFQ') costeNFQ += c; else costeNTER += c;
+    });
+    out.push({
+      q: b.q, rowStart: b.row, rowEnd: b.end, meses: meses, personas: personas,
+      costeNFQ: costeNFQ, costeNTER: costeNTER,
+      rentObjetivoNFQ: objetivos.NFQ, rentObjetivoNTER: objetivos.NTER
+    });
+  });
+  return { sheet: sh.getName(), bloques: out };
+}
+
+// Añade asignaciones (responsable/ejecutor/apoyo) de una fila de proyecto a un proyecto.
+function _pushAsig(proj, rv) {
+  if (rv[6] !== null && rv[6] !== '') proj.asignaciones.push({ rol: 'responsable', persona: String(rv[6]), pct: rv[7] });
+  if (rv[8] !== null && rv[8] !== '') proj.asignaciones.push({ rol: 'ejecutor', persona: String(rv[8]), pct: rv[9] });
+  if (rv[10] !== null && rv[10] !== '') proj.asignaciones.push({ rol: 'apoyo', persona: String(rv[10]), pct: rv[11] });
+}
+
+/**
+ * Capacidad ('9) Capacidad'): por trimestre, horasQ + proyectos con sus
+ * asignaciones (responsable/ejecutor/apoyo + %) + capacidad por persona.
+ * Permite recalcular cobertura y capacidad en cliente.
+ */
+function getCapacidad() {
+  var sh = _sheet('9) Capacidad');
+  var blocks = _qBlocksMulti(sh, [1, 2], /^\d{4}_Q[1-4]$/);
+  var LASTC = 16; // P
+  var out = [];
+  blocks.forEach(function (b) {
+    var n = b.end - b.row + 1;
+    var vals = sh.getRange(b.row, 1, n, LASTC).getValues(); // A..P
+    var horasQ = null, projStart = -1;
+    for (var i = 0; i < n; i++) {
+      if (horasQ === null && i < 7 && typeof vals[i][11] === 'number') horasQ = vals[i][11]; // col L
+      if (String(vals[i][1]).trim() === 'Proyectos') projStart = i + 1; // col B
+    }
+    var proyectos = [], capacidadPersona = [], cur = null;
+    if (projStart >= 0) {
+      for (var j = projStart; j < n; j++) {
+        var rv = vals[j];
+        if (rv[14] !== null && rv[14] !== '' && typeof rv[15] === 'number')
+          capacidadPersona.push({ persona: String(rv[14]), capacidad: rv[15] }); // O/P
+        var nombre = rv[1], horas = rv[5]; // B, F
+        if (nombre !== null && String(nombre).trim() !== '' && typeof horas === 'number') {
+          cur = { nombre: String(nombre), horas: horas, cobertura: rv[12], asignaciones: [] }; // M=cobertura
+          _pushAsig(cur, rv);
+          proyectos.push(cur);
+        } else if (cur) {
+          _pushAsig(cur, rv); // fila de continuación (más ejecutores/apoyos)
+        }
+      }
+    }
+    out.push({ q: b.q, rowStart: b.row, rowEnd: b.end, horasQ: horasQ, proyectos: proyectos, capacidadPersona: capacidadPersona });
+  });
+  return { sheet: sh.getName(), bloques: out };
+}
+
+/**
+ * SNAPSHOT: TODO lo necesario para el frontend y las simulaciones en una sola
+ * llamada (minimiza la latencia de Apps Script).
+ */
+function getSnapshot() {
+  return {
+    generadoEn: new Date().toISOString(),
+    tarifas: getTarifas(),
+    iniciativas: getIniciativas(),
+    ejecucion: getEjecucion(),
+    economico: getControlEconomico(),
+    capacidad: getCapacidad(),
+    gastos: getTable('6) Gastos').records,
+    bolsa: getTable('4) Bolsa BBVA').records,
+    adelantos: getTable('5) Adelantos').records,
+    encuestasQ4: getTable('10) Encuestas Q4').records,
+    encuestasQ1: getTable('11) Encuestas Q1').records
+  };
+}
+
+/* ===========================================================================
  * 8. API WEB  (doGet / doPost -> JSON)
  * =========================================================================== */
 function doGet(e)  { return _serve(e); }
@@ -473,6 +673,13 @@ function _route(action, p) {
                                          { headerRow: _num(p.headerRow), row: _num(p.row), force: _bool(p.force) });
     case 'search':      return searchAll(p.query, { sheets: _obj(p.sheets),
                                                     numberedOnly: _bool(p.numberedOnly), limit: _num(p.limit) });
+    // --- Lectura estructurada por módulo (alimenta las simulaciones) ---
+    case 'snapshot':    return getSnapshot();
+    case 'tarifas':     return getTarifas();
+    case 'iniciativas': return getIniciativas();
+    case 'ejecucion':   return getEjecucion();
+    case 'economico':   return getControlEconomico();
+    case 'capacidad':   return getCapacidad();
     default: throw new Error('Acción desconocida: "' + action + '". Llama action=help.');
   }
 }
@@ -494,7 +701,13 @@ function _help() {
       row:        'sheet, row, headerRow?',
       updateRow:  'sheet, row, patch:{col:val}, headerRow?, force?',
       append:     'sheet, data:{col:val}, headerRow?, row?, force?',
-      search:     'query, sheets?, numberedOnly?, limit?'
+      search:     'query, sheets?, numberedOnly?, limit?',
+      snapshot:   'TODO el libro estructurado en una llamada (para el simulador)',
+      tarifas:    'tarifas de proveedor por año/Q',
+      iniciativas:'lista de iniciativas (con P/Q/R calculados)',
+      ejecucion:  'ejecución + totalesHorasQ por trimestre',
+      economico:  'control económico parseado por Q (personas, costes, rentab. obj.)',
+      capacidad:  'capacidad parseada por Q (proyectos, asignaciones, capacidad/persona)'
     }
   };
 }
@@ -510,6 +723,12 @@ function _test_lectura() {
   Logger.log(getSheets());
   Logger.log(getTable('6) Gastos'));                 // tabla dinámica
   Logger.log(getModifiable('1) Iniciativas', 'B7:S7')); // sólo lo editable de una iniciativa
+}
+function _test_estructura() {
+  Logger.log(getTarifas());
+  Logger.log(getEjecucion().totalesHorasQ);
+  Logger.log(getControlEconomico().bloques[0]); // bloque del Q más reciente
+  Logger.log(getCapacidad().bloques[0]);
 }
 function _test_escritura() {
   // Cambia un comentario (celda sin fórmula) -> permitido.
