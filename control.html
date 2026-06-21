@@ -397,7 +397,11 @@ function renderIniciativas(){
 
 /* ---------- BOLSA / ADELANTOS ---------- */
 function renderBolsa(){
-  const bolsa = state.data.bolsa || [], adel = state.data.adelantos || [];
+  const hide = !!state._bolsaHideZero; // toggle: ocultar las consumidas (restante 0)
+  const allB = state.data.bolsa || [], allA = state.data.adelantos || [];
+  const nz = arr => arr.filter(e=>num(e.restante)>0);
+  const bolsa = hide ? nz(allB) : allB, adel = hide ? nz(allA) : allA;
+  const ocultas = (allB.length-nz(allB).length) + (allA.length-nz(allA).length);
   // Tarjeta agrupada: IZQUIERDA = proyecto que APORTA horas, DERECHA = los que las SACAN.
   const card = e => {
     const cons = e.consumos || [];
@@ -419,10 +423,15 @@ function renderBolsa(){
   };
   const grid = arr => arr.length ? `<div class="grid gap-3 lg:grid-cols-2">${arr.map(card).join("")}</div>` : '<p class="text-sm text-sand/40">Sin entradas activas.</p>';
   panel.innerHTML =
-    `<h3 class="mb-3 font-display text-lg font-bold text-sand">Bolsa BBVA <span class="text-xs font-normal text-sand/50">· ${bolsa.length} activas (las cerradas/tachadas no se muestran)</span></h3>` +
+    `<div class="mb-4 flex flex-wrap items-center gap-3">
+      <button id="bol-zero" class="chip rounded-full px-4 py-2 text-xs font-bold" style="${hide?'border-color:rgba(136,231,131,.85);color:#88E783':'color:#85C8FF'}">Ocultar restante 0h</button>
+      ${hide&&ocultas?`<span class="text-xs text-sand/40">${ocultas} ocultas (consumidas)</span>`:''}
+    </div>` +
+    `<h3 class="mb-3 font-display text-lg font-bold text-sand">Bolsa BBVA <span class="text-xs font-normal text-sand/50">· ${bolsa.length} (las cerradas/tachadas no se muestran)</span></h3>` +
     grid(bolsa) +
-    `<h3 class="mb-3 mt-7 font-display text-lg font-bold text-sand">Adelantos <span class="text-xs font-normal text-sand/50">· ${adel.length} activos</span></h3>` +
+    `<h3 class="mb-3 mt-7 font-display text-lg font-bold text-sand">Adelantos <span class="text-xs font-normal text-sand/50">· ${adel.length}</span></h3>` +
     grid(adel);
+  document.getElementById("bol-zero").onclick = ()=>{ state._bolsaHideZero=!state._bolsaHideZero; renderBolsa(); };
 }
 
 /* ---------- GASTOS (editor conectado a la hoja "6) Gastos") ---------- */
