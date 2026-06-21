@@ -38,12 +38,12 @@ export default function Experience() {
       <div className="pointer-events-none fixed inset-0 -z-10">
         <Scene />
       </div>
-      {/* Velo suave para legibilidad sin tapar la figura */}
+      {/* Velo muy suave: el cristal de las tarjetas ya garantiza legibilidad */}
       <div
         className="pointer-events-none fixed inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(125% 90% at 50% 28%, rgba(7,14,70,0) 32%, rgba(7,14,70,0.55) 100%)",
+            "radial-gradient(130% 95% at 50% 35%, rgba(7,14,70,0) 45%, rgba(7,14,70,0.4) 100%)",
         }}
       />
 

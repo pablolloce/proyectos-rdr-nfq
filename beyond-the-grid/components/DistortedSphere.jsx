@@ -34,23 +34,23 @@ export default function DistortedSphere() {
 
   return (
     <group ref={group}>
-      <Sphere args={[1.25, 128, 128]}>
+      <Sphere args={[1.45, 128, 128]}>
         <MeshDistortMaterial
           color="#85C8FF" // Serene
-          emissive="#001391" // Electric
-          emissiveIntensity={0.25}
-          roughness={0.35}
+          emissive="#1D7CF4" // azul brillante para que destaque
+          emissiveIntensity={0.5}
+          roughness={0.3}
           metalness={0}
-          clearcoat={0.6}
+          clearcoat={0.7}
           clearcoatRoughness={0.25}
-          distort={0.4}
+          distort={0.42}
           speed={1.3}
         />
       </Sphere>
 
-      {/* Retícula envolvente */}
-      <Icosahedron ref={wire} args={[2.1, 1]}>
-        <meshBasicMaterial color="#85C8FF" wireframe transparent opacity={0.18} />
+      {/* Retícula envolvente (estructura del repositorio) */}
+      <Icosahedron ref={wire} args={[2.45, 1]}>
+        <meshBasicMaterial color="#85C8FF" wireframe transparent opacity={0.3} />
       </Icosahedron>
     </group>
   );
