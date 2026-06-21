@@ -79,9 +79,12 @@
 
   <!-- Tabs -->
   <nav id="tabs" class="mb-6 flex flex-wrap gap-2">
+    <button data-tab="iniciativas" class="tab chip rounded-full px-5 py-2.5 text-sm font-bold">Iniciativas</button>
     <button data-tab="ejecucion" class="tab chip rounded-full px-5 py-2.5 text-sm font-bold">Ejecución</button>
     <button data-tab="economia"  class="tab chip rounded-full px-5 py-2.5 text-sm font-bold">Economía</button>
     <button data-tab="capacidad" class="tab chip rounded-full px-5 py-2.5 text-sm font-bold">Capacidad</button>
+    <button data-tab="bolsa" class="tab chip rounded-full px-5 py-2.5 text-sm font-bold">Bolsa / Adelantos</button>
+    <button data-tab="encuestas" class="tab chip rounded-full px-5 py-2.5 text-sm font-bold">Encuestas</button>
   </nav>
 
   <section id="panel" class="min-h-[50vh]"></section>
@@ -186,6 +189,24 @@ const DEMO = {
       {nombre:"Adopción IA RDR", horas:390, asignaciones:[{rol:"responsable",persona:"Pablo",pct:0.4},{rol:"ejecutor",persona:"Juanlu",pct:0.7}]},
     ], capacidadPersona:[{persona:"Pablo",capacidad:1.10},{persona:"Iker",capacidad:0.92},{persona:"Marta",capacidad:0.77},{persona:"Laura",capacidad:0.99}]},
   ]},
+  iniciativas: [
+    { data:{ "Estado":"Finalizado","Q facturación":"2026Q1","Código Pedido":"8542254162","Detalle":"SDATOOL-46848 Institutional Clients","Horas propuesta":205,"Estado facturación":"Cobrada","Horas ejecutadas":205,"¿Ejecutado?":"Finalizado" } },
+    { data:{ "Estado":"En curso","Q facturación":"2026Q2","Código Pedido":"-","Detalle":"SDATOOL-51125 Migración Midas 26Q2","Horas propuesta":1325,"Estado facturación":"Bolsa horas","Horas ejecutadas":600,"¿Ejecutado?":"En curso" } },
+    { data:{ "Estado":"Finalizado","Q facturación":"2026Q2","Código Pedido":"8542284285","Detalle":"OTC Fase IV 26Q2","Horas propuesta":400,"Estado facturación":"Cobrada","Horas ejecutadas":400,"¿Ejecutado?":"Finalizado" } },
+    { data:{ "Estado":"Cancelado","Q facturación":"2026Q2","Código Pedido":"-","Detalle":"Estimación descartada","Horas propuesta":150,"Estado facturación":"-","Horas ejecutadas":0,"¿Ejecutado?":"Cancelado" } },
+  ],
+  bolsa: [
+    { data:{ "Responsable BBVA":"Daría Gonzalez","Proyecto":"Cambio Peticiones XMAS","Horas adelantadas":168,"Horas consumidas":42,"Horas":66 } },
+    { data:{ "Responsable BBVA":"","Proyecto":"Estimación Q1 CSVToXML","Horas adelantadas":"","Horas consumidas":60,"Horas":"" } },
+  ],
+  adelantos: [
+    { data:{ "Responsable BBVA":"Alejandro García","Proyecto":"SDATOOL-48154 OSI Gobierno Riesgo","Horas adelantadas":310,"Horas consumidas":55,"Horas":0,"Importe":0 } },
+    { data:{ "Responsable BBVA":"Pablo Rodríguez","Proyecto":"SDATOOL-53765 Life Global","Horas adelantadas":274,"Horas consumidas":220,"Horas":54,"Importe":2851.2 } },
+  ],
+  encuestasQ4: [
+    { data:{ "Código de proyecto/servicio":"SDATOOL-46848","NOMBRE DEL PROYECTO/SERVICIO":"Institutional Clients: Onboarding","SATISFACCIÓN ENTREGA":10,"CONSIGUE RESULTADOS":10,"CONOCIMIENTO TÉCNICO ADECUADO":10,"CALIDAD TOTAL NUEVA":10 } },
+    { data:{ "Código de proyecto/servicio":"SDATOOL-34546","NOMBRE DEL PROYECTO/SERVICIO":"Calypso Back-Office OTC España","SATISFACCIÓN ENTREGA":9,"CONSIGUE RESULTADOS":10,"CONOCIMIENTO TÉCNICO ADECUADO":9,"CALIDAD TOTAL NUEVA":9 } },
+  ],
 };
 
 const state = { data:null, demo:false };
@@ -217,13 +238,92 @@ const KPI = (label,value,accent="serene")=>`
     <p class="mt-1 font-display text-2xl font-bold text-sand">${value}</p>
   </div>`;
 
-let activeTab = "economia";
+let activeTab = "iniciativas";
 function setTab(t){ activeTab=t;
   document.querySelectorAll(".tab").forEach(b=>{
     const on=b.dataset.tab===t; b.classList.toggle("bg-white/10",on);
     b.style.borderColor = on? "rgba(133,200,255,.8)":"rgba(133,200,255,.30)";
   });
-  ({ejecucion:renderEjecucion, economia:renderEconomia, capacidad:renderCapacidad}[t])();
+  ({ iniciativas:renderIniciativas, ejecucion:renderEjecucion, economia:renderEconomia,
+     capacidad:renderCapacidad, bolsa:renderBolsa, encuestas:renderEncuestas }[t])();
+}
+
+/* ---------- Tabla genérica (estilo cristal) ---------- */
+function tableHTML(records, cols){
+  if(!records || !records.length) return `<div class="glass rounded-2xl p-6 text-sand/60">Sin datos.</div>`;
+  return `<div class="glass overflow-x-auto rounded-2xl p-4"><table class="w-full text-sm">
+    <thead><tr class="text-left text-serene/80">${cols.map(c=>`<th class="p-2 ${c.r?'text-right':''}">${c.label}</th>`).join("")}</tr></thead>
+    <tbody>${records.map(rec=>{ const d=rec.data||rec; return `<tr class="border-t border-serene/10">${cols.map(c=>{
+      let v=d[c.k]; v=c.f? c.f(v,d) : (v==null||v===""?'<span class="text-sand/25">—</span>':v);
+      return `<td class="p-2 ${c.r?'text-right':''}">${v}</td>`; }).join("")}</tr>`; }).join("")}</tbody></table></div>`;
+}
+const badge=(t,c)=>`<span class="chip rounded-full px-2 py-0.5 text-[11px] text-${c}">${t}</span>`;
+function estadoBadge(v){ const s=String(v||"").toLowerCase();
+  if(s.indexOf("final")>=0) return badge(v,"lime");
+  if(s.indexOf("cancel")>=0||s.indexOf("rechaz")>=0) return badge(v,"mandarin");
+  if(s.indexOf("curso")>=0||s.indexOf("aprob")>=0||s.indexOf("bolsa")>=0) return badge(v,"serene");
+  if(s.indexOf("cobrad")>=0) return badge(v,"lime");
+  return badge(v||"—","sand"); }
+const hCell=(v)=> v===""||v==null?'':h(v);
+
+/* ---------- INICIATIVAS ---------- */
+function renderIniciativas(){
+  const recs = state.data.iniciativas || [];
+  const qs = Array.from(new Set(recs.map(r=>r.data["Q facturación"]).filter(Boolean))).sort();
+  const fq = state._iniQ || "Todos";
+  const filtered = recs.filter(r=> fq==="Todos" || r.data["Q facturación"]===fq);
+  panel.innerHTML = `
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <label class="text-xs text-serene/80">Q facturación
+        <select id="ini-q" class="ml-2"><option>Todos</option>${qs.map(q=>`<option ${q===fq?"selected":""}>${q}</option>`).join("")}</select></label>
+      <span class="text-xs text-sand/50">${filtered.length} iniciativas</span>
+    </div>` + tableHTML(filtered, [
+      { k:"Estado", label:"Estado", f:estadoBadge },
+      { k:"Q facturación", label:"Q" },
+      { k:"Código Pedido", label:"Pedido" },
+      { k:"Detalle", label:"Proyecto" },
+      { k:"Horas propuesta", label:"Horas", r:true, f:hCell },
+      { k:"Estado facturación", label:"Facturación" },
+      { k:"Horas ejecutadas", label:"Ejecutadas", r:true, f:hCell },
+      { k:"¿Ejecutado?", label:"Ejecución", f:estadoBadge },
+    ]);
+  document.getElementById("ini-q").onchange = e=>{ state._iniQ=e.target.value; renderIniciativas(); };
+}
+
+/* ---------- BOLSA / ADELANTOS ---------- */
+function renderBolsa(){
+  const bolsa = state.data.bolsa || [], adel = state.data.adelantos || [];
+  panel.innerHTML =
+    `<h3 class="mb-2 font-display text-lg font-bold text-sand">Bolsa BBVA</h3>` +
+    tableHTML(bolsa, [
+      { k:"Responsable BBVA", label:"Responsable" },
+      { k:"Proyecto", label:"Proyecto / Detalle", f:(v,d)=> v||d["Detalle / Motivo"]||'<span class="text-sand/25">—</span>' },
+      { k:"Horas adelantadas", label:"Adelantadas", r:true, f:hCell },
+      { k:"Horas consumidas", label:"Consumidas", r:true, f:hCell },
+      { k:"Horas", label:"Restante", r:true, f:hCell },
+    ]) +
+    `<h3 class="mb-2 mt-6 font-display text-lg font-bold text-sand">Adelantos</h3>` +
+    tableHTML(adel, [
+      { k:"Responsable BBVA", label:"Responsable" },
+      { k:"Proyecto", label:"Proyecto" },
+      { k:"Horas adelantadas", label:"Adelantadas", r:true, f:hCell },
+      { k:"Horas consumidas", label:"Consumidas", r:true, f:hCell },
+      { k:"Horas", label:"Restante", r:true, f:hCell },
+      { k:"Importe", label:"Importe", r:true, f:v=> v===""||v==null?'':eur.format(v) },
+    ]);
+}
+
+/* ---------- ENCUESTAS ---------- */
+function renderEncuestas(){
+  const recs = (state.data.encuestasQ4 && state.data.encuestasQ4.length) ? state.data.encuestasQ4 : (state.data.encuestasQ1||[]);
+  panel.innerHTML = tableHTML(recs, [
+    { k:"Código de proyecto/servicio", label:"Código" },
+    { k:"NOMBRE DEL PROYECTO/SERVICIO", label:"Proyecto" },
+    { k:"SATISFACCIÓN ENTREGA", label:"Satisf.", r:true },
+    { k:"CONSIGUE RESULTADOS", label:"Resultados", r:true },
+    { k:"CONOCIMIENTO TÉCNICO ADECUADO", label:"Conocim.", r:true },
+    { k:"CALIDAD TOTAL NUEVA", label:"Calidad", r:true },
+  ]);
 }
 
 /* ---------- EJECUCIÓN: redistribución de horas por Q ---------- */
@@ -395,7 +495,7 @@ async function boot(){
   document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
   document.getElementById("btn-reload").onclick = async()=>{ await loadSnapshot();
     document.getElementById("mode-badge").textContent = state.demo?"modo demo (sin backend)":"datos en vivo"; setTab(activeTab); };
-  setTab("economia");
+  setTab("iniciativas");
 }
 
 /* ===========================================================================
