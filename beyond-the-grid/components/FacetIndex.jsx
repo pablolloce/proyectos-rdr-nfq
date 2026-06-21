@@ -1,25 +1,17 @@
 "use client";
 
-import { Suspense, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
-import { MathUtils, Vector3 } from "three";
+import { Html, Environment } from "@react-three/drei";
+import * as THREE from "three";
 import { pointer } from "@/lib/pointerStore";
 import { HUB_LINKS } from "@/lib/hubLinks";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
-const R = 2.25;       // distancia de las caras al centro
-const PENT_R = 0.98;  // radio del pentágono (tiles casi tocándose -> sólido)
-const SEP = 0.55;     // cuánto se separa una cara al hover
-
-// 12 direcciones = vértices del icosaedro = normales de las caras del dodecaedro.
-function icoDirs() {
-  const t = (1 + Math.sqrt(5)) / 2;
-  const v = [[-1,t,0],[1,t,0],[-1,-t,0],[1,-t,0],[0,-1,t],[0,1,t],
-             [0,-1,-t],[0,1,-t],[t,0,-1],[t,0,1],[-t,0,-1],[-t,0,1]];
-  return v.map((a) => { const n = Math.hypot(a[0],a[1],a[2]); return [a[0]/n, a[1]/n, a[2]/n]; });
-}
+const R = 1.75;        // radio de la esfera
+const COLS = 4, ROWS = 3; // 4×3 = 12 fragmentos (= 12 links)
+const SEP = 0.45;      // separación del fragmento al hover
 
 function navTo(link) {
   const u = link.url;
@@ -28,38 +20,41 @@ function navTo(link) {
   else window.location.href = u;
 }
 
-// Un FRAGMENTO = una cara (pentágono). Se separa del conjunto cuando está activo.
-function Fragment({ dir, link, on, setOn }) {
-  const g = useRef();
-  const base = useMemo(() => new Vector3(dir[0], dir[1], dir[2]), [dir]);
-  useLayoutEffect(() => {
-    if (!g.current) return;
-    g.current.position.copy(base).multiplyScalar(R);
-    g.current.lookAt(0, 0, 0);
-  }, [base]);
+// Un FRAGMENTO = una porción real de la esfera (slice phi/theta) = un link.
+// Material físico premium (clearcoat + reflejos del Environment). Se separa al hover.
+function Shard({ idx, link, on, setOn }) {
+  const ref = useRef();
+  const { geom, dir, labelPos } = useMemo(() => {
+    const c = idx % COLS, r = Math.floor(idx / COLS);
+    const phiLen = (Math.PI * 2) / COLS, thetaLen = Math.PI / ROWS;
+    const g = new THREE.SphereGeometry(R, 28, 20, c * phiLen, phiLen, r * thetaLen, thetaLen);
+    const pos = g.attributes.position, v = new THREE.Vector3();
+    for (let i = 0; i < pos.count; i++) { v.x += pos.getX(i); v.y += pos.getY(i); v.z += pos.getZ(i); }
+    v.multiplyScalar(1 / pos.count).normalize();
+    const lp = v.clone().multiplyScalar(R + 0.95);
+    return { geom: g, dir: v, labelPos: [lp.x, lp.y, lp.z] };
+  }, [idx]);
+
   useFrame(() => {
-    if (!g.current) return;
-    const want = R + (on ? SEP : 0);
-    const cur = g.current.position.length() || R;
-    g.current.position.copy(base).multiplyScalar(MathUtils.lerp(cur, want, 0.18));
+    if (!ref.current) return;
+    const want = on ? SEP : 0;
+    const nl = THREE.MathUtils.lerp(ref.current.position.length(), want, 0.18);
+    ref.current.position.copy(dir).multiplyScalar(nl);
   });
+
   return (
-    <group ref={g}>
-      <mesh
+    <group>
+      <mesh ref={ref} geometry={geom}
         onPointerOver={(e) => { e.stopPropagation(); setOn(true); }}
         onPointerOut={() => setOn(false)}
-        onClick={(e) => { e.stopPropagation(); navTo(link); }}
-        scale={on ? 1.05 : 1}
-      >
-        <circleGeometry args={[PENT_R, 5]} />
-        <meshStandardMaterial
-          color={link.color} emissive={link.color}
-          emissiveIntensity={on ? 0.9 : 0.28} metalness={0.25} roughness={0.4}
-          transparent opacity={on ? 0.98 : 0.85} side={2}
-        />
+        onClick={(e) => { e.stopPropagation(); navTo(link); }}>
+        <meshPhysicalMaterial
+          color={link.color} emissive={link.color} emissiveIntensity={on ? 0.55 : 0.05}
+          metalness={0.35} roughness={0.12} clearcoat={1} clearcoatRoughness={0.15}
+          envMapIntensity={1.4} side={THREE.DoubleSide} />
       </mesh>
       {on && (
-        <Html center distanceFactor={8} position={[0, 0, -0.3]} style={{ pointerEvents: "none" }}>
+        <Html center position={labelPos} distanceFactor={7} style={{ pointerEvents: "none" }}>
           <div style={{ whiteSpace: "nowrap", background: "rgba(10,18,74,.92)", color: "#F7F8F8",
             border: "1px solid " + link.color, borderRadius: "999px", padding: "5px 14px",
             fontSize: "13px", fontWeight: 700, fontFamily: "Lato, sans-serif" }}>{link.name}</div>
@@ -69,24 +64,17 @@ function Fragment({ dir, link, on, setOn }) {
   );
 }
 
-function Dodeca({ links, active, setActive }) {
+function ShardSphere({ links, active, setActive }) {
   const grp = useRef();
-  const dirs = useMemo(() => icoDirs(), []);
   useFrame((_, dt) => {
     if (!grp.current) return;
-    grp.current.rotation.y += dt * 0.1;
-    grp.current.rotation.x = MathUtils.lerp(grp.current.rotation.x, pointer.y * 0.25, 0.04);
+    grp.current.rotation.y += dt * 0.08;
+    grp.current.rotation.x = THREE.MathUtils.lerp(grp.current.rotation.x, pointer.y * 0.25, 0.04);
   });
   return (
     <group ref={grp}>
-      {/* Núcleo sólido: rellena los huecos entre fragmentos -> objeto macizo */}
-      <mesh>
-        <icosahedronGeometry args={[R - 0.35, 1]} />
-        <meshStandardMaterial color="#0b1450" metalness={0.3} roughness={0.5} flatShading />
-      </mesh>
       {links.map((l, i) => (
-        <Fragment key={l.name} dir={dirs[i % dirs.length]} link={l}
-          on={active === i} setOn={(v) => setActive(v ? i : -1)} />
+        <Shard key={l.name} idx={i} link={l} on={active === i} setOn={(v) => setActive(v ? i : -1)} />
       ))}
     </group>
   );
@@ -103,16 +91,23 @@ export default function FacetIndex() {
   return (
     <div className="absolute inset-0 flex">
       <div className="relative flex-1">
-        <Canvas camera={{ position: [0, 0, 6], fov: 45 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
+        <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
           <color attach="background" args={["#070E46"]} />
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[4, 5, 6]} intensity={1.7} color="#F7F8F8" />
-          <pointLight position={[-6, -4, -4]} intensity={2.4} color="#1D7CF4" />
-          <pointLight position={[5, 2, 3]} intensity={1} color="#85C8FF" />
+          <ambientLight intensity={0.45} />
+          <directionalLight position={[5, 5, 6]} intensity={2.2} color="#F7F8F8" />
+          <pointLight position={[-6, -3, -4]} intensity={2} color="#1D7CF4" />
           <Suspense fallback={null}>
-            <Dodeca links={links} active={active} setActive={setActive} />
+            <ShardSphere links={links} active={active} setActive={setActive} />
+            <Environment preset="city" />
           </Suspense>
         </Canvas>
+        {/* Título overlay (no captura clics, pasan a la esfera) */}
+        <div className="pointer-events-none absolute inset-x-0 top-8 px-6 text-center">
+          <h1 className="font-grotesk font-bold leading-none tracking-tighter text-sand/95"
+            style={{ fontSize: "clamp(2rem, 7vw, 6rem)", textShadow: "0 8px 60px rgba(7,14,70,.6)" }}>
+            BEYOND THE GRID
+          </h1>
+        </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-5 text-center text-xs uppercase tracking-[0.3em] text-serene/55">
           Pasa el ratón sobre un fragmento · pulsa para abrir
         </div>
@@ -120,16 +115,13 @@ export default function FacetIndex() {
 
       {/* Leyenda: todos los links accesibles desde el primer momento */}
       <aside className="hidden w-64 shrink-0 overflow-auto border-l border-serene/10 p-4 md:block">
-        <p className="mb-3 font-display text-xs uppercase tracking-[0.3em] text-serene/70">Explora</p>
+        <p className="mb-3 font-grotesk text-xs uppercase tracking-[0.3em] text-serene/70">Explora</p>
         <ul className="space-y-1">
           {links.map((l, i) => (
-            <li key={l.name}
-              data-hover
-              onMouseEnter={() => setActive(i)}
-              onMouseLeave={() => setActive(-1)}
+            <li key={l.name} data-hover
+              onMouseEnter={() => setActive(i)} onMouseLeave={() => setActive(-1)}
               onClick={() => navTo(l)}
-              className={"flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors " + (active === i ? "bg-white/10" : "hover:bg-white/5")}
-            >
+              className={"flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors " + (active === i ? "bg-white/10" : "hover:bg-white/5")}>
               <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: l.color }} />
               <span className="truncate text-sand/85">{l.name}</span>
             </li>
