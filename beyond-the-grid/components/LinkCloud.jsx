@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useLinks } from "@/lib/links";
+import { useAuth } from "./AuthGate";
 
 const COLORS = {
   serene: "#85C8FF",
@@ -106,11 +107,20 @@ function Chip({ item, delay }) {
   );
 }
 
+// Sección solo para coordinadores (coordinador:true en equipo.json).
+const COORD_SECTION = {
+  num: "04",
+  title: "Coordinación",
+  items: [{ color: "purple", label: "Control RDR", href: "control.html" }],
+};
+
 export default function LinkCloud() {
+  const { isCoordinador } = useAuth();
+  const sections = isCoordinador ? [...SECTIONS, COORD_SECTION] : SECTIONS;
   let i = 0;
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-7 px-6">
-      {SECTIONS.map((section) => (
+      {sections.map((section) => (
         <div key={section.num} className="flex max-w-3xl flex-col items-center gap-3">
           <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-serene/80">
             <span className="text-serene/40">{section.num}</span> · {section.title}
