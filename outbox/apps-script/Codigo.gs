@@ -620,11 +620,21 @@ function getSnapshot() {
 function doGet(e)  { return _serve(e); }
 function doPost(e) { return _serve(e); }
 
+// Acciones de SOLO LECTURA: NO exigen token (la web pública sólo lee del libro).
+// Cualquier acción de ESCRITURA (write/writeRange/batch/append/updateRow) SÍ
+// exige token, que NO se publica en la web -> protege la modificación del Excel.
+var _READ_ACTIONS = {
+  '': 1, ping: 1, help: 1, meta: 1, sheets: 1, read: 1, readCell: 1, modifiable: 1,
+  table: 1, row: 1, search: 1, snapshot: 1, tarifas: 1, iniciativas: 1,
+  ejecucion: 1, economico: 1, capacidad: 1
+};
+
 function _serve(e) {
   try {
     var p = _params(e);
-    if (p.action !== 'ping') _auth(p);
-    return _json({ ok: true, action: p.action || 'help', data: _route(p.action, p) });
+    var action = p.action || 'help';
+    if (!_READ_ACTIONS[action]) _auth(p); // sólo las escrituras requieren token
+    return _json({ ok: true, action: action, data: _route(p.action, p) });
   } catch (err) {
     return _json({ ok: false, error: String(err && err.message ? err.message : err) });
   }

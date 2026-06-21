@@ -213,19 +213,27 @@ const state = { data:null, demo:false };
 
 async function loadSnapshot(){
   let url=null, token="";
+  state.error = "";
   try {
     const links = await fetch("links/links.json",{cache:"no-store"}).then(r=>r.json());
     url = links.controlBackend && (links.controlBackend.url||links.controlBackend);
     token = links.controlToken || "";
-  } catch(e){}
+  } catch(e){ state.error = "no se pudo leer links.json"; }
   if (url && url.indexOf("PEGAR_AQUI")<0) {
     try {
       const u = url + (url.indexOf("?")<0?"?":"&") + "action=snapshot" + (token?("&token="+encodeURIComponent(token)):"");
       const res = await fetch(u).then(r=>r.json());
       if (res && res.ok && res.data) { state.data=res.data; state.demo=false; return; }
-    } catch(e){}
+      state.error = (res && res.error) ? ("backend: "+res.error) : "respuesta inesperada del backend";
+    } catch(e){ state.error = "sin conexión con el backend (CORS/red)"; }
+  } else if (!url) {
+    state.error = "falta controlBackend en links.json";
   }
   state.data = DEMO; state.demo = true;
+}
+function modeBadge(){
+  document.getElementById("mode-badge").textContent =
+    state.demo ? ("modo demo" + (state.error ? " · " + state.error : "")) : "datos en vivo";
 }
 
 /* ===========================================================================
@@ -491,10 +499,9 @@ function renderCapacidad(){
  * =========================================================================== */
 async function boot(){
   await loadSnapshot();
-  document.getElementById("mode-badge").textContent = state.demo ? "modo demo (sin backend)" : "datos en vivo";
+  modeBadge();
   document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
-  document.getElementById("btn-reload").onclick = async()=>{ await loadSnapshot();
-    document.getElementById("mode-badge").textContent = state.demo?"modo demo (sin backend)":"datos en vivo"; setTab(activeTab); };
+  document.getElementById("btn-reload").onclick = async()=>{ await loadSnapshot(); modeBadge(); setTab(activeTab); };
   setTab("iniciativas");
 }
 
