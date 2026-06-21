@@ -93,7 +93,8 @@ function SubCube({ local, item, on, setOn, getUrl }) {
 function Filler({ local }) {
   return (
     <RoundedBox args={[CS, CS, CS]} radius={0.13} smoothness={4} position={[local.x, local.y, local.z]}>
-      <meshPhysicalMaterial color="#0d1860" metalness={0.25} roughness={0.42} clearcoat={0.7} envMapIntensity={1.1} />
+      <meshPhysicalMaterial color="#001391" emissive="#001391" emissiveIntensity={0.18}
+        metalness={0.2} roughness={0.28} clearcoat={0.9} clearcoatRoughness={0.18} envMapIntensity={1.4} />
     </RoundedBox>
   );
 }
@@ -101,7 +102,7 @@ function Filler({ local }) {
 function Figure({ pos, section, fi, active, setActive, getUrl }) {
   return (
     <group position={pos}>
-      <Html center position={[0, 1.45, 0]} zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
+      <Html center position={[0, 2.25, 0]} zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
         <div style={{ textAlign: "center", fontFamily: "var(--font-grotesk), sans-serif", whiteSpace: "nowrap" }}>
           <span style={{ fontSize: "10px", letterSpacing: "0.25em", color: "rgba(133,200,255,.6)" }}>{section.num}</span>
           <div style={{ fontSize: "15px", fontWeight: 700, color: "#F7F8F8", textShadow: "0 4px 18px rgba(7,14,70,.7)" }}>{section.title}</div>
