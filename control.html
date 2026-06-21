@@ -508,7 +508,14 @@ async function boot(){
   const ok=(e)=>{ e=String(e||"").trim().toLowerCase(); return !!e && TEAM.some(p=>
     String(p.email||"").toLowerCase()===e || String(p.emailBBVA||"").toLowerCase()===e); };
   const jwt=(t)=>{ try{ return JSON.parse(decodeURIComponent(escape(atob(t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))))); }catch(e){ return null; } };
-  function entrar(){ document.body.classList.add("authed"); boot(); }
+  function entrar(){
+    document.body.classList.add("authed");
+    // El #auth-gate lleva display:flex INLINE, que gana a la regla CSS
+    // body.authed #auth-gate{display:none}. Hay que ocultarlo por JS.
+    var g = document.getElementById("auth-gate");
+    if (g) g.style.display = "none";
+    boot();
+  }
   async function team(){ try{ TEAM=(await fetch("equipo/equipo.json",{cache:"no-store"}).then(r=>r.json())).team||[]; }catch(e){ TEAM=[]; } }
   async function onCred(resp){ const d=jwt(resp&&resp.credential); await team();
     const mail=d&&d.email_verified&&d.email?d.email:null;
