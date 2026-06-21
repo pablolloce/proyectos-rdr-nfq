@@ -378,6 +378,41 @@ function appendRow(sheetName, data, opts) {
   return getRow(sheetName, targetRow, { headerRow: headerRow });
 }
 
+/**
+ * Alta de registro CLONANDO la fila anterior: copia fórmulas y formato de la
+ * última fila con datos a la nueva (así P/Q/R de Iniciativas, L/M de Ejecución,
+ * etc. se replican y se autoajustan), limpia los valores de input heredados y
+ * escribe los nuevos. Es la forma correcta de "añadir" en tablas con fórmulas.
+ */
+function appendCloneRow(sheetName, data, opts) {
+  opts = opts || {};
+  if (!data || typeof data !== 'object') throw new Error('data debe ser un objeto {columna: valor}.');
+  var lock = LockService.getDocumentLock();
+  lock.waitLock(15000);
+  try {
+    var sh = _sheet(sheetName);
+    var headerRow = opts.headerRow || _schema(sheetName).headerRow || 1;
+    var lastCol = sh.getLastColumn();
+    var srcRow = sh.getLastRow();
+    var newRow = srcRow + 1;
+    // 1) Clonar la fila anterior (fórmulas + formato) a la nueva.
+    sh.getRange(srcRow, 1, 1, lastCol).copyTo(sh.getRange(newRow, 1, 1, lastCol));
+    // 2) Vaciar las celdas de INPUT (sin fórmula) para no arrastrar datos viejos.
+    var fs = sh.getRange(newRow, 1, 1, lastCol).getFormulas()[0];
+    for (var c = 0; c < lastCol; c++) if (fs[c] === '') sh.getRange(newRow, c + 1).clearContent();
+    // 3) Escribir los valores nuevos por cabecera.
+    var headers = sh.getRange(headerRow, 1, 1, lastCol).getValues()[0];
+    Object.keys(data).forEach(function (k) {
+      var idx = _indexOfHeader(headers, k);
+      if (idx >= 0) _setOne(sh.getRange(newRow, idx + 1), data[k]);
+    });
+    SpreadsheetApp.flush();
+    return getRow(sheetName, newRow, { headerRow: headerRow });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 /* ===========================================================================
  * 7. BÚSQUEDA GLOBAL
  * =========================================================================== */
@@ -524,6 +559,7 @@ function getControlEconomico() {
       if (cs.indexOf(',') >= 0 && typeof D === 'number' && team) {
         personas.push({
           equipo: team, nombre: cs, costeHora: D,
+          row: b.row + i, // fila absoluta (para escribir coste/dedicación)
           horasTeoricas: [vals[i][4], vals[i][5], vals[i][6]],
           dedicacion:    [vals[i][7], vals[i][8], vals[i][9]],
           ausencias:     [vals[i][10], vals[i][11], vals[i][12]],
@@ -681,6 +717,7 @@ function _route(action, p) {
                                          { headerRow: _num(p.headerRow), force: _bool(p.force) });
     case 'append':      return appendRow(p.sheet, _obj(p.data),
                                          { headerRow: _num(p.headerRow), row: _num(p.row), force: _bool(p.force) });
+    case 'appendClone': return appendCloneRow(p.sheet, _obj(p.data), { headerRow: _num(p.headerRow) });
     case 'search':      return searchAll(p.query, { sheets: _obj(p.sheets),
                                                     numberedOnly: _bool(p.numberedOnly), limit: _num(p.limit) });
     // --- Lectura estructurada por módulo (alimenta las simulaciones) ---

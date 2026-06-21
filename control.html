@@ -72,6 +72,8 @@
       <p class="text-sm text-serene/80">Ejecución · Economía · Capacidad — <span id="mode-badge" class="text-mandarin"></span></p>
     </div>
     <div class="flex items-center gap-3">
+      <span id="flash" class="text-xs font-bold" style="opacity:0;transition:opacity .3s"></span>
+      <button id="btn-mode" class="chip rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider"></button>
       <button id="btn-reload" class="chip rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider text-sand hover:bg-white/10">Recargar</button>
       <span class="text-xl font-black tracking-tight text-sand">BBVA</span>
     </div>
@@ -209,7 +211,7 @@ const DEMO = {
   ],
 };
 
-const state = { data:null, demo:false };
+const state = { data:null, demo:false, live:false, url:null, token:"" };
 
 async function loadSnapshot(){
   let url=null, token="";
@@ -219,6 +221,7 @@ async function loadSnapshot(){
     url = links.controlBackend && (links.controlBackend.url||links.controlBackend);
     token = links.controlToken || "";
   } catch(e){ state.error = "no se pudo leer links.json"; }
+  state.url = url; state.token = token; // guardados para las escrituras
   if (url && url.indexOf("PEGAR_AQUI")<0) {
     try {
       const u = url + (url.indexOf("?")<0?"?":"&") + "action=snapshot" + (token?("&token="+encodeURIComponent(token)):"");
@@ -234,6 +237,43 @@ async function loadSnapshot(){
 function modeBadge(){
   document.getElementById("mode-badge").textContent =
     state.demo ? ("modo demo" + (state.error ? " · " + state.error : "")) : "datos en vivo";
+}
+
+/* ===========================================================================
+ * MODO (Simulación / Normal) + ESCRITURA
+ * En Simulación NADA se escribe en el Excel (sandbox local). En Normal, las
+ * ediciones se persisten vía el backend (requiere controlBackend + controlToken).
+ * =========================================================================== */
+function setMode(live){
+  state.live = live;
+  const b = document.getElementById("btn-mode");
+  b.textContent = live ? "● Modo normal (escribe)" : "○ Modo simulación";
+  b.style.borderColor = live ? "rgba(255,181,107,.85)" : "rgba(133,200,255,.4)";
+  b.style.color = live ? "#FFB56B" : "#85C8FF";
+}
+function flash(msg, bad){
+  const el = document.getElementById("flash"); if(!el) return;
+  el.textContent = msg; el.style.color = bad ? "#FFB56B" : "#88E783"; el.style.opacity = "1";
+  clearTimeout(flash._t); flash._t = setTimeout(()=>{ el.style.opacity = "0"; }, 2800);
+}
+async function apiWrite(action, params){
+  if(!state.url)   throw new Error("Sin backend (controlBackend en links.json).");
+  if(!state.token) throw new Error("Falta controlToken en links.json para escribir.");
+  const body = Object.assign({ action, token: state.token }, params);
+  const res = await fetch(state.url, { method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify(body) }).then(r=>r.json());
+  if(!res || !res.ok) throw new Error((res && res.error) || "error del backend");
+  return res.data;
+}
+/**
+ * Persiste una edición SOLO en modo normal. Tras escribir, recarga el snapshot
+ * (para reflejar fórmulas recalculadas en el Excel) y re-renderiza.
+ * En simulación, el cambio ya se aplicó al modelo local por el caller.
+ */
+async function persist(writeFn, label){
+  if(!state.live){ flash("Simulación: cambio local (no se guarda en el Excel).", true); return; }
+  try { flash("Guardando…"); await writeFn(); await loadSnapshot(); modeBadge(); setTab(activeTab); flash((label||"Guardado")+" ✓"); }
+  catch(e){ flash(String(e && e.message || e), true); }
 }
 
 /* ===========================================================================
@@ -280,22 +320,53 @@ function renderIniciativas(){
   const qs = Array.from(new Set(recs.map(r=>r.data["Q facturación"]).filter(Boolean))).sort();
   const fq = state._iniQ || "Todos";
   const filtered = recs.filter(r=> fq==="Todos" || r.data["Q facturación"]===fq);
+  const ed = state.live; // editable (escribe en Excel) solo en Modo normal
+  const esc = s => String(s==null?'':s).replace(/"/g,'&quot;');
+  const inp = (rec,key,t) => `<input data-row="${rec.row}" data-key="${esc(key)}" type="${t||'text'}" value="${esc(rec.data[key])}" class="w-full bg-transparent focus:outline-none">`;
+  const ro  = (v,fmt) => (v==null||v==="")?'<span class="text-sand/25">—</span>':(fmt?fmt(v):v);
+
   panel.innerHTML = `
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <label class="text-xs text-serene/80">Q facturación
         <select id="ini-q" class="ml-2"><option>Todos</option>${qs.map(q=>`<option ${q===fq?"selected":""}>${q}</option>`).join("")}</select></label>
       <span class="text-xs text-sand/50">${filtered.length} iniciativas</span>
-    </div>` + tableHTML(filtered, [
-      { k:"Estado", label:"Estado", f:estadoBadge },
-      { k:"Q facturación", label:"Q" },
-      { k:"Código Pedido", label:"Pedido" },
-      { k:"Detalle", label:"Proyecto" },
-      { k:"Horas propuesta", label:"Horas", r:true, f:hCell },
-      { k:"Estado facturación", label:"Facturación" },
-      { k:"Horas ejecutadas", label:"Ejecutadas", r:true, f:hCell },
-      { k:"¿Ejecutado?", label:"Ejecución", f:estadoBadge },
-    ]);
+      ${ed ? `<button id="ini-add" class="ml-auto chip rounded-full px-4 py-2 text-xs font-bold hover:bg-white/10">+ Añadir iniciativa</button>`
+           : `<span class="ml-auto text-xs text-sand/40">Activa <b>Modo normal</b> para editar / añadir</span>`}
+    </div>
+    <div class="glass overflow-x-auto rounded-2xl p-4"><table class="w-full text-sm">
+      <thead><tr class="text-left text-serene/80">
+        <th class="p-2">Estado</th><th class="p-2">Q</th><th class="p-2">Id Pedido</th><th class="p-2">Proyecto</th>
+        <th class="p-2 text-right">Horas est.</th><th class="p-2">Facturación</th><th class="p-2 text-right">Ejecutadas</th><th class="p-2">Ejecución</th>
+      </tr></thead>
+      <tbody>${filtered.map(rec=>`<tr class="border-t border-serene/10">
+        <td class="p-2">${ed?inp(rec,"Estado"):estadoBadge(rec.data["Estado"])}</td>
+        <td class="p-2">${ed?inp(rec,"Q facturación"):ro(rec.data["Q facturación"])}</td>
+        <td class="p-2">${ed?inp(rec,"Código Pedido"):ro(rec.data["Código Pedido"])}</td>
+        <td class="p-2">${ed?inp(rec,"Detalle"):ro(rec.data["Detalle"])}</td>
+        <td class="p-2 text-right">${ed?inp(rec,"Horas propuesta","number"):ro(rec.data["Horas propuesta"],h)}</td>
+        <td class="p-2">${ed?inp(rec,"Estado facturación"):ro(rec.data["Estado facturación"])}</td>
+        <td class="p-2 text-right">${ro(rec.data["Horas ejecutadas"],h)}</td>
+        <td class="p-2">${estadoBadge(rec.data["¿Ejecutado?"])}</td>
+      </tr>`).join("")}</tbody></table>
+      <p class="mt-3 text-xs text-sand/50">"Ejecutadas" es fórmula del Excel (cámbiala en la pestaña Ejecución). El resto es editable en Modo normal.</p>
+    </div>`;
   document.getElementById("ini-q").onchange = e=>{ state._iniQ=e.target.value; renderIniciativas(); };
+  if(ed){
+    panel.querySelectorAll("input[data-row]").forEach(i=>i.addEventListener("change",()=>{
+      const row=+i.dataset.row, key=i.dataset.key, val=i.type==="number"?num(i.value):i.value;
+      const rec=recs.find(r=>r.row===row); if(rec) rec.data[key]=val;
+      persist(()=>apiWrite("updateRow",{ sheet:"1) Iniciativas", row, patch:{ [key]:val } }), "Iniciativa actualizada");
+    }));
+    const add=document.getElementById("ini-add");
+    if(add) add.onclick=()=>{
+      const Detalle=prompt("Nombre / descripción de la iniciativa:"); if(!Detalle) return;
+      const Q=prompt("Q facturación (p.ej. 2026Q3):","")||"";
+      const horas=num(prompt("Horas estimadas (propuesta):","0"));
+      const pedido=prompt("Id Pedido (opcional):","")||"";
+      const data={ "Estado":"Pendiente de aprobar","Detalle":Detalle,"Q facturación":Q,"Horas propuesta":horas,"Código Pedido":pedido };
+      persist(()=>apiWrite("appendClone",{ sheet:"1) Iniciativas", data }), "Iniciativa añadida");
+    };
+  }
 }
 
 /* ---------- BOLSA / ADELANTOS ---------- */
@@ -334,129 +405,81 @@ function renderEncuestas(){
   ]);
 }
 
-/* ---------- EJECUCIÓN: redistribución de horas por Q ---------- */
-const ejecOverrides = {}; // { proyecto: { Q: horas } }
+/* ---------- EJECUCIÓN: edición / redistribución de horas por Q ---------- */
 function renderEjecucion(){
   const ej = state.data.ejecucion || {qColumns:[],records:[],totalesHorasQ:{}};
   const qs = ej.qColumns;
-  const tot = totalesHorasPorQ(ej.records, qs, ejecOverrides);
+  const recalc = ()=>{ const t={}; qs.forEach(q=>t[q]=0);
+    ej.records.forEach(r=>qs.forEach(q=>t[q]+=num(r.data[q]))); state.data.ejecucion.totalesHorasQ=t; return t; };
+  const tot = recalc();
   panel.innerHTML = `
-    <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-      ${qs.map(q=>KPI("Horas "+q, h(tot[q]))).join("")}
-    </div>
-    <div class="glass overflow-x-auto rounded-2xl p-4">
-      <table class="w-full text-sm">
-        <thead><tr class="text-left text-serene/80">
-          <th class="p-2">Proyecto</th>${qs.map(q=>`<th class="p-2 text-right">${q}</th>`).join("")}
-        </tr></thead>
-        <tbody>
-          ${ej.records.map(rec=>{ const name=rec.data["Proyecto"]||"—"; return `<tr class="border-t border-serene/10">
-            <td class="p-2 text-sand">${name}</td>
-            ${qs.map(q=>{ const ov=ejecOverrides[name]; const val= ov&&q in ov? ov[q] : num(rec.data[q]);
-              return `<td class="p-2 text-right"><input type="number" class="w-24 text-right" value="${val}"
-                data-proj="${encodeURIComponent(name)}" data-q="${q}"></td>`; }).join("")}
-          </tr>`; }).join("")}
-        </tbody>
-      </table>
-      <p class="mt-3 text-xs text-sand/50">Edita las horas para simular cómo repartir un proyecto entre trimestres. Los totales de arriba se recalculan al instante.</p>
-    </div>`;
-  panel.querySelectorAll("input[data-proj]").forEach(inp=>{
-    inp.addEventListener("input",()=>{ const p=decodeURIComponent(inp.dataset.proj), q=inp.dataset.q;
-      (ejecOverrides[p]=ejecOverrides[p]||{})[q]=num(inp.value);
-      const t=totalesHorasPorQ(ej.records,qs,ejecOverrides);
-      qs.forEach((qq,i)=>{ panel.querySelectorAll(".glass .font-display")[i].textContent=h(t[qq]); });
-    });
-  });
+    <div class="mb-3 text-xs text-sand/50">Edita las horas por trimestre. ${state.live?'Se guardan en el Excel.':'En simulación recalculan localmente (afecta a Economía).'}</div>
+    <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">${qs.map(q=>KPI("Horas "+q, h(tot[q]))).join("")}</div>
+    <div class="glass overflow-x-auto rounded-2xl p-4"><table class="w-full text-sm">
+      <thead><tr class="text-left text-serene/80"><th class="p-2">Proyecto</th>${qs.map(q=>`<th class="p-2 text-right">${q}</th>`).join("")}</tr></thead>
+      <tbody>${ej.records.map(rec=>`<tr class="border-t border-serene/10"><td class="p-2 text-sand">${rec.data["Proyecto"]||"—"}</td>
+        ${qs.map(q=>`<td class="p-2 text-right"><input type="number" class="w-20 bg-transparent text-right focus:outline-none" value="${num(rec.data[q])}" data-row="${rec.row}" data-q="${q}"></td>`).join("")}
+      </tr>`).join("")}</tbody></table></div>`;
+  panel.querySelectorAll("input[data-q]").forEach(inp=>inp.addEventListener("change",()=>{
+    const row=+inp.dataset.row, q=inp.dataset.q, val=num(inp.value);
+    const rec=ej.records.find(r=>r.row===row); if(rec) rec.data[q]=val;
+    const t=recalc(); const k=panel.querySelectorAll(".grid .font-display"); qs.forEach((qq,i)=>{ if(k[i]) k[i].textContent=h(t[qq]); });
+    if(state.live) persist(()=>apiWrite("updateRow",{ sheet:"2)Ejecución Real", row, patch:{ [q]:val } }), "Ejecución actualizada");
+  }));
 }
 
-/* ---------- ECONOMÍA: simulador de rentabilidad ---------- */
-const ecoScenario = {}; // por Q: { quitar:[], dedicacion:{}, tarifa, gastos, horas }
+/* ---------- ECONOMÍA: desglose completo + edición/simulación ---------- */
+const ecoScenario = {}; // por Q: { tarifa, gastos, horas }
 function renderEconomia(){
   const blocks = (state.data.economico && state.data.economico.bloques) || [];
   if(!blocks.length){ panel.innerHTML=`<div class="glass rounded-2xl p-6 text-sand/70">No hay bloques de Control Económico.</div>`; return; }
   const qSel = state._ecoQ || blocks[0].q; state._ecoQ=qSel;
   const block = blocks.find(b=>b.q===qSel)||blocks[0];
-  const sc = ecoScenario[qSel] = ecoScenario[qSel] || { quitar:[], dedicacion:{},
-    tarifa: pickTarifa(qSel), gastos:0, horas: (state.data.ejecucion.totalesHorasQ||{})[qSel] || 0 };
+  const sc = ecoScenario[qSel] = ecoScenario[qSel] || { tarifa:pickTarifa(qSel), gastos:0, horas:(state.data.ejecucion.totalesHorasQ||{})[qSel]||0 };
+
+  const compute = ()=> economiaQ({ personas:block.personas, horasTotalesQ:sc.horas, tarifa:sc.tarifa, gastos:sc.gastos,
+    objNFQ:block.rentObjetivoNFQ||0.25, objNTER:block.rentObjetivoNTER||0.20 });
+  const kpisHTML = ()=>{ const e=compute(); const real=e.rentabilidadReal; const ok=real!=null&&real>=e.rentObjetivoTotal;
+    return KPI("Ingreso real",eur.format(e.ingresoReal))+KPI("Coste total",eur.format(e.costeTotal),"mandarin")+
+      KPI("Rentab. real",pct(real),ok?"lime":"mandarin")+KPI("Rent. objetivo",pct(e.rentObjetivoTotal))+
+      KPI("Ingreso objetivo",eur.format(e.ingresoObjetivo))+KPI("Ing. obj. (horas)",h(e.ingresoObjetivoHoras))+
+      KPI("Coste NFQ",eur.format(e.costeNFQ))+KPI("Coste NTER",eur.format(e.costeNTER)); };
+  const prow = p=>{ const ded=p.dedicacion&&p.dedicacion.length?p.dedicacion[0]:1; const aus=(p.ausencias||[]).reduce((a,x)=>a+num(x),0);
+    return `<tr class="border-t border-serene/10"><td class="p-2 text-sand">${p.nombre}</td>
+      <td class="p-2 text-right"><input type="number" step="0.01" class="w-20 bg-transparent text-right focus:outline-none" value="${num(p.costeHora)}" data-edit="coste" data-row="${p.row||''}"></td>
+      <td class="p-2 text-right"><input type="number" step="0.05" min="0" max="1" class="w-16 bg-transparent text-right focus:outline-none" value="${ded}" data-edit="ded" data-row="${p.row||''}"></td>
+      <td class="p-2 text-right text-sand/60">${h(aus)}</td><td class="p-2 text-right">${h(horasImputadas(p))}</td>
+      <td class="p-2 text-right text-sand">${eur.format(costePersonaQ(p))}</td></tr>`; };
+  const team = t=>{ const ps=block.personas.filter(p=>p.equipo===t); if(!ps.length) return ""; const sub=ps.reduce((a,p)=>a+costePersonaQ(p),0);
+    return `<h3 class="mb-2 mt-5 font-display text-base font-bold text-serene">${t} · ${eur.format(sub)}</h3>
+      <div class="glass overflow-x-auto rounded-2xl p-3"><table class="w-full text-sm">
+      <thead><tr class="text-left text-serene/70"><th class="p-2">Persona</th><th class="p-2 text-right">€/h</th><th class="p-2 text-right">Dedic.</th><th class="p-2 text-right">Aus. Q</th><th class="p-2 text-right">Imput. Q</th><th class="p-2 text-right">Coste Q</th></tr></thead>
+      <tbody>${ps.map(prow).join("")}</tbody></table></div>`; };
 
   panel.innerHTML = `
     <div class="mb-5 flex flex-wrap items-end gap-4">
-      <label class="text-xs text-serene/80">Trimestre
-        <select id="eco-q" class="ml-2">${blocks.map(b=>`<option ${b.q===qSel?"selected":""}>${b.q}</option>`).join("")}</select></label>
+      <label class="text-xs text-serene/80">Trimestre <select id="eco-q" class="ml-2">${blocks.map(b=>`<option ${b.q===qSel?"selected":""}>${b.q}</option>`).join("")}</select></label>
       <label class="text-xs text-serene/80">Tarifa €/h <input id="eco-tarifa" type="number" step="0.01" class="ml-2 w-24" value="${sc.tarifa}"></label>
       <label class="text-xs text-serene/80">Horas Q <input id="eco-horas" type="number" class="ml-2 w-28" value="${sc.horas}"></label>
       <label class="text-xs text-serene/80">Gastos € <input id="eco-gastos" type="number" class="ml-2 w-28" value="${sc.gastos}"></label>
+      <span class="text-xs text-sand/40">${state.live?'Editar €/h y dedicación escribe en el Excel.':'Simulación: cambios locales (no se guardan).'}</span>
     </div>
-    <div id="eco-kpis" class="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6"></div>
-    <div class="glass rounded-2xl p-4">
-      <div class="mb-2 flex items-center justify-between">
-        <h3 class="font-display text-lg font-bold text-sand">Equipo · escenario</h3>
-        <button id="eco-add" class="chip rounded-full px-3 py-1.5 text-xs font-bold hover:bg-white/10">+ Añadir persona</button>
-      </div>
-      <div class="overflow-x-auto"><table class="w-full text-sm">
-        <thead><tr class="text-left text-serene/70"><th class="p-2"></th><th class="p-2">Persona</th><th class="p-2">Equipo</th>
-          <th class="p-2 text-right">€/h</th><th class="p-2">Dedicación</th><th class="p-2 text-right">Coste Q</th></tr></thead>
-        <tbody id="eco-personas"></tbody>
-      </table></div>
-      <p class="mt-3 text-xs text-sand/50">Desmarca para "quitar", mueve la dedicación o añade personas: la rentabilidad de arriba cambia al instante. (Nada se guarda en el Excel.)</p>
-    </div>`;
+    <div id="eco-kpis" class="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">${kpisHTML()}</div>
+    ${team("NFQ")}${team("NTER")}
+    <p class="mt-3 text-xs text-sand/50">Aus. Q = ausencias (vacaciones/formación) importadas del Excel (no editables). Imput. Q = (horas − ausencias) × dedicación.</p>`;
 
   document.getElementById("eco-q").onchange = e=>{ state._ecoQ=e.target.value; renderEconomia(); };
-  ["tarifa","horas","gastos"].forEach(k=>{
-    document.getElementById("eco-"+k).addEventListener("input", e=>{ sc[k]=num(e.target.value); recompute(); });
-  });
-  document.getElementById("eco-add").onclick = ()=>{
-    const nombre = prompt("Nombre de la persona nueva:"); if(!nombre) return;
-    const equipo = (prompt("Equipo (NFQ/NTER):","NFQ")||"NFQ").toUpperCase();
-    const costeHora = num(prompt("Coste €/hora:","30"));
-    sc.dedicacion[nombre]=1;
-    (sc.anadir=sc.anadir||[]).push({equipo,nombre,costeHora,horasTeoricas:[160,160,160],dedicacion:[1,1,1],ausencias:[0,0,0]});
-    renderEconomia();
-  };
-
-  function currentPersonas(){
-    let ps = aplicarEscenarioPersonas(block.personas, { quitar:sc.quitar, dedicacion:sc.dedicacion });
-    if(sc.anadir) ps = ps.concat(sc.anadir.filter(a=>sc.quitar.indexOf(a.nombre)<0));
-    return ps;
-  }
-  function recompute(){
-    const ps = currentPersonas();
-    const eco = economiaQ({ personas:ps, horasTotalesQ:sc.horas, tarifa:sc.tarifa, gastos:sc.gastos,
-      objNFQ:block.rentObjetivoNFQ||0.25, objNTER:block.rentObjetivoNTER||0.20 });
-    const real = eco.rentabilidadReal;
-    const ok = real!=null && real>=eco.rentObjetivoTotal;
-    document.getElementById("eco-kpis").innerHTML =
-      KPI("Ingreso real", eur.format(eco.ingresoReal)) +
-      KPI("Coste total", eur.format(eco.costeTotal), "mandarin") +
-      KPI("Coste NFQ / NTER", eur.format(eco.costeNFQ)+" / "+eur.format(eco.costeNTER)) +
-      KPI("Rent. objetivo", pct(eco.rentObjetivoTotal)) +
-      KPI("Ingreso objetivo", eur.format(eco.ingresoObjetivo)+" · "+h(eco.ingresoObjetivoHoras)) +
-      KPI("Rentabilidad real", pct(real), ok?"lime":"mandarin");
-  }
-  function renderPersonas(){
-    const all = block.personas.concat(sc.anadir||[]);
-    document.getElementById("eco-personas").innerHTML = all.map(p=>{
-      const quitada = sc.quitar.indexOf(p.nombre)>=0;
-      const ded = sc.dedicacion[p.nombre]!=null ? sc.dedicacion[p.nombre] : (p.dedicacion?p.dedicacion[0]:1);
-      const coste = quitada?0: costePersonaQ({...p, dedicacion:(p.dedicacion||[0,0,0]).map(()=>ded)});
-      return `<tr class="border-t border-serene/10 ${quitada?'opacity-40':''}">
-        <td class="p-2"><input type="checkbox" data-q="${encodeURIComponent(p.nombre)}" ${quitada?'':'checked'}></td>
-        <td class="p-2 text-sand">${p.nombre}</td>
-        <td class="p-2"><span class="chip rounded-full px-2 py-0.5 text-[11px]">${p.equipo}</span></td>
-        <td class="p-2 text-right">${num(p.costeHora).toFixed(1)}</td>
-        <td class="p-2"><input type="range" min="0" max="1" step="0.25" value="${ded}" data-d="${encodeURIComponent(p.nombre)}"> <span class="text-xs text-sand/60">${pct(ded)}</span></td>
-        <td class="p-2 text-right text-sand">${eur.format(coste)}</td></tr>`;
-    }).join("");
-    document.querySelectorAll("#eco-personas input[type=checkbox]").forEach(cb=>cb.addEventListener("change",e=>{
-      const n=decodeURIComponent(cb.dataset.q); const i=sc.quitar.indexOf(n);
-      if(cb.checked){ if(i>=0)sc.quitar.splice(i,1); } else if(i<0) sc.quitar.push(n);
-      renderPersonas(); recompute();
-    }));
-    document.querySelectorAll("#eco-personas input[type=range]").forEach(r=>r.addEventListener("input",e=>{
-      sc.dedicacion[decodeURIComponent(r.dataset.d)]=num(r.value); renderPersonas(); recompute();
-    }));
-  }
-  renderPersonas(); recompute();
+  ["tarifa","horas","gastos"].forEach(k=>document.getElementById("eco-"+k).addEventListener("input",e=>{ sc[k]=num(e.target.value); document.getElementById("eco-kpis").innerHTML=kpisHTML(); }));
+  panel.querySelectorAll("input[data-edit]").forEach(i=>i.addEventListener("change",()=>{
+    const row=+i.dataset.row, p=block.personas.find(x=>x.row===row); if(!p){ flash("Sin fila asociada (recarga datos).",true); return; }
+    const val=num(i.value);
+    if(i.dataset.edit==="coste"){ p.costeHora=val;
+      if(state.live){ persist(()=>apiWrite("write",{ sheet:"3) Control Economico.", a1:"D"+row, value:val }),"Coste actualizado"); return; } }
+    else { p.dedicacion=[val,val,val];
+      if(state.live){ persist(()=>apiWrite("batch",{ updates:[
+        {sheet:"3) Control Economico.",a1:"H"+row,value:val},{sheet:"3) Control Economico.",a1:"I"+row,value:val},{sheet:"3) Control Economico.",a1:"J"+row,value:val}] }),"Dedicación actualizada"); return; } }
+    renderEconomia(); // simulación: recalcular vista
+  }));
 }
 function pickTarifa(q){ const t=state.data.tarifas||{}; return t[q] || t[q.slice(0,4)] || t["2026"] || 51.22; }
 
@@ -502,6 +525,13 @@ async function boot(){
   modeBadge();
   document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
   document.getElementById("btn-reload").onclick = async()=>{ await loadSnapshot(); modeBadge(); setTab(activeTab); };
+  setMode(false); // por defecto SIMULACIÓN (seguro)
+  document.getElementById("btn-mode").onclick = ()=>{
+    if(!state.live && (!state.url || !state.token))
+      flash("Para Modo normal hace falta controlBackend + controlToken en links.json.", true);
+    setMode(!state.live);
+    setTab(activeTab); // re-render con/sin inputs editables
+  };
   setTab("iniciativas");
 }
 
