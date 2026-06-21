@@ -14,7 +14,7 @@ export default function Scene() {
     <Canvas
       camera={{ position: [0, 0, 5], fov: 45 }}
       gl={{ antialias: true, alpha: false }}
-      dpr={[1, 1.5]}
+      dpr={1} // va difuminado de fondo: no necesita resolución retina (mucho más fluido)
     >
       <color attach="background" args={["#070E46"]} />
 

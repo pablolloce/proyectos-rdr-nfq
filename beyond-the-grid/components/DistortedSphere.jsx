@@ -35,11 +35,11 @@ export default function DistortedSphere() {
 
   return (
     <group ref={group}>
-      <Sphere args={[1.45, 128, 128]}>
+      <Sphere args={[1.45, 64, 64]}>
         <MeshDistortMaterial
           color="#85C8FF" // Serene
           emissive="#1D7CF4"
-          emissiveIntensity={0.35}
+          emissiveIntensity={0.45}
           roughness={0.3}
           metalness={0}
           clearcoat={0.7}

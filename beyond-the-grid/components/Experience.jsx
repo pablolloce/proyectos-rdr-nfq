@@ -33,19 +33,20 @@ export default function Experience() {
       <CustomCursor />
       <LoadingScreen />
 
-      {/* Fondo 3D: difuminado y atenuado -> resplandor sutil, no protagonista. */}
+      {/* Fondo 3D: blur ligero (12px) -> se distingue pero queda de fondo.
+          Blur pequeño = mucho más barato por frame que 45px. */}
       <div
         className="pointer-events-none fixed inset-0 z-0"
-        style={{ filter: "blur(45px)", opacity: 0.55, transform: "scale(1.1)" }}
+        style={{ filter: "blur(12px)", opacity: 0.65 }}
       >
         <Scene />
       </div>
-      {/* Velo Midnight: deja el fondo oscuro y los chips legibles */}
+      {/* Velo Midnight: centro más claro (deja ver el 3D), bordes oscuros */}
       <div
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(120% 95% at 50% 45%, rgba(7,14,70,0.45) 0%, rgba(7,14,70,0.8) 100%)",
+            "radial-gradient(120% 95% at 50% 45%, rgba(7,14,70,0.3) 0%, rgba(7,14,70,0.75) 100%)",
         }}
       />
 

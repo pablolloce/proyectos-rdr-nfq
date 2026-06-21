@@ -64,9 +64,9 @@ function Chip({ item, delay }) {
   const props = {
     "data-hover": true,
     className:
-      "group inline-flex items-center gap-2.5 rounded-full border px-5 py-3 shadow-lg backdrop-blur-md transition-colors",
-    // Cristal oscuro (Midnight) -> texto legible sobre el fondo difuminado.
-    style: { borderColor: rgba(accent, 0.45), backgroundColor: "rgba(10, 18, 74, 0.6)" },
+      "group inline-flex items-center gap-3 rounded-full border px-6 py-3.5 shadow-lg transition-colors",
+    // Cristal oscuro Midnight (sin backdrop-blur -> sin coste por frame).
+    style: { borderColor: rgba(accent, 0.45), backgroundColor: "rgba(10, 18, 74, 0.72)" },
     // Entrada + flotación continua (cada chip con su fase via delay).
     initial: { opacity: 0, scale: 0.9 },
     animate: { opacity: 1, scale: 1, y: [0, -5, 0] },
@@ -84,9 +84,9 @@ function Chip({ item, delay }) {
 
   const inner = (
     <>
-      <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: accent }} />
-      <span className="font-display text-sm font-bold text-sand md:text-base">{item.label}</span>
-      <span aria-hidden className="text-sm transition-transform group-hover:translate-x-0.5" style={{ color: accent }}>
+      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: accent }} />
+      <span className="font-display text-base font-bold text-sand md:text-lg">{item.label}</span>
+      <span aria-hidden className="text-base transition-transform group-hover:translate-x-0.5" style={{ color: accent }}>
         {arrow}
       </span>
     </>
