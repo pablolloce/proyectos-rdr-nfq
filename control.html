@@ -409,8 +409,19 @@ function renderBolsa(){
 
 /* ---------- ENCUESTAS ---------- */
 function renderEncuestas(){
-  const recs = (state.data.encuestasQ4 && state.data.encuestasQ4.length) ? state.data.encuestasQ4 : (state.data.encuestasQ1||[]);
-  panel.innerHTML = tableHTML(recs, [
+  // Conjuntos por Q disponibles en el snapshot.
+  const sets = [];
+  if((state.data.encuestasQ1||[]).length) sets.push({ q:"2026Q1", recs:state.data.encuestasQ1 });
+  if((state.data.encuestasQ4||[]).length) sets.push({ q:"2025Q4", recs:state.data.encuestasQ4 });
+  if(!sets.length){ panel.innerHTML=`<div class="glass rounded-2xl p-6 text-sand/60">Sin encuestas.</div>`; return; }
+  const qSel = state._encQ || sets[0].q; state._encQ=qSel;
+  const set = sets.find(s=>s.q===qSel)||sets[0];
+  const avg = k=>{ const v=set.recs.map(r=>num(r.data[k])).filter(x=>x>0); return v.length? (v.reduce((a,x)=>a+x,0)/v.length):0; };
+  panel.innerHTML = `
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <label class="text-xs text-serene/80">Trimestre <select id="enc-q" class="ml-2">${sets.map(s=>`<option ${s.q===qSel?"selected":""}>${s.q}</option>`).join("")}</select></label>
+      <span class="text-xs text-sand/50">${set.recs.length} respuestas · Calidad media <b class="text-lime">${avg("CALIDAD TOTAL NUEVA").toFixed(2)}</b></span>
+    </div>` + tableHTML(set.recs, [
     { k:"Código de proyecto/servicio", label:"Código" },
     { k:"NOMBRE DEL PROYECTO/SERVICIO", label:"Proyecto" },
     { k:"SATISFACCIÓN ENTREGA", label:"Satisf.", r:true },
@@ -418,6 +429,7 @@ function renderEncuestas(){
     { k:"CONOCIMIENTO TÉCNICO ADECUADO", label:"Conocim.", r:true },
     { k:"CALIDAD TOTAL NUEVA", label:"Calidad", r:true },
   ]);
+  document.getElementById("enc-q").onchange = e=>{ state._encQ=e.target.value; renderEncuestas(); };
 }
 
 /* ---------- EJECUCIÓN: edición + filtros (Q de elevación y Estado) ---------- */
@@ -467,26 +479,56 @@ function renderEconomia(){
   if(!blocks.length){ panel.innerHTML=`<div class="glass rounded-2xl p-6 text-sand/70">No hay bloques de Control Económico.</div>`; return; }
   const qSel = state._ecoQ || blocks[0].q; state._ecoQ=qSel;
   const block = blocks.find(b=>b.q===qSel)||blocks[0];
-  const sc = ecoScenario[qSel] = ecoScenario[qSel] || { tarifa:pickTarifa(qSel), gastos:0, horas:(state.data.ejecucion.totalesHorasQ||{})[qSel]||0 };
 
-  const compute = ()=> economiaQ({ personas:block.personas, horasTotalesQ:sc.horas, tarifa:sc.tarifa, gastos:sc.gastos,
-    objNFQ:block.rentObjetivoNFQ||0.25, objNTER:block.rentObjetivoNTER||0.20 });
-  const kpisHTML = ()=>{ const e=compute(); const real=e.rentabilidadReal; const ok=real!=null&&real>=e.rentObjetivoTotal;
+  // Gastos del Q desde la hoja "6) Gastos" (suma por meses del bloque).
+  const ym = d=>{ const x=new Date(d); return isNaN(x)?null:(x.getFullYear()+"-"+(x.getMonth()+1)); };
+  const mesesYM = (block.meses||[]).map(ym).filter(Boolean);
+  const gastosQ = (state.data.gastos||[]).reduce((a,g)=>{ const m=ym(g.data&&g.data["Fecha"]); return a + (m&&mesesYM.indexOf(m)>=0?num(g.data["Importe"]):0); },0);
+  const sc = ecoScenario[qSel] = ecoScenario[qSel] || { tarifa:pickTarifa(qSel), horas:(state.data.ejecucion.totalesHorasQ||{})[qSel]||0, gastos:null };
+  if(sc.gastos==null) sc.gastos = gastosQ;
+
+  // VALORES REALES del Excel (horas imputadas N-P y coste = €/h × imputadas).
+  // La simulación de dedicación escala las imputadas reales (no recalcula desde
+  // "horas teóricas", que en el Excel están vacías para casi todos).
+  const baseDed = p => (p.dedicacion&&p.dedicacion.length? num(p.dedicacion[0]) : 1);
+  const dedNow  = p => p._ded!=null ? p._ded : baseDed(p);
+  const factor  = p => { const b=baseDed(p); return b? dedNow(p)/b : (dedNow(p)?1:0); };
+  const impM    = (p,m)=> num((p.horasImputadas||[])[m]) * factor(p);
+  const impQ    = p => (p.horasImputadas||[]).reduce((a,x)=>a+num(x),0) * factor(p);
+  const ausQ    = p => (p.ausencias||[]).reduce((a,x)=>a+num(x),0);
+  const costeQ  = p => num(p.costeHora) * impQ(p);
+  const mLabel  = (d,m)=>{ const x=new Date(d); return isNaN(x)?("M"+(m+1)):x.toLocaleDateString("es-ES",{month:"short"}); };
+
+  const costes = ()=>{ let NFQ=0,NTER=0; block.personas.forEach(p=>{ const c=costeQ(p); if(p.equipo==="NTER")NTER+=c; else NFQ+=c; }); return {NFQ,NTER,total:NFQ+NTER}; };
+  const eco = ()=>{ const c=costes(); const costeTotal=c.total+num(sc.gastos);
+    const ingresoReal=num(sc.horas)*num(sc.tarifa);
+    const rObj=rentObjetivoTotal(c.NFQ,c.NTER,block.rentObjetivoNFQ||0.25,block.rentObjetivoNTER||0.20);
+    const ingObj = rObj<1 && rObj>=0 ? costeTotal/(1-rObj) : 0;
+    return { NFQ:c.NFQ, NTER:c.NTER, costeTotal, ingresoReal, rObj, ingObj,
+      ingObjH: sc.tarifa? ingObj/num(sc.tarifa):0, rReal: ingresoReal? 1-costeTotal/ingresoReal : null }; };
+  const kpisHTML = ()=>{ const e=eco(); const ok=e.rReal!=null&&e.rReal>=e.rObj;
     return KPI("Ingreso real",eur.format(e.ingresoReal))+KPI("Coste total",eur.format(e.costeTotal),"mandarin")+
-      KPI("Rentab. real",pct(real),ok?"lime":"mandarin")+KPI("Rent. objetivo",pct(e.rentObjetivoTotal))+
-      KPI("Ingreso objetivo",eur.format(e.ingresoObjetivo))+KPI("Ing. obj. (horas)",h(e.ingresoObjetivoHoras))+
-      KPI("Coste NFQ",eur.format(e.costeNFQ))+KPI("Coste NTER",eur.format(e.costeNTER)); };
-  const prow = p=>{ const ded=p.dedicacion&&p.dedicacion.length?p.dedicacion[0]:1; const aus=(p.ausencias||[]).reduce((a,x)=>a+num(x),0);
-    return `<tr class="border-t border-serene/10"><td class="p-2 text-sand">${p.nombre}</td>
-      <td class="p-2 text-right"><input type="number" step="0.01" class="w-20 bg-transparent text-right focus:outline-none" value="${num(p.costeHora)}" data-edit="coste" data-row="${p.row||''}"></td>
-      <td class="p-2 text-right"><input type="number" step="0.05" min="0" max="1" class="w-16 bg-transparent text-right focus:outline-none" value="${ded}" data-edit="ded" data-row="${p.row||''}"></td>
-      <td class="p-2 text-right text-sand/60">${h(aus)}</td><td class="p-2 text-right">${h(horasImputadas(p))}</td>
-      <td class="p-2 text-right text-sand">${eur.format(costePersonaQ(p))}</td></tr>`; };
-  const team = t=>{ const ps=block.personas.filter(p=>p.equipo===t); if(!ps.length) return ""; const sub=ps.reduce((a,p)=>a+costePersonaQ(p),0);
-    return `<h3 class="mb-2 mt-5 font-display text-base font-bold text-serene">${t} · ${eur.format(sub)}</h3>
+      KPI("Rentab. real",pct(e.rReal),ok?"lime":"mandarin")+KPI("Rent. objetivo",pct(e.rObj))+
+      KPI("Ingreso objetivo",eur.format(e.ingObj))+KPI("Ing. obj. (horas)",h(e.ingObjH))+
+      KPI("Coste NFQ",eur.format(e.NFQ))+KPI("Coste NTER",eur.format(e.NTER)); };
+
+  const prow = p=>`<tr class="border-t border-serene/10"><td class="p-2 text-sand">${p.nombre}</td>
+    <td class="p-2 text-right"><input type="number" step="0.01" class="w-20 bg-transparent text-right focus:outline-none" value="${num(p.costeHora).toFixed(2)}" data-edit="coste" data-row="${p.row||''}"></td>
+    <td class="p-2 text-right"><input type="number" step="5" min="0" class="w-14 bg-transparent text-right focus:outline-none" value="${Math.round(dedNow(p)*100)}" data-edit="ded" data-row="${p.row||''}">%</td>
+    ${[0,1,2].map(m=>`<td class="p-2 text-right text-sand/70">${h(impM(p,m))}</td>`).join("")}
+    <td class="p-2 text-right text-sand/50">${h(ausQ(p))}</td><td class="p-2 text-right">${h(impQ(p))}</td>
+    <td class="p-2 text-right text-sand">${eur.format(costeQ(p))}</td></tr>`;
+  const team = t=>{ const ps=block.personas.filter(p=>p.equipo===t); if(!ps.length) return "";
+    const sM=[0,1,2].map(m=>ps.reduce((a,p)=>a+impM(p,m),0)); const sImp=ps.reduce((a,p)=>a+impQ(p),0); const sCoste=ps.reduce((a,p)=>a+costeQ(p),0);
+    return `<h3 class="mb-2 mt-5 font-display text-base font-bold text-serene">${t} · ${eur.format(sCoste)}</h3>
       <div class="glass overflow-x-auto rounded-2xl p-3"><table class="w-full text-sm">
-      <thead><tr class="text-left text-serene/70"><th class="p-2">Persona</th><th class="p-2 text-right">€/h</th><th class="p-2 text-right">Dedic.</th><th class="p-2 text-right">Aus. Q</th><th class="p-2 text-right">Imput. Q</th><th class="p-2 text-right">Coste Q</th></tr></thead>
-      <tbody>${ps.map(prow).join("")}</tbody></table></div>`; };
+      <thead><tr class="text-left text-serene/70"><th class="p-2">Persona</th><th class="p-2 text-right">€/h</th><th class="p-2 text-right">Dedic.</th>
+        ${[0,1,2].map(m=>`<th class="p-2 text-right">${mLabel((block.meses||[])[m],m)}</th>`).join("")}
+        <th class="p-2 text-right">Aus. Q</th><th class="p-2 text-right">Imput. Q</th><th class="p-2 text-right">Coste Q</th></tr></thead>
+      <tbody>${ps.map(prow).join("")}
+        <tr class="border-t-2 border-serene/30 font-bold text-sand"><td class="p-2">Total ${t}</td><td></td><td></td>
+        ${sM.map(v=>`<td class="p-2 text-right">${h(v)}</td>`).join("")}<td></td><td class="p-2 text-right">${h(sImp)}</td><td class="p-2 text-right">${eur.format(sCoste)}</td></tr>
+      </tbody></table></div>`; };
 
   panel.innerHTML = `
     <div class="mb-5 flex flex-wrap items-end gap-4">
@@ -494,11 +536,11 @@ function renderEconomia(){
       <label class="text-xs text-serene/80">Tarifa €/h <input id="eco-tarifa" type="number" step="0.01" class="ml-2 w-24" value="${sc.tarifa}"></label>
       <label class="text-xs text-serene/80">Horas Q <input id="eco-horas" type="number" class="ml-2 w-28" value="${sc.horas}"></label>
       <label class="text-xs text-serene/80">Gastos € <input id="eco-gastos" type="number" class="ml-2 w-28" value="${sc.gastos}"></label>
-      <span class="text-xs text-sand/40">${state.live?'Editar €/h y dedicación escribe en el Excel.':'Simulación: cambios locales (no se guardan).'}</span>
+      <span class="text-xs text-sand/40">Gastos del Q (hoja 6): <b class="text-sand/70">${eur.format(gastosQ)}</b> · ${state.live?'editar €/h y dedicación escribe en el Excel':'simulación local'}</span>
     </div>
     <div id="eco-kpis" class="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">${kpisHTML()}</div>
     ${team("NFQ")}${team("NTER")}
-    <p class="mt-3 text-xs text-sand/50">Aus. Q = ausencias (vacaciones/formación) importadas del Excel (no editables). Imput. Q = (horas − ausencias) × dedicación.</p>`;
+    <p class="mt-3 text-xs text-sand/50">Valores reales del Excel (horas imputadas y coste). La dedicación escala las horas imputadas en la simulación. Aus. Q = vacaciones/formación importadas.</p>`;
 
   document.getElementById("eco-q").onchange = e=>{ state._ecoQ=e.target.value; renderEconomia(); };
   ["tarifa","horas","gastos"].forEach(k=>document.getElementById("eco-"+k).addEventListener("input",e=>{ sc[k]=num(e.target.value); document.getElementById("eco-kpis").innerHTML=kpisHTML(); }));
@@ -507,9 +549,9 @@ function renderEconomia(){
     const val=num(i.value);
     if(i.dataset.edit==="coste"){ p.costeHora=val;
       if(state.live){ persist(()=>apiWrite("write",{ sheet:"3) Control Economico.", a1:"D"+row, value:val }),"Coste actualizado"); return; } }
-    else { p.dedicacion=[val,val,val];
+    else { const ded=val/100; p._ded=ded;
       if(state.live){ persist(()=>apiWrite("batch",{ updates:[
-        {sheet:"3) Control Economico.",a1:"H"+row,value:val},{sheet:"3) Control Economico.",a1:"I"+row,value:val},{sheet:"3) Control Economico.",a1:"J"+row,value:val}] }),"Dedicación actualizada"); return; } }
+        {sheet:"3) Control Economico.",a1:"H"+row,value:ded},{sheet:"3) Control Economico.",a1:"I"+row,value:ded},{sheet:"3) Control Economico.",a1:"J"+row,value:ded}] }),"Dedicación actualizada"); return; } }
     renderEconomia(); // simulación: recalcular vista
   }));
 }
