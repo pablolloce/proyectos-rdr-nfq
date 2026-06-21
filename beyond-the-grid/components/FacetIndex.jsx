@@ -9,9 +9,16 @@ import { HUB_LINKS } from "@/lib/hubLinks";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
-const R = 1.75;        // radio de la esfera
-const COLS = 4, ROWS = 3; // 4×3 = 12 fragmentos (= 12 links)
-const SEP = 0.45;      // separación del fragmento al hover
+const SP = 1.04;   // separación entre mini-cubos (deja una rendija)
+const CS = 0.94;   // tamaño del mini-cubo
+const LIFT = 0.55; // cuánto sale el cubo al hover
+
+// 12 celdas de la cáscara visible (cámara iso en +x,+y,+z) repartidas en las 3 caras.
+const LINK_CELLS = [
+  [-1, 1, 1], [1, 1, 1], [-1, 1, -1], [0, 1, 0],   // cara superior (y=1)
+  [1, 0, 1], [1, -1, 0], [1, 0, -1], [1, -1, -1],  // cara derecha (x=1)
+  [-1, 0, 1], [0, -1, 1], [-1, -1, 1], [0, 0, 1],  // cara izquierda (z=1)
+];
 
 function navTo(link) {
   const u = link.url;
@@ -20,41 +27,34 @@ function navTo(link) {
   else window.location.href = u;
 }
 
-// Un FRAGMENTO = una porción real de la esfera (slice phi/theta) = un link.
-// Material físico premium (clearcoat + reflejos del Environment). Se separa al hover.
-function Shard({ idx, link, on, setOn }) {
+// Un mini-cubo. Si tiene link es interactivo (sale al hover, etiqueta, navega).
+function MiniCube({ cell, link, on, setOn }) {
   const ref = useRef();
-  const { geom, dir, labelPos } = useMemo(() => {
-    const c = idx % COLS, r = Math.floor(idx / COLS);
-    const phiLen = (Math.PI * 2) / COLS, thetaLen = Math.PI / ROWS;
-    const g = new THREE.SphereGeometry(R, 28, 20, c * phiLen, phiLen, r * thetaLen, thetaLen);
-    const pos = g.attributes.position, v = new THREE.Vector3();
-    for (let i = 0; i < pos.count; i++) { v.x += pos.getX(i); v.y += pos.getY(i); v.z += pos.getZ(i); }
-    v.multiplyScalar(1 / pos.count).normalize();
-    const lp = v.clone().multiplyScalar(R + 0.95);
-    return { geom: g, dir: v, labelPos: [lp.x, lp.y, lp.z] };
-  }, [idx]);
-
+  const cur = useRef(0);
+  const base = useMemo(() => new THREE.Vector3(cell[0], cell[1], cell[2]).multiplyScalar(SP), [cell]);
+  const dir = useMemo(() => base.clone().normalize(), [base]);
   useFrame(() => {
     if (!ref.current) return;
-    const want = on ? SEP : 0;
-    const nl = THREE.MathUtils.lerp(ref.current.position.length(), want, 0.18);
-    ref.current.position.copy(dir).multiplyScalar(nl);
+    cur.current = THREE.MathUtils.lerp(cur.current, on ? LIFT : 0, 0.2);
+    ref.current.position.copy(base).addScaledVector(dir, cur.current);
   });
-
+  const isLink = !!link;
   return (
     <group>
-      <mesh ref={ref} geometry={geom}
-        onPointerOver={(e) => { e.stopPropagation(); setOn(true); }}
-        onPointerOut={() => setOn(false)}
-        onClick={(e) => { e.stopPropagation(); navTo(link); }}>
+      <mesh ref={ref}
+        onPointerOver={isLink ? (e) => { e.stopPropagation(); setOn(true); } : undefined}
+        onPointerOut={isLink ? () => setOn(false) : undefined}
+        onClick={isLink ? (e) => { e.stopPropagation(); navTo(link); } : undefined}>
+        <boxGeometry args={[CS, CS, CS]} />
         <meshPhysicalMaterial
-          color={link.color} emissive={link.color} emissiveIntensity={on ? 0.55 : 0.05}
-          metalness={0.35} roughness={0.12} clearcoat={1} clearcoatRoughness={0.15}
-          envMapIntensity={1.4} side={THREE.DoubleSide} />
+          color={isLink ? link.color : "#0c1657"}
+          emissive={isLink ? link.color : "#000000"}
+          emissiveIntensity={on ? 0.7 : isLink ? 0.14 : 0}
+          metalness={0.32} roughness={isLink ? 0.16 : 0.5}
+          clearcoat={1} clearcoatRoughness={0.2} envMapIntensity={1.3} />
       </mesh>
-      {on && (
-        <Html center position={labelPos} distanceFactor={7} style={{ pointerEvents: "none" }}>
+      {isLink && on && (
+        <Html center position={[base.x + dir.x * 1.1, base.y + dir.y * 1.1, base.z + dir.z * 1.1]} style={{ pointerEvents: "none" }}>
           <div style={{ whiteSpace: "nowrap", background: "rgba(10,18,74,.92)", color: "#F7F8F8",
             border: "1px solid " + link.color, borderRadius: "999px", padding: "5px 14px",
             fontSize: "13px", fontWeight: 700, fontFamily: "Lato, sans-serif" }}>{link.name}</div>
@@ -64,17 +64,27 @@ function Shard({ idx, link, on, setOn }) {
   );
 }
 
-function ShardSphere({ links, active, setActive }) {
+function CubeOfCubes({ links, active, setActive }) {
   const grp = useRef();
-  useFrame((_, dt) => {
+  const used = useMemo(() => new Set(LINK_CELLS.slice(0, links.length).map((c) => c.join(","))), [links.length]);
+  // Resto de la cáscara visible: cubos neutros (para que se lea como un cubo macizo).
+  const neutral = useMemo(() => {
+    const out = [];
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++)
+      if ((i === 1 || j === 1 || k === 1) && !used.has([i, j, k].join(","))) out.push([i, j, k]);
+    return out;
+  }, [used]);
+  useFrame(() => {
     if (!grp.current) return;
-    grp.current.rotation.y += dt * 0.08;
-    grp.current.rotation.x = THREE.MathUtils.lerp(grp.current.rotation.x, pointer.y * 0.25, 0.04);
+    // Parallax leve: el cubo bascula con el ratón pero sin ocultar caras.
+    grp.current.rotation.y = THREE.MathUtils.lerp(grp.current.rotation.y, pointer.x * 0.18, 0.05);
+    grp.current.rotation.x = THREE.MathUtils.lerp(grp.current.rotation.x, pointer.y * 0.12, 0.05);
   });
   return (
     <group ref={grp}>
+      {neutral.map((c) => <MiniCube key={"n" + c.join(",")} cell={c} link={null} />)}
       {links.map((l, i) => (
-        <Shard key={l.name} idx={i} link={l} on={active === i} setOn={(v) => setActive(v ? i : -1)} />
+        <MiniCube key={l.name} cell={LINK_CELLS[i]} link={l} on={active === i} setOn={(v) => setActive(v ? i : -1)} />
       ))}
     </group>
   );
@@ -86,30 +96,24 @@ export default function FacetIndex() {
   const [active, setActive] = useState(-1);
   const links = HUB_LINKS
     .filter((l) => !l.coord || isCoordinador)
+    .slice(0, LINK_CELLS.length)
     .map((l) => ({ ...l, url: l.href || getUrl(l.key) || "#" }));
 
   return (
     <div className="absolute inset-0 flex">
       <div className="relative flex-1">
-        <Canvas camera={{ position: [0, 0, 5], fov: 45 }} dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
+        <Canvas orthographic camera={{ position: [7, 7, 7], zoom: 88, near: -50, far: 100 }} dpr={[1, 2]} gl={{ antialias: true }}>
           <color attach="background" args={["#070E46"]} />
-          <ambientLight intensity={0.45} />
-          <directionalLight position={[5, 5, 6]} intensity={2.2} color="#F7F8F8" />
-          <pointLight position={[-6, -3, -4]} intensity={2} color="#1D7CF4" />
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[6, 8, 5]} intensity={2.2} color="#F7F8F8" />
+          <pointLight position={[-6, -2, 4]} intensity={1.8} color="#1D7CF4" />
           <Suspense fallback={null}>
-            <ShardSphere links={links} active={active} setActive={setActive} />
+            <CubeOfCubes links={links} active={active} setActive={setActive} />
             <Environment preset="city" />
           </Suspense>
         </Canvas>
-        {/* Título overlay (no captura clics, pasan a la esfera) */}
-        <div className="pointer-events-none absolute inset-x-0 top-8 px-6 text-center">
-          <h1 className="font-grotesk font-bold leading-none tracking-tighter text-sand/95"
-            style={{ fontSize: "clamp(2rem, 7vw, 6rem)", textShadow: "0 8px 60px rgba(7,14,70,.6)" }}>
-            BEYOND THE GRID
-          </h1>
-        </div>
         <div className="pointer-events-none absolute inset-x-0 bottom-5 text-center text-xs uppercase tracking-[0.3em] text-serene/55">
-          Pasa el ratón sobre un fragmento · pulsa para abrir
+          Cada cubo de color es un link · pulsa para abrir
         </div>
       </div>
 
@@ -122,7 +126,7 @@ export default function FacetIndex() {
               onMouseEnter={() => setActive(i)} onMouseLeave={() => setActive(-1)}
               onClick={() => navTo(l)}
               className={"flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors " + (active === i ? "bg-white/10" : "hover:bg-white/5")}>
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: l.color }} />
+              <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: l.color }} />
               <span className="truncate text-sand/85">{l.name}</span>
             </li>
           ))}
