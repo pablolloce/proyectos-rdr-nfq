@@ -14,23 +14,25 @@ const LIFT = 0.4;    // cuánto sale el sub-cubo (link) al hover
 const S = 2.4;       // separación entre figuras
 
 // 4 SECCIONES = 4 figuras. Cada figura = mini-cubo de sub-cubos (1 por link + relleno).
+// copy:true -> copia la URL al portapapeles (con aviso) en vez de navegar.
 const SECTIONS = [
   { num: "01", title: "Formaciones", items: [
     { label: "¿Qué es RDR?", href: "que-es-rdr.html", color: "#85C8FF" },
     { label: "HUB Formativo", href: "rdr-formacion.html", color: "#88E783" },
-    { label: "Portal BBVA CIB", key: "portalBBVACIB", color: "#F7F8F8" },
+    { label: "Portal BBVA CIB", key: "portalBBVACIB", color: "#F7F8F8", copy: true },
   ] },
   { num: "02", title: "Equipo RDR", items: [
     { label: "Vacaciones", href: "vacaciones.html", color: "#8BE1E9" },
-    { label: "Time Report", key: "timeReportNFQ", color: "#9694FF" },
+    { label: "Time Report NFQ", key: "timeReportNFQ", color: "#9694FF" },
+    { label: "Time Report BBVA", key: "timeReportBBVA", color: "#9694FF", copy: true },
     { label: "Retrospectiva", href: "retro.html", color: "#FFB56B" },
     { label: "Comidas", href: "comidas.html", color: "#FFE761" },
   ] },
   { num: "03", title: "Proyectos RDR", items: [
     { label: "Planificación", key: "planificacionNFQ", color: "#85C8FF" },
     { label: "Pases Calendados", href: "pases-calendados.html", color: "#FFE761" },
-    { label: "Drive", key: "driveBBVA", color: "#88E783" },
-    { label: "GitHub", key: "githubBBVA", color: "#8BE1E9" },
+    { label: "Drive BBVA", key: "driveBBVA", color: "#88E783", copy: true },
+    { label: "GitHub BBVA", key: "githubBBVA", color: "#8BE1E9", copy: true },
   ] },
   { num: "04", title: "Coordinación", coordOnly: true, items: [
     { label: "Control RDR", href: "control.html", color: "#9694FF" },
@@ -48,14 +50,15 @@ const SLOTS = (() => {
   return s;
 })();
 
-function navTo(item, getUrl) {
+function activate(item, getUrl, copyLink) {
+  if (item.copy) { copyLink(item.key); return; } // copia URL + toast
   const u = item.href || getUrl(item.key) || "#";
   if (!u || u === "#") return;
   if (item.key || /^https?:/i.test(u)) window.open(u, "_blank", "noopener");
   else window.location.href = u;
 }
 
-function SubCube({ local, item, on, setOn, getUrl }) {
+function SubCube({ local, item, on, setOn, onAct }) {
   const ref = useRef();
   const lift = useRef(0);
   const dir = useMemo(() => local.clone().normalize(), [local]);
@@ -72,7 +75,7 @@ function SubCube({ local, item, on, setOn, getUrl }) {
       <RoundedBox ref={ref} args={[CS, CS, CS]} radius={0.13} smoothness={5}
         onPointerOver={(e) => { e.stopPropagation(); setOn(true); }}
         onPointerOut={() => setOn(false)}
-        onClick={(e) => { e.stopPropagation(); navTo(item, getUrl); }}>
+        onClick={(e) => { e.stopPropagation(); onAct(item); }}>
         <meshPhysicalMaterial color={item.color} emissive={item.color} emissiveIntensity={on ? 0.55 : 0.16}
           metalness={0.18} roughness={0.14} clearcoat={1} clearcoatRoughness={0.1} envMapIntensity={1.7} />
       </RoundedBox>
@@ -83,7 +86,7 @@ function SubCube({ local, item, on, setOn, getUrl }) {
           borderRadius: "999px", padding: on ? "4px 11px" : "2px 8px",
           fontSize: on ? "12px" : "10px", fontWeight: 700, fontFamily: "Lato, sans-serif",
           boxShadow: on ? "0 6px 24px rgba(0,0,0,.4)" : "none", transition: "all .15s" }}>
-          {item.label}
+          {item.label}{item.copy ? " ⧉" : ""}
         </div>
       </Html>
     </group>
@@ -99,7 +102,7 @@ function Filler({ local }) {
   );
 }
 
-function Figure({ pos, section, fi, active, setActive, getUrl }) {
+function Figure({ pos, section, fi, active, setActive, onAct }) {
   return (
     <group position={pos}>
       <Html center position={[0, 2.25, 0]} zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
@@ -113,14 +116,14 @@ function Figure({ pos, section, fi, active, setActive, getUrl }) {
         const item = section.items[si];
         if (!item) return <Filler key={"f" + si} local={local} />;
         const key = fi + "." + si;
-        return <SubCube key={key} local={local} item={item} getUrl={getUrl}
+        return <SubCube key={key} local={local} item={item} onAct={onAct}
           on={active === key} setOn={(v) => setActive(v ? key : null)} />;
       })}
     </group>
   );
 }
 
-function Sculpture({ sections, active, setActive, getUrl }) {
+function Sculpture({ sections, active, setActive, onAct }) {
   const grp = useRef();
   useFrame(() => {
     if (!grp.current) return;
@@ -131,16 +134,17 @@ function Sculpture({ sections, active, setActive, getUrl }) {
     <group ref={grp}>
       {sections.map((sec, fi) => (
         <Figure key={sec.num} pos={FIG_POS[fi]} section={sec} fi={fi}
-          active={active} setActive={setActive} getUrl={getUrl} />
+          active={active} setActive={setActive} onAct={onAct} />
       ))}
     </group>
   );
 }
 
 export default function FacetIndex() {
-  const { getUrl } = useLinks();
+  const { getUrl, copyLink } = useLinks();
   const { isCoordinador } = useAuth();
   const [active, setActive] = useState(null);
+  const onAct = (item) => activate(item, getUrl, copyLink);
   const sections = useMemo(() => SECTIONS.filter((s) => !s.coordOnly || isCoordinador), [isCoordinador]);
 
   return (
@@ -153,7 +157,7 @@ export default function FacetIndex() {
           <pointLight position={[-7, -2, 5]} intensity={2.4} color="#1D7CF4" />
           <pointLight position={[5, 4, -5]} intensity={1.8} color="#85C8FF" />
           <Suspense fallback={null}>
-            <Sculpture sections={sections} active={active} setActive={setActive} getUrl={getUrl} />
+            <Sculpture sections={sections} active={active} setActive={setActive} onAct={onAct} />
             <Environment preset="city" />
           </Suspense>
         </Canvas>
@@ -175,10 +179,11 @@ export default function FacetIndex() {
                 return (
                   <li key={it.label} data-hover
                     onMouseEnter={() => setActive(key)} onMouseLeave={() => setActive(null)}
-                    onClick={() => navTo(it, getUrl)}
+                    onClick={() => onAct(it)}
                     className={"flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors " + (active === key ? "bg-white/10" : "hover:bg-white/5")}>
                     <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: it.color }} />
-                    <span className="truncate text-sand/85">{it.label}</span>
+                    <span className="flex-1 truncate text-sand/85">{it.label}</span>
+                    <span className="shrink-0 text-serene/50">{it.copy ? "⧉" : it.key ? "↗" : "→"}</span>
                   </li>
                 );
               })}

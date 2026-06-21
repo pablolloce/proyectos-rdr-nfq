@@ -52,23 +52,16 @@ export default function AuthGate({ children, onAuthed }) {
   const team = useRef([]);
   const btnRef = useRef(null);
 
+  // Solo se permite el correo NFQ (p.email). El @bbva.com (emailBBVA) NO entra.
   const emailPermitido = useCallback((e) => {
     const x = String(e || "").trim().toLowerCase();
     if (!x) return false;
-    return team.current.some(
-      (p) =>
-        String(p.email || "").toLowerCase() === x ||
-        String(p.emailBBVA || "").toLowerCase() === x
-    );
+    return team.current.some((p) => String(p.email || "").toLowerCase() === x);
   }, []);
 
   const esCoordinador = useCallback((e) => {
     const x = String(e || "").trim().toLowerCase();
-    const m = team.current.find(
-      (p) =>
-        String(p.email || "").toLowerCase() === x ||
-        String(p.emailBBVA || "").toLowerCase() === x
-    );
+    const m = team.current.find((p) => String(p.email || "").toLowerCase() === x);
     return !!(m && m.coordinador);
   }, []);
 
@@ -115,7 +108,7 @@ export default function AuthGate({ children, onAuthed }) {
       } else {
         setMsg(
           data && data.email
-            ? `El correo ${data.email} no pertenece al equipo RDR. Usa tu cuenta @nfq.es, @nter.es, @nfq.mx o @bbva.com del equipo.`
+            ? `El correo ${data.email} no pertenece al equipo RDR. Usa tu cuenta @nfq.es, @nter.es o @nfq.mx del equipo.`
             : "No se pudo verificar el correo. Inténtalo de nuevo."
         );
         try {
@@ -200,8 +193,7 @@ export default function AuthGate({ children, onAuthed }) {
             {configErr && <p className="mt-4 text-sm text-mandarin">{configErr}</p>}
 
             <p className="mt-8 text-xs text-sand/50">
-              Válido con tu correo <b>@nfq.es</b>, <b>@nter.es</b>, <b>@nfq.mx</b> o{" "}
-              <b>@bbva.com</b> del equipo.
+              Válido con tu correo <b>@nfq.es</b>, <b>@nter.es</b> o <b>@nfq.mx</b> del equipo.
             </p>
           </div>
         </div>
