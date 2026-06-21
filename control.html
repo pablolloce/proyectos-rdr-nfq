@@ -645,9 +645,9 @@ function renderEconomia(){
 }
 function pickTarifa(q){ const t=state.data.tarifas||{}; return t[q] || t[q.slice(0,4)] || t["2026"] || 51.22; }
 
-/* ---------- CAPACIDAD: MATRIZ de asignación (personas × proyectos) ----------
-   Celdas = % de cada persona en cada proyecto · columna derecha = capacidad de
-   la persona · fila inferior = cobertura del proyecto. Compacto, sin estirarse. */
+/* ---------- CAPACIDAD: vista por PROYECTO (cada proyecto con su equipo) ----------
+   1 fila por proyecto, su equipo (varias personas) en chips con % en línea.
+   Aparte, capacidad por persona en chips. Denso, sin huecos. */
 function renderCapacidad(){
   const blocks = (state.data.capacidad && state.data.capacidad.bloques) || [];
   if(!blocks.length){ panel.innerHTML=`<div class="glass rounded-2xl p-6 text-sand/70">No hay bloques de Capacidad.</div>`; return; }
@@ -672,35 +672,21 @@ function renderCapacidad(){
   const capP = per => { let hh=0; projs.forEach(p=>(p.asignaciones||[]).forEach(a=>{ if(a.persona===per) hh+=num(p.horas)*num(a.pct); })); return hq? hh/hq:0; };
   const teamCap = e => { let w=0,s=0; e.miembros.forEach(m=>{ const p=num(m.peso); w+=p; s+=capP(m.persona)*p; }); return w? s/w:0; };
   const col = v => v>1.05?"mandarin": v>=0.8?"lime":"serene";
-  const getA = (p,per)=> (p.asignaciones||[]).find(a=>a.persona===per);
-  const short = s => { s=String(s||''); const m=s.match(/SDATOOL-?(\d+)/i); return m? ('SDA'+m[1].slice(-3)) : s.split(/[ ·\-]/)[0]; };
-  const heat = f => f<=0?'' : `background:rgba(133,200,255,${Math.min(0.55,0.12+f*0.45)})`;
-  const SL = 'position:sticky;left:0;z-index:1;background:#0b1450';
-  const SR = 'position:sticky;right:0;background:#0b1450';
 
-  const matriz = `<div class="glass overflow-auto rounded-2xl p-2" style="max-height:62vh">
-    <table class="text-xs" style="border-collapse:separate;border-spacing:0">
-      <thead><tr class="text-serene/80">
-        <th class="px-2 py-1 text-left" style="${SL}">Persona</th>
-        ${projs.map(p=>`<th class="px-1 py-1 align-bottom" title="${esc(p.nombre)} · ${h(p.horas)}"><div class="mx-auto truncate" style="max-width:48px">${short(p.nombre)}</div></th>`).join("")}
-        <th class="px-2 py-1 text-right" style="${SR}">Cap.</th>
-      </tr></thead>
-      <tbody>
-        ${people.map((per,pix)=>{ const cp=capP(per);
-          return `<tr class="border-t border-serene/10">
-            <td class="px-2 py-0.5 whitespace-nowrap text-sand/85" style="${SL}">${per}</td>
-            ${projs.map((p,pi)=>{ const a=getA(p,per); const v=a?Math.round(num(a.pct)*100):''; const f=a?num(a.pct):0;
-              return `<td class="p-0 text-center" style="${heat(f)}"><input type="number" class="w-11 bg-transparent py-0.5 text-center focus:outline-none" value="${v}" data-mx="cell" data-pi="${pi}" data-pix="${pix}"></td>`; }).join("")}
-            <td class="px-2 py-0.5 text-right font-bold text-${col(cp)}" style="${SR}">${pct(cp)}</td>
-          </tr>`; }).join("")}
-        <tr class="border-t-2 border-serene/30">
-          <td class="px-2 py-1 font-bold text-sand" style="${SL}">Cobertura</td>
-          ${projs.map(p=>{ const c=cob(p); return `<td class="px-1 py-1 text-center text-[11px] font-bold text-${col(c)}">${Math.round(c*100)}</td>`; }).join("")}
-          <td style="${SR}"></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>`;
+  // ---- Tabla por proyecto (equipo en chips) ----
+  const projRows = projs.map((p,pi)=>{ const c=cob(p);
+    const chips=(p.asignaciones||[]).map((a,ai)=>`<span class="chip inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]" title="${esc(a.persona)} · ${a.rol||''}"><span class="text-sand/85">${fnName(a.persona)}</span><input type="number" class="w-8 bg-transparent text-right focus:outline-none" value="${Math.round(num(a.pct)*100)}" data-cap="pct" data-pi="${pi}" data-ai="${ai}"><span class="text-sand/40">%</span><button data-cap="rm" data-pi="${pi}" data-ai="${ai}" class="text-mandarin">✕</button></span>`).join("");
+    return `<tr class="border-t border-serene/10 align-top">
+      <td class="py-1.5 pr-3"><div class="truncate font-medium text-sand" style="max-width:230px" title="${esc(p.nombre)}">${p.nombre||'—'}</div></td>
+      <td class="px-2 py-1.5"><input type="number" class="w-16 rounded bg-white/5 px-1 text-right focus:outline-none" value="${num(p.horas)}" data-cap="phoras" data-pi="${pi}"></td>
+      <td class="px-2 py-1.5 text-right"><b class="text-${col(c)}">${pct(c)}</b></td>
+      <td class="py-1.5 pl-2"><div class="flex flex-wrap items-center gap-1">${chips||'<span class="text-xs text-sand/30">sin equipo</span>'}
+        <span class="inline-flex items-center gap-1">
+          <select data-cap="addsel" data-pi="${pi}" class="text-[11px]"><option value="">+</option>${people.map(n=>`<option>${n}</option>`).join("")}</select>
+          <input type="number" placeholder="%" class="w-9 text-[11px]" data-cap="addpct" data-pi="${pi}">
+          <button data-cap="add" data-pi="${pi}" class="text-serene" title="Añadir">＋</button>
+        </span></div></td>
+    </tr>`; }).join("");
 
   const showT = !!state._capShowTeams;
   const teamStrip = `<div class="mt-4 flex flex-wrap items-center gap-2">
@@ -731,31 +717,38 @@ function renderCapacidad(){
     <div class="mb-3 flex flex-wrap items-center gap-4">
       <label class="text-xs text-serene/80">Trimestre <select id="cap-q" class="ml-2">${blocks.map(x=>`<option ${x.q===qSel?"selected":""}>${x.q}</option>`).join("")}</select></label>
       <label class="text-xs text-serene/80">Horas/persona Q <input id="cap-hq" type="number" class="ml-2 w-24" value="${hq}"></label>
-      <span class="text-xs text-sand/40">Celda = % persona·proyecto · Cap. = carga persona · Cobertura = % cubierto · <span class="text-lime">ok</span>/<span class="text-mandarin">excede</span></span>
+      <span class="text-xs text-sand/40">Cob. = % cubierto del proyecto · chips = % de cada persona · <span class="text-lime">ok</span>/<span class="text-mandarin">excede</span></span>
     </div>
-    ${matriz}${teamStrip}${teamEditor}`;
+    <div class="glass overflow-auto rounded-2xl p-3" style="max-height:55vh">
+      <table class="w-full text-sm">
+        <thead><tr class="text-left text-serene/80"><th class="py-1 pr-3">Proyecto</th><th class="px-2 py-1">Horas</th><th class="px-2 py-1 text-right">Cob.</th><th class="py-1 pl-2">Equipo</th></tr></thead>
+        <tbody>${projRows||'<tr><td colspan="4" class="py-3 text-sand/40">Sin proyectos.</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="glass mt-4 rounded-2xl p-3">
+      <p class="mb-2 text-xs uppercase tracking-wider text-serene/70">Capacidad por persona</p>
+      <div class="flex flex-wrap gap-2">${people.map(per=>{ const v=capP(per); return `<span class="chip rounded-full px-3 py-1 text-xs"><b class="text-sand/85">${per}</b> <span class="text-${col(v)}">${pct(v)}</span></span>`; }).join("")||'<span class="text-xs text-sand/40">—</span>'}</div>
+    </div>
+    ${teamStrip}${teamEditor}`;
 
   document.getElementById("cap-q").onchange = e=>{ state._capQ=e.target.value; renderCapacidad(); };
   document.getElementById("cap-hq").addEventListener("change", e=>{ state._capHoras[qSel]=num(e.target.value); renderCapacidad(); });
   document.getElementById("cap-edit").onclick = ()=>{ state._capShowTeams=!state._capShowTeams; renderCapacidad(); };
-  panel.querySelectorAll('input[data-mx="cell"]').forEach(inp=>inp.addEventListener("change",()=>{
-    const pi=+inp.dataset.pi, per=people[+inp.dataset.pix], v=num(inp.value)/100;
-    const p=b.proyectos[pi]; p.asignaciones=p.asignaciones||[];
-    const a=p.asignaciones.find(x=>x.persona===per);
-    if(v>0){ if(a) a.pct=v; else p.asignaciones.push({rol:"ejecutor",persona:per,pct:v}); }
-    else if(a) p.asignaciones.splice(p.asignaciones.indexOf(a),1);
-    renderCapacidad();
-  }));
-  if(showT){
-    document.getElementById("cap-tadd").onclick = ()=>{ equipos.push({ lider:"Nuevo sub-equipo", miembros:[] }); renderCapacidad(); };
-    panel.querySelectorAll("[data-cap]").forEach(el=>{ const t=el.getAttribute("data-cap");
-      if(t==="tname") el.addEventListener("change",()=>{ equipos[+el.dataset.ei].lider=el.value; renderCapacidad(); });
-      else if(t==="trm") el.addEventListener("click",()=>{ equipos.splice(+el.dataset.ei,1); renderCapacidad(); });
-      else if(t==="mrm") el.addEventListener("click",()=>{ equipos[+el.dataset.ei].miembros.splice(+el.dataset.mi,1); renderCapacidad(); });
-      else if(t==="mpeso") el.addEventListener("change",()=>{ equipos[+el.dataset.ei].miembros[+el.dataset.mi].peso=num(el.value)/100; renderCapacidad(); });
-      else if(t==="madd") el.addEventListener("change",()=>{ if(el.value){ equipos[+el.dataset.ei].miembros.push({persona:el.value, peso:1}); renderCapacidad(); } });
-    });
-  }
+  if(showT) document.getElementById("cap-tadd").onclick = ()=>{ equipos.push({ lider:"Nuevo sub-equipo", miembros:[] }); renderCapacidad(); };
+  panel.querySelectorAll("[data-cap]").forEach(el=>{ const t=el.getAttribute("data-cap");
+    if(t==="phoras") el.addEventListener("change",()=>{ b.proyectos[+el.dataset.pi].horas=num(el.value); renderCapacidad(); });
+    else if(t==="pct") el.addEventListener("change",()=>{ b.proyectos[+el.dataset.pi].asignaciones[+el.dataset.ai].pct=num(el.value)/100; renderCapacidad(); });
+    else if(t==="rm") el.addEventListener("click",()=>{ b.proyectos[+el.dataset.pi].asignaciones.splice(+el.dataset.ai,1); renderCapacidad(); });
+    else if(t==="add") el.addEventListener("click",()=>{ const pi=+el.dataset.pi;
+      const sel=panel.querySelector(`select[data-cap="addsel"][data-pi="${pi}"]`), pc=panel.querySelector(`input[data-cap="addpct"][data-pi="${pi}"]`);
+      const persona=sel.value, v=num(pc.value)/100; if(!persona||!v){ flash("Elige persona y %",true); return; }
+      (b.proyectos[pi].asignaciones=b.proyectos[pi].asignaciones||[]).push({rol:"ejecutor",persona,pct:v}); renderCapacidad(); });
+    else if(t==="tname") el.addEventListener("change",()=>{ equipos[+el.dataset.ei].lider=el.value; renderCapacidad(); });
+    else if(t==="trm") el.addEventListener("click",()=>{ equipos.splice(+el.dataset.ei,1); renderCapacidad(); });
+    else if(t==="mrm") el.addEventListener("click",()=>{ equipos[+el.dataset.ei].miembros.splice(+el.dataset.mi,1); renderCapacidad(); });
+    else if(t==="mpeso") el.addEventListener("change",()=>{ equipos[+el.dataset.ei].miembros[+el.dataset.mi].peso=num(el.value)/100; renderCapacidad(); });
+    else if(t==="madd") el.addEventListener("change",()=>{ if(el.value){ equipos[+el.dataset.ei].miembros.push({persona:el.value, peso:1}); renderCapacidad(); } });
+  });
 }
 
 /* ===========================================================================
