@@ -656,15 +656,18 @@ function renderCapacidad(){
   state._capHoras = state._capHoras || {};
   const hq = state._capHoras[qSel]!=null ? state._capHoras[qSel] : (num(b.horasQ)||500);
   const esc = s => String(s==null?'':s).replace(/"/g,'&quot;');
-  // Sub-equipos EDITABLES (copia local del Excel; sandbox).
-  state._capEquipos = state._capEquipos || {};
-  if(!state._capEquipos[qSel]) state._capEquipos[qSel] = (b.equipos||[]).map(e=>({ lider:e.lider||"", miembros:(e.miembros||[]).slice() }));
-  const equipos = state._capEquipos[qSel];
+  const noAlex = n => !/casal/i.test(String(n||"")); // Alex Casal = Manager, no ejecuta
+  // Sub-equipos EDITABLES (sandbox). Miembros = {persona, peso} (peso = % en el equipo:
+  // 100% = dedicado; un % = recurso compartido, p. ej. el equipo Cross/técnico o Ángela).
+  state._capTeams = state._capTeams || {};
+  if(!state._capTeams[qSel]) state._capTeams[qSel] = (b.equipos||[]).map(e=>({ lider:e.lider||"", capExcel:e.capacidadCubierta,
+    miembros:(e.miembros||[]).map(m=>({ persona:(m&&m.persona)||m, nivel:(m&&m.nivel)||"", peso:1 })).filter(x=>noAlex(x.persona)) }));
+  const equipos = state._capTeams[qSel];
 
   const people = (()=>{ const s=new Set();
-    equipos.forEach(e=>e.miembros.forEach(m=>s.add(m)));
+    equipos.forEach(e=>e.miembros.forEach(m=>s.add(m.persona)));
     (b.proyectos||[]).forEach(p=>(p.asignaciones||[]).forEach(a=>a.persona&&s.add(a.persona)));
-    return Array.from(s).filter(Boolean).sort(); })();
+    return Array.from(s).filter(n=>n&&noAlex(n)).sort(); })();
   const cob = p => { const s=(p.asignaciones||[]).reduce((a,x)=>a+num(x.pct),0); return p.horas? s*hq/num(p.horas):0; };
   const capP = nombre => { let hh=0; (b.proyectos||[]).forEach(p=>(p.asignaciones||[]).forEach(a=>{ if(a.persona===nombre) hh+=num(p.horas)*num(a.pct); })); return hq? hh/hq:0; };
   const col = v => v>1.05?"mandarin": v>=0.8?"lime":"serene";
@@ -692,15 +695,19 @@ function renderCapacidad(){
       </div></div>`; }).join("");
 
   // ---- Sub-equipos (creador) ----
-  const teamHTML = equipos.map((e,ei)=>{ const caps=e.miembros.map(capP); const avg=caps.length?caps.reduce((a,x)=>a+x,0)/caps.length:0;
+  const teamCap = e => { let w=0,s=0; e.miembros.forEach(m=>{ const p=num(m.peso); w+=p; s+=capP(m.persona)*p; }); return w? s/w:0; };
+  const teamHTML = equipos.map((e,ei)=>{ const avg=teamCap(e);
     return `<div class="mb-2 border-b border-serene/10 pb-2 last:border-0">
       <div class="flex items-center gap-2">
-        <input value="${esc(e.lider)}" placeholder="Nombre/Líder" class="flex-1 bg-transparent text-sm font-bold text-sand focus:outline-none" data-cap="tname" data-ei="${ei}">
+        <input value="${esc(e.lider)}" placeholder="Responsable (N2)" class="flex-1 bg-transparent text-sm font-bold text-sand focus:outline-none" data-cap="tname" data-ei="${ei}">
         <span class="text-xs text-${col(avg)}">${pct(avg)}</span>
+        ${e.capExcel!=null?`<span class="text-[10px] text-sand/35" title="Capacidad cubierta en el Excel">xls ${pct(num(e.capExcel))}</span>`:''}
         <button data-cap="trm" data-ei="${ei}" class="text-mandarin" title="Eliminar sub-equipo">✕</button>
       </div>
       <div class="mt-1 flex flex-wrap items-center gap-1">
-        ${e.miembros.map((m,mi)=>`<span class="chip inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] text-sand/80" title="${esc(m)}">${fn(m)}<button data-cap="mrm" data-ei="${ei}" data-mi="${mi}" class="text-mandarin">✕</button></span>`).join("")}
+        ${e.miembros.map((m,mi)=>`<span class="chip inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${m.nivel==='Tech'?'text-aqua':'text-sand/80'}" title="${esc(m.persona)} · ${m.nivel||''} · ${Math.round(num(m.peso)*100)}%">${fn(m.persona)}
+          <input type="number" class="w-8 bg-transparent text-right focus:outline-none" value="${Math.round(num(m.peso)*100)}" data-cap="mpeso" data-ei="${ei}" data-mi="${mi}"><span class="text-sand/40">%</span>
+          <button data-cap="mrm" data-ei="${ei}" data-mi="${mi}" class="text-mandarin">✕</button></span>`).join("")}
         <select data-cap="madd" data-ei="${ei}" class="text-[11px]"><option value="">+ miembro</option>${people.map(n=>`<option>${n}</option>`).join("")}</select>
       </div></div>`; }).join("");
 
@@ -742,7 +749,8 @@ function renderCapacidad(){
     else if(t==="tname") el.addEventListener("change",()=>{ equipos[+el.dataset.ei].lider=el.value; renderCapacidad(); });
     else if(t==="trm") el.addEventListener("click",()=>{ equipos.splice(+el.dataset.ei,1); renderCapacidad(); });
     else if(t==="mrm") el.addEventListener("click",()=>{ equipos[+el.dataset.ei].miembros.splice(+el.dataset.mi,1); renderCapacidad(); });
-    else if(t==="madd") el.addEventListener("change",()=>{ if(el.value){ equipos[+el.dataset.ei].miembros.push(el.value); renderCapacidad(); } });
+    else if(t==="mpeso") el.addEventListener("change",()=>{ equipos[+el.dataset.ei].miembros[+el.dataset.mi].peso=num(el.value)/100; renderCapacidad(); });
+    else if(t==="madd") el.addEventListener("change",()=>{ if(el.value){ equipos[+el.dataset.ei].miembros.push({persona:el.value, peso:1}); renderCapacidad(); } });
   });
   drawCapChart(people.map(fn), people.map(capP));
 }

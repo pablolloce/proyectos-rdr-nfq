@@ -615,19 +615,32 @@ function getCapacidad() {
     }
     // Sub-equipos: filas entre la cabecera N0 y "Proyectos". Cada fila = un
     // sub-equipo; miembros = celdas B..G (N0..Tech), separando por ";".
+    // Estructura: B=N0(manager) C=N1 D=N2(responsable) E=N3 F=N4 G=Tech(cross).
+    // Cada fila con N2 abre un sub-equipo; sus miembros son N1/N3/N4/Tech (+ el
+    // propio N2). Alex Casal (N0) es Manager -> excluido. Tech = equipo Cross.
     var equipos = [];
     if (teamHdr >= 0) {
       var endTeam = projStart >= 0 ? projStart - 1 : n;
+      var nivelCols = [{ c: 2, n: 'N1' }, { c: 4, n: 'N3' }, { c: 5, n: 'N4' }, { c: 6, n: 'Tech' }];
+      var curTeam = null;
       for (var t = teamHdr + 1; t < endTeam; t++) {
-        var miembros = [];
-        for (var col = 1; col <= 6; col++) {
-          var cell = vals[t][col];
-          if (cell !== null && String(cell).trim() !== '')
-            String(cell).split(';').forEach(function (nm) { nm = nm.trim(); if (nm) miembros.push(nm); });
+        var lidRaw = vals[t][3]; // D = N2 = responsable
+        var lid = (lidRaw !== null && String(lidRaw).trim() !== '') ? String(lidRaw).split(';')[0].trim() : null;
+        if (lid && !/casal/i.test(lid)) {
+          curTeam = { lider: lid, miembros: [{ persona: lid, nivel: 'N2' }],
+            horasEquipo: vals[t][7], capacidadCubierta: vals[t][9] };
+          equipos.push(curTeam);
         }
-        if (!miembros.length) continue;
-        var lid = (vals[t][1] !== null && String(vals[t][1]).trim() !== '') ? String(vals[t][1]).split(';')[0].trim() : null;
-        equipos.push({ lider: lid, miembros: miembros, horasEquipo: vals[t][7], capacidadCubierta: vals[t][9] });
+        if (curTeam) {
+          nivelCols.forEach(function (nc) {
+            var cell = vals[t][nc.c];
+            if (cell !== null && String(cell).trim() !== '')
+              String(cell).split(';').forEach(function (nm) {
+                nm = nm.trim();
+                if (nm && !/casal/i.test(nm)) curTeam.miembros.push({ persona: nm, nivel: nc.n });
+              });
+          });
+        }
       }
     }
     var proyectos = [], capacidadPersona = [], cur = null;
