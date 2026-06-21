@@ -2,18 +2,18 @@
 
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Html, Environment } from "@react-three/drei";
+import { Html, Environment, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import { pointer } from "@/lib/pointerStore";
 import { HUB_LINKS } from "@/lib/hubLinks";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
-const SP = 1.04;   // separación entre mini-cubos (deja una rendija)
-const CS = 0.94;   // tamaño del mini-cubo
-const LIFT = 0.55; // cuánto sale el cubo al hover
+const SP = 1.38;   // separación entre cubos (flotan con aire entre ellos)
+const CS = 0.92;   // tamaño del cubo
+const LIFT = 0.5;  // cuánto sale el cubo al hover
 
-// 12 celdas de la cáscara visible (cámara iso en +x,+y,+z) repartidas en las 3 caras.
+// 12 celdas repartidas en las 3 caras visibles de un cubo 3×3×3 (cámara iso +x+y+z).
 const LINK_CELLS = [
   [-1, 1, 1], [1, 1, 1], [-1, 1, -1], [0, 1, 0],   // cara superior (y=1)
   [1, 0, 1], [1, -1, 0], [1, 0, -1], [1, -1, -1],  // cara derecha (x=1)
@@ -27,64 +27,57 @@ function navTo(link) {
   else window.location.href = u;
 }
 
-// Un mini-cubo. Si tiene link es interactivo (sale al hover, etiqueta, navega).
-function MiniCube({ cell, link, on, setOn }) {
+// Cubo-cristal redondeado (bubbly) translúcido = un link. Etiqueta SIEMPRE visible.
+function Crystal({ cell, link, on, setOn }) {
   const ref = useRef();
-  const cur = useRef(0);
+  const lift = useRef(0);
   const base = useMemo(() => new THREE.Vector3(cell[0], cell[1], cell[2]).multiplyScalar(SP), [cell]);
   const dir = useMemo(() => base.clone().normalize(), [base]);
+  const labelPos = useMemo(() => { const p = base.clone().addScaledVector(dir, 1.0); return [p.x, p.y, p.z]; }, [base, dir]);
   useFrame(() => {
     if (!ref.current) return;
-    cur.current = THREE.MathUtils.lerp(cur.current, on ? LIFT : 0, 0.2);
-    ref.current.position.copy(base).addScaledVector(dir, cur.current);
+    lift.current = THREE.MathUtils.lerp(lift.current, on ? LIFT : 0, 0.18);
+    ref.current.position.copy(base).addScaledVector(dir, lift.current);
+    const s = THREE.MathUtils.lerp(ref.current.scale.x, on ? 1.16 : 1, 0.2);
+    ref.current.scale.setScalar(s);
   });
-  const isLink = !!link;
   return (
     <group>
-      <mesh ref={ref}
-        onPointerOver={isLink ? (e) => { e.stopPropagation(); setOn(true); } : undefined}
-        onPointerOut={isLink ? () => setOn(false) : undefined}
-        onClick={isLink ? (e) => { e.stopPropagation(); navTo(link); } : undefined}>
-        <boxGeometry args={[CS, CS, CS]} />
+      <RoundedBox ref={ref} args={[CS, CS, CS]} radius={0.18} smoothness={5}
+        onPointerOver={(e) => { e.stopPropagation(); setOn(true); }}
+        onPointerOut={() => setOn(false)}
+        onClick={(e) => { e.stopPropagation(); navTo(link); }}>
         <meshPhysicalMaterial
-          color={isLink ? link.color : "#0c1657"}
-          emissive={isLink ? link.color : "#000000"}
-          emissiveIntensity={on ? 0.7 : isLink ? 0.14 : 0}
-          metalness={0.32} roughness={isLink ? 0.16 : 0.5}
-          clearcoat={1} clearcoatRoughness={0.2} envMapIntensity={1.3} />
-      </mesh>
-      {isLink && on && (
-        <Html center position={[base.x + dir.x * 1.1, base.y + dir.y * 1.1, base.z + dir.z * 1.1]} style={{ pointerEvents: "none" }}>
-          <div style={{ whiteSpace: "nowrap", background: "rgba(10,18,74,.92)", color: "#F7F8F8",
-            border: "1px solid " + link.color, borderRadius: "999px", padding: "5px 14px",
-            fontSize: "13px", fontWeight: 700, fontFamily: "Lato, sans-serif" }}>{link.name}</div>
-        </Html>
-      )}
+          color={link.color} emissive={link.color} emissiveIntensity={on ? 0.55 : 0.18}
+          transparent opacity={on ? 0.92 : 0.62} roughness={0.05} metalness={0}
+          clearcoat={1} clearcoatRoughness={0.08} ior={1.45} envMapIntensity={2.1}
+          transmission={0.35} thickness={0.6} />
+      </RoundedBox>
+      <Html center position={labelPos} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
+        <div style={{ whiteSpace: "nowrap", color: "#F7F8F8",
+          background: on ? "rgba(10,18,74,.96)" : "rgba(10,18,74,.55)",
+          border: "1px solid " + (on ? link.color : "rgba(133,200,255,.35)"),
+          borderRadius: "999px", padding: on ? "5px 13px" : "3px 10px",
+          fontSize: on ? "13px" : "11px", fontWeight: 700, fontFamily: "Lato, sans-serif",
+          boxShadow: on ? "0 6px 24px rgba(0,0,0,.4)" : "none", transition: "all .15s" }}>
+          {link.name}
+        </div>
+      </Html>
     </group>
   );
 }
 
 function CubeOfCubes({ links, active, setActive }) {
   const grp = useRef();
-  const used = useMemo(() => new Set(LINK_CELLS.slice(0, links.length).map((c) => c.join(","))), [links.length]);
-  // Resto de la cáscara visible: cubos neutros (para que se lea como un cubo macizo).
-  const neutral = useMemo(() => {
-    const out = [];
-    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++)
-      if ((i === 1 || j === 1 || k === 1) && !used.has([i, j, k].join(","))) out.push([i, j, k]);
-    return out;
-  }, [used]);
   useFrame(() => {
     if (!grp.current) return;
-    // Parallax leve: el cubo bascula con el ratón pero sin ocultar caras.
-    grp.current.rotation.y = THREE.MathUtils.lerp(grp.current.rotation.y, pointer.x * 0.18, 0.05);
-    grp.current.rotation.x = THREE.MathUtils.lerp(grp.current.rotation.x, pointer.y * 0.12, 0.05);
+    grp.current.rotation.y = THREE.MathUtils.lerp(grp.current.rotation.y, pointer.x * 0.16, 0.05);
+    grp.current.rotation.x = THREE.MathUtils.lerp(grp.current.rotation.x, pointer.y * 0.1, 0.05);
   });
   return (
     <group ref={grp}>
-      {neutral.map((c) => <MiniCube key={"n" + c.join(",")} cell={c} link={null} />)}
       {links.map((l, i) => (
-        <MiniCube key={l.name} cell={LINK_CELLS[i]} link={l} on={active === i} setOn={(v) => setActive(v ? i : -1)} />
+        <Crystal key={l.name} cell={LINK_CELLS[i]} link={l} on={active === i} setOn={(v) => setActive(v ? i : -1)} />
       ))}
     </group>
   );
@@ -102,23 +95,24 @@ export default function FacetIndex() {
   return (
     <div className="absolute inset-0 flex">
       <div className="relative flex-1">
-        <Canvas orthographic camera={{ position: [7, 7, 7], zoom: 88, near: -50, far: 100 }} dpr={[1, 2]} gl={{ antialias: true }}>
+        <Canvas orthographic camera={{ position: [7, 7, 7], zoom: 64, near: -50, far: 100 }} dpr={[1, 2]} gl={{ antialias: true }}>
           <color attach="background" args={["#070E46"]} />
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[6, 8, 5]} intensity={2.2} color="#F7F8F8" />
-          <pointLight position={[-6, -2, 4]} intensity={1.8} color="#1D7CF4" />
+          <ambientLight intensity={0.7} />
+          <directionalLight position={[6, 9, 6]} intensity={2.8} color="#F7F8F8" />
+          <pointLight position={[-7, -2, 5]} intensity={2.4} color="#1D7CF4" />
+          <pointLight position={[5, 4, -5]} intensity={1.8} color="#85C8FF" />
           <Suspense fallback={null}>
             <CubeOfCubes links={links} active={active} setActive={setActive} />
             <Environment preset="city" />
           </Suspense>
         </Canvas>
         <div className="pointer-events-none absolute inset-x-0 bottom-5 text-center text-xs uppercase tracking-[0.3em] text-serene/55">
-          Cada cubo de color es un link · pulsa para abrir
+          Pulsa un cubo para abrir su enlace
         </div>
       </div>
 
-      {/* Leyenda: todos los links accesibles desde el primer momento */}
-      <aside className="hidden w-64 shrink-0 overflow-auto border-l border-serene/10 p-4 md:block">
+      {/* Leyenda lateral (acceso rápido + sincronizada con el cubo) */}
+      <aside className="hidden w-60 shrink-0 overflow-auto border-l border-serene/10 p-4 lg:block">
         <p className="mb-3 font-grotesk text-xs uppercase tracking-[0.3em] text-serene/70">Explora</p>
         <ul className="space-y-1">
           {links.map((l, i) => (
