@@ -269,6 +269,9 @@ function getTable(sheetName, opts) {
   var headerRow = opts.headerRow || _schema(sheetName).headerRow || 1;
   var dataStart = opts.dataStartRow || _schema(sheetName).dataStartRow || (headerRow + 1);
   var lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
+  // Tope opcional de filas: evita leer hojas con miles de filas vacías
+  // (p.ej. "5) Adelantos" llega a la fila 44.000+ y haría lentísimo el snapshot).
+  if (opts.maxRows) lastRow = Math.min(lastRow, dataStart + opts.maxRows - 1);
   if (lastRow < dataStart) return { sheet: sh.getName(), headerRow: headerRow, count: 0, records: [] };
 
   var headers = sh.getRange(headerRow, 1, 1, lastCol).getValues()[0];
@@ -642,9 +645,9 @@ function getSnapshot() {
     ejecucion: getEjecucion(),
     economico: getControlEconomico(),
     capacidad: getCapacidad(),
-    gastos: getTable('6) Gastos').records,
-    bolsa: getTable('4) Bolsa BBVA').records,
-    adelantos: getTable('5) Adelantos').records,
+    gastos: getTable('6) Gastos', { maxRows: 1500 }).records,
+    bolsa: getTable('4) Bolsa BBVA', { maxRows: 500 }).records,
+    adelantos: getTable('5) Adelantos', { maxRows: 500 }).records, // hoja con 44k filas vacías
     encuestasQ4: getTable('10) Encuestas Q4').records,
     encuestasQ1: getTable('11) Encuestas Q1').records
   };
