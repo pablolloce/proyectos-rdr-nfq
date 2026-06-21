@@ -38,6 +38,10 @@
   input[type=number],select { background:rgba(7,14,70,.6); border:1px solid rgba(133,200,255,.25); border-radius:.6rem; padding:.35rem .5rem; }
   /* Inputs de % dentro de chips: sin padding/fondo para que se vea el número */
   .chip input[type=number]{ background:transparent; border:none; border-radius:0; padding:0; width:2.4rem; color:#F7F8F8; }
+  /* Pantalla de carga mientras conecta con Apps Script */
+  @keyframes ctlspin{ to{ transform:rotate(360deg) } }
+  #load-gate{ position:fixed; inset:0; z-index:80; display:flex; align-items:center; justify-content:center; background:rgba(7,14,70,.93) }
+  .ctl-spin{ width:46px; height:46px; margin:0 auto; border-radius:9999px; border:3px solid rgba(133,200,255,.22); border-top-color:#85C8FF; animation:ctlspin .9s linear infinite }
   input[type=range]{ accent-color:#85C8FF; }
   ::-webkit-scrollbar{width:10px;height:10px} ::-webkit-scrollbar-thumb{background:rgba(133,200,255,.25);border-radius:8px}
   /* Fondo 3D difuminado */
@@ -58,7 +62,16 @@
     <p class="mt-2 text-sm text-sand/70">Inicia sesión con tu cuenta del equipo.</p>
     <div id="g-btn" class="mt-7 flex justify-center"></div>
     <p id="auth-msg" class="mt-4 text-sm text-mandarin"></p>
-    <p class="mt-6 text-xs text-sand/40">@nfq.es · @nter.es · @nfq.mx · @bbva.com</p>
+    <p class="mt-6 text-xs text-sand/40">@nfq.es · @nter.es · @nfq.mx</p>
+  </div>
+</div>
+
+<!-- ===================== PANTALLA DE CARGA ===================== -->
+<div id="load-gate">
+  <div style="text-align:center">
+    <div class="ctl-spin"></div>
+    <p class="mt-5 text-xs uppercase tracking-[0.3em] text-serene/70">Conectando con el backend</p>
+    <p class="mt-1 text-sm text-sand/60">Cargando datos del Control…</p>
   </div>
 </div>
 
@@ -71,6 +84,7 @@
 
   <header class="mb-6 flex flex-wrap items-center justify-between gap-4">
     <div>
+      <a href="index.html" class="mb-2 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-serene transition-colors hover:text-sand">← Volver al hub</a>
       <h1 class="text-2xl font-bold text-sand md:text-3xl">Control RDR</h1>
       <p class="text-sm text-serene/80">Ejecución · Economía · Capacidad — <span id="mode-badge" class="text-mandarin"></span></p>
     </div>
@@ -794,11 +808,13 @@ function drawCapChart(labels, values){
 /* ===========================================================================
  * ARRANQUE
  * =========================================================================== */
+function showLoad(v){ var lg=document.getElementById("load-gate"); if(lg) lg.style.display = v ? "flex" : "none"; }
 async function boot(){
   await loadSnapshot();
   modeBadge();
+  showLoad(false); // datos listos (o demo): ocultar pantalla de carga
   document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
-  document.getElementById("btn-reload").onclick = async()=>{ await loadSnapshot(); modeBadge(); setTab(activeTab); };
+  document.getElementById("btn-reload").onclick = async()=>{ showLoad(true); await loadSnapshot(); modeBadge(); setTab(activeTab); showLoad(false); };
   setMode(false); // por defecto SIMULACIÓN (seguro)
   document.getElementById("btn-mode").onclick = ()=>{
     if(!state.live && (!state.url || !state.token))
