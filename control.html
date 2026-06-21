@@ -664,21 +664,32 @@ function renderCapacidad(){
   const equipos = state._capTeams[qSel];
   const projs = b.proyectos || [];
 
+  // Horas por proyecto = las de Ejecución para este Q (deben coincidir).
+  const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g,'');
+  const codeOf = s => { const m=String(s||'').match(/sdatool-?\d+/i); return m? m[0].toLowerCase().replace('-',''):null; };
+  const ejMap = (()=>{ const m={}; const ej=state.data.ejecucion||{};
+    (ej.records||[]).forEach(r=>{ const nm=r.data&&r.data["Proyecto"]; if(!nm) return; const hrs=num(r.data[qSel]);
+      const c=codeOf(nm); if(c) m['c'+c]=(m['c'+c]||0)+hrs; m['n'+norm(nm)]=(m['n'+norm(nm)]||0)+hrs; }); return m; })();
+  const ejHoras = p => { const c=codeOf(p.nombre); if(c&&ejMap['c'+c]!=null) return ejMap['c'+c];
+    const k='n'+norm(p.nombre); return ejMap[k]!=null? ejMap[k] : num(p.horas); };
+
   const people = (()=>{ const s=new Set();
     equipos.forEach(e=>e.miembros.forEach(m=>s.add(m.persona)));
     projs.forEach(p=>(p.asignaciones||[]).forEach(a=>a.persona&&s.add(a.persona)));
     return Array.from(s).filter(n=>n&&noAlex(n)).sort(); })();
-  const cob = p => { const s=(p.asignaciones||[]).reduce((a,x)=>a+num(x.pct),0); return p.horas? s*hq/num(p.horas):0; };
-  const capP = per => { let hh=0; projs.forEach(p=>(p.asignaciones||[]).forEach(a=>{ if(a.persona===per) hh+=num(p.horas)*num(a.pct); })); return hq? hh/hq:0; };
+  const cob = p => { const s=(p.asignaciones||[]).reduce((a,x)=>a+num(x.pct),0); const hp=ejHoras(p); return hp? s*hq/hp:0; };
+  const capP = per => { let hh=0; projs.forEach(p=>(p.asignaciones||[]).forEach(a=>{ if(a.persona===per) hh+=ejHoras(p)*num(a.pct); })); return hq? hh/hq:0; };
   const teamCap = e => { let w=0,s=0; e.miembros.forEach(m=>{ const p=num(m.peso); w+=p; s+=capP(m.persona)*p; }); return w? s/w:0; };
   const col = v => v>1.05?"mandarin": v>=0.8?"lime":"serene";
+  const bar = (label,v,extra)=>`<div><div class="flex justify-between text-xs"><span class="text-sand/85">${label}${extra?` <span class="text-sand/40">${extra}</span>`:''}</span><span class="text-${col(v)}">${pct(v)}</span></div>
+    <div class="mt-0.5 h-2 rounded-full bg-white/10"><div class="h-2 rounded-full bg-${col(v)}" style="width:${Math.min(100,v*100)}%"></div></div></div>`;
 
-  // ---- Tabla por proyecto (equipo en chips) ----
+  // ---- Tabla por proyecto (equipo en chips, horas de Ejecución) ----
   const projRows = projs.map((p,pi)=>{ const c=cob(p);
     const chips=(p.asignaciones||[]).map((a,ai)=>`<span class="chip inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px]" title="${esc(a.persona)} · ${a.rol||''}"><span class="text-sand/85">${fnName(a.persona)}</span><input type="number" class="w-8 bg-transparent text-right focus:outline-none" value="${Math.round(num(a.pct)*100)}" data-cap="pct" data-pi="${pi}" data-ai="${ai}"><span class="text-sand/40">%</span><button data-cap="rm" data-pi="${pi}" data-ai="${ai}" class="text-mandarin">✕</button></span>`).join("");
     return `<tr class="border-t border-serene/10 align-top">
       <td class="py-1.5 pr-3"><div class="truncate font-medium text-sand" style="max-width:230px" title="${esc(p.nombre)}">${p.nombre||'—'}</div></td>
-      <td class="px-2 py-1.5"><input type="number" class="w-16 rounded bg-white/5 px-1 text-right focus:outline-none" value="${num(p.horas)}" data-cap="phoras" data-pi="${pi}"></td>
+      <td class="px-2 py-1.5 text-right text-sand/70" title="Horas de Ejecución (${qSel})">${h(ejHoras(p))}</td>
       <td class="px-2 py-1.5 text-right"><b class="text-${col(c)}">${pct(c)}</b></td>
       <td class="py-1.5 pl-2"><div class="flex flex-wrap items-center gap-1">${chips||'<span class="text-xs text-sand/30">sin equipo</span>'}
         <span class="inline-flex items-center gap-1">
@@ -688,20 +699,11 @@ function renderCapacidad(){
         </span></div></td>
     </tr>`; }).join("");
 
-  const showT = !!state._capShowTeams;
-  const teamStrip = `<div class="mt-4 flex flex-wrap items-center gap-2">
-    <span class="text-xs text-serene/70">Sub-equipos:</span>
-    ${equipos.map(e=>{ const v=teamCap(e); return `<span class="chip rounded-full px-3 py-1 text-xs"><b class="text-sand">${e.lider||'—'}</b> <span class="text-${col(v)}">${pct(v)}</span></span>`; }).join("")||'<span class="text-xs text-sand/40">—</span>'}
-    <button id="cap-edit" class="chip rounded-full px-3 py-1 text-xs text-serene">${showT?'Ocultar editor':'Editar equipos'}</button>
-  </div>`;
-
-  const teamEditor = showT ? `<div class="glass mt-3 rounded-2xl p-4">
-    <div class="mb-2 flex items-center justify-between"><span class="text-xs uppercase tracking-wider text-serene/70">Editor de sub-equipos · <span class="text-aqua">Tech/cross</span> en aqua</span>
-      <button id="cap-tadd" class="chip rounded-full px-3 py-1 text-xs font-bold">+ Sub-equipo</button></div>
+  // ---- Distribución del equipo (editor de sub-equipos) — separado de la capacidad ----
+  const teamEditor = `<div class="glass rounded-2xl p-4">
     ${equipos.map((e,ei)=>`<div class="mb-2 border-b border-serene/10 pb-2 last:border-0">
       <div class="flex items-center gap-2">
         <input value="${esc(e.lider)}" placeholder="Responsable (N2)" class="flex-1 bg-transparent text-sm font-bold text-sand focus:outline-none" data-cap="tname" data-ei="${ei}">
-        <span class="text-xs text-${col(teamCap(e))}">${pct(teamCap(e))}</span>
         ${e.capExcel!=null?`<span class="text-[10px] text-sand/35" title="Capacidad cubierta (Excel)">xls ${pct(num(e.capExcel))}</span>`:''}
         <button data-cap="trm" data-ei="${ei}" class="text-mandarin">✕</button>
       </div>
@@ -710,34 +712,47 @@ function renderCapacidad(){
           <input type="number" class="w-8 bg-transparent text-right focus:outline-none" value="${Math.round(num(m.peso)*100)}" data-cap="mpeso" data-ei="${ei}" data-mi="${mi}"><span class="text-sand/40">%</span>
           <button data-cap="mrm" data-ei="${ei}" data-mi="${mi}" class="text-mandarin">✕</button></span>`).join("")}
         <select data-cap="madd" data-ei="${ei}" class="text-[11px]"><option value="">+ miembro</option>${people.map(n=>`<option>${n}</option>`).join("")}</select>
-      </div></div>`).join("")}
-  </div>` : '';
+      </div></div>`).join("")||'<p class="text-sm text-sand/40">Sin sub-equipos.</p>'}
+  </div>`;
 
   panel.innerHTML = `
     <div class="mb-3 flex flex-wrap items-center gap-4">
       <label class="text-xs text-serene/80">Trimestre <select id="cap-q" class="ml-2">${blocks.map(x=>`<option ${x.q===qSel?"selected":""}>${x.q}</option>`).join("")}</select></label>
       <label class="text-xs text-serene/80">Horas/persona Q <input id="cap-hq" type="number" class="ml-2 w-24" value="${hq}"></label>
-      <span class="text-xs text-sand/40">Cob. = % cubierto del proyecto · chips = % de cada persona · <span class="text-lime">ok</span>/<span class="text-mandarin">excede</span></span>
+      <span class="text-xs text-sand/40">Horas = las de Ejecución · Cob. = % cubierto · chips = % por persona · <span class="text-lime">ok</span>/<span class="text-mandarin">excede</span></span>
     </div>
-    <div class="glass overflow-auto rounded-2xl p-3" style="max-height:55vh">
+
+    <h3 class="mb-2 font-display text-lg font-bold text-sand">Proyectos</h3>
+    <div class="glass rounded-2xl p-3">
       <table class="w-full text-sm">
-        <thead><tr class="text-left text-serene/80"><th class="py-1 pr-3">Proyecto</th><th class="px-2 py-1">Horas</th><th class="px-2 py-1 text-right">Cob.</th><th class="py-1 pl-2">Equipo</th></tr></thead>
+        <thead><tr class="text-left text-serene/80"><th class="py-1 pr-3">Proyecto</th><th class="px-2 py-1 text-right">Horas</th><th class="px-2 py-1 text-right">Cob.</th><th class="py-1 pl-2">Equipo</th></tr></thead>
         <tbody>${projRows||'<tr><td colspan="4" class="py-3 text-sand/40">Sin proyectos.</td></tr>'}</tbody>
       </table>
     </div>
-    <div class="glass mt-4 rounded-2xl p-3">
-      <p class="mb-2 text-xs uppercase tracking-wider text-serene/70">Capacidad por persona</p>
-      <div class="flex flex-wrap gap-2">${people.map(per=>{ const v=capP(per); return `<span class="chip rounded-full px-3 py-1 text-xs"><b class="text-sand/85">${per}</b> <span class="text-${col(v)}">${pct(v)}</span></span>`; }).join("")||'<span class="text-xs text-sand/40">—</span>'}</div>
+
+    <div class="mt-5 grid gap-4 lg:grid-cols-2">
+      <div>
+        <h3 class="mb-2 font-display text-lg font-bold text-sand">Capacidad por persona</h3>
+        <div class="glass rounded-2xl p-3"><div style="height:${Math.max(160, people.length*24)}px"><canvas id="cap-chart"></canvas></div></div>
+      </div>
+      <div>
+        <h3 class="mb-2 font-display text-lg font-bold text-sand">Capacidad por sub-equipo</h3>
+        <div class="glass space-y-3 rounded-2xl p-4">${equipos.length? equipos.map(e=>bar(e.lider||'—', teamCap(e), (e.miembros||[]).length+' pers.')).join("") : '<p class="text-sm text-sand/40">—</p>'}</div>
+      </div>
     </div>
-    ${teamStrip}${teamEditor}`;
+
+    <div class="mt-5 flex items-center justify-between">
+      <h3 class="font-display text-lg font-bold text-sand">Distribución del equipo</h3>
+      <button id="cap-tadd" class="chip rounded-full px-3 py-1 text-xs font-bold hover:bg-white/10">+ Sub-equipo</button>
+    </div>
+    <p class="mb-2 text-xs text-sand/40"><span class="text-aqua">Tech/cross</span> en aqua. % = peso de cada persona en el sub-equipo.</p>
+    ${teamEditor}`;
 
   document.getElementById("cap-q").onchange = e=>{ state._capQ=e.target.value; renderCapacidad(); };
   document.getElementById("cap-hq").addEventListener("change", e=>{ state._capHoras[qSel]=num(e.target.value); renderCapacidad(); });
-  document.getElementById("cap-edit").onclick = ()=>{ state._capShowTeams=!state._capShowTeams; renderCapacidad(); };
-  if(showT) document.getElementById("cap-tadd").onclick = ()=>{ equipos.push({ lider:"Nuevo sub-equipo", miembros:[] }); renderCapacidad(); };
+  document.getElementById("cap-tadd").onclick = ()=>{ equipos.push({ lider:"Nuevo sub-equipo", miembros:[] }); renderCapacidad(); };
   panel.querySelectorAll("[data-cap]").forEach(el=>{ const t=el.getAttribute("data-cap");
-    if(t==="phoras") el.addEventListener("change",()=>{ b.proyectos[+el.dataset.pi].horas=num(el.value); renderCapacidad(); });
-    else if(t==="pct") el.addEventListener("change",()=>{ b.proyectos[+el.dataset.pi].asignaciones[+el.dataset.ai].pct=num(el.value)/100; renderCapacidad(); });
+    if(t==="pct") el.addEventListener("change",()=>{ b.proyectos[+el.dataset.pi].asignaciones[+el.dataset.ai].pct=num(el.value)/100; renderCapacidad(); });
     else if(t==="rm") el.addEventListener("click",()=>{ b.proyectos[+el.dataset.pi].asignaciones.splice(+el.dataset.ai,1); renderCapacidad(); });
     else if(t==="add") el.addEventListener("click",()=>{ const pi=+el.dataset.pi;
       const sel=panel.querySelector(`select[data-cap="addsel"][data-pi="${pi}"]`), pc=panel.querySelector(`input[data-cap="addpct"][data-pi="${pi}"]`);
@@ -748,6 +763,22 @@ function renderCapacidad(){
     else if(t==="mrm") el.addEventListener("click",()=>{ equipos[+el.dataset.ei].miembros.splice(+el.dataset.mi,1); renderCapacidad(); });
     else if(t==="mpeso") el.addEventListener("change",()=>{ equipos[+el.dataset.ei].miembros[+el.dataset.mi].peso=num(el.value)/100; renderCapacidad(); });
     else if(t==="madd") el.addEventListener("change",()=>{ if(el.value){ equipos[+el.dataset.ei].miembros.push({persona:el.value, peso:1}); renderCapacidad(); } });
+  });
+  drawCapChart(people, people.map(capP));
+}
+
+function drawCapChart(labels, values){
+  if(!window.Chart){ return; }
+  const cv=document.getElementById("cap-chart"); if(!cv) return;
+  if(window._capChart){ try{window._capChart.destroy();}catch(e){} }
+  const colors = values.map(v=> v>1.05?"#FFB56B": v>=0.8?"#88E783":"#85C8FF");
+  window._capChart = new Chart(cv, {
+    type:"bar",
+    data:{ labels, datasets:[{ data:values.map(v=>Math.round(v*100)), backgroundColor:colors, borderRadius:4 }] },
+    options:{ indexAxis:"y", responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>c.parsed.x+"%"}} },
+      scales:{ x:{ suggestedMax:150, ticks:{color:"rgba(247,248,248,.6)", callback:v=>v+"%"}, grid:{color:"rgba(133,200,255,.12)"} },
+               y:{ ticks:{color:"rgba(247,248,248,.85)", font:{size:10}}, grid:{display:false} } } }
   });
 }
 
