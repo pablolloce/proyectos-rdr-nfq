@@ -1,0 +1,519 @@
+/**
+ * ============================================================================
+ *  BACKEND RDR BBVA  ·  Google Apps Script
+ * ----------------------------------------------------------------------------
+ *  API genérica y DINÁMICA para leer y modificar CUALQUIER dato modificable
+ *  del libro "Control - RDR BBVA".
+ *
+ *  Concepto clave (descubierto al analizar el Excel):
+ *    - Una celda es MODIFICABLE  ->  NO contiene fórmula  (getFormula() === '')
+ *    - Una celda es CALCULADA    ->  contiene fórmula (P, Q, R de Iniciativas,
+ *                                    rentabilidades, totales, bolsas, etc.)
+ *  Por defecto el backend PROTEGE las celdas con fórmula: no las pisa salvo
+ *  que se pase force:true. Así nunca rompes el modelo de cálculo sin querer.
+ *
+ *  Expone:
+ *    1) Funciones llamables desde el propio editor de Apps Script.
+ *    2) Una API web (doGet / doPost -> JSON) para usarlo como backend remoto.
+ * ============================================================================
+ */
+
+/* ===========================================================================
+ * 1. CONFIGURACIÓN
+ * =========================================================================== */
+var CONFIG = {
+  // ID del Google Sheet (la parte de la URL .../d/<ESTO>/edit).
+  // Déjalo vacío ('') si pegas este script COMO script ligado a la hoja.
+  SPREADSHEET_ID: '',
+
+  // Token simple de seguridad para la API web. CÁMBIALO.
+  // Toda llamada (salvo action=ping) debe enviar token=<este valor>.
+  API_TOKEN: 'CAMBIA_ESTE_TOKEN_LARGO_Y_SECRETO',
+
+  // Si true, no se sobreescriben celdas con fórmula salvo force:true.
+  PROTECT_FORMULAS: true,
+
+  // Convertir strings numéricos/booleanos/fechas al escribir ("440" -> 440).
+  AUTO_TYPE: true
+};
+
+/* ===========================================================================
+ * 2. ESQUEMA DEL LIBRO  (pistas para la capa de "tablas" dinámica)
+ *    Sólo son DEFAULTS: cualquier acción acepta headerRow/dataStartRow propios,
+ *    así que funciona aunque cambie la estructura.
+ * =========================================================================== */
+var SCHEMAS = {
+  '1) Iniciativas':        { headerRow: 6, dataStartRow: 7, mode: 'tabla',
+    desc: 'Catálogo de lo vendido. P/Q/R son fórmulas (semáforo de ejecución).' },
+  '2)Ejecución Real':      { headerRow: 5, dataStartRow: 6, mode: 'tabla',
+    desc: 'Ejecución/revenue repartido por trimestre. L,M y fila 3-4 son fórmulas.' },
+  '3) Control Economico.': { headerRow: 4, dataStartRow: 6, mode: 'bloques',
+    desc: 'Rentabilidad por persona y trimestre. Muchas fórmulas; usa read/write por celda.' },
+  '3) Control Economico':  { headerRow: 6, dataStartRow: 8, mode: 'bloques',
+    desc: 'Versión antigua (2025Q1-Q2) del control económico.' },
+  '4) Bolsa BBVA':         { headerRow: 5, dataStartRow: 6, mode: 'tabla',
+    desc: 'Bolsa de horas BBVA. K (Restante) y K3 (Total) son fórmulas.' },
+  '5) Adelantos':          { headerRow: 7, dataStartRow: 8, mode: 'tabla',
+    desc: 'Horas adelantadas vs consumidas. L,M (Restante/Importe) son fórmulas.' },
+  '6) Gastos':             { headerRow: 4, dataStartRow: 5, mode: 'tabla',
+    desc: 'Gastos sueltos (guardias, dietas...). Todo es modificable.' },
+  '7) Costes':             { headerRow: 2, dataStartRow: 3, mode: 'bloques',
+    desc: 'Horas x coste/h por persona y mes. D = Horas*Coste/h (fórmula).' },
+  '8) Seg. Contable':      { headerRow: 6, dataStartRow: 7, mode: 'bloques',
+    desc: 'Cierre contable mensual. Casi todo son fórmulas; edita inputs concretos.' },
+  '9) Capacidad':          { headerRow: 14, dataStartRow: 15, mode: 'bloques',
+    desc: 'Planificación de equipo por trimestre. M y P son fórmulas de cobertura.' },
+  '10) Encuestas Q4':      { headerRow: 2, dataStartRow: 3, mode: 'tabla',
+    desc: 'Encuestas de satisfacción Q4. Notas modificables.' },
+  '11) Encuestas Q1':      { headerRow: 1, dataStartRow: 2, mode: 'tabla',
+    desc: 'Encuestas de satisfacción Q1. F (Calidad total) puede ser fórmula.' }
+};
+
+function _schema(name) { return SCHEMAS[name] || {}; }
+
+/* ===========================================================================
+ * 3. UTILIDADES INTERNAS
+ * =========================================================================== */
+function _ss() {
+  return CONFIG.SPREADSHEET_ID
+    ? SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID)
+    : SpreadsheetApp.getActiveSpreadsheet();
+}
+
+function _sheet(name) {
+  if (!name) throw new Error('Falta el nombre de pestaña (sheet).');
+  var sh = _ss().getSheetByName(name);
+  if (!sh) throw new Error('No existe la pestaña: "' + name + '".');
+  return sh;
+}
+
+// Índice de columna (1-based) -> letra A1.
+function _colLetter(n) {
+  var s = '';
+  while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = (n - m - 1) / 26; }
+  return s;
+}
+
+// Detecta string de fecha ISO ("2026-01-01" o "2026-01-01 00:00:00").
+function _maybeDate(s) {
+  if (!/^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?$/.test(s)) return null;
+  var d = new Date(s.replace(' ', 'T'));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// Escribe UN valor en un rango de 1 celda, interpretando tipo y fórmulas.
+function _setOne(rng, value) {
+  if (value === null || value === undefined) { rng.clearContent(); return; }
+  if (typeof value === 'string') {
+    if (value === '') { rng.clearContent(); return; }
+    if (value.charAt(0) === '=') { rng.setFormula(value); return; }     // fórmula explícita
+    if (CONFIG.AUTO_TYPE) {
+      var d = _maybeDate(value);          if (d)               { rng.setValue(d);    return; }
+      if (value === 'true')               { rng.setValue(true);  return; }
+      if (value === 'false')              { rng.setValue(false); return; }
+      if (/^-?\d+(\.\d+)?$/.test(value))  { rng.setValue(Number(value)); return; }
+    }
+    rng.setValue(value); return;
+  }
+  rng.setValue(value); // number | boolean | Date
+}
+
+// Lanza error si el rango toca fórmulas y no se fuerza.
+function _assertWritable(rng, force) {
+  if (force || !CONFIG.PROTECT_FORMULAS) return;
+  var fs = rng.getFormulas();
+  for (var r = 0; r < fs.length; r++) {
+    for (var c = 0; c < fs[r].length; c++) {
+      if (fs[r][c] !== '') {
+        var a1 = _colLetter(rng.getColumn() + c) + (rng.getRow() + r);
+        throw new Error('La celda ' + rng.getSheet().getName() + '!' + a1 +
+          ' contiene una fórmula (' + fs[r][c] + '). Usa force:true para sobrescribirla.');
+      }
+    }
+  }
+}
+
+function _indexOfHeader(headers, name) {
+  for (var i = 0; i < headers.length; i++) if (headers[i] === name) return i;          // exacto
+  var t = String(name).trim().toLowerCase();
+  for (var j = 0; j < headers.length; j++) if (String(headers[j]).trim().toLowerCase() === t) return j; // laxo
+  return -1;
+}
+
+/* ===========================================================================
+ * 4. LECTURA
+ * =========================================================================== */
+
+/** Lista todas las pestañas con sus dimensiones. */
+function getSheets() {
+  return _ss().getSheets().map(function (sh) {
+    return { name: sh.getName(), index: sh.getIndex(),
+             rows: sh.getLastRow(), cols: sh.getLastColumn() };
+  });
+}
+
+/** Metadatos: nombre del libro, pestañas y esquema conocido. */
+function getMeta() {
+  return { spreadsheet: _ss().getName(), sheets: getSheets(), schemas: SCHEMAS };
+}
+
+/**
+ * Lee un rango (o toda la hoja si a1 es vacío) devolviendo valores, fórmulas
+ * y una máscara 'editable' (true = celda modificable, sin fórmula).
+ */
+function readRange(sheetName, a1) {
+  var sh = _sheet(sheetName);
+  var rng = a1 ? sh.getRange(a1) : sh.getDataRange();
+  var formulas = rng.getFormulas();
+  return {
+    sheet: sh.getName(), a1: rng.getA1Notation(),
+    startRow: rng.getRow(), startCol: rng.getColumn(),
+    numRows: rng.getNumRows(), numCols: rng.getNumColumns(),
+    values: rng.getValues(),
+    formulas: formulas,
+    editable: formulas.map(function (row) { return row.map(function (f) { return f === ''; }); })
+  };
+}
+
+/** Lee una sola celda. */
+function readCell(sheetName, a1) {
+  var sh = _sheet(sheetName);
+  var rng = sh.getRange(a1);
+  return { sheet: sh.getName(), a1: rng.getA1Notation(),
+           value: rng.getValue(), formula: rng.getFormula(),
+           editable: rng.getFormula() === '' };
+}
+
+/**
+ * Devuelve SOLO las celdas modificables (sin fórmula) de un rango/hoja.
+ * Responde directamente a "recuperar cualquier dato modificable".
+ */
+function getModifiable(sheetName, a1, opts) {
+  opts = opts || {};
+  var sh = _sheet(sheetName);
+  var rng = a1 ? sh.getRange(a1) : sh.getDataRange();
+  var vals = rng.getValues(), fs = rng.getFormulas();
+  var sr = rng.getRow(), sc = rng.getColumn();
+  var out = [];
+  for (var r = 0; r < vals.length; r++) {
+    for (var c = 0; c < vals[r].length; c++) {
+      if (fs[r][c] !== '') continue;                       // es fórmula -> no modificable
+      var v = vals[r][c];
+      if (!opts.includeEmpty && (v === '' || v === null)) continue;
+      out.push({ a1: _colLetter(sc + c) + (sr + r), row: sr + r, col: sc + c, value: v });
+    }
+  }
+  return { sheet: sh.getName(), count: out.length, cells: out };
+}
+
+/* ===========================================================================
+ * 5. ESCRITURA
+ * =========================================================================== */
+
+// Aplica una actualización {sheet, a1, value | values} sin flush (uso interno).
+function _applyUpdate(u, force) {
+  var sh = _sheet(u.sheet);
+  var rng = sh.getRange(u.a1);
+  _assertWritable(rng, force || u.force);
+  if (Array.isArray(u.values)) {
+    if (!Array.isArray(u.values[0])) throw new Error('"values" debe ser una matriz 2D.');
+    if (rng.getNumRows() !== u.values.length || rng.getNumColumns() !== u.values[0].length) {
+      throw new Error('Dimensiones de values (' + u.values.length + 'x' + u.values[0].length +
+        ') no coinciden con ' + u.sheet + '!' + rng.getA1Notation() +
+        ' (' + rng.getNumRows() + 'x' + rng.getNumColumns() + ').');
+    }
+    for (var r = 0; r < u.values.length; r++)
+      for (var c = 0; c < u.values[r].length; c++)
+        _setOne(rng.getCell(r + 1, c + 1), u.values[r][c]);
+  } else {
+    if (rng.getNumRows() !== 1 || rng.getNumColumns() !== 1)
+      throw new Error('Para rangos multi-celda usa "values" (matriz). Rango: ' + rng.getA1Notation());
+    _setOne(rng, u.value);
+  }
+  return { sheet: sh.getName(), a1: rng.getA1Notation() };
+}
+
+/** Escribe una sola celda. value puede ser número, texto, "=FÓRMULA" o fecha ISO. */
+function writeCell(sheetName, a1, value, opts) {
+  opts = opts || {};
+  _applyUpdate({ sheet: sheetName, a1: a1, value: value }, opts.force);
+  SpreadsheetApp.flush();
+  return readCell(sheetName, a1);
+}
+
+/** Escribe un rango a partir de una matriz 2D de valores. */
+function writeRange(sheetName, a1, values, opts) {
+  opts = opts || {};
+  _applyUpdate({ sheet: sheetName, a1: a1, values: values }, opts.force);
+  SpreadsheetApp.flush();
+  return readRange(sheetName, a1);
+}
+
+/** Actualización en lote: updates = [{sheet, a1, value} | {sheet, a1, values}]. */
+function batchUpdate(updates, opts) {
+  opts = opts || {};
+  if (!Array.isArray(updates)) throw new Error('updates debe ser un array.');
+  var res = updates.map(function (u) { return _applyUpdate(u, opts.force); });
+  SpreadsheetApp.flush();
+  return { updated: res.length, cells: res };
+}
+
+/* ===========================================================================
+ * 6. CAPA DE TABLAS DINÁMICA  (registros como objetos {cabecera: valor})
+ * =========================================================================== */
+
+/** Devuelve los registros de una hoja-tabla como objetos clave/valor. */
+function getTable(sheetName, opts) {
+  opts = opts || {};
+  var sh = _sheet(sheetName);
+  var headerRow = opts.headerRow || _schema(sheetName).headerRow || 1;
+  var dataStart = opts.dataStartRow || _schema(sheetName).dataStartRow || (headerRow + 1);
+  var lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
+  if (lastRow < dataStart) return { sheet: sh.getName(), headerRow: headerRow, count: 0, records: [] };
+
+  var headers = sh.getRange(headerRow, 1, 1, lastCol).getValues()[0];
+  var cols = [];
+  for (var c = 0; c < headers.length; c++)
+    if (headers[c] !== '' && headers[c] !== null) cols.push({ index: c, name: String(headers[c]) });
+
+  var n = lastRow - dataStart + 1;
+  var vals = sh.getRange(dataStart, 1, n, lastCol).getValues();
+  var fs   = sh.getRange(dataStart, 1, n, lastCol).getFormulas();
+  var where = opts.where || null;
+  var records = [];
+
+  for (var r = 0; r < vals.length; r++) {
+    var data = {}, formulas = {}, editable = {}, empty = true;
+    for (var k = 0; k < cols.length; k++) {
+      var col = cols[k], v = vals[r][col.index];
+      if (v !== '' && v !== null) empty = false;
+      data[col.name] = v;
+      formulas[col.name] = fs[r][col.index];
+      editable[col.name] = fs[r][col.index] === '';
+    }
+    if (empty) continue;
+    if (where && !_matchWhere(data, where)) continue;
+    records.push({ row: dataStart + r, data: data, formulas: formulas, editable: editable });
+  }
+  return { sheet: sh.getName(), headerRow: headerRow, dataStartRow: dataStart,
+           columns: cols.map(function (c) { return c.name; }), count: records.length, records: records };
+}
+
+// Filtro de registros. where = {col: valor} ó {col: {op, value}}.
+function _matchWhere(data, where) {
+  return Object.keys(where).every(function (k) {
+    var cond = where[k], val = data[k];
+    if (cond && typeof cond === 'object') {
+      var t = cond.value;
+      switch (cond.op) {
+        case 'eq':       return val === t;
+        case 'ne':       return val !== t;
+        case 'contains': return String(val).toLowerCase().indexOf(String(t).toLowerCase()) >= 0;
+        case 'gt':       return Number(val) >  Number(t);
+        case 'gte':      return Number(val) >= Number(t);
+        case 'lt':       return Number(val) <  Number(t);
+        case 'lte':      return Number(val) <= Number(t);
+        default:         return false;
+      }
+    }
+    return String(val) === String(cond); // igualdad laxa por defecto
+  });
+}
+
+/** Lee una fila como registro {cabecera: valor}. */
+function getRow(sheetName, rowNumber, opts) {
+  opts = opts || {};
+  var sh = _sheet(sheetName);
+  var headerRow = opts.headerRow || _schema(sheetName).headerRow || 1;
+  var lastCol = sh.getLastColumn();
+  var headers = sh.getRange(headerRow, 1, 1, lastCol).getValues()[0];
+  var vals = sh.getRange(rowNumber, 1, 1, lastCol).getValues()[0];
+  var fs   = sh.getRange(rowNumber, 1, 1, lastCol).getFormulas()[0];
+  var data = {}, editable = {};
+  for (var c = 0; c < headers.length; c++) {
+    if (headers[c] === '' || headers[c] === null) continue;
+    data[String(headers[c])] = vals[c];
+    editable[String(headers[c])] = fs[c] === '';
+  }
+  return { sheet: sh.getName(), row: rowNumber, data: data, editable: editable };
+}
+
+/** Modifica una fila por número de fila usando un patch {cabecera: nuevoValor}. */
+function updateRow(sheetName, rowNumber, patch, opts) {
+  opts = opts || {};
+  if (!patch || typeof patch !== 'object') throw new Error('patch debe ser un objeto {columna: valor}.');
+  var sh = _sheet(sheetName);
+  var headerRow = opts.headerRow || _schema(sheetName).headerRow || 1;
+  var lastCol = sh.getLastColumn();
+  var headers = sh.getRange(headerRow, 1, 1, lastCol).getValues()[0];
+  var changed = [];
+  Object.keys(patch).forEach(function (key) {
+    var idx = _indexOfHeader(headers, key);
+    if (idx < 0) throw new Error('Columna "' + key + '" no encontrada en ' + sheetName +
+                                 ' (cabecera fila ' + headerRow + ').');
+    var rng = sh.getRange(rowNumber, idx + 1);
+    _assertWritable(rng, opts.force);
+    _setOne(rng, patch[key]);
+    changed.push({ column: key, a1: rng.getA1Notation() });
+  });
+  SpreadsheetApp.flush();
+  return { sheet: sh.getName(), row: rowNumber, changed: changed };
+}
+
+/** Añade un registro nuevo {cabecera: valor} (por defecto en la primera fila libre). */
+function appendRow(sheetName, data, opts) {
+  opts = opts || {};
+  if (!data || typeof data !== 'object') throw new Error('data debe ser un objeto {columna: valor}.');
+  var sh = _sheet(sheetName);
+  var headerRow = opts.headerRow || _schema(sheetName).headerRow || 1;
+  var lastCol = sh.getLastColumn();
+  var headers = sh.getRange(headerRow, 1, 1, lastCol).getValues()[0];
+  var targetRow = opts.row || (sh.getLastRow() + 1);
+  Object.keys(data).forEach(function (key) {
+    var idx = _indexOfHeader(headers, key);
+    if (idx < 0) throw new Error('Columna "' + key + '" no encontrada en ' + sheetName + '.');
+    _setOne(sh.getRange(targetRow, idx + 1), data[key]);
+  });
+  SpreadsheetApp.flush();
+  return getRow(sheetName, targetRow, { headerRow: headerRow });
+}
+
+/* ===========================================================================
+ * 7. BÚSQUEDA GLOBAL
+ * =========================================================================== */
+
+/** Busca texto en todo el libro (o en pestañas concretas). */
+function searchAll(query, opts) {
+  opts = opts || {};
+  if (query === undefined || query === null || query === '') throw new Error('Falta query.');
+  var limit = opts.limit || 200;
+  var filter = opts.sheets || null;
+  var q = String(query).toLowerCase();
+  var matches = [];
+  var sheets = _ss().getSheets();
+  for (var s = 0; s < sheets.length; s++) {
+    var sh = sheets[s], name = sh.getName();
+    if (filter && filter.indexOf(name) < 0) continue;
+    if (opts.numberedOnly && !/^\s*\d+\)/.test(name)) continue;
+    if (sh.getLastRow() === 0) continue;
+    var rng = sh.getDataRange(), vals = rng.getValues();
+    var sr = rng.getRow(), sc = rng.getColumn();
+    for (var r = 0; r < vals.length; r++) {
+      for (var c = 0; c < vals[r].length; c++) {
+        var v = vals[r][c];
+        if (v === '' || v === null) continue;
+        if (String(v).toLowerCase().indexOf(q) >= 0) {
+          matches.push({ sheet: name, a1: _colLetter(sc + c) + (sr + r),
+                         row: sr + r, col: sc + c, value: v });
+          if (matches.length >= limit)
+            return { query: query, count: matches.length, truncated: true, matches: matches };
+        }
+      }
+    }
+  }
+  return { query: query, count: matches.length, truncated: false, matches: matches };
+}
+
+/* ===========================================================================
+ * 8. API WEB  (doGet / doPost -> JSON)
+ * =========================================================================== */
+function doGet(e)  { return _serve(e); }
+function doPost(e) { return _serve(e); }
+
+function _serve(e) {
+  try {
+    var p = _params(e);
+    if (p.action !== 'ping') _auth(p);
+    return _json({ ok: true, action: p.action || 'help', data: _route(p.action, p) });
+  } catch (err) {
+    return _json({ ok: false, error: String(err && err.message ? err.message : err) });
+  }
+}
+
+// Mezcla parámetros GET (e.parameter) con el cuerpo JSON (POST).
+function _params(e) {
+  var p = {};
+  if (e && e.parameter) for (var k in e.parameter) p[k] = e.parameter[k];
+  if (e && e.postData && e.postData.contents) {
+    try { var b = JSON.parse(e.postData.contents); for (var j in b) p[j] = b[j]; } catch (_) {}
+  }
+  return p;
+}
+
+function _auth(p) {
+  if (CONFIG.API_TOKEN && p.token !== CONFIG.API_TOKEN) throw new Error('Token inválido o ausente.');
+}
+
+// Coerción de parámetros que pueden venir como string (GET) u objeto (POST).
+function _bool(v) { return v === true || v === 'true' || v === 1 || v === '1'; }
+function _num(v)  { return (v === undefined || v === null || v === '') ? undefined : Number(v); }
+function _obj(v)  {
+  if (v === undefined || v === null) return undefined;
+  if (typeof v === 'string') { try { return JSON.parse(v); } catch (e) { return v; } }
+  return v;
+}
+
+function _route(action, p) {
+  switch (action) {
+    case undefined: case '': case 'ping': case 'help': return _help();
+    case 'meta':        return getMeta();
+    case 'sheets':      return getSheets();
+    case 'read':        return readRange(p.sheet, p.a1);
+    case 'readCell':    return readCell(p.sheet, p.a1);
+    case 'modifiable':  return getModifiable(p.sheet, p.a1, { includeEmpty: _bool(p.includeEmpty) });
+    case 'write':       return writeCell(p.sheet, p.a1, p.value, { force: _bool(p.force) });
+    case 'writeRange':  return writeRange(p.sheet, p.a1, _obj(p.values), { force: _bool(p.force) });
+    case 'batch':       return batchUpdate(_obj(p.updates), { force: _bool(p.force) });
+    case 'table':       return getTable(p.sheet, { headerRow: _num(p.headerRow),
+                                                   dataStartRow: _num(p.dataStartRow), where: _obj(p.where) });
+    case 'row':         return getRow(p.sheet, _num(p.row), { headerRow: _num(p.headerRow) });
+    case 'updateRow':   return updateRow(p.sheet, _num(p.row), _obj(p.patch),
+                                         { headerRow: _num(p.headerRow), force: _bool(p.force) });
+    case 'append':      return appendRow(p.sheet, _obj(p.data),
+                                         { headerRow: _num(p.headerRow), row: _num(p.row), force: _bool(p.force) });
+    case 'search':      return searchAll(p.query, { sheets: _obj(p.sheets),
+                                                    numberedOnly: _bool(p.numberedOnly), limit: _num(p.limit) });
+    default: throw new Error('Acción desconocida: "' + action + '". Llama action=help.');
+  }
+}
+
+function _help() {
+  return {
+    info: 'Backend RDR BBVA. Envía ?action=... y token=... (POST JSON recomendado).',
+    actions: {
+      ping:       'sin token, comprueba conectividad',
+      meta:       'metadatos del libro + esquema',
+      sheets:     'lista de pestañas',
+      read:       'sheet, a1?            -> valores+fórmulas+editable',
+      readCell:   'sheet, a1',
+      modifiable: 'sheet, a1?, includeEmpty? -> sólo celdas sin fórmula',
+      write:      'sheet, a1, value, force?',
+      writeRange: 'sheet, a1, values(2D), force?',
+      batch:      'updates:[{sheet,a1,value|values}], force?',
+      table:      'sheet, headerRow?, dataStartRow?, where?',
+      row:        'sheet, row, headerRow?',
+      updateRow:  'sheet, row, patch:{col:val}, headerRow?, force?',
+      append:     'sheet, data:{col:val}, headerRow?, row?, force?',
+      search:     'query, sheets?, numberedOnly?, limit?'
+    }
+  };
+}
+
+function _json(o) {
+  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/* ===========================================================================
+ * 9. PRUEBAS RÁPIDAS (ejecútalas desde el editor para autorizar permisos)
+ * =========================================================================== */
+function _test_lectura() {
+  Logger.log(getSheets());
+  Logger.log(getTable('6) Gastos'));                 // tabla dinámica
+  Logger.log(getModifiable('1) Iniciativas', 'B7:S7')); // sólo lo editable de una iniciativa
+}
+function _test_escritura() {
+  // Cambia un comentario (celda sin fórmula) -> permitido.
+  Logger.log(writeCell('6) Gastos', 'D5', 'Pago guardia (editado por backend)'));
+  // Intenta pisar una fórmula -> debe fallar salvo force:true.
+  try { writeCell('1) Iniciativas', 'Q7', 999); } catch (e) { Logger.log('Protegido OK: ' + e.message); }
+}

@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------- Base ---------- */
+html,
+body {
+  background: #05060d;
+  /* Lenis gestiona el smooth scroll; desactivamos el nativo. */
+  scroll-behavior: auto;
+}
+
+::selection {
+  background: #1d7cf4;
+  color: #fff;
+}
+
+/* Ocultamos el cursor del sistema solo en dispositivos con puntero fino
+   (ratón). En táctil se mantiene el comportamiento normal. */
+@media (pointer: fine) {
+  * {
+    cursor: none;
+  }
+}
+
+/* ---------- Estilos recomendados por Lenis ---------- */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}

@@ -1,0 +1,60 @@
+name: Deploy Beyond the Grid (GitHub Pages)
+
+# Construye el proyecto Next (export estático) y lo publica en GitHub Pages.
+# Requiere: Settings -> Pages -> Source = "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "beyond-the-grid/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch: {} # permite lanzarlo a mano desde la pestaña Actions
+
+# Permisos que necesita el despliegue de Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un solo despliegue a la vez; cancela los anteriores en curso.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: beyond-the-grid # aquí vive el package.json
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Sin package-lock.json usamos npm install (no npm ci).
+      # Si más adelante commiteas el lockfile, cambia a "npm ci" + cache.
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Build (next build -> export a out/)
+        run: npm run build
+
+      - name: Subir artefacto de Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: beyond-the-grid/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Desplegar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
