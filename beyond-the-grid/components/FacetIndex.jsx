@@ -9,11 +9,11 @@ import { HUB_LINKS } from "@/lib/hubLinks";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
-const SP = 1.38;   // separación entre cubos (flotan con aire entre ellos)
-const CS = 0.92;   // tamaño del cubo
-const LIFT = 0.5;  // cuánto sale el cubo al hover
+const SP = 1.08;   // separación: cubos juntos -> se lee como un CUBO macizo
+const CS = 0.98;   // tamaño del cubo
+const LIFT = 0.45; // cuánto sale el cubo de su link al hover
 
-// 12 celdas repartidas en las 3 caras visibles de un cubo 3×3×3 (cámara iso +x+y+z).
+// 12 celdas (links) repartidas en las 3 caras visibles de un cubo 3×3×3 (cámara iso +x+y+z).
 const LINK_CELLS = [
   [-1, 1, 1], [1, 1, 1], [-1, 1, -1], [0, 1, 0],   // cara superior (y=1)
   [1, 0, 1], [1, -1, 0], [1, 0, -1], [1, -1, -1],  // cara derecha (x=1)
@@ -27,48 +27,62 @@ function navTo(link) {
   else window.location.href = u;
 }
 
-// Cubo-cristal redondeado (bubbly) translúcido = un link. Etiqueta SIEMPRE visible.
-function Crystal({ cell, link, on, setOn }) {
+// Cubo redondeado SÓLIDO (opaco, glossy = cristal sólido). Con link: interactivo + etiqueta.
+function MiniCube({ cell, link, on, setOn }) {
   const ref = useRef();
   const lift = useRef(0);
   const base = useMemo(() => new THREE.Vector3(cell[0], cell[1], cell[2]).multiplyScalar(SP), [cell]);
   const dir = useMemo(() => base.clone().normalize(), [base]);
-  const labelPos = useMemo(() => { const p = base.clone().addScaledVector(dir, 1.0); return [p.x, p.y, p.z]; }, [base, dir]);
+  const labelPos = useMemo(() => { const p = base.clone().addScaledVector(dir, 0.95); return [p.x, p.y, p.z]; }, [base, dir]);
   useFrame(() => {
     if (!ref.current) return;
-    lift.current = THREE.MathUtils.lerp(lift.current, on ? LIFT : 0, 0.18);
+    const target = link ? (on ? LIFT : 0) : 0;
+    lift.current = THREE.MathUtils.lerp(lift.current, target, 0.18);
     ref.current.position.copy(base).addScaledVector(dir, lift.current);
-    const s = THREE.MathUtils.lerp(ref.current.scale.x, on ? 1.16 : 1, 0.2);
+    const s = THREE.MathUtils.lerp(ref.current.scale.x, on ? 1.14 : 1, 0.2);
     ref.current.scale.setScalar(s);
   });
+  const isLink = !!link;
   return (
     <group>
-      <RoundedBox ref={ref} args={[CS, CS, CS]} radius={0.18} smoothness={5}
-        onPointerOver={(e) => { e.stopPropagation(); setOn(true); }}
-        onPointerOut={() => setOn(false)}
-        onClick={(e) => { e.stopPropagation(); navTo(link); }}>
-        <meshPhysicalMaterial
-          color={link.color} emissive={link.color} emissiveIntensity={on ? 0.55 : 0.18}
-          transparent opacity={on ? 0.92 : 0.62} roughness={0.05} metalness={0}
-          clearcoat={1} clearcoatRoughness={0.08} ior={1.45} envMapIntensity={2.1}
-          transmission={0.35} thickness={0.6} />
+      <RoundedBox ref={ref} args={[CS, CS, CS]} radius={0.16} smoothness={5}
+        onPointerOver={isLink ? (e) => { e.stopPropagation(); setOn(true); } : undefined}
+        onPointerOut={isLink ? () => setOn(false) : undefined}
+        onClick={isLink ? (e) => { e.stopPropagation(); navTo(link); } : undefined}>
+        {isLink ? (
+          <meshPhysicalMaterial color={link.color} emissive={link.color} emissiveIntensity={on ? 0.5 : 0.14}
+            metalness={0.18} roughness={0.14} clearcoat={1} clearcoatRoughness={0.1} envMapIntensity={1.7} />
+        ) : (
+          <meshPhysicalMaterial color="#0d1860" metalness={0.25} roughness={0.4}
+            clearcoat={0.7} clearcoatRoughness={0.25} envMapIntensity={1.1} />
+        )}
       </RoundedBox>
-      <Html center position={labelPos} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
-        <div style={{ whiteSpace: "nowrap", color: "#F7F8F8",
-          background: on ? "rgba(10,18,74,.96)" : "rgba(10,18,74,.55)",
-          border: "1px solid " + (on ? link.color : "rgba(133,200,255,.35)"),
-          borderRadius: "999px", padding: on ? "5px 13px" : "3px 10px",
-          fontSize: on ? "13px" : "11px", fontWeight: 700, fontFamily: "Lato, sans-serif",
-          boxShadow: on ? "0 6px 24px rgba(0,0,0,.4)" : "none", transition: "all .15s" }}>
-          {link.name}
-        </div>
-      </Html>
+      {isLink && (
+        <Html center position={labelPos} zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
+          <div style={{ whiteSpace: "nowrap", color: "#F7F8F8",
+            background: on ? "rgba(10,18,74,.96)" : "rgba(10,18,74,.6)",
+            border: "1px solid " + (on ? link.color : "rgba(133,200,255,.35)"),
+            borderRadius: "999px", padding: on ? "5px 13px" : "3px 10px",
+            fontSize: on ? "13px" : "11px", fontWeight: 700, fontFamily: "Lato, sans-serif",
+            boxShadow: on ? "0 6px 24px rgba(0,0,0,.4)" : "none", transition: "all .15s" }}>
+            {link.name}
+          </div>
+        </Html>
+      )}
     </group>
   );
 }
 
 function CubeOfCubes({ links, active, setActive }) {
   const grp = useRef();
+  const used = useMemo(() => new Set(LINK_CELLS.slice(0, links.length).map((c) => c.join(","))), [links.length]);
+  // Resto de la cáscara visible -> cubos neutros para completar la figura del cubo.
+  const neutral = useMemo(() => {
+    const out = [];
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++)
+      if ((i === 1 || j === 1 || k === 1) && !used.has([i, j, k].join(","))) out.push([i, j, k]);
+    return out;
+  }, [used]);
   useFrame(() => {
     if (!grp.current) return;
     grp.current.rotation.y = THREE.MathUtils.lerp(grp.current.rotation.y, pointer.x * 0.16, 0.05);
@@ -76,8 +90,9 @@ function CubeOfCubes({ links, active, setActive }) {
   });
   return (
     <group ref={grp}>
+      {neutral.map((c) => <MiniCube key={"n" + c.join(",")} cell={c} link={null} />)}
       {links.map((l, i) => (
-        <Crystal key={l.name} cell={LINK_CELLS[i]} link={l} on={active === i} setOn={(v) => setActive(v ? i : -1)} />
+        <MiniCube key={l.name} cell={LINK_CELLS[i]} link={l} on={active === i} setOn={(v) => setActive(v ? i : -1)} />
       ))}
     </group>
   );
@@ -95,7 +110,7 @@ export default function FacetIndex() {
   return (
     <div className="absolute inset-0 flex">
       <div className="relative flex-1">
-        <Canvas orthographic camera={{ position: [7, 7, 7], zoom: 64, near: -50, far: 100 }} dpr={[1, 2]} gl={{ antialias: true }}>
+        <Canvas orthographic camera={{ position: [7, 7, 7], zoom: 80, near: -50, far: 100 }} dpr={[1, 2]} gl={{ antialias: true }}>
           <color attach="background" args={["#070E46"]} />
           <ambientLight intensity={0.7} />
           <directionalLight position={[6, 9, 6]} intensity={2.8} color="#F7F8F8" />
@@ -107,7 +122,7 @@ export default function FacetIndex() {
           </Suspense>
         </Canvas>
         <div className="pointer-events-none absolute inset-x-0 bottom-5 text-center text-xs uppercase tracking-[0.3em] text-serene/55">
-          Pulsa un cubo para abrir su enlace
+          Pulsa un cubo de color para abrir su enlace
         </div>
       </div>
 
