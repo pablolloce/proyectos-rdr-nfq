@@ -182,24 +182,24 @@ export default function AuthGate({ children, onAuthed }) {
         children
       ) : (
         // Overlay de login. El Canvas 3D queda visible detrás (backdrop translúcido).
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/70 px-6 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-10 text-center backdrop-blur-xl">
-            <p className="font-display text-xs uppercase tracking-[0.3em] text-accent">
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-midnight/80 px-6 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-serene/20 bg-white/5 p-10 text-center backdrop-blur-xl">
+            <p className="font-sans text-xs uppercase tracking-[0.3em] text-serene">
               RDR Knowledge · BBVA × NFQ
             </p>
-            <h1 className="mt-4 font-display text-3xl font-bold text-white">
+            <h1 className="mt-4 font-display text-3xl font-bold text-sand">
               Acceso del equipo RDR
             </h1>
-            <p className="mt-3 text-sm text-white/60">
+            <p className="mt-3 text-sm text-sand/70">
               Inicia sesión con tu cuenta de Google del equipo para entrar al hub.
             </p>
 
             <div ref={btnRef} className="mt-8 flex justify-center" />
 
-            {msg && <p className="mt-4 text-sm text-accent2">{msg}</p>}
-            {configErr && <p className="mt-4 text-sm text-accent2">{configErr}</p>}
+            {msg && <p className="mt-4 text-sm text-mandarin">{msg}</p>}
+            {configErr && <p className="mt-4 text-sm text-mandarin">{configErr}</p>}
 
-            <p className="mt-8 text-xs text-white/40">
+            <p className="mt-8 text-xs text-sand/50">
               Válido con tu correo <b>@nfq.es</b>, <b>@nter.es</b>, <b>@nfq.mx</b> o{" "}
               <b>@bbva.com</b> del equipo.
             </p>

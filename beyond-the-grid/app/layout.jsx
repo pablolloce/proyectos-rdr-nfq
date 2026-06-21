@@ -1,26 +1,28 @@
 import "./globals.css";
-import { Space_Grotesk, Inter } from "next/font/google";
+import { Source_Serif_4, Lato } from "next/font/google";
 
-// Tipografías premium cargadas con next/font (sin layout shift, self-hosted).
-const grotesk = Space_Grotesk({
+// BBVA: Source Serif 4 para titulares, Lato para el resto.
+const serif = Source_Serif_4({
   subsets: ["latin"],
-  weight: ["500", "700"],
-  variable: "--font-space-grotesk",
+  weight: ["600", "700"],
+  variable: "--font-serif",
 });
-const inter = Inter({
+const lato = Lato({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["300", "400", "700"],
+  variable: "--font-lato",
 });
 
 export const metadata = {
-  title: "Beyond the Grid",
-  description: "Un entorno digital fluido. React · Three.js · GSAP.",
+  title: "RDR Knowledge · BBVA × NFQ",
+  description:
+    "Hub de documentación, formación y proyectos del Repositorio de Datos de Referencia.",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${grotesk.variable} ${inter.variable}`}>
-      <body className="bg-ink font-sans text-white antialiased">{children}</body>
+    <html lang="es" className={`${serif.variable} ${lato.variable}`}>
+      <body className="bg-midnight font-sans text-sand antialiased">{children}</body>
     </html>
   );
 }

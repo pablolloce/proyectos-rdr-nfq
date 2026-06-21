@@ -15,7 +15,8 @@ const nextConfig = {
   // Útil en hosting estático para que /ruta sirva /ruta/index.html.
   trailingSlash: true,
 
-  reactStrictMode: true,
+  // Desactivado: con R3F, StrictMode duplica el montaje del canvas en dev.
+  reactStrictMode: false,
 };
 
 export default nextConfig;

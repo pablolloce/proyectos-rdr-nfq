@@ -14,26 +14,24 @@ const COLORS = {
 };
 const TEXT = "#001391"; // Electric Blue
 
+const BASE =
+  "group flex h-full flex-col gap-3 rounded-2xl p-6 text-left transition-transform duration-300 hover:-translate-y-1";
+
 /**
- * Tarjeta del hub. Según los datos que reciba se comporta como:
- *   - href  -> enlace interno a una subpágina estática (.html en public/)
- *   - open  -> enlace externo cuya URL sale de links.json (abre en pestaña nueva)
- *   - copy  -> botón que copia al portapapeles la URL de links.json
- *   - pills -> tarjeta múltiple con varios mini-botones (copy/open)
+ * Tarjeta del hub. Según los datos se comporta como:
+ *   href  -> enlace interno a subpágina estática (.html en public/)
+ *   open  -> enlace externo cuya URL sale de links.json (pestaña nueva)
+ *   copy  -> botón que copia al portapapeles la URL de links.json
+ *   pills -> tarjeta múltiple con mini-botones (copy/open)
  */
 export default function Card({ card }) {
   const { getUrl, copyLink } = useLinks();
-  const bg = COLORS[card.color] || COLORS.sand;
-  const base =
-    "card group flex flex-col gap-3 rounded-2xl p-6 text-left transition-transform duration-300 will-change-transform hover:-translate-y-1";
-  const style = { backgroundColor: bg, color: TEXT };
+  const style = { backgroundColor: COLORS[card.color] || COLORS.sand, color: TEXT };
 
   const Head = (
     <>
       {card.phase && (
-        <p className="text-xs font-bold uppercase tracking-wider opacity-70">
-          {card.phase}
-        </p>
+        <p className="text-xs font-bold uppercase tracking-wider opacity-70">{card.phase}</p>
       )}
       <h3 className="font-display text-2xl font-bold leading-tight">{card.title}</h3>
       <p className="text-sm leading-relaxed opacity-80">{card.desc}</p>
@@ -41,58 +39,40 @@ export default function Card({ card }) {
   );
 
   const Action = ({ label, arrow }) => (
-    <div className="mt-2 flex items-center justify-between text-sm font-bold uppercase tracking-wider">
+    <div className="mt-auto flex items-center justify-between pt-2 text-sm font-bold uppercase tracking-wider">
       <span>{label}</span>
-      <span aria-hidden className="transition-transform group-hover:translate-x-1">
-        {arrow}
-      </span>
+      <span aria-hidden className="transition-transform group-hover:translate-x-1">{arrow}</span>
     </div>
   );
 
   // --- Tarjeta múltiple (pills) ---
   if (card.pills) {
+    const pillCls =
+      "pill inline-flex items-center gap-2 rounded-full border border-[#001391]/30 px-4 py-2 text-xs font-bold transition-colors hover:bg-black/5";
     return (
-      <div data-card className="card" style={style}>
-        <div className={base.replace("hover:-translate-y-1", "")}>
-          {Head}
-          <div className="mt-2 flex flex-wrap gap-2">
-            {card.pills.map((p) => {
-              const inner = (
-                <>
-                  <span>{p.label}</span>
-                  <span aria-hidden>{p.open ? "↗" : "⧉"}</span>
-                </>
-              );
-              const pillCls =
-                "pill inline-flex items-center gap-2 rounded-full border border-current/30 px-4 py-2 text-xs font-bold transition-colors hover:bg-black/5";
-              if (p.open) {
-                const url = getUrl(p.open);
-                return (
-                  <a
-                    key={p.label}
-                    data-hover
-                    href={url || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={pillCls}
-                  >
-                    {inner}
-                  </a>
-                );
-              }
-              return (
-                <button
-                  key={p.label}
-                  data-hover
-                  type="button"
-                  onClick={() => copyLink(p.copy)}
-                  className={pillCls}
-                >
-                  {inner}
-                </button>
-              );
-            })}
-          </div>
+      <div className={BASE} style={style}>
+        {Head}
+        <div className="mt-auto flex flex-wrap gap-2 pt-2">
+          {card.pills.map((p) =>
+            p.open ? (
+              <a
+                key={p.label}
+                data-hover
+                href={getUrl(p.open) || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={pillCls}
+              >
+                <span>{p.label}</span>
+                <span aria-hidden>↗</span>
+              </a>
+            ) : (
+              <button key={p.label} data-hover type="button" onClick={() => copyLink(p.copy)} className={pillCls}>
+                <span>{p.label}</span>
+                <span aria-hidden>⧉</span>
+              </button>
+            )
+          )}
         </div>
       </div>
     );
@@ -101,26 +81,17 @@ export default function Card({ card }) {
   // --- Enlace interno a subpágina estática ---
   if (card.href) {
     return (
-      <a data-card data-hover href={card.href} className={base} style={style}>
+      <a data-hover href={card.href} className={BASE} style={style}>
         {Head}
         <Action label="Abrir" arrow="→" />
       </a>
     );
   }
 
-  // --- Enlace externo (abre URL de links.json) ---
+  // --- Enlace externo (URL de links.json) ---
   if (card.open) {
-    const url = getUrl(card.open);
     return (
-      <a
-        data-card
-        data-hover
-        href={url || "#"}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={base}
-        style={style}
-      >
+      <a data-hover href={getUrl(card.open) || "#"} target="_blank" rel="noopener noreferrer" className={BASE} style={style}>
         {Head}
         <Action label="Abrir" arrow="↗" />
       </a>
@@ -129,14 +100,7 @@ export default function Card({ card }) {
 
   // --- Copiar URL de links.json ---
   return (
-    <button
-      data-card
-      data-hover
-      type="button"
-      onClick={() => copyLink(card.copy)}
-      className={base}
-      style={style}
-    >
+    <button data-hover type="button" onClick={() => copyLink(card.copy)} className={BASE} style={style}>
       {Head}
       <Action label="Copiar enlace" arrow="⧉" />
     </button>

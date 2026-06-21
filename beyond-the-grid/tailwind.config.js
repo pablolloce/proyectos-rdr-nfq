@@ -1,20 +1,24 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./app/**/*.{js,jsx}",
-    "./components/**/*.{js,jsx}",
-  ],
+  content: ["./app/**/*.{js,jsx}", "./components/**/*.{js,jsx}"],
   theme: {
     extend: {
       fontFamily: {
-        // Mapeadas a las CSS vars que inyecta next/font en layout.jsx
-        display: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        // BBVA: Source Serif 4 (titulares) + Lato (texto). Vars de next/font.
+        display: ["var(--font-serif)", "Georgia", "serif"],
+        sans: ["var(--font-lato)", "system-ui", "sans-serif"],
       },
       colors: {
-        ink: "#05060d",     // fondo casi negro
-        accent: "#1D7CF4",  // azul
-        accent2: "#CD3D60", // magenta
+        // Paleta oficial BBVA (subset presentaciones)
+        midnight: "#070E46",
+        electric: "#001391",
+        serene: "#85C8FF",
+        sand: "#F7F8F8",
+        canary: "#FFE761",
+        lime: "#88E783",
+        aqua: "#8BE1E9",
+        purple: "#9694FF",
+        mandarin: "#FFB56B",
       },
     },
   },

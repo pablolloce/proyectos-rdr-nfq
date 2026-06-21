@@ -1,36 +1,30 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { Environment } from "@react-three/drei";
 import { Suspense } from "react";
 import DistortedSphere from "./DistortedSphere";
 
 /**
- * Canvas 3D de fondo, a pantalla completa. Se monta solo en cliente
- * (lo importamos con dynamic ssr:false desde Experience.jsx).
- *
- * El <Environment/> aporta reflejos HDRI -> es lo que hace que el material
- * se vea "premium" en lugar de plano.
+ * Fondo 3D AMBIENTE (no interactivo, detrás del contenido del hub).
+ * Fondo Midnight para que cualquier zona "vacía" case con la marca BBVA.
+ * Sin Environment HDRI (evita descargas y frames oscuros): iluminación propia.
  */
 export default function Scene() {
   return (
     <Canvas
       camera={{ position: [0, 0, 5], fov: 45 }}
-      gl={{ antialias: true, alpha: true }}
-      dpr={[1, 2]} // nitidez en pantallas retina sin pasarnos de carga
+      gl={{ antialias: true, alpha: false }}
+      dpr={[1, 1.5]}
     >
-      {/* Fondo del propio canvas */}
-      <color attach="background" args={["#05060d"]} />
+      <color attach="background" args={["#070E46"]} />
 
-      {/* Iluminación base */}
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[3, 3, 3]} intensity={2.2} />
-      <directionalLight position={[-4, -2, -3]} intensity={0.6} color="#1D7CF4" />
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[3, 3, 4]} intensity={1.4} color="#F7F8F8" />
+      <pointLight position={[-4, -2, -2]} intensity={2} color="#85C8FF" />
+      <pointLight position={[4, 2, 2]} intensity={1.2} color="#001391" />
 
       <Suspense fallback={null}>
         <DistortedSphere />
-        {/* Reflejos premium. Quita o cambia el preset si trabajas offline. */}
-        <Environment preset="city" />
       </Suspense>
     </Canvas>
   );
