@@ -313,13 +313,23 @@ function estadoBadge(v){ const s=String(v||"").toLowerCase();
   if(s.indexOf("cobrad")>=0) return badge(v,"lime");
   return badge(v||"—","sand"); }
 const hCell=(v)=> v===""||v==null?'':h(v);
+// Preajuste "Vista activa" (instrucciones): oculta lo cerrado de Qs anteriores.
+const curQ = ()=>{ const d=new Date(); return d.getFullYear()+"Q"+(Math.floor(d.getMonth()/3)+1); };
+const esCerrado = s=>{ s=String(s||"").toLowerCase(); return s.indexOf("final")>=0||s.indexOf("cancel")>=0||s.indexOf("rechaz")>=0; };
+const vistaActivaOk = (estado,q,cq)=> !esCerrado(estado) || q===cq; // activo (cualquier Q) o cerrado del Q actual
+const btnActiva = (id,on,cq)=> `<button id="${id}" class="chip rounded-full px-3 py-1.5 text-xs font-bold" style="${on?'border-color:rgba(136,231,131,.85);color:#88E783':'color:#85C8FF'}">Vista activa (${cq})</button>`;
 
 /* ---------- INICIATIVAS ---------- */
 function renderIniciativas(){
   const recs = state.data.iniciativas || [];
   const qs = Array.from(new Set(recs.map(r=>r.data["Q facturación"]).filter(Boolean))).sort();
   const fq = state._iniQ || "Todos";
-  const filtered = recs.filter(r=> fq==="Todos" || r.data["Q facturación"]===fq);
+  const estados = Array.from(new Set(recs.map(r=>r.data["Estado"]).filter(Boolean))).sort();
+  const fe = state._iniEstado || "Todos";
+  const activa = state._iniActiva, cq = curQ();
+  const filtered = recs.filter(r=>
+    (fq==="Todos" || r.data["Q facturación"]===fq) && (fe==="Todos" || r.data["Estado"]===fe)
+    && (!activa || vistaActivaOk(r.data["Estado"], r.data["Q facturación"], cq)));
   const ed = state.live; // editable (escribe en Excel) solo en Modo normal
   const esc = s => String(s==null?'':s).replace(/"/g,'&quot;');
   const inp = (rec,key,t) => `<input data-row="${rec.row}" data-key="${esc(key)}" type="${t||'text'}" value="${esc(rec.data[key])}" class="w-full bg-transparent focus:outline-none">`;
@@ -329,6 +339,9 @@ function renderIniciativas(){
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <label class="text-xs text-serene/80">Q facturación
         <select id="ini-q" class="ml-2"><option>Todos</option>${qs.map(q=>`<option ${q===fq?"selected":""}>${q}</option>`).join("")}</select></label>
+      <label class="text-xs text-serene/80">Estado
+        <select id="ini-estado" class="ml-2"><option>Todos</option>${estados.map(s=>`<option ${s===fe?"selected":""}>${s}</option>`).join("")}</select></label>
+      ${btnActiva("ini-activa", activa, cq)}
       <span class="text-xs text-sand/50">${filtered.length} iniciativas</span>
       ${ed ? `<button id="ini-add" class="ml-auto chip rounded-full px-4 py-2 text-xs font-bold hover:bg-white/10">+ Añadir iniciativa</button>`
            : `<span class="ml-auto text-xs text-sand/40">Activa <b>Modo normal</b> para editar / añadir</span>`}
@@ -351,6 +364,8 @@ function renderIniciativas(){
       <p class="mt-3 text-xs text-sand/50">"Ejecutadas" es fórmula del Excel (cámbiala en la pestaña Ejecución). El resto es editable en Modo normal.</p>
     </div>`;
   document.getElementById("ini-q").onchange = e=>{ state._iniQ=e.target.value; renderIniciativas(); };
+  document.getElementById("ini-estado").onchange = e=>{ state._iniEstado=e.target.value; renderIniciativas(); };
+  document.getElementById("ini-activa").onclick = ()=>{ state._iniActiva=!state._iniActiva; renderIniciativas(); };
   if(ed){
     panel.querySelectorAll("input[data-row]").forEach(i=>i.addEventListener("change",()=>{
       const row=+i.dataset.row, key=i.dataset.key, val=i.type==="number"?num(i.value):i.value;
@@ -405,21 +420,38 @@ function renderEncuestas(){
   ]);
 }
 
-/* ---------- EJECUCIÓN: edición / redistribución de horas por Q ---------- */
+/* ---------- EJECUCIÓN: edición + filtros (Q de elevación y Estado) ---------- */
 function renderEjecucion(){
   const ej = state.data.ejecucion || {qColumns:[],records:[],totalesHorasQ:{}};
   const qs = ej.qColumns;
   const recalc = ()=>{ const t={}; qs.forEach(q=>t[q]=0);
     ej.records.forEach(r=>qs.forEach(q=>t[q]+=num(r.data[q]))); state.data.ejecucion.totalesHorasQ=t; return t; };
   const tot = recalc();
+  // Estado de cada proyecto cruzando con Iniciativas (por nombre).
+  const estadoMap = {}; (state.data.iniciativas||[]).forEach(r=>{ const n=r.data["Detalle"]; if(n) estadoMap[n]=r.data["Estado"]; });
+  const eOf = rec => estadoMap[rec.data["Proyecto"]] || "—";
+  const qElev = Array.from(new Set(ej.records.map(r=>r.data["Q elevación"]).filter(Boolean))).sort();
+  const estados = Array.from(new Set(ej.records.map(eOf).filter(s=>s && s!=="—"))).sort();
+  const qf = state._ejeQ || "Todos", ef = state._ejeEstado || "Todos";
+  const activa = state._ejeActiva, cq = curQ();
+  const rows = ej.records.filter(r=> (qf==="Todos"||r.data["Q elevación"]===qf) && (ef==="Todos"||eOf(r)===ef)
+    && (!activa || vistaActivaOk(eOf(r), r.data["Q elevación"], cq)));
   panel.innerHTML = `
-    <div class="mb-3 text-xs text-sand/50">Edita las horas por trimestre. ${state.live?'Se guardan en el Excel.':'En simulación recalculan localmente (afecta a Economía).'}</div>
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <label class="text-xs text-serene/80">Q elevación <select id="eje-q" class="ml-2"><option>Todos</option>${qElev.map(q=>`<option ${q===qf?"selected":""}>${q}</option>`).join("")}</select></label>
+      <label class="text-xs text-serene/80">Estado <select id="eje-estado" class="ml-2"><option>Todos</option>${estados.map(s=>`<option ${s===ef?"selected":""}>${s}</option>`).join("")}</select></label>
+      ${btnActiva("eje-activa", activa, cq)}
+      <span class="text-xs text-sand/50">${rows.length} proyectos · ${state.live?'la edición escribe en el Excel':'simulación local'}</span>
+    </div>
     <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">${qs.map(q=>KPI("Horas "+q, h(tot[q]))).join("")}</div>
     <div class="glass overflow-x-auto rounded-2xl p-4"><table class="w-full text-sm">
-      <thead><tr class="text-left text-serene/80"><th class="p-2">Proyecto</th>${qs.map(q=>`<th class="p-2 text-right">${q}</th>`).join("")}</tr></thead>
-      <tbody>${ej.records.map(rec=>`<tr class="border-t border-serene/10"><td class="p-2 text-sand">${rec.data["Proyecto"]||"—"}</td>
+      <thead><tr class="text-left text-serene/80"><th class="p-2">Proyecto</th><th class="p-2">Estado</th>${qs.map(q=>`<th class="p-2 text-right">${q}</th>`).join("")}</tr></thead>
+      <tbody>${rows.map(rec=>`<tr class="border-t border-serene/10"><td class="p-2 text-sand">${rec.data["Proyecto"]||"—"}</td><td class="p-2">${estadoBadge(eOf(rec))}</td>
         ${qs.map(q=>`<td class="p-2 text-right"><input type="number" class="w-20 bg-transparent text-right focus:outline-none" value="${num(rec.data[q])}" data-row="${rec.row}" data-q="${q}"></td>`).join("")}
       </tr>`).join("")}</tbody></table></div>`;
+  document.getElementById("eje-q").onchange = e=>{ state._ejeQ=e.target.value; renderEjecucion(); };
+  document.getElementById("eje-estado").onchange = e=>{ state._ejeEstado=e.target.value; renderEjecucion(); };
+  document.getElementById("eje-activa").onclick = ()=>{ state._ejeActiva=!state._ejeActiva; renderEjecucion(); };
   panel.querySelectorAll("input[data-q]").forEach(inp=>inp.addEventListener("change",()=>{
     const row=+inp.dataset.row, q=inp.dataset.q, val=num(inp.value);
     const rec=ej.records.find(r=>r.row===row); if(rec) rec.data[q]=val;
