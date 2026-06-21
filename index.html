@@ -198,36 +198,40 @@
     .card {
       display: flex;
       flex-direction: column;
-      padding: 14px 16px;
-      border-radius: 14px;
-      color: var(--electric);
+      padding: 16px 18px;
+      border-radius: 16px;
+      color: var(--sand);
       position: relative;
       overflow: hidden;
-      transition: transform 0.18s ease, box-shadow 0.18s ease;
-      border: none;
       text-align: left;
       cursor: pointer;
       width: 100%;
-      min-height: 130px;
+      min-height: 132px;
+      background: rgba(10, 18, 74, 0.55);
+      border: 1px solid color-mix(in srgb, var(--accent, #85C8FF) 35%, transparent);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
     }
 
     .card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+      transform: translateY(-3px);
+      background: rgba(10, 18, 74, 0.72);
+      border-color: color-mix(in srgb, var(--accent, #85C8FF) 70%, transparent);
+      box-shadow: 0 16px 40px -12px color-mix(in srgb, var(--accent, #85C8FF) 55%, transparent);
     }
 
     .card:focus-visible {
-      outline: 2px solid var(--sand);
+      outline: 2px solid var(--accent, #85C8FF);
       outline-offset: 3px;
     }
 
-    .card--serene  { background: var(--serene); }
-    .card--lime    { background: var(--lime); }
-    .card--canary  { background: var(--canary); }
-    .card--aqua    { background: var(--aqua); }
-    .card--purple  { background: var(--purple); }
-    .card--mandarin{ background: var(--mandarin); }
-    .card--sand    { background: var(--sand); }
+    /* El acento pasa a ser color de detalle (borde/glow/eyebrow), no relleno */
+    .card--serene  { --accent: #85C8FF; }
+    .card--lime    { --accent: #88E783; }
+    .card--canary  { --accent: #FFE761; }
+    .card--aqua    { --accent: #8BE1E9; }
+    .card--purple  { --accent: #9694FF; }
+    .card--mandarin{ --accent: #FFB56B; }
+    .card--sand    { --accent: #F7F8F8; }
 
     .card__head {
       display: flex;
@@ -242,7 +246,8 @@
       font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      opacity: 0.7;
+      color: var(--accent, #85C8FF);
+      opacity: 0.9;
     }
 
     .card__num {
@@ -279,8 +284,9 @@
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
+      color: var(--accent, #85C8FF);
       padding-top: 8px;
-      border-top: 1px solid rgba(0, 19, 145, 0.18);
+      border-top: 1px solid rgba(247, 248, 248, 0.12);
     }
 
     .card__arrow {
@@ -312,7 +318,7 @@
       display: flex;
       gap: 6px;
       padding-top: 8px;
-      border-top: 1px solid rgba(0, 19, 145, 0.18);
+      border-top: 1px solid rgba(247, 248, 248, 0.12);
       margin-top: auto;
     }
 
@@ -324,25 +330,25 @@
       gap: 6px;
       padding: 7px 10px;
       border-radius: 999px;
-      background: rgba(0, 19, 145, 0.10);
-      color: var(--electric);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--sand);
       font-size: 11px;
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      border: none;
+      border: 1px solid color-mix(in srgb, var(--accent, #85C8FF) 40%, transparent);
       cursor: pointer;
       text-align: center;
       transition: background 0.15s ease, transform 0.15s ease;
     }
 
     .pill:hover {
-      background: rgba(0, 19, 145, 0.18);
+      background: rgba(255, 255, 255, 0.12);
       transform: translateY(-1px);
     }
 
     .pill:focus-visible {
-      outline: 2px solid var(--electric);
+      outline: 2px solid var(--accent, #85C8FF);
       outline-offset: 2px;
     }
 
@@ -445,10 +451,20 @@
       padding: 6px 14px; cursor: pointer; font-family: inherit; }
     .auth-logout:hover { color: var(--serene); border-color: var(--serene); }
     body:not(.authed) .auth-logout { display: none; }
+
+    /* ---------- Fondo 3D: núcleo de datos difuminado (look nuevo) ---------- */
+    #bg3d  { position: fixed; inset: 0; z-index: 0; filter: blur(14px); opacity: 0.55; pointer-events: none; }
+    #veil  { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: radial-gradient(120% 95% at 50% 35%, rgba(7,14,70,0.25) 0%, rgba(7,14,70,0.8) 100%); }
+    .page  { position: relative; z-index: 1; }  /* contenido por encima del 3D */
   </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+
+  <!-- Fondo 3D difuminado + velo -->
+  <canvas id="bg3d"></canvas>
+  <div id="veil"></div>
 
   <!-- ============ PUERTA DE ACCESO ============ -->
   <div id="auth-gate">
@@ -923,6 +939,30 @@
         });
       })();
     })();
+  </script>
+  <!-- ============ FONDO 3D (Three.js · núcleo de datos) ============ -->
+  <script type="module">
+    import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+    const canvas = document.getElementById("bg3d");
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(1); // va difuminado: sin retina, más fluido
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 100);
+    camera.position.z = 5;
+    const geo = new THREE.IcosahedronGeometry(1.6, 1);
+    const wire = new THREE.LineSegments(new THREE.WireframeGeometry(geo),
+      new THREE.LineBasicMaterial({ color: 0x85C8FF, transparent: true, opacity: 0.55 }));
+    const core = new THREE.Mesh(new THREE.IcosahedronGeometry(1.05, 2),
+      new THREE.MeshBasicMaterial({ color: 0x1D7CF4, transparent: true, opacity: 0.35 }));
+    scene.add(wire, core);
+    function resize() { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+    addEventListener("resize", resize); resize();
+    (function loop(t) {
+      wire.rotation.y = core.rotation.y = t * 0.0001;
+      wire.rotation.x = t * 0.00006;
+      renderer.render(scene, camera);
+      requestAnimationFrame(loop);
+    })(0);
   </script>
 </body>
 </html>
