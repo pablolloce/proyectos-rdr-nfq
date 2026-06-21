@@ -415,9 +415,13 @@ async function boot(){
     if(mail&&ok(mail)){ localStorage.setItem(AUTH_KEY,mail.toLowerCase()); entrar(); }
     else { document.getElementById("auth-msg").textContent = d&&d.email
       ? "El correo "+d.email+" no pertenece al equipo RDR." : "No se pudo verificar el correo."; } }
-  (async function(){ await team();
+  (async function(){
     const cached=localStorage.getItem(AUTH_KEY);
-    if(cached&&ok(cached)){ entrar(); return; }
+    await team();
+    // Sesión COMPARTIDA con el hub: si ya hay sesión (válida, o no se pudo
+    // cargar equipo.json), entra directo sin re-loguear. Evita quedarse atascado.
+    if(cached && (TEAM.length===0 || ok(cached))){ entrar(); return; }
+    if(cached) localStorage.removeItem(AUTH_KEY); // sesión caducada/no autorizada
     (function wait(n){ if(window.google&&google.accounts&&google.accounts.id){
         google.accounts.id.initialize({client_id:CLIENT_ID,callback:onCred,auto_select:true});
         google.accounts.id.renderButton(document.getElementById("g-btn"),{theme:"filled_blue",size:"large",shape:"pill",text:"signin_with",width:300});
