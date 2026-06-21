@@ -7,6 +7,7 @@ module.exports = {
         // BBVA: Source Serif 4 (titulares) + Lato (texto). Vars de next/font.
         display: ["var(--font-serif)", "Georgia", "serif"],
         sans: ["var(--font-lato)", "system-ui", "sans-serif"],
+        grotesk: ["var(--font-grotesk)", "system-ui", "sans-serif"],
       },
       colors: {
         // Paleta oficial BBVA (subset presentaciones)
