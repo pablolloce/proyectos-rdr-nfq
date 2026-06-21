@@ -8,15 +8,14 @@ import LoadingScreen from "./LoadingScreen";
 import CustomCursor from "./CustomCursor";
 import AuthGate from "./AuthGate";
 import Header from "./Header";
-import LinkList from "./LinkList";
+import LinkCloud from "./LinkCloud";
 
 // Canvas solo en cliente (WebGL/window) -> sin SSR.
 const Scene = dynamic(() => import("./Scene"), { ssr: false });
 
 /**
- * Hub RDR. Sin tarjetas: índice de enlaces elegante a la derecha y el 3D
- * (núcleo de datos) como protagonista a la izquierda. Todo a pantalla completa,
- * sin scroll en desktop.
+ * Hub RDR. Núcleo de datos 3D centrado como protagonista + enlaces como chips
+ * de cristal flotantes por encima. Todo a pantalla completa, sin scroll.
  */
 export default function Experience() {
   // Ratón -> pointerStore (parallax del 3D, sin estado de React).
@@ -34,34 +33,24 @@ export default function Experience() {
       <CustomCursor />
       <LoadingScreen />
 
-      {/* Fondo 3D ambiente, fijo y detrás de todo */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
+      {/* Fondo 3D ambiente. z-0 (no -z-10) para que NUNCA quede tras el body. */}
+      <div className="pointer-events-none fixed inset-0 z-0">
         <Scene />
       </div>
-      {/* Velo muy suave (solo refuerza la legibilidad de la columna derecha) */}
+      {/* Velo suave radial para legibilidad de los chips sin tapar la figura */}
       <div
-        className="pointer-events-none fixed inset-0 -z-10"
+        className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "linear-gradient(90deg, rgba(7,14,70,0) 40%, rgba(7,14,70,0.45) 75%, rgba(7,14,70,0.6) 100%)",
+            "radial-gradient(120% 90% at 50% 45%, rgba(7,14,70,0) 35%, rgba(7,14,70,0.5) 100%)",
         }}
       />
 
       <AuthGate>
         <div className="relative z-10 flex h-screen flex-col">
           <Header />
-          <main className="grid flex-1 grid-cols-1 gap-10 px-8 pb-10 lg:grid-cols-2">
-            {/* Izquierda: espacio para el 3D + claim de marca */}
-            <div className="relative hidden lg:block">
-              <p className="absolute bottom-3 left-1 max-w-sm font-display text-3xl font-bold leading-tight text-sand/90">
-                Todo el conocimiento del equipo RDR, en un único lugar.
-              </p>
-            </div>
-
-            {/* Derecha: índice de enlaces (centrado vertical, sin scroll) */}
-            <div className="flex items-center">
-              <LinkList />
-            </div>
+          <main className="flex-1">
+            <LinkCloud />
           </main>
         </div>
       </AuthGate>
