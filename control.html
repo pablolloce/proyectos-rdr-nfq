@@ -36,6 +36,8 @@
   .chip { background:rgba(10,18,74,.72); border:1px solid rgba(133,200,255,.30); }
   input,select { color-scheme:dark; }
   input[type=number],select { background:rgba(7,14,70,.6); border:1px solid rgba(133,200,255,.25); border-radius:.6rem; padding:.35rem .5rem; }
+  /* Inputs de % dentro de chips: sin padding/fondo para que se vea el número */
+  .chip input[type=number]{ background:transparent; border:none; border-radius:0; padding:0; width:2.4rem; color:#F7F8F8; }
   input[type=range]{ accent-color:#85C8FF; }
   ::-webkit-scrollbar{width:10px;height:10px} ::-webkit-scrollbar-thumb{background:rgba(133,200,255,.25);border-radius:8px}
   /* Fondo 3D difuminado */
