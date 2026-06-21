@@ -9,21 +9,14 @@ import CustomCursor from "./CustomCursor";
 import AuthGate from "./AuthGate";
 import Header from "./Header";
 import HubSections from "./HubSections";
-import Footer from "./Footer";
 
 // Canvas solo en cliente (WebGL/window) -> sin SSR.
 const Scene = dynamic(() => import("./Scene"), { ssr: false });
 
 /**
- * Hub RDR. Enfoque dashboard: todo el contenido accesible de inmediato
- * (sin hero a pantalla completa ni animaciones por scroll).
- *
- * Capas:
- *   -z-10  Fondo 3D ambiente (fijo, no captura clics)
- *    z-10  Contenido del hub (tras login)
- *    z-90  Puerta de acceso
- *    z-100 Splash de carga (una vez)
- *    z-9999 Cursor
+ * Hub RDR. Dashboard a pantalla completa: todo el contenido visible sin scroll
+ * (en desktop). El 3D queda de fondo (núcleo de datos) y la sesión vive en la
+ * cabecera. Animaciones de entrada (Framer), no de scroll.
  */
 export default function Experience() {
   // Ratón -> pointerStore (parallax del 3D, sin estado de React).
@@ -45,22 +38,19 @@ export default function Experience() {
       <div className="pointer-events-none fixed inset-0 -z-10">
         <Scene />
       </div>
-      {/* Velo para legibilidad sobre el 3D */}
+      {/* Velo suave para legibilidad sin tapar la figura */}
       <div
         className="pointer-events-none fixed inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(120% 100% at 50% 0%, rgba(7,14,70,0) 40%, rgba(7,14,70,0.85) 100%)",
+            "radial-gradient(125% 90% at 50% 28%, rgba(7,14,70,0) 32%, rgba(7,14,70,0.55) 100%)",
         }}
       />
 
       <AuthGate>
-        <div className="relative z-10 flex min-h-screen flex-col">
+        <div className="relative z-10 flex h-screen flex-col">
           <Header />
-          <main className="flex-1">
-            <HubSections />
-          </main>
-          <Footer />
+          <HubSections />
         </div>
       </AuthGate>
     </LinksProvider>

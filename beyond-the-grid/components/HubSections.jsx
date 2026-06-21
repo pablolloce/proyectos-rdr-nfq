@@ -11,7 +11,6 @@ const SECTIONS = [
   {
     num: "01",
     title: "Formaciones",
-    hint: "Welcome pack y materiales de referencia",
     cards: [
       { color: "serene", phase: "Welcome · Fase 1", title: "¿Qué es RDR?", desc: "Definición, entidades, arquitectura y ecosistema. Punto de partida.", href: "que-es-rdr.html" },
       { color: "lime", phase: "Welcome · Fase 2", title: "HUB Formativo", desc: "Plan de capacitación técnica y funcional para el equipo RDR.", href: "rdr-formacion.html" },
@@ -21,7 +20,6 @@ const SECTIONS = [
   {
     num: "02",
     title: "Equipo RDR",
-    hint: "Operativa diaria del equipo",
     cards: [
       { color: "aqua", phase: "Política y calendario", title: "Vacaciones RDR", desc: "Política, calendario y coordinación de días libres del equipo.", href: "vacaciones.html" },
       { color: "purple", phase: "Reporte de horas", title: "Time Report", desc: "Imputación semanal de tiempos para BBVA y NFQ.", pills: [{ label: "BBVA", copy: "timeReportBBVA" }, { label: "NFQ", open: "timeReportNFQ" }] },
@@ -32,7 +30,6 @@ const SECTIONS = [
   {
     num: "03",
     title: "Proyectos RDR",
-    hint: "Releases, código y documentación",
     cards: [
       { color: "serene", phase: "Planificación", title: "Planificación RDR", desc: "Planificación de proyectos y asignación del equipo RDR-NFQ.", open: "planificacionNFQ" },
       { color: "canary", phase: "Operativa", title: "Pases Calendados", desc: "Planificación de releases y trazabilidad de despliegues por entorno.", href: "pases-calendados.html" },
@@ -41,7 +38,7 @@ const SECTIONS = [
   },
 ];
 
-// Entrada escalonada al montar (sin scroll): los enlaces están listos al instante.
+// Entrada escalonada al montar (sin scroll): todo accesible al instante.
 const container = { hidden: {}, show: { transition: { staggerChildren: 0.04, delayChildren: 0.1 } } };
 const item = { hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } } };
 
@@ -51,21 +48,18 @@ export default function HubSections() {
       variants={container}
       initial="hidden"
       animate="show"
-      className="mx-auto max-w-7xl px-6 pb-16"
+      className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 content-start gap-x-5 gap-y-6 px-6 pb-8 sm:grid-cols-2 lg:grid-cols-3 lg:content-stretch"
     >
       {SECTIONS.map((section) => (
-        <section key={section.num} className="mb-10">
-          <div className="mb-5 flex items-baseline gap-4">
+        <section key={section.num} className="flex min-h-0 flex-col gap-3">
+          <div className="flex items-baseline gap-2">
             <span className="font-display text-sm font-bold text-serene">{section.num}</span>
-            <h2 className="font-display text-2xl font-bold text-sand md:text-3xl">{section.title}</h2>
-            <span className="ml-auto hidden text-xs uppercase tracking-[0.25em] text-serene/60 md:block">
-              {section.hint}
-            </span>
+            <h2 className="font-display text-xl font-bold text-sand">{section.title}</h2>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-1 flex-col gap-3">
             {section.cards.map((card) => (
-              <motion.div key={card.title} variants={item} className="h-full">
+              <motion.div key={card.title} variants={item} className="flex-1">
                 <Card card={card} />
               </motion.div>
             ))}

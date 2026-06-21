@@ -2,44 +2,56 @@
 
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Sphere, MeshDistortMaterial } from "@react-three/drei";
+import { Sphere, Icosahedron, MeshDistortMaterial } from "@react-three/drei";
 import { MathUtils } from "three";
 import { pointer } from "@/lib/pointerStore";
 
 /**
- * Esfera ambiente (ya NO depende del scroll). Color de marca Serene sobre
- * Midnight. Gira suavemente, flota y hace un parallax leve con el ratón.
- *
- * metalness baja + emissive Electric: sin Environment HDRI se ve luminosa
- * (con metalness alta y sin entorno salía oscura -> "recuadros negros").
+ * "Núcleo de datos" (RDR = Repositorio de Datos de Referencia):
+ *   - esfera distorsionada (ruido perlin) = el dato vivo.
+ *   - retícula wireframe (icosaedro) que la envuelve y contra-rota = la
+ *     estructura/relaciones del repositorio.
+ * Colores de marca (Serene + Electric) sobre Midnight. Gira despacio y hace
+ * parallax con el ratón. metalness 0 + emissive -> luminosa (nunca negra).
  */
 export default function DistortedSphere() {
   const group = useRef();
+  const wire = useRef();
 
   useFrame((state, delta) => {
     const t = state.clock.elapsedTime;
-    if (!group.current) return;
-    group.current.rotation.y += delta * 0.1; // giro ambiente continuo
-    group.current.rotation.x = MathUtils.lerp(group.current.rotation.x, pointer.y * 0.2, 0.04);
-    group.current.position.x = MathUtils.lerp(group.current.position.x, pointer.x * 0.4, 0.04);
-    group.current.position.y = Math.sin(t * 0.4) * 0.12; // flotación leve
+    if (group.current) {
+      group.current.rotation.y += delta * 0.08;
+      group.current.rotation.x = MathUtils.lerp(group.current.rotation.x, pointer.y * 0.2, 0.04);
+      group.current.position.x = MathUtils.lerp(group.current.position.x, pointer.x * 0.5, 0.03);
+      group.current.position.y = 0.35 + Math.sin(t * 0.4) * 0.12; // flota, ligeramente alta
+    }
+    if (wire.current) {
+      wire.current.rotation.y -= delta * 0.05; // contra-rota respecto al núcleo
+      wire.current.rotation.z += delta * 0.03;
+    }
   });
 
   return (
     <group ref={group}>
-      <Sphere args={[1.5, 128, 128]}>
+      <Sphere args={[1.25, 128, 128]}>
         <MeshDistortMaterial
           color="#85C8FF" // Serene
           emissive="#001391" // Electric
-          emissiveIntensity={0.18}
-          roughness={0.4}
-          metalness={0.0}
-          clearcoat={0.5}
-          clearcoatRoughness={0.3}
-          distort={0.35}
-          speed={1.2}
+          emissiveIntensity={0.25}
+          roughness={0.35}
+          metalness={0}
+          clearcoat={0.6}
+          clearcoatRoughness={0.25}
+          distort={0.4}
+          speed={1.3}
         />
       </Sphere>
+
+      {/* Retícula envolvente */}
+      <Icosahedron ref={wire} args={[2.1, 1]}>
+        <meshBasicMaterial color="#85C8FF" wireframe transparent opacity={0.18} />
+      </Icosahedron>
     </group>
   );
 }
