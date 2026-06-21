@@ -38,8 +38,8 @@ export default function DistortedSphere() {
       <Sphere args={[1.45, 128, 128]}>
         <MeshDistortMaterial
           color="#85C8FF" // Serene
-          emissive="#1D7CF4" // azul brillante para que destaque
-          emissiveIntensity={0.5}
+          emissive="#1D7CF4"
+          emissiveIntensity={0.35}
           roughness={0.3}
           metalness={0}
           clearcoat={0.7}

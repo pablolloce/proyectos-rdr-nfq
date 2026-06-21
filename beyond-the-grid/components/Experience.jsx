@@ -33,16 +33,19 @@ export default function Experience() {
       <CustomCursor />
       <LoadingScreen />
 
-      {/* Fondo 3D ambiente. z-0 (no -z-10) para que NUNCA quede tras el body. */}
-      <div className="pointer-events-none fixed inset-0 z-0">
+      {/* Fondo 3D: difuminado y atenuado -> resplandor sutil, no protagonista. */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{ filter: "blur(45px)", opacity: 0.55, transform: "scale(1.1)" }}
+      >
         <Scene />
       </div>
-      {/* Velo suave radial para legibilidad de los chips sin tapar la figura */}
+      {/* Velo Midnight: deja el fondo oscuro y los chips legibles */}
       <div
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "radial-gradient(120% 90% at 50% 45%, rgba(7,14,70,0) 35%, rgba(7,14,70,0.5) 100%)",
+            "radial-gradient(120% 95% at 50% 45%, rgba(7,14,70,0.45) 0%, rgba(7,14,70,0.8) 100%)",
         }}
       />
 

@@ -64,17 +64,22 @@ function Chip({ item, delay }) {
   const props = {
     "data-hover": true,
     className:
-      "group inline-flex items-center gap-2.5 rounded-full border bg-white/5 px-5 py-3 backdrop-blur-sm transition-colors hover:bg-white/10",
-    style: { borderColor: rgba(accent, 0.3) },
+      "group inline-flex items-center gap-2.5 rounded-full border px-5 py-3 shadow-lg backdrop-blur-md transition-colors",
+    // Cristal oscuro (Midnight) -> texto legible sobre el fondo difuminado.
+    style: { borderColor: rgba(accent, 0.45), backgroundColor: "rgba(10, 18, 74, 0.6)" },
     // Entrada + flotación continua (cada chip con su fase via delay).
     initial: { opacity: 0, scale: 0.9 },
-    animate: { opacity: 1, scale: 1, y: [0, -6, 0] },
+    animate: { opacity: 1, scale: 1, y: [0, -5, 0] },
     transition: {
       opacity: { duration: 0.5, delay },
       scale: { duration: 0.4, delay },
-      y: { duration: 3.6, repeat: Infinity, ease: "easeInOut", delay },
+      y: { duration: 3.8, repeat: Infinity, ease: "easeInOut", delay },
     },
-    whileHover: { scale: 1.06, boxShadow: `0 12px 30px -8px ${rgba(accent, 0.5)}` },
+    whileHover: {
+      scale: 1.06,
+      backgroundColor: "rgba(10, 18, 74, 0.85)",
+      boxShadow: `0 12px 30px -8px ${rgba(accent, 0.5)}`,
+    },
   };
 
   const inner = (
