@@ -607,10 +607,28 @@ function getCapacidad() {
   blocks.forEach(function (b) {
     var n = b.end - b.row + 1;
     var vals = sh.getRange(b.row, 1, n, LASTC).getValues(); // A..P
-    var horasQ = null, projStart = -1;
+    var horasQ = null, projStart = -1, teamHdr = -1;
     for (var i = 0; i < n; i++) {
       if (horasQ === null && i < 7 && typeof vals[i][11] === 'number') horasQ = vals[i][11]; // col L
-      if (String(vals[i][1]).trim() === 'Proyectos') projStart = i + 1; // col B
+      if (String(vals[i][1]).trim() === 'N0') teamHdr = i;                 // cabecera sub-equipos
+      if (String(vals[i][1]).trim() === 'Proyectos') projStart = i + 1;    // col B
+    }
+    // Sub-equipos: filas entre la cabecera N0 y "Proyectos". Cada fila = un
+    // sub-equipo; miembros = celdas B..G (N0..Tech), separando por ";".
+    var equipos = [];
+    if (teamHdr >= 0) {
+      var endTeam = projStart >= 0 ? projStart - 1 : n;
+      for (var t = teamHdr + 1; t < endTeam; t++) {
+        var miembros = [];
+        for (var col = 1; col <= 6; col++) {
+          var cell = vals[t][col];
+          if (cell !== null && String(cell).trim() !== '')
+            String(cell).split(';').forEach(function (nm) { nm = nm.trim(); if (nm) miembros.push(nm); });
+        }
+        if (!miembros.length) continue;
+        var lid = (vals[t][1] !== null && String(vals[t][1]).trim() !== '') ? String(vals[t][1]).split(';')[0].trim() : null;
+        equipos.push({ lider: lid, miembros: miembros, horasEquipo: vals[t][7], capacidadCubierta: vals[t][9] });
+      }
     }
     var proyectos = [], capacidadPersona = [], cur = null;
     if (projStart >= 0) {
@@ -628,7 +646,7 @@ function getCapacidad() {
         }
       }
     }
-    out.push({ q: b.q, rowStart: b.row, rowEnd: b.end, horasQ: horasQ, proyectos: proyectos, capacidadPersona: capacidadPersona });
+    out.push({ q: b.q, rowStart: b.row, rowEnd: b.end, horasQ: horasQ, equipos: equipos, proyectos: proyectos, capacidadPersona: capacidadPersona });
   });
   return { sheet: sh.getName(), bloques: out };
 }

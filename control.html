@@ -185,7 +185,12 @@ const DEMO = {
     ]},
   ]},
   capacidad: { bloques:[
-    { q:"2026Q3", horasQ:360, proyectos:[
+    { q:"2026Q3", horasQ:360,
+      equipos:[
+        {lider:"Pablo", miembros:["Pablo","Iker","Juanlu"], horasEquipo:1080},
+        {lider:"Marta", miembros:["Marta","Laura"], horasEquipo:720},
+      ],
+      proyectos:[
       {nombre:"Eventos Corporativos 26Q3", horas:150, asignaciones:[{rol:"responsable",persona:"Pablo",pct:0.05},{rol:"ejecutor",persona:"Iker",pct:0.25}]},
       {nombre:"Migración Midas 26Q3", horas:550, asignaciones:[{rol:"responsable",persona:"Marta",pct:0.2},{rol:"ejecutor",persona:"Laura",pct:0.65}]},
       {nombre:"Adopción IA RDR", horas:390, asignaciones:[{rol:"responsable",persona:"Pablo",pct:0.4},{rol:"ejecutor",persona:"Juanlu",pct:0.7}]},
@@ -578,37 +583,76 @@ function renderEconomia(){
 function pickTarifa(q){ const t=state.data.tarifas||{}; return t[q] || t[q.slice(0,4)] || t["2026"] || 51.22; }
 
 /* ---------- CAPACIDAD ---------- */
+/* ---------- CAPACIDAD: simulador (sandbox local, no escribe en el Excel) ---------- */
 function renderCapacidad(){
   const blocks = (state.data.capacidad && state.data.capacidad.bloques) || [];
   if(!blocks.length){ panel.innerHTML=`<div class="glass rounded-2xl p-6 text-sand/70">No hay bloques de Capacidad.</div>`; return; }
   const qSel = state._capQ || blocks[0].q; state._capQ=qSel;
   const b = blocks.find(x=>x.q===qSel)||blocks[0];
-  panel.innerHTML = `
-    <div class="mb-5 flex flex-wrap items-end gap-4">
-      <label class="text-xs text-serene/80">Trimestre
-        <select id="cap-q" class="ml-2">${blocks.map(x=>`<option ${x.q===qSel?"selected":""}>${x.q}</option>`).join("")}</select></label>
-      <span class="text-xs text-sand/60">Horas/persona Q: <b class="text-sand">${h(b.horasQ)}</b></span>
-    </div>
-    <div class="grid gap-5 lg:grid-cols-2">
-      <div class="glass rounded-2xl p-4">
-        <h3 class="mb-3 font-display text-lg font-bold text-sand">Cobertura por proyecto</h3>
-        <table class="w-full text-sm"><thead><tr class="text-left text-serene/70">
-          <th class="p-2">Proyecto</th><th class="p-2 text-right">Horas</th><th class="p-2 text-right">Cobertura</th></tr></thead>
-          <tbody>${(b.proyectos||[]).map(p=>{ const cob=coberturaProyecto(p,b.horasQ);
-            const c = cob>=1? "lime" : cob>=0.8? "canary":"mandarin";
-            return `<tr class="border-t border-serene/10"><td class="p-2 text-sand">${p.nombre}</td>
-              <td class="p-2 text-right">${h(p.horas)}</td>
-              <td class="p-2 text-right font-bold text-${c}">${pct(cob)}</td></tr>`; }).join("")}</tbody></table>
+  state._capHoras = state._capHoras || {};
+  const hq = state._capHoras[qSel]!=null ? state._capHoras[qSel] : (num(b.horasQ)||500);
+
+  // Personas disponibles (sub-equipos + asignaciones actuales).
+  const people = (()=>{ const s=new Set();
+    (b.equipos||[]).forEach(e=>(e.miembros||[]).forEach(m=>s.add(m)));
+    (b.proyectos||[]).forEach(p=>(p.asignaciones||[]).forEach(a=>a.persona&&s.add(a.persona)));
+    return Array.from(s).filter(Boolean).sort(); })();
+
+  // Cálculos (instrucciones): cobertura proyecto y capacidad persona.
+  const cob = p => { const s=(p.asignaciones||[]).reduce((a,x)=>a+num(x.pct),0); return p.horas? s*hq/num(p.horas):0; };
+  const capP = nombre => { let hh=0; (b.proyectos||[]).forEach(p=>(p.asignaciones||[]).forEach(a=>{ if(a.persona===nombre) hh+=num(p.horas)*num(a.pct); })); return hq? hh/hq:0; };
+  const col = v => v>1.05?"mandarin": v>=0.8?"lime":"serene";
+  const bar = (label,v,extra)=>`<div><div class="flex justify-between text-xs"><span class="text-sand/85">${label}${extra?` <span class="text-sand/40">${extra}</span>`:''}</span><span class="text-${col(v)}">${pct(v)}</span></div>
+    <div class="mt-0.5 h-2 rounded-full bg-white/10"><div class="h-2 rounded-full bg-${col(v)}" style="width:${Math.min(100,v*100)}%"></div></div></div>`;
+
+  const projHTML = (b.proyectos||[]).map((p,pi)=>{ const c=cob(p);
+    return `<div class="glass rounded-2xl p-4">
+      <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h4 class="font-display font-bold text-sand">${p.nombre||'—'}</h4>
+        <div class="flex items-center gap-3 text-xs text-sand/70">
+          <span>Horas <input type="number" class="w-20 rounded bg-white/5 px-1 text-right focus:outline-none" value="${num(p.horas)}" data-cap="phoras" data-pi="${pi}"></span>
+          <span>Cobertura <b class="text-${col(c)}">${pct(c)}</b></span>
+        </div>
       </div>
-      <div class="glass rounded-2xl p-4">
-        <h3 class="mb-3 font-display text-lg font-bold text-sand">Capacidad por persona</h3>
-        <div class="space-y-2">${(b.capacidadPersona||[]).map(cp=>{ const v=num(cp.capacidad);
-          const c = v>1.05?"mandarin": v>=0.8?"lime":"serene"; const w=Math.min(100,v*100);
-          return `<div><div class="flex justify-between text-xs"><span class="text-sand">${cp.persona}</span><span class="text-${c}">${pct(v)}</span></div>
-            <div class="mt-1 h-2 rounded-full bg-white/10"><div class="h-2 rounded-full bg-${c}" style="width:${w}%"></div></div></div>`; }).join("")}</div>
+      <div class="space-y-1">${(p.asignaciones||[]).map((a,ai)=>`<div class="flex items-center gap-2 text-sm">
+        <span class="w-16 shrink-0 text-[10px] uppercase tracking-wider text-serene/60">${a.rol||'ejec.'}</span>
+        <span class="flex-1 truncate text-sand/80">${a.persona}</span>
+        <input type="number" class="w-14 rounded bg-white/5 px-1 text-right focus:outline-none" value="${Math.round(num(a.pct)*100)}" data-cap="pct" data-pi="${pi}" data-ai="${ai}"><span class="text-sand/40">%</span>
+        <button data-cap="rm" data-pi="${pi}" data-ai="${ai}" class="text-mandarin hover:text-sand" title="Quitar">✕</button></div>`).join("")||'<p class="text-xs text-sand/40">Sin asignaciones</p>'}</div>
+      <div class="mt-2 flex flex-wrap items-center gap-2">
+        <select data-cap="addsel" data-pi="${pi}" class="text-xs"><option value="">+ persona…</option>${people.map(n=>`<option>${n}</option>`).join("")}</select>
+        <input type="number" placeholder="%" class="w-14" data-cap="addpct" data-pi="${pi}">
+        <button data-cap="add" data-pi="${pi}" class="chip rounded-full px-3 py-1 text-xs font-bold">Añadir</button>
+      </div></div>`; }).join("");
+
+  panel.innerHTML = `
+    <div class="mb-4 flex flex-wrap items-end gap-4">
+      <label class="text-xs text-serene/80">Trimestre <select id="cap-q" class="ml-2">${blocks.map(x=>`<option ${x.q===qSel?"selected":""}>${x.q}</option>`).join("")}</select></label>
+      <label class="text-xs text-serene/80">Horas/persona Q <input id="cap-hq" type="number" class="ml-2 w-24" value="${hq}"></label>
+      <span class="text-xs text-sand/40">Simulación local: mete personas en proyectos, ajusta % y mira cobertura/capacidad.</span>
+    </div>
+    <div class="grid gap-5 lg:grid-cols-3">
+      <div class="lg:col-span-2"><h3 class="mb-3 font-display text-lg font-bold text-sand">Proyectos · cobertura</h3><div class="grid gap-3">${projHTML||'<p class="text-sm text-sand/40">Sin proyectos.</p>'}</div></div>
+      <div class="space-y-5">
+        <div><h3 class="mb-3 font-display text-lg font-bold text-sand">Capacidad por persona</h3>
+          <div class="glass space-y-2 rounded-2xl p-4">${people.length? people.map(n=>bar(n,capP(n))).join("") : '<p class="text-sm text-sand/40">—</p>'}</div></div>
+        <div><h3 class="mb-3 font-display text-lg font-bold text-sand">Capacidad por sub-equipo</h3>
+          <div class="glass space-y-3 rounded-2xl p-4">${(b.equipos||[]).length? (b.equipos).map(e=>{ const caps=(e.miembros||[]).map(capP); const avg=caps.length?caps.reduce((a,x)=>a+x,0)/caps.length:0;
+            return bar((e.lider||"Equipo"), avg, (e.miembros||[]).length+" pers."); }).join("") : '<p class="text-sm text-sand/40">Sin sub-equipos detectados.</p>'}</div></div>
       </div>
     </div>`;
-  document.getElementById("cap-q").onchange=e=>{ state._capQ=e.target.value; renderCapacidad(); };
+
+  document.getElementById("cap-q").onchange = e=>{ state._capQ=e.target.value; renderCapacidad(); };
+  document.getElementById("cap-hq").addEventListener("change", e=>{ state._capHoras[qSel]=num(e.target.value); renderCapacidad(); });
+  panel.querySelectorAll("[data-cap]").forEach(el=>{ const t=el.getAttribute("data-cap");
+    if(t==="phoras") el.addEventListener("change",()=>{ b.proyectos[+el.dataset.pi].horas=num(el.value); renderCapacidad(); });
+    else if(t==="pct") el.addEventListener("change",()=>{ b.proyectos[+el.dataset.pi].asignaciones[+el.dataset.ai].pct=num(el.value)/100; renderCapacidad(); });
+    else if(t==="rm") el.addEventListener("click",()=>{ b.proyectos[+el.dataset.pi].asignaciones.splice(+el.dataset.ai,1); renderCapacidad(); });
+    else if(t==="add") el.addEventListener("click",()=>{ const pi=+el.dataset.pi;
+      const sel=panel.querySelector(`select[data-cap="addsel"][data-pi="${pi}"]`), pi2=panel.querySelector(`input[data-cap="addpct"][data-pi="${pi}"]`);
+      const persona=sel.value, pctv=num(pi2.value)/100; if(!persona||!pctv){ flash("Elige persona y %",true); return; }
+      (b.proyectos[pi].asignaciones=b.proyectos[pi].asignaciones||[]).push({rol:"ejecutor",persona,pct:pctv}); renderCapacidad(); });
+  });
 }
 
 /* ===========================================================================
