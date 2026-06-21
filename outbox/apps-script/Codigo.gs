@@ -634,6 +634,58 @@ function getCapacidad() {
 }
 
 /**
+ * Bolsa / Adelantos AGRUPADOS: cada entrada = un adelanto (proyecto que APORTA
+ * horas) con sus consumos (proyectos que las SACAN). Excluye las CERRADAS,
+ * detectadas por texto TACHADO (getFontLines === 'line-through'). Acotado en
+ * filas (la hoja de Adelantos tiene decenas de miles de filas vacías).
+ */
+function _parseBolsa(sh, dataStart, c, lastColN) {
+  var lastRow = Math.min(sh.getLastRow(), dataStart + 600);
+  if (lastRow < dataStart) return { entries: [] };
+  var n = lastRow - dataStart + 1;
+  var rng = sh.getRange(dataStart, 1, n, lastColN);
+  var v = rng.getValues();
+  var L = rng.getFontLines(); // 'line-through' = tachado (cerrada)
+  var has = function (x) { return x !== '' && x !== null && x !== undefined; };
+  var struck = function (i, idx) { return idx != null && L[i][idx] === 'line-through'; };
+  var entries = [], cur = null;
+  for (var i = 0; i < n; i++) {
+    var resp = v[i][c.resp], horas = v[i][c.horas];
+    if (has(resp) || (has(horas) && typeof horas === 'number')) {
+      cur = {
+        responsable: resp, proyecto: v[i][c.proy], pedido: v[i][c.pedido],
+        horasAdelantadas: horas, restante: v[i][c.restante],
+        importe: c.importe != null ? v[i][c.importe] : null,
+        cerrada: struck(i, c.proy) || struck(i, c.resp) || struck(i, c.horas),
+        consumos: []
+      };
+      entries.push(cur);
+    }
+    var ch = v[i][c.consHoras];
+    if (cur && has(ch)) {
+      cur.consumos.push({
+        fecha: v[i][c.consFecha], detalle: v[i][c.consDet],
+        proyecto: c.consProy != null ? v[i][c.consProy] : null, horas: ch
+      });
+    }
+  }
+  return { entries: entries.filter(function (e) { return !e.cerrada; }) };
+}
+
+/** Bolsa BBVA agrupada (sin las cerradas/tachadas). */
+function getBolsa() {
+  return _parseBolsa(_sheet('4) Bolsa BBVA'), 6,
+    { resp: 1, proy: 3, pedido: 4, horas: 5, restante: 10, consFecha: 6, consDet: 7, consHoras: 9 }, 11);
+}
+
+/** Adelantos agrupados (sin los cerrados/tachados). */
+function getAdelantos() {
+  return _parseBolsa(_sheet('5) Adelantos'), 8,
+    { resp: 1, proy: 3, pedido: 4, horas: 6, restante: 11, importe: 12,
+      consFecha: 7, consDet: 9, consProy: 8, consHoras: 10 }, 13);
+}
+
+/**
  * SNAPSHOT: TODO lo necesario para el frontend y las simulaciones en una sola
  * llamada (minimiza la latencia de Apps Script).
  */
@@ -646,8 +698,8 @@ function getSnapshot() {
     economico: getControlEconomico(),
     capacidad: getCapacidad(),
     gastos: getTable('6) Gastos', { maxRows: 1500 }).records,
-    bolsa: getTable('4) Bolsa BBVA', { maxRows: 500 }).records,
-    adelantos: getTable('5) Adelantos', { maxRows: 500 }).records, // hoja con 44k filas vacías
+    bolsa: getBolsa().entries,        // agrupado y sin cerradas (tachadas)
+    adelantos: getAdelantos().entries,
     encuestasQ4: getTable('10) Encuestas Q4').records,
     encuestasQ1: getTable('11) Encuestas Q1').records
   };
@@ -730,6 +782,8 @@ function _route(action, p) {
     case 'ejecucion':   return getEjecucion();
     case 'economico':   return getControlEconomico();
     case 'capacidad':   return getCapacidad();
+    case 'bolsa':       return getBolsa();
+    case 'adelantos':   return getAdelantos();
     default: throw new Error('Acción desconocida: "' + action + '". Llama action=help.');
   }
 }

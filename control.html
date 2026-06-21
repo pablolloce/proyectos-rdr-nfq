@@ -198,12 +198,16 @@ const DEMO = {
     { data:{ "Estado":"Cancelado","Q facturación":"2026Q2","Código Pedido":"-","Detalle":"Estimación descartada","Horas propuesta":150,"Estado facturación":"-","Horas ejecutadas":0,"¿Ejecutado?":"Cancelado" } },
   ],
   bolsa: [
-    { data:{ "Responsable BBVA":"Daría Gonzalez","Proyecto":"Cambio Peticiones XMAS","Horas adelantadas":168,"Horas consumidas":42,"Horas":66 } },
-    { data:{ "Responsable BBVA":"","Proyecto":"Estimación Q1 CSVToXML","Horas adelantadas":"","Horas consumidas":60,"Horas":"" } },
+    { responsable:"Daría Gonzalez", proyecto:"Cambio Peticiones XMAS", horasAdelantadas:168, restante:66,
+      consumos:[ {detalle:"Modificación Conexión XMAS", horas:42}, {detalle:"Estimación Q1 CSVToXML", horas:60} ] },
+    { responsable:"Alejandro García", proyecto:"Sec. Finance MMF BRS", horasAdelantadas:99, restante:0,
+      consumos:[ {detalle:"Análisis Instrucciones liquidación", horas:3} ] },
   ],
   adelantos: [
-    { data:{ "Responsable BBVA":"Alejandro García","Proyecto":"SDATOOL-48154 OSI Gobierno Riesgo","Horas adelantadas":310,"Horas consumidas":55,"Horas":0,"Importe":0 } },
-    { data:{ "Responsable BBVA":"Pablo Rodríguez","Proyecto":"SDATOOL-53765 Life Global","Horas adelantadas":274,"Horas consumidas":220,"Horas":54,"Importe":2851.2 } },
+    { responsable:"Alejandro García", proyecto:"SDATOOL-48154 OSI Gobierno Riesgo", horasAdelantadas:310, restante:0, importe:0,
+      consumos:[ {proyecto:"AFIIR Alta emisores", horas:55}, {proyecto:"CTM Colombia Q4", horas:165}, {proyecto:"BSI 2.0 Impact", horas:90} ] },
+    { responsable:"Pablo Rodríguez", proyecto:"SDATOOL-53765 Life Global", horasAdelantadas:274, restante:54, importe:2851.2,
+      consumos:[ {proyecto:"Desarrollos pendientes", horas:220} ] },
   ],
   encuestasQ4: [
     { data:{ "Código de proyecto/servicio":"SDATOOL-46848","NOMBRE DEL PROYECTO/SERVICIO":"Institutional Clients: Onboarding","SATISFACCIÓN ENTREGA":10,"CONSIGUE RESULTADOS":10,"CONOCIMIENTO TÉCNICO ADECUADO":10,"CALIDAD TOTAL NUEVA":10 } },
@@ -211,7 +215,7 @@ const DEMO = {
   ],
 };
 
-const state = { data:null, demo:false, live:false, url:null, token:"" };
+const state = { data:null, demo:false, live:false, url:null, token:"", _iniActiva:true, _ejeActiva:true };
 
 async function loadSnapshot(){
   let url=null, token="";
@@ -348,12 +352,12 @@ function renderIniciativas(){
     </div>
     <div class="glass overflow-x-auto rounded-2xl p-4"><table class="w-full text-sm">
       <thead><tr class="text-left text-serene/80">
-        <th class="p-2">Estado</th><th class="p-2">Q</th><th class="p-2">Id Pedido</th><th class="p-2">Proyecto</th>
+        <th class="p-2 min-w-[140px]">Estado</th><th class="p-2">Q</th><th class="p-2">Id Pedido</th><th class="p-2">Proyecto</th>
         <th class="p-2 text-right">Horas est.</th><th class="p-2">Facturación</th><th class="p-2 text-right">Ejecutadas</th><th class="p-2">Ejecución</th>
       </tr></thead>
       <tbody>${filtered.map(rec=>`<tr class="border-t border-serene/10">
-        <td class="p-2">${ed?inp(rec,"Estado"):estadoBadge(rec.data["Estado"])}</td>
-        <td class="p-2">${ed?inp(rec,"Q facturación"):ro(rec.data["Q facturación"])}</td>
+        <td class="p-2 whitespace-nowrap">${ed?inp(rec,"Estado"):estadoBadge(rec.data["Estado"])}</td>
+        <td class="p-2">${ed?inp(rec,"Q facturación"):(rec.data["Q facturación"]?`<span class="chip rounded-full px-2.5 py-0.5 text-xs font-bold text-serene whitespace-nowrap">${rec.data["Q facturación"]}</span>`:ro(rec.data["Q facturación"]))}</td>
         <td class="p-2">${ed?inp(rec,"Código Pedido"):ro(rec.data["Código Pedido"])}</td>
         <td class="p-2">${ed?inp(rec,"Detalle"):ro(rec.data["Detalle"])}</td>
         <td class="p-2 text-right">${ed?inp(rec,"Horas propuesta","number"):ro(rec.data["Horas propuesta"],h)}</td>
@@ -387,24 +391,31 @@ function renderIniciativas(){
 /* ---------- BOLSA / ADELANTOS ---------- */
 function renderBolsa(){
   const bolsa = state.data.bolsa || [], adel = state.data.adelantos || [];
+  // Tarjeta agrupada: IZQUIERDA = proyecto que APORTA horas, DERECHA = los que las SACAN.
+  const card = e => {
+    const cons = e.consumos || [];
+    const consumido = cons.reduce((a,c)=>a+num(c.horas),0);
+    return `<div class="glass rounded-2xl p-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <p class="text-[11px] uppercase tracking-wider text-serene">Aporta horas</p>
+          <h4 class="font-display text-base font-bold text-sand">${e.proyecto||'—'}</h4>
+          ${e.responsable?`<p class="text-xs text-sand/50">${e.responsable}</p>`:''}
+          <p class="mt-2 text-sm text-sand/80">Adelantadas <b class="text-sand">${h(e.horasAdelantadas)}</b> · Restante <b class="text-lime">${h(e.restante)}</b>${e.importe?` · ${eur.format(e.importe)}`:''}</p>
+        </div>
+        <div class="sm:border-l sm:border-serene/15 sm:pl-4">
+          <p class="text-[11px] uppercase tracking-wider text-mandarin">Consume (${h(consumido)})</p>
+          ${cons.length ? cons.map(c=>`<div class="flex justify-between gap-2 text-sm"><span class="truncate text-sand/80">${c.proyecto||c.detalle||'—'}</span><span class="shrink-0 text-sand">${h(c.horas)}</span></div>`).join("") : '<p class="text-xs text-sand/40">Sin consumos</p>'}
+        </div>
+      </div>
+    </div>`;
+  };
+  const grid = arr => arr.length ? `<div class="grid gap-3 lg:grid-cols-2">${arr.map(card).join("")}</div>` : '<p class="text-sm text-sand/40">Sin entradas activas.</p>';
   panel.innerHTML =
-    `<h3 class="mb-2 font-display text-lg font-bold text-sand">Bolsa BBVA</h3>` +
-    tableHTML(bolsa, [
-      { k:"Responsable BBVA", label:"Responsable" },
-      { k:"Proyecto", label:"Proyecto / Detalle", f:(v,d)=> v||d["Detalle / Motivo"]||'<span class="text-sand/25">—</span>' },
-      { k:"Horas adelantadas", label:"Adelantadas", r:true, f:hCell },
-      { k:"Horas consumidas", label:"Consumidas", r:true, f:hCell },
-      { k:"Horas", label:"Restante", r:true, f:hCell },
-    ]) +
-    `<h3 class="mb-2 mt-6 font-display text-lg font-bold text-sand">Adelantos</h3>` +
-    tableHTML(adel, [
-      { k:"Responsable BBVA", label:"Responsable" },
-      { k:"Proyecto", label:"Proyecto" },
-      { k:"Horas adelantadas", label:"Adelantadas", r:true, f:hCell },
-      { k:"Horas consumidas", label:"Consumidas", r:true, f:hCell },
-      { k:"Horas", label:"Restante", r:true, f:hCell },
-      { k:"Importe", label:"Importe", r:true, f:v=> v===""||v==null?'':eur.format(v) },
-    ]);
+    `<h3 class="mb-3 font-display text-lg font-bold text-sand">Bolsa BBVA <span class="text-xs font-normal text-sand/50">· ${bolsa.length} activas (las cerradas/tachadas no se muestran)</span></h3>` +
+    grid(bolsa) +
+    `<h3 class="mb-3 mt-7 font-display text-lg font-bold text-sand">Adelantos <span class="text-xs font-normal text-sand/50">· ${adel.length} activos</span></h3>` +
+    grid(adel);
 }
 
 /* ---------- ENCUESTAS ---------- */
@@ -432,22 +443,28 @@ function renderEncuestas(){
   document.getElementById("enc-q").onchange = e=>{ state._encQ=e.target.value; renderEncuestas(); };
 }
 
-/* ---------- EJECUCIÓN: edición + filtros (Q de elevación y Estado) ---------- */
+/* ---------- EJECUCIÓN: edición + filtros + total/repartido/faltan ---------- */
 function renderEjecucion(){
   const ej = state.data.ejecucion || {qColumns:[],records:[],totalesHorasQ:{}};
   const qs = ej.qColumns;
   const recalc = ()=>{ const t={}; qs.forEach(q=>t[q]=0);
     ej.records.forEach(r=>qs.forEach(q=>t[q]+=num(r.data[q]))); state.data.ejecucion.totalesHorasQ=t; return t; };
   const tot = recalc();
-  // Estado de cada proyecto cruzando con Iniciativas (por nombre).
   const estadoMap = {}; (state.data.iniciativas||[]).forEach(r=>{ const n=r.data["Detalle"]; if(n) estadoMap[n]=r.data["Estado"]; });
   const eOf = rec => estadoMap[rec.data["Proyecto"]] || "—";
+  // Total a ejecutar = elevadas + de bolsa/adelantos − a bolsa/adelantos.
+  const totalEjec = r => num(r.data["Horas elevadas"]) + num(r.data["Horas cobradas de Adelantos"]) + num(r.data["Horas cobradas de Bolsa BBVA"]) - num(r.data["Horas a Adelantos"]) - num(r.data["Horas a Bolsa BBVA"]);
+  const repartido = r => qs.reduce((a,q)=>a+num(r.data[q]),0);
   const qElev = Array.from(new Set(ej.records.map(r=>r.data["Q elevación"]).filter(Boolean))).sort();
   const estados = Array.from(new Set(ej.records.map(eOf).filter(s=>s && s!=="—"))).sort();
   const qf = state._ejeQ || "Todos", ef = state._ejeEstado || "Todos";
   const activa = state._ejeActiva, cq = curQ();
   const rows = ej.records.filter(r=> (qf==="Todos"||r.data["Q elevación"]===qf) && (ef==="Todos"||eOf(r)===ef)
     && (!activa || vistaActivaOk(eOf(r), r.data["Q elevación"], cq)));
+  // Con vista activa, ocultar los Q que están a 0 en todas las filas visibles.
+  const visQs = activa ? qs.filter(q=>rows.some(r=>num(r.data[q])!==0)) : qs;
+  const faltanCell = r => { const f = totalEjec(r) - repartido(r); const c = f===0?"lime": f>0?"canary":"mandarin";
+    return `<span class="text-${c} font-bold">${h(f)}</span>`; };
   panel.innerHTML = `
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <label class="text-xs text-serene/80">Q elevación <select id="eje-q" class="ml-2"><option>Todos</option>${qElev.map(q=>`<option ${q===qf?"selected":""}>${q}</option>`).join("")}</select></label>
@@ -455,20 +472,23 @@ function renderEjecucion(){
       ${btnActiva("eje-activa", activa, cq)}
       <span class="text-xs text-sand/50">${rows.length} proyectos · ${state.live?'la edición escribe en el Excel':'simulación local'}</span>
     </div>
-    <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">${qs.map(q=>KPI("Horas "+q, h(tot[q]))).join("")}</div>
+    <div class="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">${visQs.map(q=>KPI("Horas "+q, h(tot[q]))).join("")}</div>
     <div class="glass overflow-x-auto rounded-2xl p-4"><table class="w-full text-sm">
-      <thead><tr class="text-left text-serene/80"><th class="p-2">Proyecto</th><th class="p-2">Estado</th>${qs.map(q=>`<th class="p-2 text-right">${q}</th>`).join("")}</tr></thead>
-      <tbody>${rows.map(rec=>`<tr class="border-t border-serene/10"><td class="p-2 text-sand">${rec.data["Proyecto"]||"—"}</td><td class="p-2">${estadoBadge(eOf(rec))}</td>
-        ${qs.map(q=>`<td class="p-2 text-right"><input type="number" class="w-20 bg-transparent text-right focus:outline-none" value="${num(rec.data[q])}" data-row="${rec.row}" data-q="${q}"></td>`).join("")}
-      </tr>`).join("")}</tbody></table></div>`;
+      <thead><tr class="text-left text-serene/80"><th class="p-2">Proyecto</th><th class="p-2 min-w-[120px]">Estado</th><th class="p-2 text-right">Total</th>${visQs.map(q=>`<th class="p-2 text-right">${q}</th>`).join("")}<th class="p-2 text-right">Σ Q</th><th class="p-2 text-right">Faltan</th></tr></thead>
+      <tbody>${rows.map(rec=>`<tr class="border-t border-serene/10"><td class="p-2 text-sand">${rec.data["Proyecto"]||"—"}</td><td class="p-2 whitespace-nowrap">${estadoBadge(eOf(rec))}</td>
+        <td class="p-2 text-right text-sand/70">${h(totalEjec(rec))}</td>
+        ${visQs.map(q=>`<td class="p-2 text-right"><input type="number" class="w-20 bg-transparent text-right focus:outline-none" value="${num(rec.data[q])}" data-row="${rec.row}" data-q="${q}"></td>`).join("")}
+        <td class="p-2 text-right text-sand">${h(repartido(rec))}</td><td class="p-2 text-right">${faltanCell(rec)}</td>
+      </tr>`).join("")}</tbody></table>
+      <p class="mt-3 text-xs text-sand/50">Total = horas a ejecutar (elevadas ± bolsa/adelantos). Σ Q = repartidas entre trimestres. Faltan = Total − Σ Q (0 = completo).</p></div>`;
   document.getElementById("eje-q").onchange = e=>{ state._ejeQ=e.target.value; renderEjecucion(); };
   document.getElementById("eje-estado").onchange = e=>{ state._ejeEstado=e.target.value; renderEjecucion(); };
   document.getElementById("eje-activa").onclick = ()=>{ state._ejeActiva=!state._ejeActiva; renderEjecucion(); };
   panel.querySelectorAll("input[data-q]").forEach(inp=>inp.addEventListener("change",()=>{
     const row=+inp.dataset.row, q=inp.dataset.q, val=num(inp.value);
     const rec=ej.records.find(r=>r.row===row); if(rec) rec.data[q]=val;
-    const t=recalc(); const k=panel.querySelectorAll(".grid .font-display"); qs.forEach((qq,i)=>{ if(k[i]) k[i].textContent=h(t[qq]); });
     if(state.live) persist(()=>apiWrite("updateRow",{ sheet:"2)Ejecución Real", row, patch:{ [q]:val } }), "Ejecución actualizada");
+    else renderEjecucion(); // recalcula Σ / Faltan / KPIs
   }));
 }
 
