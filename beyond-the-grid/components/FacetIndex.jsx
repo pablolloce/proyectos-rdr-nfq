@@ -257,7 +257,7 @@ export default function FacetIndex() {
   // Distribución en rejilla de 2 columnas (cuadrantes). Última fila impar -> centrada.
   const blocks = useMemo(() => {
     const laid = sections.map((s) => ({ section: s, layout: layoutBlock(s) }));
-    const cellW = COLS * SP + GAP_X;
+    const cellW = COLS * SPX + GAP_X;
     const maxH = Math.max(...laid.map((l) => l.layout.h)) + GAP_Y;
     const nRows = Math.ceil(laid.length / 2);
     return laid.map((l, bi) => {
