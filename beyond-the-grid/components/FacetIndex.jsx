@@ -2,21 +2,20 @@
 
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Html, Line, Icosahedron } from "@react-three/drei";
+import { Html, Line, Icosahedron, MeshDistortMaterial } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
 /**
- * Hub 3D = las letras R · D · R como FIGURAS COMPLETAS, cada una recortada en
- * PORCIONES RADIALES (= enlaces). La letra se ve entera; cada porción es un gajo
- * clicable con su etiqueta fuera, unida por una línea (estilo tu esquema).
- * Coordinación = gema externa (solo coordinadores).
+ * Hub 3D = letras R · D · R "dentro del agua": cada letra es una pieza ÚNICA,
+ * muy redondeada, que ONDULA como gelatina (MeshDistortMaterial), con burbujas
+ * subiendo de fondo y mucha animación. Bordes limpios (sin cortes duros).
  *
- * El recorte usa planos de clipping sobre la geometría de la letra -> por eso la
- * figura NO rota (los planos son de mundo); el 3D lo da la cámara angulada + el
- * grosor + las luces. Movimiento propio = flotar en profundidad (no afecta al corte).
+ * Cada enlace = una porción angular de la letra: su etiqueta va fuera, unida por
+ * una línea; al señalar (etiqueta o porción) la letra brilla y la línea se marca.
+ * El click va sobre un gajo invisible que cubre esa porción. Control = gema externa.
  */
 const SECTIONS = [
   { num: "01", title: "Formaciones", color: "#85C8FF", glyph: "R", items: [
@@ -42,72 +41,50 @@ const SECTIONS = [
   ] },
 ];
 
-const DZ = 0.85;       // grosor de la letra
-const LETX = 6.6;      // separación entre letras
-const HITR = 2.7;      // radio del gajo de click (cubre la letra)
-const LBL_R = 3.1;     // distancia de las etiquetas
-const FRONT = DZ / 2 + 0.05;
+const DZ = 0.9;
+const LETX = 6.4;
+const HITR = 2.7;
+const LBL_R = 3.1;
+const FRONT = DZ / 2 + 0.1;
 
 const hint = (it) => (it.copy ? "⧉" : it.key ? "↗" : "→");
 const aria = (it) => it.label + (it.copy ? " · copiar enlace" : it.key ? " · abrir en pestaña nueva" : " · abrir");
 
-function hexToRgb(h) { h = h.replace("#", ""); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); }
-function mix(hex, t) { const a = hexToRgb(hex); const c = a.map((v) => Math.round(v + (255 - v) * t)); return `rgb(${c[0]},${c[1]},${c[2]})`; }
-const shade = (hex, i, n) => mix(hex, 0.0 + 0.52 * (n > 1 ? i / (n - 1) : 0));
-
-// --- Formas sólidas de letra (centradas luego con geometry.center()) ---
 function shapeD() {
   const s = new THREE.Shape();
   s.moveTo(-1.5, -2); s.lineTo(-1.5, 2); s.lineTo(-0.5, 2);
-  s.absarc(-0.5, 0, 2, Math.PI / 2, -Math.PI / 2, true); // bulto a la derecha
+  s.absarc(-0.5, 0, 2, Math.PI / 2, -Math.PI / 2, true);
   s.lineTo(-1.5, -2);
-  const h = new THREE.Path(); // contador (hueco)
-  h.moveTo(-0.75, -1.32); h.lineTo(-0.75, 1.32); h.lineTo(-0.5, 1.32);
-  h.absarc(-0.5, 0, 1.32, Math.PI / 2, -Math.PI / 2, true);
-  h.lineTo(-0.75, -1.32);
+  const h = new THREE.Path();
+  h.moveTo(-0.78, -1.28); h.lineTo(-0.78, 1.28); h.lineTo(-0.5, 1.28);
+  h.absarc(-0.5, 0, 1.28, Math.PI / 2, -Math.PI / 2, true); h.lineTo(-0.78, -1.28);
   s.holes.push(h);
   return s;
 }
 function shapeR() {
   const s = new THREE.Shape();
-  s.moveTo(-1.4, -2);
-  s.lineTo(-1.4, 2);
-  s.lineTo(-0.1, 2);
-  s.absarc(-0.1, 1.15, 0.9, Math.PI / 2, -Math.PI / 2, true); // bucle exterior
-  s.lineTo(0.2, 0.25);
-  s.lineTo(1.15, -2);   // pata (lado externo)
-  s.lineTo(0.45, -2);   // pata (lado interno)
-  s.lineTo(-0.55, 0.25);
-  s.lineTo(-0.55, -2);  // lado derecho del asta
-  s.lineTo(-1.4, -2);
-  const h = new THREE.Path(); // contador del bucle (hueco)
-  h.moveTo(-0.6, 1.62); h.lineTo(-0.6, 0.68); h.lineTo(-0.1, 0.68);
-  h.absarc(-0.1, 1.15, 0.47, -Math.PI / 2, Math.PI / 2, false); // bulto interior a la derecha
-  h.lineTo(-0.6, 1.62);
+  s.moveTo(-1.4, -2); s.lineTo(-1.4, 2); s.lineTo(-0.1, 2);
+  s.absarc(-0.1, 1.15, 0.92, Math.PI / 2, -Math.PI / 2, true);
+  s.lineTo(0.25, 0.2); s.lineTo(1.18, -2); s.lineTo(0.48, -2);
+  s.lineTo(-0.55, 0.2); s.lineTo(-0.55, -2); s.lineTo(-1.4, -2);
+  const h = new THREE.Path();
+  h.moveTo(-0.62, 1.62); h.lineTo(-0.62, 0.66); h.lineTo(-0.1, 0.66);
+  h.absarc(-0.1, 1.15, 0.49, -Math.PI / 2, Math.PI / 2, false); h.lineTo(-0.62, 1.62);
   s.holes.push(h);
   return s;
 }
 function letterGeometry(glyph) {
   const shape = glyph === "D" ? shapeD() : shapeR();
-  const g = new THREE.ExtrudeGeometry(shape, { depth: DZ, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.12, bevelSegments: 6, steps: 1, curveSegments: 44 });
+  // bisel grande -> bordes MUY redondeados y limpios
+  const g = new THREE.ExtrudeGeometry(shape, { depth: DZ, bevelEnabled: true, bevelThickness: 0.26, bevelSize: 0.26, bevelSegments: 8, steps: 1, curveSegments: 48 });
   g.center();
   return g;
 }
-
-// Planos de clipping para el gajo angular [a0,a1] centrado en C (mundo).
-function sectorPlanes(a0, a1, cx) {
-  const C = new THREE.Vector3(cx, 0, 0);
-  const n1 = new THREE.Vector3(-Math.sin(a0), Math.cos(a0), 0);
-  const n2 = new THREE.Vector3(Math.sin(a1), -Math.cos(a1), 0);
-  return [new THREE.Plane(n1, -n1.dot(C)), new THREE.Plane(n2, -n2.dot(C))];
-}
-// Gajo de disco (invisible) = área de click del sector.
 function hitWedge(a0, a1) {
-  const PAD = 0.04;
   const s = new THREE.Shape();
   s.moveTo(0, 0);
-  s.lineTo(Math.cos(a0 + PAD) * HITR, Math.sin(a0 + PAD) * HITR);
-  s.absarc(0, 0, HITR, a0 + PAD, a1 - PAD, false);
+  s.lineTo(Math.cos(a0) * HITR, Math.sin(a0) * HITR);
+  s.absarc(0, 0, HITR, a0, a1, false);
   s.lineTo(0, 0);
   return new THREE.ShapeGeometry(s);
 }
@@ -120,42 +97,65 @@ function activate(item, getUrl, copyLink, navInternal) {
   else navInternal(u, item);
 }
 
-function Sector({ geo, planes, hit, color, accent, mid, active, setActive, onAct, item }) {
+// Burbujas de fondo subiendo (efecto agua)
+function Bubbles({ count = 30 }) {
   const ref = useRef();
-  useFrame(() => {
+  const data = useMemo(() => Array.from({ length: count }, () => ({
+    x: (Math.random() - 0.5) * 24, y0: Math.random() * 16, z: -2.5 - Math.random() * 5,
+    r: 0.06 + Math.random() * 0.18, sp: 0.4 + Math.random() * 0.7, ph: Math.random() * 6.28,
+  })), [count]);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  useFrame((state) => {
     if (!ref.current) return;
-    const z = THREE.MathUtils.lerp(ref.current.position.z, active ? 0.5 : 0, 0.2);
-    ref.current.position.z = z;
-    if (ref.current.children[0]?.material) ref.current.children[0].material.emissiveIntensity = THREE.MathUtils.lerp(ref.current.children[0].material.emissiveIntensity, active ? 0.85 : 0.28, 0.2);
+    const t = state.clock.elapsedTime;
+    data.forEach((b, i) => {
+      const y = ((b.y0 + t * b.sp) % 16) - 8;
+      dummy.position.set(b.x + Math.sin(t * 0.6 + b.ph) * 0.35, y, b.z);
+      dummy.scale.setScalar(b.r * (0.85 + Math.sin(t * 2 + b.ph) * 0.15));
+      dummy.updateMatrix();
+      ref.current.setMatrixAt(i, dummy.matrix);
+    });
+    ref.current.instanceMatrix.needsUpdate = true;
   });
   return (
-    <group ref={ref}>
-      {/* porción visible: la LETRA recortada a este gajo */}
-      <mesh geometry={geo}>
-        <meshPhysicalMaterial color={color} emissive={accent} emissiveIntensity={0.28} metalness={0.2} roughness={0.22} clearcoat={1} clearcoatRoughness={0.08} clippingPlanes={planes} side={THREE.DoubleSide} />
-      </mesh>
-      {/* área de click (gajo invisible) */}
-      <mesh geometry={hit} position={[0, 0, FRONT]}
-        onPointerOver={(e) => { e.stopPropagation(); setActive(true); }}
-        onPointerOut={() => setActive(false)}
-        onClick={(e) => { e.stopPropagation(); onAct(item, accent); }}>
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-      </mesh>
-    </group>
+    <instancedMesh ref={ref} args={[undefined, undefined, count]}>
+      <sphereGeometry args={[1, 16, 16]} />
+      <meshPhysicalMaterial color="#bfe2ff" transparent opacity={0.26} roughness={0.08} metalness={0} clearcoat={1} />
+    </instancedMesh>
   );
 }
 
 function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
+  const grp = useRef();
+  const mat = useRef();
   const n = section.items.length;
+  const letterActive = activeKey != null && activeKey.startsWith(section.num + ".");
   const sectors = useMemo(() => section.items.map((_, i) => {
     const a0 = -Math.PI / 2 + i * (2 * Math.PI / n);
     const a1 = a0 + 2 * Math.PI / n;
-    return { a0, a1, mid: (a0 + a1) / 2, planes: sectorPlanes(a0, a1, x), hit: hitWedge(a0, a1) };
-  }), [n, x]);
+    return { mid: (a0 + a1) / 2, hit: hitWedge(a0, a1) };
+  }), [n]);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    if (grp.current) {
+      grp.current.rotation.z = Math.sin(t * 0.7 + x) * 0.05;
+      grp.current.rotation.x = -0.1 + Math.sin(t * 0.5 + x) * 0.06;
+      grp.current.rotation.y = Math.sin(t * 0.4 + x) * 0.07;
+      grp.current.position.y = Math.sin(t * 0.8 + x) * 0.2;
+    }
+    if (mat.current) mat.current.emissiveIntensity = THREE.MathUtils.lerp(mat.current.emissiveIntensity, letterActive ? 0.55 : 0.2, 0.15);
+  });
 
   return (
-    <group position={[x, 0, 0]}>
-      <Html center position={[0, 2.55, FRONT]} style={{ pointerEvents: "none" }}>
+    <group ref={grp} position={[x, 0, 0]}>
+      {/* letra: pieza única que ondula (gelatina/agua) */}
+      <mesh geometry={geo}>
+        <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.2}
+          roughness={0.16} metalness={0.1} clearcoat={1} clearcoatRoughness={0.08} distort={0.18} speed={2.2} />
+      </mesh>
+
+      <Html center position={[0, 2.6, FRONT]} style={{ pointerEvents: "none" }}>
         <div style={{ textAlign: "center", whiteSpace: "nowrap" }}>
           <div style={{ fontSize: "10px", letterSpacing: ".25em", color: "rgba(133,200,255,.6)", fontFamily: "var(--font-lato), Lato, sans-serif" }}>{section.num}</div>
           <div style={{ fontSize: "17px", fontWeight: 700, color: "#F7F8F8", fontFamily: "var(--font-serif), Georgia, serif" }}>{section.title}</div>
@@ -165,15 +165,19 @@ function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
       {sectors.map((sec, i) => {
         const item = section.items[i];
         const key = section.num + "." + i;
-        const color = shade(section.color, i, n);
         const active = activeKey === key;
         const lx = Math.cos(sec.mid) * LBL_R, ly = Math.sin(sec.mid) * LBL_R;
         return (
           <group key={key}>
-            <Sector geo={geo} planes={sec.planes} hit={sec.hit} color={color} accent={section.color} mid={sec.mid}
-              active={active} setActive={(v) => setActiveKey(v ? key : null)} onAct={onAct} item={item} />
-            <Line points={[[Math.cos(sec.mid) * 1.4, Math.sin(sec.mid) * 1.4, FRONT], [lx, ly, FRONT]]}
-              color={active ? section.color : "#9fb0e0"} lineWidth={active ? 2.6 : 1.2} transparent opacity={active ? 1 : 0.45} />
+            {/* gajo invisible = área de click/hover de esta porción */}
+            <mesh geometry={sec.hit} position={[0, 0, FRONT]}
+              onPointerOver={(e) => { e.stopPropagation(); setActiveKey(key); }}
+              onPointerOut={() => setActiveKey(null)}
+              onClick={(e) => { e.stopPropagation(); onAct(item, section.color); }}>
+              <meshBasicMaterial transparent opacity={active ? 0.14 : 0} color={section.color} depthWrite={false} />
+            </mesh>
+            <Line points={[[Math.cos(sec.mid) * 1.5, Math.sin(sec.mid) * 1.5, FRONT], [lx, ly, FRONT]]}
+              color={active ? section.color : "#9fb0e0"} lineWidth={active ? 2.6 : 1.2} transparent opacity={active ? 1 : 0.4} />
             <Html center position={[lx, ly, FRONT]} zIndexRange={active ? [70, 0] : [40, 0]} style={{ pointerEvents: "auto" }}>
               <button data-hover type="button" aria-label={aria(item)}
                 onClick={() => onAct(item, section.color)}
@@ -206,7 +210,7 @@ function External({ pos, section, activeKey, setActiveKey, onAct }) {
     if (!ref.current) return;
     const t = state.clock.elapsedTime;
     ref.current.rotation.y = t * 0.6; ref.current.rotation.x = t * 0.25;
-    ref.current.position.y = pos[1] + Math.sin(t * 1.1) * 0.12;
+    ref.current.position.y = pos[1] + Math.sin(t * 1.1) * 0.18;
     ref.current.scale.setScalar(THREE.MathUtils.lerp(ref.current.scale.x, active ? 1.2 : 1, 0.2));
   });
   return (
@@ -229,11 +233,11 @@ function External({ pos, section, activeKey, setActiveKey, onAct }) {
 
 function Scene3D({ letters, external, activeKey, setActiveKey, onAct }) {
   const grp = useRef();
-  // Solo flota en Z (no rota ni mueve XY) para que los planos de recorte sigan válidos.
-  useFrame((state) => { if (grp.current) grp.current.position.z = Math.sin(state.clock.elapsedTime * 0.6) * 0.25; });
+  useFrame((state) => { if (grp.current) grp.current.position.y = Math.sin(state.clock.elapsedTime * 0.4) * 0.15; });
   const n = letters.length;
   return (
     <group ref={grp}>
+      <Bubbles />
       {letters.map((s, i) => (
         <Letter key={s.num} x={(i - (n - 1) / 2) * LETX} section={s} geo={s._geo} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />
       ))}
@@ -260,14 +264,14 @@ export default function FacetIndex() {
   return (
     <div className="absolute inset-0 flex">
       <div className="relative flex-1">
-        <Canvas camera={{ position: [1.6, 1.0, 24], fov: 32 }}
-          onCreated={({ camera, gl }) => { gl.localClippingEnabled = true; camera.lookAt(0, 0, 0); }}
+        <Canvas camera={{ position: [1.4, 0.8, 24], fov: 32 }} onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
           dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance" }}>
-          <color attach="background" args={["#070E46"]} />
+          <color attach="background" args={["#061046"]} />
+          <fog attach="fog" args={["#061046", 18, 40]} />
           <ambientLight intensity={0.6} />
-          <directionalLight position={[5, 9, 10]} intensity={2.4} color="#F7F8F8" />
-          <pointLight position={[-9, -2, 9]} intensity={1.6} color="#1D7CF4" />
-          <pointLight position={[9, 4, 6]} intensity={1.4} color="#85C8FF" />
+          <directionalLight position={[5, 9, 10]} intensity={2.3} color="#F7F8F8" />
+          <pointLight position={[-9, -2, 9]} intensity={1.8} color="#1D7CF4" />
+          <pointLight position={[9, 4, 6]} intensity={1.5} color="#85C8FF" />
           <Suspense fallback={null}>
             <Scene3D letters={letters} external={external} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />
           </Suspense>
