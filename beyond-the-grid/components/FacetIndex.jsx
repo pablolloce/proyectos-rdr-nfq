@@ -49,13 +49,13 @@ const SECTIONS = [
 
 const COLS = 3;       // columnas por bloque
 const ROWS = 3;       // filas por bloque
-const DEPTH = 2;      // capas de profundidad (losa 3×3×2 = 18 piezas)
-// Piezas RECTANGULARES (apaisadas): caben mejor las etiquetas horizontales.
-const CW = 1.75;      // ancho
-const CH = 0.92;      // alto
+const DEPTH = 3;      // capas de profundidad (losa 3×3×3 = 27 piezas)
+// Piezas RECTANGULARES VERTICALES.
+const CW = 0.95;      // ancho
+const CH = 1.75;      // alto (verticales)
 const CD = 0.85;      // fondo
-const SPX = CW + 0.18; // separación horizontal (costura)
-const SPY = CH + 0.16; // separación vertical
+const SPX = CW + 0.4;  // separación horizontal mayor: las etiquetas respiran
+const SPY = CH + 0.16; // separación vertical (costura)
 const SPZ = CD + 0.12; // separación en profundidad
 const GAP_X = 1.8;    // separación horizontal entre bloques
 const GAP_Y = 1.9;    // separación vertical entre bloques (incluye título)
@@ -190,7 +190,7 @@ function FillerCube({ cell }) {
     ref.current.scale.setScalar(1 + b.ds);
   });
   return (
-    <RoundedBox ref={ref} args={[CW, CH, CD]} radius={0.13} smoothness={3} position={[cell.x, cell.y, cell.z]}>
+    <RoundedBox ref={ref} args={[CW, CH, CD]} radius={0.12} smoothness={2} position={[cell.x, cell.y, cell.z]}>
       <meshPhysicalMaterial color="#D7DCEA" emissive="#001391" emissiveIntensity={0.06}
         metalness={0.1} roughness={0.4} clearcoat={0.8} clearcoatRoughness={0.25} />
     </RoundedBox>
@@ -273,7 +273,7 @@ export default function FacetIndex() {
   const onAct = (item) =>
     activate(item, getUrl, copyLink, (url, it) => setNav({ url, label: it.label, color: it.color }));
 
-  const zoom = isCoordinador ? 48 : 54;
+  const zoom = isCoordinador ? 40 : 46;
 
   return (
     <div className="absolute inset-0 flex">
