@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Legal Agreements · RDR · Presentación Completa</title>
+<style>
+:root{
+  --electric:#001391;
+  --serene:#85C8FF;
+  --midnight:#060E46;
+  --sand:#F7F8F8;
+  --white:#FFFFFF;
+  --aqua:#8BE1E9;
+  --lime:#88E783;
+  --canary:#FFE761;
+  --purple:#B68CFF;
+  --gray2:#E2E6EA;
+  --gray5:#6E7781;
+  --mandarin:#FFB56B;
+  --r:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0D0D0D;overflow:hidden;height:100vh;width:100vw}
+
+/* ---------- HEADER ---------- */
+.hdr{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-items:center;padding:0 32px;z-index:100;transition:opacity .3s}
+.hdr.light{background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--gray2)}
+.hdr.dark{background:rgba(6,14,70,.7);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.08)}
+.hdr.hide-on-cover{opacity:0;pointer-events:none}
+.hdr img{height:28px}
+.hdr-title{margin-left:16px;font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--electric)}
+
+/* ---------- PROGRESS ---------- */
+.pbar-wrap{position:fixed;bottom:0;left:0;right:0;height:4px;background:var(--gray2);z-index:100}
+.pbar{height:100%;background:linear-gradient(90deg,var(--electric),var(--serene));transition:width .4s}
+
+/* ---------- COUNTER ---------- */
+.counter{position:fixed;bottom:14px;right:32px;font-size:11px;color:var(--gray5);z-index:100}
+
+/* ---------- SLIDES ---------- */
+.slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s;transform:translateX(40px);background:var(--white);overflow-y:auto}
+.slide.active{opacity:1;pointer-events:auto;transform:translateX(0)}
+.slide.prev{transform:translateX(-40px)}
+.si{width:90%;max-width:1100px;padding:52px 0 32px}
+
+/* ---------- TYPOGRAPHY ---------- */
+h2{font-size:28px;font-weight:800;color:var(--electric);line-height:1.2;margin-bottom:8px}
+.label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--serene);margin-bottom:6px}
+.sub{font-size:14px;color:var(--gray5);line-height:1.6;max-width:700px}
+.body{font-size:13px;line-height:1.7;color:#333}
+.accent{color:var(--electric)}
+
+/* ---------- GRID ---------- */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
+
+/* ---------- CARDS ---------- */
+.card{background:var(--white);border-radius:var(--r);padding:22px 20px;border-top:3px solid var(--serene);box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.card h3{font-size:15px;font-weight:700;margin-bottom:8px}
+
+/* ---------- HIGHLIGHT ---------- */
+.highlight{background:linear-gradient(90deg,rgba(133,200,255,.12),rgba(139,225,233,.08));border-left:4px solid var(--serene);border-radius:0 var(--r) var(--r) 0;padding:16px 24px}
+
+/* ---------- TABLE ---------- */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:var(--electric);color:#fff;padding:12px 14px;text-align:left;font-weight:600}
+.tbl td{padding:10px 14px;border-bottom:1px solid var(--gray2)}
+.tbl tr:nth-child(even){background:var(--sand)}
+.tbl tr:hover td{background:rgba(133,200,255,.1)}
+
+/* ---------- FLOW / DIAGRAM ---------- */
+.flow{display:flex;align-items:center;gap:0;justify-content:center;flex-wrap:wrap}
+.flow-box{background:var(--white);border:2px solid var(--serene);border-radius:var(--r);padding:14px 20px;text-align:center;min-width:120px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
+.flow-box.origin{border-color:var(--canary);background:rgba(255,231,97,.08)}
+.flow-box.canonical{border-color:var(--electric);background:rgba(0,19,145,.04)}
+.flow-box.dest{border-color:var(--lime);background:rgba(136,231,131,.08)}
+.flow-box.error{border-color:#FF4D4D;background:rgba(255,77,77,.06)}
+.flow-arrow{font-size:24px;color:var(--electric);padding:0 8px;font-weight:700}
+
+/* ---------- COVER ---------- */
+.cover{background:linear-gradient(135deg,var(--midnight) 0%,var(--electric) 100%);color:#fff}
+.cover h1{font-size:42px;font-weight:800;line-height:1.15;margin-bottom:16px}
+.cover .sub{color:rgba(255,255,255,.7)}
+.cover .pill{display:inline-block;background:rgba(133,200,255,.15);border:1px solid rgba(133,200,255,.3);border-radius:20px;padding:6px 16px;font-size:12px;color:var(--serene);margin-right:8px;margin-top:12px}
+
+/* ---------- CLOSING ---------- */
+.closing{background:linear-gradient(135deg,var(--midnight) 0%,var(--electric) 100%);color:#fff;text-align:center}
+
+/* ---------- ANNEXE ---------- */
+.annexe-hdr{background:linear-gradient(135deg,var(--midnight) 0%,#1a237e 100%);color:#fff}
+
+/* ---------- STAT ---------- */
+.stat-n{font-size:36px;font-weight:800;color:var(--electric)}
+.stat-l{font-size:11px;color:var(--gray5);margin-top:4px}
+
+/* ---------- BADGE ---------- */
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.badge-blue{background:rgba(133,200,255,.15);color:var(--electric)}
+.badge-green{background:rgba(136,231,131,.15);color:#1B8C13}
+.badge-yellow{background:rgba(255,231,97,.15);color:#8B6914}
+.badge-purple{background:rgba(182,140,255,.15);color:#5B21B6}
+.badge-orange{background:rgba(255,181,107,.15);color:#C05621}
+
+.divider{height:1px;background:var(--gray2)}
+
+/* ---------- SMALL TABLE ---------- */
+.tbl-sm{width:100%;border-collapse:collapse;font-size:11px}
+.tbl-sm th{background:var(--electric);color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:11px}
+.tbl-sm td{padding:6px 10px;border-bottom:1px solid var(--gray2);font-size:11px}
+.tbl-sm tr:nth-child(even){background:var(--sand)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr light hide-on-cover" id="hdr">
+  <img id="hdr-bbva" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 28'%3E%3Ctext x='0' y='20' font-family='Arial' font-weight='bold' font-size='16' fill='%23001391'%3EBBVA%3C/text%3E%3C/svg%3E" alt="BBVA" style="height:24px">
+  <img id="hdr-nfq" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 28'%3E%3Ctext x='0' y='20' font-family='Arial' font-weight='bold' font-size='16' fill='%23001391'%3ENFQ%3C/text%3E%3C/svg%3E" alt="NFQ" style="height:24px;margin-left:12px">
+  <span class="hdr-title" id="hdr-title" style="margin-left:16px">Legal Agreements · RDR</span>
+</div>
+
+<!-- PROGRESS BAR -->
+<div class="pbar-wrap"><div class="pbar" id="pbar" style="width:0%"></div></div>
+<div class="counter" id="counter">1 / 23</div>
+
+<!-- ========== SLIDES ========== -->
+
+<!-- ===== SLIDE 0 · COVER ===== -->
+<div class="slide cover active" data-slide="0" data-theme="dark">
+  <div class="si" style="text-align:center">
+    <p style="font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--serene);margin-bottom:20px">BBVA CIB · RDR · Legal Agreements</p>
+    <h1>Legal Agreements<br>en RDR</h1>
+    <p class="sub" style="max-width:650px;margin:0 auto;margin-top:16px">Descripción funcional completa de los Acuerdos Legales gestionados en RDR: qué son, tipos, estructura de datos, cesión a sistemas consumidores y su papel en una migración de datos.</p>
+    <div style="margin-top:28px">
+      <span class="pill">ISDA · GMRA · GMSLA · CMOF</span>
+      <span class="pill">Modelo Canónico</span>
+      <span class="pill">Mentor · Calypso</span>
+      <span class="pill">BBVA SA · Bancomer</span>
+      <span class="pill">Migración</span>
+    </div>
+    <div style="font-size:12px;opacity:.6;margin-top:32px">BBVA CIB · NFQ Advisory · Confidencial</div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 1 · ¿QUÉ ES UN LEGAL AGREEMENT? ===== -->
+<div class="slide" data-slide="1" data-theme="light">
+  <div class="si">
+    <p class="label">01 · Introducción</p>
+    <h2>¿Qué es un Legal Agreement?</h2>
+    <p class="sub" style="margin-bottom:24px">Los <strong>Legal Agreements</strong> (Acuerdos Legales) son documentos contractuales que establecen los <strong>términos y condiciones</strong> bajo los cuales se llevan a cabo las transacciones y relaciones entre el banco y sus clientes, así como entre el banco y otras entidades.</p>
+    <div class="g2" style="margin-bottom:24px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent">Contexto en BBVA CIB</h3>
+        <ul style="list-style:none;padding-left:0;font-size:13px;line-height:2.2">
+          <li>• Actualmente el maestro es <strong>Mentor</strong></li>
+          <li>• Almacenados y distribuidos por <strong>RDR</strong></li>
+          <li>• Fundamento legal de operaciones de derivados, repos, préstamo de valores…</li>
+          <li>• Cada geografía CIB tiene instancias diferenciadas (BBVA SA, Bancomer…)</li>
+          <li>• En RDR se realiza toda la gestión de datos y la difusión a sistemas consumidores</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--serene);border-top:none">
+        <h3 style="color:var(--electric)">¿Por qué son importantes?</h3>
+        <ul style="list-style:none;padding-left:0;font-size:13px;line-height:2.2">
+          <li>• Garantizan los <strong>derechos y obligaciones</strong> de las partes</li>
+          <li>• Aseguran el <strong>cumplimiento normativo</strong> del sector financiero</li>
+          <li>• Proporcionan <strong>claridad y transparencia</strong> en las relaciones</li>
+          <li>• Facilitan transacciones de forma <strong>eficiente y segura</strong></li>
+          <li>• Sin Legal Agreement, las operaciones <strong>no confirman/notifican</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="g4" style="margin-bottom:0">
+      <div class="card" style="text-align:center;border-top:3px solid var(--electric);padding:16px">
+        <div style="font-size:24px;margin-bottom:6px">🔒</div>
+        <h3 style="font-size:12px">Protección Legal</h3>
+        <p style="font-size:11px;color:var(--gray5);margin-top:4px">Marco legal que protege todas las partes</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--serene);padding:16px">
+        <div style="font-size:24px;margin-bottom:6px">📋</div>
+        <h3 style="font-size:12px">Claridad</h3>
+        <p style="font-size:11px;color:var(--gray5);margin-top:4px">Evita malentendidos y disputas</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--lime);padding:16px">
+        <div style="font-size:24px;margin-bottom:6px">⚖️</div>
+        <h3 style="font-size:12px">Cumplimiento</h3>
+        <p style="font-size:11px;color:var(--gray5);margin-top:4px">Regulaciones financieras y normativas</p>
+      </div>
+      <div class="card" style="text-align:center;border-top:3px solid var(--canary);padding:16px">
+        <div style="font-size:24px;margin-bottom:6px">⚡</div>
+        <h3 style="font-size:12px">Facilitación</h3>
+        <p style="font-size:11px;color:var(--gray5);margin-top:4px">Transacciones eficientes y seguras</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 2 · TIPOLOGÍAS ===== -->
+<div class="slide" data-slide="2" data-theme="light">
+  <div class="si">
+    <p class="label">02 · Tipologías</p>
+    <h2>Tipos de Legal Agreements</h2>
+    <p class="sub" style="margin-bottom:24px">Se diferencian según el tipo de transacción para el que están destinados.</p>
+    <div class="g3" style="margin-bottom:16px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:13px;margin-bottom:6px" class="accent">ISDA</h3>
+        <p class="badge badge-blue" style="margin-bottom:8px">Derivados</p>
+        <p class="body" style="font-size:11px;color:#5C5C5C">International Swaps and Derivatives Association. Rige transacciones de swaps y otros derivados OTC. Incluye cláusulas sobre compensación, eventos de incumplimiento y resolución de disputas. Versiones: 1987, 1992, 2002.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--serene)">
+        <h3 style="font-size:13px;margin-bottom:6px" class="accent">CMOF</h3>
+        <p class="badge badge-blue" style="margin-bottom:8px">Mercado de Crédito</p>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Contrato Marco de Operaciones Financieras. Regula operaciones bajo ley española, incluyendo gestión de riesgos y documentación. Versiones: 1997, 2009, 2013, 2020.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--aqua)">
+        <h3 style="font-size:13px;margin-bottom:6px" class="accent">GMSLA</h3>
+        <p class="badge badge-green" style="margin-bottom:8px">Préstamo de Valores</p>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Global Master Securities Lending Agreement. Establece los términos bajo los cuales se prestan y devuelven valores, así como condiciones de compensación. Versiones: 2000, 2010.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--lime)">
+        <h3 style="font-size:13px;margin-bottom:6px" class="accent">GMRA</h3>
+        <p class="badge badge-purple" style="margin-bottom:8px">Repos</p>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Global Master Repurchase Agreement. Regula transacciones de recompra, definiendo tasa de interés, colateral y condiciones de liquidación. Versiones: 1995, 2000, 2011.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--canary)">
+        <h3 style="font-size:13px;margin-bottom:6px" class="accent">MRA / EMA / DRV</h3>
+        <p class="badge badge-purple" style="margin-bottom:8px">Específicos</p>
+        <p class="body" style="font-size:11px;color:#5C5C5C">MRA: repos jurisdiccionales. EMA: European Master Agreement. DRV: Deutscher Rahmenvertrag (ley alemana). Cada uno con cláusulas y estructura particular.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--purple)">
+        <h3 style="font-size:13px;margin-bottom:6px" class="accent">CLS</h3>
+        <p class="badge badge-yellow" style="margin-bottom:8px">Divisas (FX)</p>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Continuous Linked Settlement. Reduce el riesgo de liquidación en transacciones de divisas, asegurando que ambas partes reciban fondos simultáneamente.</p>
+      </div>
+    </div>
+    <div class="highlight">
+      <p class="body">Además existen otras tipologías: <strong>FBF</strong>, <strong>CDEAEUROP</strong>, <strong>CDEAUSA</strong>, <strong>NAFMII</strong>, <strong>SWIFT</strong>, <strong>MCA</strong>, entre otras. El sistema almacena 76 valores distintos en producción (27 canónicos + 49 códigos legacy heredados de Mentor).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 3 · DATOS GENERALES ===== -->
+<div class="slide" data-slide="3" data-theme="light">
+  <div class="si">
+    <p class="label">03 · Estructura de Datos</p>
+    <h2>Datos Generales del Contrato</h2>
+    <p class="sub" style="margin-bottom:24px">Cada Legal Agreement contiene información general que identifica y caracteriza el acuerdo.</p>
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:12px">Identificadores</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li><strong>Agreement ID (RDR_ID)</strong> — Identificador canónico del LAGR en RDR</li>
+          <li><strong>Scan Code</strong> — Identificador principal y único en Mentor</li>
+          <li><strong>Contract Id (Mentor)</strong> — ID del contrato en el sistema origen</li>
+          <li><strong>DigitID</strong> — Identificador numérico para usuarios</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--serene);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:12px">Datos Descriptivos</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li><strong>Agreement Type</strong> — Tipología (ISDA, GMRA, GMSLA…)</li>
+          <li><strong>Contract Version</strong> — Año/versión del acuerdo</li>
+          <li><strong>Contract Jurisdiction</strong> — Jurisdicción aplicable</li>
+          <li><strong>Contract Description</strong> — Texto libre descriptivo</li>
+          <li><strong>Status</strong> — Estado del contrato (activo/inactivo)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--lime);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:12px">Fechas Clave</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li><strong>Signature Date</strong> — Fecha de firma del acuerdo</li>
+          <li><strong>Effective Date</strong> — Fecha desde la cual es efectivo</li>
+          <li><strong>Last Amendment Date</strong> — Última modificación del contrato físico</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--purple);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:12px">Campos de Control</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li><strong>Legal Opinion (Y/N/L)</strong> — Netting Legal Opinion Effect</li>
+          <li><strong>Coverage Type (Multientity)</strong> — Tipo de cobertura</li>
+          <li><strong>Scope Standard Definition (Y/N)</strong> — Si incluye todos los productos</li>
+          <li><strong>Cover FX</strong> — Cobertura de operaciones FX</li>
+        </ul>
+      </div>
+    </div>
+    <div class="highlight">
+      <p class="body"><strong>Netting Legal Opinion Effect:</strong> Marca que indica si se calculan o no los productos estándar del acuerdo según tipo de entidad (clasificación ISDA) y país de residencia del firmante externo.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 4 · PARTICIPANTES ===== -->
+<div class="slide" data-slide="4" data-theme="light">
+  <div class="si">
+    <p class="label">03 · Participantes</p>
+    <h2>Firmantes y Participantes</h2>
+    <p class="sub" style="margin-bottom:24px">Todo Legal Agreement tiene dos partes: la parte interna (BBVA) y la parte externa (cliente/contrapartida).</p>
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:12px" class="accent">Parte Interna (BBVA)</h3>
+        <p class="body" style="color:#5C5C5C;margin-bottom:12px"><strong>Firmante Interno (Signer BBVA):</strong> Persona que acepta los términos y tiene poder para actuar en nombre de la organización.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• <strong>SignerId</strong> — FINSID del firmante interno</li>
+          <li>• <strong>SignerName</strong> — Nombre legal del firmante</li>
+          <li>• <strong>EntityTypeID</strong> — Tipo de entidad ISDA</li>
+          <li>• <strong>Country Restriction</strong> — País de restricción</li>
+        </ul>
+        <p class="body" style="color:#5C5C5C;margin-top:12px"><strong>Participantes Internos:</strong> Branches/oficinas de BBVA que participan (Place of Business).</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--serene)">
+        <h3 style="font-size:14px;margin-bottom:12px" class="accent">Parte Externa (Contrapartida)</h3>
+        <p class="body" style="color:#5C5C5C;margin-bottom:12px"><strong>Firmante Externo (Signer Cpty):</strong> Propietario del acuerdo. Su firma representa la aceptación de los términos por parte de su entidad.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• <strong>SignerId</strong> — FINSID del firmante externo</li>
+          <li>• <strong>SignerName</strong> — Nombre legal</li>
+          <li>• <strong>EntityTypeID</strong> — Tipo de entidad</li>
+          <li>• <strong>Country Restriction</strong> — País de restricción</li>
+        </ul>
+        <p class="body" style="color:#5C5C5C;margin-top:12px"><strong>Participantes Externos:</strong> Entidades externas que participan bajo el acuerdo.</p>
+      </div>
+    </div>
+    <div class="highlight">
+      <p class="body"><strong>Nota:</strong> Los datos de ambas partes (BBVA y contrapartida) tienen la misma estructura. Para que el acuerdo sea válido y vinculante, es necesaria la firma de ambos firmantes.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 5 · PRODUCTOS Y SCOPE ===== -->
+<div class="slide" data-slide="5" data-theme="light">
+  <div class="si">
+    <p class="label">03 · Productos y Scope</p>
+    <h2>Productos y Ámbito de Aplicación</h2>
+    <p class="sub" style="margin-bottom:24px">Los Legal Agreements definen qué productos financieros están cubiertos y si existen inclusiones o exclusiones específicas.</p>
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:12px">Productos del Acuerdo</h3>
+        <p class="body" style="color:#5C5C5C;margin-bottom:10px">Productos financieros sobre los que pivota el acuerdo. Pueden estar <strong>incluidos</strong> o <strong>excluidos</strong>.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• <strong>ProductId</strong> — Identificador canónico del producto</li>
+          <li>• <strong>ProductMentor</strong> — Descripción en Mentor</li>
+          <li>• <strong>Restriction (I/E)</strong> — Inclusión o Exclusión</li>
+          <li>• <strong>agreementCollateral</strong> — Si aplica colateral</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--canary);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:12px">Scope (Ámbito)</h3>
+        <p class="body" style="color:#5C5C5C;margin-bottom:10px">Define si el acuerdo cubre todos los productos o tiene restricciones.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• <strong>Scope Standard Definition (Y/N)</strong> — Cobertura total</li>
+          <li>• <strong>Scope Exclusions</strong> — Comentarios sobre exclusiones</li>
+          <li>• <strong>Scope Inclusions</strong> — Comentarios sobre inclusiones</li>
+          <li>• <strong>Scope With Effects From</strong> — Fecha de efectividad</li>
+        </ul>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="card" style="border-left:4px solid var(--lime);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:12px">Trades Asociados</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• <strong>Id</strong> — Identificador del trade</li>
+          <li>• <strong>TradeSystem</strong> — Sistema origen (MUREX, STAR, CALYPSO, STRATEGY)</li>
+          <li>• <strong>Restriction (I/E)</strong> — Inclusión o Exclusión</li>
+          <li>• <strong>Comment</strong> — Observaciones</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--purple);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:12px">External Identifiers</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• <strong>Id</strong> — Valor del identificador externo</li>
+          <li>• <strong>Type</strong> — Tipo de identificador (Calypso, SAIT, P22, P32…)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 6 · ANEXOS (COLATERALES) ===== -->
+<div class="slide" data-slide="6" data-theme="light">
+  <div class="si">
+    <p class="label">04 · Anexos</p>
+    <h2>Anexos (Colaterales)</h2>
+    <p class="sub" style="margin-bottom:24px">Los anexos son documentos adicionales que se adjuntan al contrato principal y actúan como <strong>garantía</strong> ante el incumplimiento de éste.</p>
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">¿Para qué sirven?</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>📋 <strong>Detallar o aclarar</strong> términos del acuerdo principal</li>
+          <li>📐 Contener <strong>especificaciones técnicas</strong> y estándares de calidad</li>
+          <li>⚖️ Incluir referencias a <strong>leyes y regulaciones</strong> relevantes</li>
+          <li>🔧 <strong>Personalizar</strong> el contrato a necesidades específicas</li>
+          <li>💰 Detallar cómo se manejan las <strong>liquidaciones</strong></li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid var(--serene)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Datos Principales del Anexo</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>• <strong>CollID / csaId</strong> — Identificador del colateral</li>
+          <li>• <strong>Type</strong> — Tipología del anexo (CSA, IM, Netting…)</li>
+          <li>• <strong>Base Currency</strong> — Divisa base</li>
+          <li>• <strong>Collateral Signature Date</strong> — Fecha de firma</li>
+          <li>• <strong>Legal Opinion (Y/N/L)</strong> — Opinión legal</li>
+          <li>• <strong>Regulatory Compliant (Y/N)</strong> — Cumplimiento regulatorio</li>
+          <li>• <strong>Symmetric (Y/N)</strong> — Si es simétrico</li>
+        </ul>
+      </div>
+    </div>
+    <div class="highlight">
+      <p class="body"><strong>Importante:</strong> Un acuerdo legal puede tener <strong>múltiples anexos</strong> de diferentes tipologías. Cada anexo tiene su propia estructura de datos con información de ambas partes (BBVA y contrapartida).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 7 · TIPOLOGÍAS DE ANEXOS ===== -->
+<div class="slide" data-slide="7" data-theme="light">
+  <div class="si">
+    <p class="label">04 · Tipos de Anexos</p>
+    <h2>Tipologías de Anexos</h2>
+    <p class="sub" style="margin-bottom:24px">Cada tipo de anexo está destinado a cubrir un aspecto específico del riesgo o la garantía.</p>
+    <div class="g3" style="margin-bottom:16px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:13px;margin-bottom:8px" class="accent">Initial Margin (IM)</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Establece los requisitos de <strong>margen inicial</strong> al entrar en un contrato de derivados. Medida de seguridad para cubrir posibles pérdidas.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--serene)">
+        <h3 style="font-size:13px;margin-bottom:8px" class="accent">Credit Support Annex (CSA)</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Complementa un acuerdo de derivados. Detalla los términos de <strong>intercambio de garantías</strong> (collateral) para mitigar el riesgo de crédito.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--lime)">
+        <h3 style="font-size:13px;margin-bottom:8px" class="accent">Netting Agreement</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Establece condiciones bajo las cuales las partes pueden <strong>compensar obligaciones mutuas</strong>, reduciendo el riesgo de crédito.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--canary)">
+        <h3 style="font-size:13px;margin-bottom:8px" class="accent">Swap Agent Agreement</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Términos bajo los cuales un agente de swaps <strong>actúa en nombre de las partes</strong>, facilitando la administración y liquidación.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--purple)">
+        <h3 style="font-size:13px;margin-bottom:8px" class="accent">Termination Events</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Detalla las circunstancias bajo las cuales un contrato puede ser <strong>terminado anticipadamente</strong>, así como las consecuencias.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--aqua)">
+        <h3 style="font-size:13px;margin-bottom:8px" class="accent">Otros (CGAR, CSD…)</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Tipologías específicas por jurisdicción: <strong>CGAR IM/VM</strong> (ley mexicana), <strong>CSD</strong>, <strong>Colateral Repo</strong>, <strong>Colateral PV</strong>.</p>
+      </div>
+    </div>
+    <div class="highlight">
+      <p class="body">Para tipologías como <strong>IM</strong> o <strong>CSA</strong>, existen varios subtipos según la <strong>jurisdicción</strong> (English Law, NY Law, German Law, Spanish Law) y <strong>versión</strong> del documento legal.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 8 · CLÁUSULAS ISDA ===== -->
+<div class="slide" data-slide="8" data-theme="light">
+  <div class="si">
+    <p class="label">05 · Cláusulas ISDA</p>
+    <h2>Eventos de Default y Terminación (ISDA)</h2>
+    <p class="sub" style="margin-bottom:20px">Los acuerdos tipo ISDA contienen cláusulas específicas gestionadas <strong>simétricamente</strong> para la parte BBVA y la contrapartida.</p>
+    <div class="g2" style="margin-bottom:16px">
+      <div class="card" style="border-top:3px solid #FF4D4D">
+        <h3 style="font-size:13px;margin-bottom:10px;color:#CC0000">Events of Default</h3>
+        <ul style="list-style:none;font-size:11px;line-height:2.4;color:#5C5C5C">
+          <li>❌ <strong>Cross Default</strong> — Incumplimiento cruzado entre acuerdos</li>
+          <li>❌ <strong>Bankruptcy</strong> — Insolvencia de una parte</li>
+          <li>❌ <strong>Credit Event upon Merger</strong> — Fusión que debilita crediticiamente</li>
+          <li>❌ <strong>Default under Specified Transactions</strong> — Threshold Amount</li>
+          <li>❌ <strong>Merger Without Assumption</strong> — Fusión sin asunción</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid var(--canary)">
+        <h3 style="font-size:13px;margin-bottom:10px" class="accent">Termination Events</h3>
+        <ul style="list-style:none;font-size:11px;line-height:2.4;color:#5C5C5C">
+          <li>⚠️ <strong>Illegality</strong> — Ilegalidad sobrevenida</li>
+          <li>⚠️ <strong>Force Majeure</strong> — Fuerza mayor / imposibilidad</li>
+          <li>⚠️ <strong>Additional Termination Events (ATE)</strong> — Eventos adicionales</li>
+          <li>⚠️ <strong>Automatic Early Termination</strong> — Terminación automática</li>
+          <li>⚠️ <strong>Termination Long Stop Date</strong> — Fecha límite</li>
+        </ul>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="card" style="border-top:3px solid var(--purple);padding:16px">
+        <h3 style="font-size:12px;margin-bottom:8px" class="accent">Otras Cláusulas Operativas</h3>
+        <ul style="list-style:none;font-size:11px;line-height:2;color:#5C5C5C">
+          <li>• <strong>Termination Currency</strong> (hasta 3 divisas)</li>
+          <li>• <strong>Offices</strong> — Multibranch / All Branches</li>
+          <li>• <strong>Calculation Agent</strong></li>
+          <li>• <strong>Multiple Transaction Payment Netting</strong></li>
+          <li>• <strong>Set Off / Transfer / Assignment</strong></li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid var(--aqua);padding:16px">
+        <h3 style="font-size:12px;margin-bottom:8px" class="accent">Cross Default - Detalle</h3>
+        <ul style="list-style:none;font-size:11px;line-height:2;color:#5C5C5C">
+          <li>• Cross Acceleration (Y/N)</li>
+          <li>• Operative Default (Y/N)</li>
+          <li>• Specified Indebtedness: Borrowed Money / Derivatives</li>
+          <li>• Threshold Amount: Comparator / Type / Amount / Currency</li>
+          <li>• Shareholders Equity</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 9 · BANCOMER: PROPÓSITO Y CICLO DE VIDA ===== -->
+<div class="slide" data-slide="9" data-theme="light">
+  <div class="si">
+    <p class="label">06 · Bancomer (México)</p>
+    <h2>Legal Agreements Bancomer — Propósito y Ciclo de Vida</h2>
+    <p class="sub" style="margin-bottom:24px">Los Legal Agreements de Bancomer son los <strong>contratos marco</strong> que regulan la relación jurídica entre BBVA México y sus contrapartidas en operaciones de mercados financieros.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:10px">¿Para qué sirven?</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>📌 <strong>Formalizar</strong> las condiciones legales (cláusulas ISDA, netting, cross-default, colateral)</li>
+          <li>📌 <strong>Centralizar</strong> en RDR documentación contractual que antes residía en SAIT (sistema local mexicano)</li>
+          <li>📌 <strong>Habilitar la difusión</strong> de datos contractuales a sistemas downstream (Calypso, APX, SAIT)</li>
+          <li>📌 <strong>Cumplir regulación mexicana</strong>: garantías (warrantors), Product 22/32 (CNBV), FATCA</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--canary);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:10px">Ciclo de Vida</h3>
+        <div class="flow" style="margin-bottom:12px">
+          <div class="flow-box origin"><p style="font-size:11px;font-weight:700">1. Alta</p><p style="font-size:10px;color:var(--gray5)">LAGRBANC</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box canonical"><p style="font-size:11px;font-weight:700">2. Enriquecimiento</p><p style="font-size:10px;color:var(--gray5)">Anexos, trades</p></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-box dest"><p style="font-size:11px;font-weight:700">3. Difusión</p><p style="font-size:10px;color:var(--gray5)">SAIT, Calypso, APX</p></div>
+        </div>
+        <p class="body" style="font-size:11px;color:#5C5C5C;margin-top:8px">La pantalla <strong>LAGRBANC</strong> es la más compleja del sistema Workstation: <strong>919 controles</strong> en 17 páginas, 164 catálogos y 75 ocurrencias.</p>
+      </div>
+    </div>
+
+    <div class="g2" style="margin-bottom:16px">
+      <div class="card" style="border-top:3px solid var(--serene)">
+        <h3 style="font-size:13px;margin-bottom:8px" class="accent">Integración RDR ↔ SAIT</h3>
+        <table class="tbl-sm">
+          <thead><tr><th>Dirección</th><th>Mecanismo</th><th>Contenido</th></tr></thead>
+          <tbody>
+            <tr><td>SAIT → RDR</td><td>Batch XML</td><td>Contratos legacy</td></tr>
+            <tr><td>RDR → SAIT</td><td>Batch XML + ESB</td><td>Acuerdos enriquecidos</td></tr>
+            <tr><td>RDR → Calypso</td><td>Batch XML</td><td>IDs de acuerdo</td></tr>
+            <tr><td>RDR → APX</td><td>Batch diario/semanal</td><td>Onboarding FX</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="border-top:3px solid var(--lime)">
+        <h3 style="font-size:13px;margin-bottom:8px" class="accent">Cadenas Batch Bancomer</h3>
+        <table class="tbl-sm">
+          <thead><tr><th>Cadena</th><th>Destino</th><th>Frecuencia</th></tr></thead>
+          <tbody>
+            <tr><td><strong>RDR_DAILY_LA</strong></td><td>SAIT</td><td>Diaria</td></tr>
+            <tr><td><strong>RDR_DAILY_P32</strong></td><td>SAIT</td><td>Diaria</td></tr>
+            <tr><td><strong>MEKYTL0959</strong></td><td>Mentor</td><td>T-W-Th-F-Sa</td></tr>
+            <tr><td><strong>MEKYTL1070/71</strong></td><td>APX</td><td>Diario/Semanal</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>RDR es el repositorio maestro de los acuerdos legales de Bancomer.</strong> SAIT es un sistema receptor que consume la información. La publicación ESB envía eventos en formato FIXML con validación Agreement ID + FATCA.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 10 · BANCOMER: CAMPOS ESPECÍFICOS MÉXICO ===== -->
+<div class="slide" data-slide="10" data-theme="light">
+  <div class="si">
+    <p class="label">06 · Bancomer — Campos Específicos</p>
+    <h2>Campos Específicos de México</h2>
+    <p class="sub" style="margin-bottom:24px">La instancia Bancomer tiene campos propios que no existen en BBVA SA, orientados a la regulación mexicana (CNBV) y a la integración con SAIT.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:12px">Cabecera del Acuerdo (México)</h3>
+        <table class="tbl-sm">
+          <thead><tr><th>Campo</th><th>Descripción</th><th>Oblig.</th></tr></thead>
+          <tbody>
+            <tr><td>Agreement Owner</td><td>Entidad interna (org 1145 = BBVA México)</td><td>✅</td></tr>
+            <tr><td>Market Type</td><td>DER, RPDI, MDIN, RF</td><td>✅</td></tr>
+            <tr><td>Agreement Date</td><td>Fecha del acuerdo marco</td><td>✅</td></tr>
+            <tr><td>Signature Date</td><td>Fecha de firma</td><td>✅</td></tr>
+            <tr><td>Agreement Version</td><td>ISDA 2002, CMOF 2013…</td><td></td></tr>
+            <tr><td>Application Key</td><td>Clave de enrutamiento</td><td>✅</td></tr>
+            <tr><td>Gen. Confirmation</td><td>Tipo de confirmación general</td><td>✅</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="border-left:4px solid var(--canary);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:12px">Campos Regulatorios MX</h3>
+        <table class="tbl-sm">
+          <thead><tr><th>Campo</th><th>Descripción</th><th>Oblig.</th></tr></thead>
+          <tbody>
+            <tr style="background:rgba(255,231,97,.12)"><td><strong>Product 22</strong></td><td>Identificador regulatorio CNBV</td><td></td></tr>
+            <tr style="background:rgba(255,231,97,.12)"><td><strong>Product 32</strong></td><td>Identificador regulatorio CNBV</td><td></td></tr>
+            <tr style="background:rgba(255,231,97,.12)"><td><strong>Security Account ID</strong></td><td>Cuenta custodia de valores</td><td>✅</td></tr>
+            <tr style="background:rgba(255,231,97,.12)"><td><strong>Investment Service</strong></td><td>Servicio de inversión asociado</td><td></td></tr>
+            <tr><td>Entry Form</td><td>Formulario de entrada SAIT</td><td></td></tr>
+            <tr><td>Guarantee / Withhold</td><td>Indicadores regulatorios MX</td><td></td></tr>
+            <tr><td>Broker Type</td><td>Tipo de intermediario</td><td></td></tr>
+            <tr><td>FATCA</td><td>Información fiscal US/MX</td><td></td></tr>
+            <tr><td>Warrantors</td><td>Garantes del acuerdo</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Pantalla LAGRBANC — 10 páginas:</strong> General Information · BBVA Participant · External Client · Trades · Products · Third Parties (Warrantors) · External Codes (Calypso, SAIT, P22/P32) · Annexes · Security Account · Diffusion Control.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 11 · BANCOMER: ANEXOS Y MERCADOS ===== -->
+<div class="slide" data-slide="11" data-theme="light">
+  <div class="si">
+    <p class="label">06 · Bancomer — Anexos y Mercados</p>
+    <h2>Anexos de Colateral y Tipos de Mercado (México)</h2>
+    <p class="sub" style="margin-bottom:24px">Bancomer tiene tipologías de anexo propias bajo ley mexicana y clasifica los acuerdos por tipo de mercado.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--canary)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Anexos Ley Mexicana 🇲🇽</h3>
+        <table class="tbl-sm">
+          <thead><tr><th>Código</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr style="background:rgba(255,231,97,.12)"><td><strong>CGAR IM</strong></td><td>Contrato de Garantía — Initial Margin</td></tr>
+            <tr style="background:rgba(255,231,97,.12)"><td><strong>CGAR VM</strong></td><td>Contrato de Garantía — Variation Margin</td></tr>
+            <tr><td>CGARIMMEX</td><td>CGAR IM para derivados México</td></tr>
+            <tr><td>CGARVMMEX</td><td>CGAR VM para derivados México</td></tr>
+          </tbody>
+        </table>
+        <p class="body" style="font-size:11px;color:#5C5C5C;margin-top:12px"><strong>Contenido del anexo:</strong> Tipo de CSA y simetría, divisas elegibles, colateral elegible (cash, securities, letters of credit), haircuts, rating-dependent eligibility, custodios y vehículo de garantía (específico MX).</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Tipos de Mercado (Market Type)</h3>
+        <table class="tbl-sm" style="margin-bottom:16px">
+          <thead><tr><th>Código</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td><strong>DER</strong></td><td>Derivados OTC: swaps, opciones, forwards FX</td></tr>
+            <tr><td><strong>RPDI</strong></td><td>Repos y mercado de dinero</td></tr>
+            <tr><td><strong>MDIN</strong></td><td>Operaciones interbancarias</td></tr>
+            <tr><td><strong>RF</strong></td><td>Bonos y renta fija nacional</td></tr>
+          </tbody>
+        </table>
+        <h3 style="font-size:13px;margin-bottom:8px" class="accent">Anexos Otras Jurisdicciones</h3>
+        <table class="tbl-sm">
+          <thead><tr><th>Jurisdicción</th><th>Anexos</th></tr></thead>
+          <tbody>
+            <tr><td>English Law</td><td>CSA, CSA 2016 VM, CSD IM</td></tr>
+            <tr><td>New York Law</td><td>CSA NY, CSA 2016 VM NY, CSA IM NY</td></tr>
+            <tr><td>German Law</td><td>Collateral DRV, DRV 2016 VM</td></tr>
+            <tr><td>Spanish Law</td><td>ARG, ARG 2016 VM</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Cláusulas ISDA en Bancomer:</strong> Se gestionan simétricamente (INT/EXT): Events of Default (Cross Default, Bankruptcy), Termination Events (Credit Event Upon Merger, ATE), Operational Clauses (Auto Early Termination, Set Off, Payment Netting, Calculation Agent) y Currency &amp; Transfer (3 Termination Currencies, Assignment).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 12 · INTERFAZ RDR ===== -->
+<div class="slide" data-slide="12" data-theme="light">
+  <div class="si">
+    <p class="label">07 · Interfaz de Usuario</p>
+    <h2>Interfaz de Legal Agreements en RDR</h2>
+    <p class="sub" style="margin-bottom:24px">Se accede a través del menú <strong>Legal Agreements → Legal Agreements</strong>. En Bancomer se utiliza la pantalla <strong>LAGRBANC</strong> (919 controles, 17 páginas, 164 catálogos).</p>
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:12px">Secciones BBVA SA</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>🔍 <strong>Búsqueda</strong> — Agreement ID, Scan Code, Signer FINSID</li>
+          <li>📋 <strong>General Information</strong> — Datos maestros generales</li>
+          <li>📄 <strong>Agreement</strong> — Tipo, versión, jurisdicción</li>
+          <li>👥 <strong>Participants</strong> — BBVA y External</li>
+          <li>📦 <strong>Products &amp; Trades</strong> — Scope y operaciones</li>
+          <li>🔗 <strong>Annexes</strong> — Colaterales asociados</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--serene);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:12px">Secciones Bancomer (LAGRBANC)</h3>
+        <table class="tbl-sm" style="margin-top:8px">
+          <thead><tr><th>#</th><th>Página</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>General Information</td></tr>
+            <tr><td>2</td><td>BBVA Participant</td></tr>
+            <tr><td>3</td><td>External Client</td></tr>
+            <tr><td>4-5</td><td>Trades / Products</td></tr>
+            <tr><td>6</td><td>Third Parties / Warrantors</td></tr>
+            <tr><td>7</td><td>External Codes (Calypso, SAIT, P22/P32)</td></tr>
+            <tr><td>8-9</td><td>Annexes / Security Account</td></tr>
+            <tr><td>10</td><td>Diffusion Control</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="highlight">
+      <p class="body"><strong>Bancomer destaca por:</strong> campos regulatorios mexicanos (Product 22/32 CNBV), Security Account, Investment Service, Warrantors (garantes), integración SAIT y FATCA.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 13 · CESIÓN DE INFORMACIÓN ===== -->
+<div class="slide" data-slide="13" data-theme="light">
+  <div class="si">
+    <p class="label">07 · Cesión de Información</p>
+    <h2>Distribución a Aplicativos Consumidores</h2>
+    <p class="sub" style="margin-bottom:24px">Desde RDR se cede la información de Legal Agreements mediante distintos canales a múltiples sistemas.</p>
+
+    <table class="tbl" style="margin-bottom:24px">
+      <thead>
+        <tr>
+          <th style="width:25%">Canal de Cesión</th>
+          <th style="width:75%">Aplicativos Consumidores</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:700">📄 Fichero (Batch)</td>
+          <td>DATIO, TRACK, IHS MARKIT, SMART DATA, SAIT</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700">📡 Publicación (Online)</td>
+          <td>CALYPSO (BO), SALES WAREHOUSE, REPORTING ENGINE</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700">🔄 Petición-Respuesta</td>
+          <td>JBPM</td>
+        </tr>
+        <tr>
+          <td style="font-weight:700">🌐 API</td>
+          <td>NEW SCRITTURA</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Diagrama de flujo -->
+    <div style="position:relative;margin-bottom:20px">
+      <div class="flow">
+        <div class="flow-box origin">
+          <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">Sistema Maestro</p>
+          <p style="font-size:15px;font-weight:700;color:var(--electric)">MENTOR</p>
+          <p style="font-size:10px;color:var(--gray5);margin-top:4px">Fuente de datos</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box canonical">
+          <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">Repositorio</p>
+          <p style="font-size:15px;font-weight:700;color:var(--electric)">RDR</p>
+          <p style="font-size:10px;color:var(--gray5);margin-top:4px">Gestión y distribución</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-box dest">
+          <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">Consumidores</p>
+          <p style="font-size:15px;font-weight:700;color:var(--electric)">Calypso, Datio…</p>
+          <p style="font-size:10px;color:var(--gray5);margin-top:4px">Múltiples canales</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>En migraciones:</strong> Los Legal Agreements se ceden al Back Office destino (Calypso) mediante <strong>Publicación Online</strong>. No utilizan el mecanismo de Petición-Respuesta (Handler/Diccionario) que sí usan otras entidades como contrapartidas o portfolios.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 14 · MODELO DE DATOS ===== -->
+<div class="slide" data-slide="14" data-theme="light">
+  <div class="si">
+    <p class="label">08 · Modelo de Datos</p>
+    <h2>Modelo de Datos y Tablas Principales</h2>
+    <p class="sub" style="margin-bottom:24px">Estructura de tablas en base de datos RDR que soportan la entidad Legal Agreements.</p>
+    <table class="tbl" style="margin-bottom:20px">
+      <thead><tr><th>Tabla</th><th>Propósito</th></tr></thead>
+      <tbody>
+        <tr><td><strong>FT_T_LAGR</strong></td><td>Cabecera del acuerdo (tipo, versión, fechas, estado, cobertura)</td></tr>
+        <tr><td>FT_T_FLAR</td><td>Relación firmante–acuerdo (roles INT/EXT), cláusulas ISDA</td></tr>
+        <tr><td>FT_T_LAIP</td><td>Participantes adicionales del acuerdo</td></tr>
+        <tr><td>FT_T_LARS</td><td>Operaciones y productos vinculados (con restricciones)</td></tr>
+        <tr><td>FT_T_LAID</td><td>Identificadores en sistemas externos (RDR, SAIT, P22, P32)</td></tr>
+        <tr><td><strong>FT_T_LAAN</strong></td><td>Metadatos del anexo de colateral (tipo CSA, agente de valoración)</td></tr>
+        <tr><td>FT_T_LACD</td><td>Detalle de colateral (cash, securities, haircuts)</td></tr>
+        <tr><td>FT_T_ACLP</td><td>Relación acuerdo–cuenta de valores</td></tr>
+        <tr><td>LEGAL_AGREEMENT_ATTRIBUTES</td><td>Atributos extendidos (tipo operación, garantía, SSI, P32)</td></tr>
+        <tr><td>LEGAL_PART_STAT</td><td>Atributos de participante (divisas de terminación, ratings)</td></tr>
+        <tr><td>LAC1</td><td>Contactos, participantes y garantes</td></tr>
+      </tbody>
+    </table>
+    <div class="g2">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:13px;margin-bottom:8px" class="accent">Volumetría</h3>
+        <div class="stat-n">~96K</div>
+        <p class="stat-l">Acuerdos legales en producción (FT_T_LAGR)</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--serene)">
+        <h3 style="font-size:13px;margin-bottom:8px" class="accent">Estructura XML</h3>
+        <p class="body" style="font-size:11px;color:#5C5C5C">Ruta base: <code>/ROOT/nettingContractArray/</code><br>Simetría: <code>.../bbva/...</code> y <code>.../cpty/...</code><br>Colateral: <code>.../Annexes/AnnexesDetail/</code></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 15 · PROCESOS BATCH ===== -->
+<div class="slide" data-slide="15" data-theme="light">
+  <div class="si">
+    <p class="label">09 · Procesos Batch</p>
+    <h2>Cadenas Batch y Automatización</h2>
+    <p class="sub" style="margin-bottom:24px">Procesos automáticos que distribuyen los Legal Agreements a sistemas consumidores.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:10px">Bancomer (México)</h3>
+        <table class="tbl-sm">
+          <thead><tr><th>Cadena</th><th>Destino</th><th>Frecuencia</th></tr></thead>
+          <tbody>
+            <tr><td>RDR_DAILY_LA</td><td>SAIT</td><td>Diaria</td></tr>
+            <tr><td>RDR_DAILY_P32</td><td>SAIT</td><td>Diaria</td></tr>
+            <tr><td>MEKYTL0959</td><td>Mentor</td><td>T-W-Th-F-Sa</td></tr>
+            <tr><td>MEKYTL1070</td><td>APX diario</td><td>T-W-Th-F-Sa</td></tr>
+            <tr><td>MEKYTL1071</td><td>APX semanal</td><td>Domingo</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="border-left:4px solid var(--serene);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:10px">BBVA SA (General)</h3>
+        <table class="tbl-sm">
+          <thead><tr><th>Canal</th><th>Destino</th><th>Formato</th></tr></thead>
+          <tbody>
+            <tr><td>Fichero Batch</td><td>DATIO, TRACK</td><td>XML/CSV</td></tr>
+            <tr><td>Publicación Online</td><td>Calypso</td><td>FIXML</td></tr>
+            <tr><td>API</td><td>New Scrittura</td><td>JSON/REST</td></tr>
+            <tr><td>Petición-Respuesta</td><td>JBPM</td><td>XML</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Publicación ESB:</strong> Eventos de contratos en formato FIXML con validación Agreement ID + FATCA. La publicación online a Calypso es el mecanismo utilizado en migraciones.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 16 · ANNEXE HEADER: MIGRACIÓN ===== -->
+<div class="slide annexe-hdr" data-slide="16" data-theme="dark">
+  <div class="si" style="text-align:center">
+    <p style="font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--aqua);margin-bottom:20px">Anexo</p>
+    <h1 style="font-size:38px;font-weight:800;color:#fff;margin-bottom:16px">Legal Agreements<br>en una Migración de Datos</h1>
+    <p class="sub" style="max-width:600px;margin:0 auto;color:rgba(255,255,255,.7)">Cómo se aborda esta entidad en una migración: papel de RDR, análisis de cobertura, publicación y flujo de trabajo en simulacros.</p>
+    <div style="margin-top:28px">
+      <span class="pill">Papel de RDR</span>
+      <span class="pill">Análisis</span>
+      <span class="pill">Publicación</span>
+      <span class="pill">Pre-simulacro</span>
+      <span class="pill">Durante</span>
+      <span class="pill">Post-simulacro</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 17 · PAPEL DE RDR EN MIGRACIÓN ===== -->
+<div class="slide" data-slide="17" data-theme="light">
+  <div class="si">
+    <p class="label">Migración · Papel de RDR</p>
+    <h2>Papel de RDR en una Migración de Operaciones</h2>
+    <p class="sub" style="margin-bottom:24px">RDR actúa de <strong>diccionario entre aplicativos</strong> y como <strong>maestro de datos estáticos</strong> que facilita al BO destino todos los datos fijos correspondientes.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent">RDR como Diccionario</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8">En la caída de operaciones, la tarea principal de RDR es <strong>ofrecer la traducción de identificadores</strong> entre aplicativos (handler de traducciones).</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• Traduce IDs entre sistema origen y destino</li>
+          <li>• Papel fundamental en la caída de operaciones</li>
+          <li>• No se dan de alta agreements desde proyecto</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--lime);border-top:none">
+        <h3 style="color:var(--electric)">RDR como Maestro de Datos</h3>
+        <p class="body" style="color:#5C5C5C;line-height:1.8">RDR es el encargado de <strong>facilitar al BO destino</strong> todos los datos fijos — incluyendo los Legal Agreements que las operaciones migradas necesitan.</p>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• Analizar cobertura de agreements</li>
+          <li>• Publicar agreements al BO destino</li>
+          <li>• Verificar recepción (ACK/NACK)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight" style="border-left:4px solid #FF4D4D">
+      <p class="body"><strong>Criticidad:</strong> No se paraliza el GoLive ni se considera KO si falta algún Legal Agreement. Sin embargo, es <strong>muy importante</strong> que estén en el BO previo al GoLive. Sin Legal Agreement, las operaciones <strong>no confirman/notifican</strong> — aunque tengan la instrucción de confirmación, sin el agreement asociado no funcionará.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 18 · ANÁLISIS DE COBERTURA ===== -->
+<div class="slide" data-slide="18" data-theme="light">
+  <div class="si">
+    <p class="label">Migración · Análisis</p>
+    <h2>Análisis de Cobertura de Agreements</h2>
+    <p class="sub" style="margin-bottom:24px">Se parte de la premisa de que <strong>todas las contrapartidas de la operativa viva necesitan un agreement</strong>.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">¿Qué se analiza?</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>✅ Operaciones que <strong>ya cuentan</strong> con Agreement en RDR y BO</li>
+          <li>⚠️ Operaciones que <strong>no cuentan</strong> con Agreement válido</li>
+          <li>🔧 Para las que no tienen → <strong>revisar cuál dar de alta o publicar</strong></li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid var(--canary)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Regla de necesidad</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>📌 Para cada combinación <strong>contrapartida-producto</strong> debe existir un agreement</li>
+          <li>📌 Siempre que la contrapartida dueña <strong>no sea sender</strong></li>
+          <li>📌 En caso de ser sender, no es indispensable</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:4px solid #FF4D4D;border-top:none;margin-bottom:16px;background:rgba(255,77,77,.03)">
+      <h3 style="font-size:14px;margin-bottom:8px;color:#CC0000">Actualización continua</h3>
+      <p class="body" style="color:#5C5C5C">El análisis debe actualizarse periódicamente: <strong>antes de cada simulacro y posterior a él</strong>. Las migraciones se dilatan y los agreements pueden inactivarse con el tiempo. Lo mismo para el GoLive.</p>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Si no existe agreement:</strong> Desde proyecto <strong>no se dan de alta agreements</strong>. Se debe reportar al usuario y BO destino que esa contrapartida quedará sin cobertura legal. La decisión de alta es de <strong>negocio</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 19 · PUBLICACIÓN AL BO ===== -->
+<div class="slide" data-slide="19" data-theme="light">
+  <div class="si">
+    <p class="label">Migración · Publicación</p>
+    <h2>Publicación de Legal Agreements al BO</h2>
+    <p class="sub" style="margin-bottom:24px">Una vez definida la fecha de simulacro, RDR debe publicar todos los agreements necesarios al BO destino.</p>
+
+    <!-- Flujo simplificado -->
+    <div class="flow" style="margin-bottom:24px">
+      <div class="flow-box origin">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">BO extrae</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">Agreements<br>necesarios</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box canonical">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">RDR verifica</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">¿Existe en<br>RDR?</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box" style="border-color:var(--purple);background:rgba(182,140,255,.06)">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">RDR ejecuta</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">Publicación<br>online</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box dest">
+        <p style="font-size:11px;color:var(--gray5);margin-bottom:4px">Calypso</p>
+        <p style="font-size:13px;font-weight:700;color:var(--electric)">ACK / NACK</p>
+      </div>
+    </div>
+
+    <div class="g2" style="margin-bottom:16px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent" style="font-size:14px;margin-bottom:10px">Timing de publicación</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>• Muchas veces puede hacerse el <strong>día anterior</strong> al simulacro</li>
+          <li>• En otras ocasiones, debe hacerse el <strong>mismo día</strong></li>
+          <li>• Es una tarea que <strong>debe estar bien atada y probada</strong></li>
+          <li>• En simulacros y GoLive los tiempos van <strong>muy medidos</strong></li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--lime);border-top:none">
+        <h3 style="color:var(--electric);font-size:14px;margin-bottom:10px">Verificación</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>✅ Revisar respuesta <strong>ACK/NACK</strong> de Calypso</li>
+          <li>✅ Si todo ACK → versionar el excel de publicación</li>
+          <li>❌ Si NACK → investigar causa y reintentar</li>
+          <li>📝 RDR ha terminado las tareas previas de Agreements</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight" style="border-left:4px solid var(--canary)">
+      <p class="body"><strong>Nota:</strong> En simulacros de IT no se valida nada de Agreements. Sin embargo, si posterior al simulacro hay un ciclo de pruebas <strong>UAT/Realtime</strong>, sí se validará. A medida que avanza el proyecto, tras los simulacros y ciclos de prueba, se debe iterar.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 20 · FLUJO SIMULACROS ===== -->
+<div class="slide" data-slide="20" data-theme="light">
+  <div class="si">
+    <p class="label">Migración · Simulacros</p>
+    <h2>Flujo de Trabajo: Pre / Durante / Post Simulacro</h2>
+    <p class="sub" style="margin-bottom:24px">Tareas secuenciales que RDR debe ejecutar para asegurar cobertura completa de Legal Agreements en simulacros.</p>
+
+    <div style="margin-bottom:16px">
+      <table class="tbl" style="font-size:12px">
+        <thead><tr><th style="width:5%">#</th><th style="width:15%">Responsable</th><th>Acción</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1</strong></td><td><span class="badge badge-green">BO</span></td><td>Extracción de Agreements de su sistema para la operativa viva</td></tr>
+          <tr><td><strong>2</strong></td><td><span class="badge badge-green">BO</span></td><td>Detectar para qué contrapartida-producto necesita <strong>Agreement</strong></td></tr>
+          <tr><td><strong>3</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Revisar si existe algún Agreement en RDR que cumpla los requisitos</td></tr>
+          <tr><td><strong>4</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Los que existan en RDR → <strong>publicar al BO destino</strong></td></tr>
+          <tr><td><strong>5</strong></td><td><span class="badge badge-green">BO</span></td><td>Los que no existan → reportar al usuario (RDR NO da de alta)</td></tr>
+          <tr><td><strong>6</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Ejecutar <strong>publicación</strong> de los Agreements necesarios</td></tr>
+          <tr><td><strong>7</strong></td><td><span class="badge badge-blue">RDR</span></td><td>Revisar respuesta <strong>ACK/NACK</strong>. Si todo ACK → versionar excel</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="g2" style="margin-bottom:16px">
+      <div class="card" style="border-left:4px solid var(--electric);border-top:none">
+        <h3 class="accent" style="font-size:13px;margin-bottom:8px">Durante el simulacro</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>✅ Asegurar eepp levantado y handler funcionando</li>
+          <li>⚡ Si surge operación nueva → publicar agreement</li>
+          <li>📝 <strong>Apuntar</strong> todas las publicaciones realizadas</li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--canary);border-top:none">
+        <h3 style="color:var(--electric);font-size:13px;margin-bottom:8px">Post-simulacro (lunes)</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;color:#5C5C5C">
+          <li>📧 Revisar si ha salido operativa viva nueva</li>
+          <li>📧 Enviar correo con resumen de acciones</li>
+          <li>🔄 Volver a repetir el análisis si es necesario</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight" style="border-left:4px solid #FF4D4D">
+      <p class="body"><strong>"De nada sirve solucionar un error si no queda inventariado"</strong> — Cada Agreement publicado durante el simulacro debe quedar registrado inmediatamente. Los tiempos van <strong>muy muy medidos</strong>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 21 · RESUMEN MIGRACIÓN ===== -->
+<div class="slide" data-slide="21" data-theme="light">
+  <div class="si">
+    <p class="label">Migración · Resumen</p>
+    <h2>Resumen: Legal Agreements en Migración</h2>
+    <p class="sub" style="margin-bottom:24px">Puntos clave a recordar sobre cómo se aborda esta entidad en una migración de datos.</p>
+
+    <div class="g2" style="margin-bottom:20px">
+      <div class="card" style="border-top:3px solid var(--electric)">
+        <h3 style="font-size:14px;margin-bottom:10px" class="accent">Lo que SÍ hace RDR</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>✅ Analizar cobertura de agreements para operativa viva</li>
+          <li>✅ Publicar agreements existentes al BO destino (Calypso)</li>
+          <li>✅ Verificar respuesta ACK/NACK</li>
+          <li>✅ Versionar excel de publicación</li>
+          <li>✅ Soporte técnico durante simulacros y GoLive</li>
+          <li>✅ Actualizar análisis antes/después de cada simulacro</li>
+        </ul>
+      </div>
+      <div class="card" style="border-top:3px solid #FF4D4D">
+        <h3 style="font-size:14px;margin-bottom:10px;color:#CC0000">Lo que NO hace RDR</h3>
+        <ul style="list-style:none;font-size:12px;line-height:2.4;color:#5C5C5C">
+          <li>❌ Dar de alta agreements nuevos (es decisión de negocio)</li>
+          <li>❌ Responsabilizarse de qué agreement necesita cada operación</li>
+          <li>❌ Decidir contenido funcional del agreement</li>
+          <li>❌ Garantizar el GoLive (no es KO si falta un agreement)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="highlight">
+      <p class="body"><strong>Flujo cíclico:</strong> Análisis → Publicación → Simulacro → Revisión → Análisis actualizado → Siguiente simulacro/GoLive. Las migraciones pueden dilatarse en el tiempo y los agreements pueden inactivarse, por lo que el análisis <strong>nunca es definitivo</strong> hasta el GoLive.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 22 · CLOSING ===== -->
+<div class="slide closing" data-slide="22" data-theme="dark">
+  <div class="si" style="text-align:center">
+    <p style="font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--serene);margin-bottom:20px">Resumen</p>
+    <h1 style="font-size:36px;font-weight:800;color:#fff;margin-bottom:20px">Claves de los Legal Agreements en RDR</h1>
+    <div style="max-width:650px;margin:0 auto;text-align:left">
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">1</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">Son <strong>contratos marco</strong> que regulan las transacciones entre BBVA y sus contrapartes (derivados, repos, préstamo de valores, FX…). Sin ellos, las operaciones no confirman ni notifican.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">2</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">Se gestionan en <strong>Mentor</strong> y se almacenan/distribuyen en <strong>RDR</strong>. Tipologías: ISDA, CMOF, GMSLA, GMRA, MRA, CLS, EMA, DRV.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">3</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">Los <strong>Anexos (Colaterales)</strong> — CSA, IM, Netting — complementan el acuerdo con garantías y condiciones de mitigación del riesgo.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">4</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">La cesión a consumidores (Calypso, Datio, SAIT…) se realiza por <strong>publicación online, fichero batch, API y petición-respuesta</strong>.</p>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+        <span style="background:var(--serene);color:var(--electric);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">5</span>
+        <p style="color:rgba(255,255,255,.85);font-size:14px;line-height:1.6">En <strong>migraciones</strong>: RDR publica agreements al BO destino. No da de alta nuevos — eso es decisión de negocio. El análisis es cíclico y nunca definitivo hasta el GoLive.</p>
+      </div>
+    </div>
+    <div style="margin-top:28px">
+      <span class="pill">Modelo Canónico</span>
+      <span class="pill">Mentor → RDR → Consumidores</span>
+      <span class="pill">Publicación Online</span>
+      <span class="pill">Migración</span>
+    </div>
+    <div style="font-size:12px;opacity:.6;margin-top:32px">BBVA CIB · NFQ Advisory · Confidencial</div>
+  </div>
+</div>
+
+<!-- ========== END SLIDES ========== -->
+
+<script>
+const slides=document.querySelectorAll('.slide'),total=slides.length;
+let cur=0;
+const hdr=document.getElementById('hdr');
+const hdrBbva=document.getElementById('hdr-bbva');
+const hdrNfq=document.getElementById('hdr-nfq');
+const hdrTitle=document.getElementById('hdr-title');
+function goTo(i){
+  if(i<0||i>=total)return;
+  const p=cur;cur=i;
+  slides.forEach((s,j)=>{s.classList.remove('active','prev');if(j===cur)s.classList.add('active');else if(j===p)s.classList.add('prev')});
+  document.getElementById('counter').textContent=(cur+1)+' / '+total;
+  document.getElementById('pbar').style.width=((cur+1)/total*100)+'%';
+  if(cur===0 || cur===total-1 || slides[cur].classList.contains('annexe-hdr')){
+    hdr.classList.add('hide-on-cover');
+  } else {
+    hdr.classList.remove('hide-on-cover');
+  }
+  const theme=slides[cur].dataset.theme;
+  if(theme==='dark'){
+    hdr.className='hdr dark';
+    hdrBbva.style.filter='brightness(0) invert(1)';
+    hdrNfq.style.filter='brightness(0) invert(1)';
+    hdrTitle.style.color='#FFFFFF';
+  } else {
+    hdr.className='hdr light';
+    hdrBbva.style.filter='none';
+    hdrNfq.style.filter='none';
+    hdrTitle.style.color='var(--electric)';
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ')goTo(cur+1);
+  if(e.key==='ArrowLeft')goTo(cur-1);
+  if(e.key==='Home')goTo(0);
+  if(e.key==='End')goTo(total-1);
+  if(e.key>='1'&&e.key<='9')goTo(parseInt(e.key)-1);
+  if(e.key==='0')goTo(9);
+});
+let tx=0;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX});
+document.addEventListener('touchend',e=>{const d=tx-e.changedTouches[0].clientX;if(Math.abs(d)>50)d>0?goTo(cur+1):goTo(cur-1)});
+document.addEventListener('click',e=>{const x=e.clientX/window.innerWidth;if(x>.85)goTo(cur+1);else if(x<.15)goTo(cur-1)});
+goTo(0);
+</script>
+</body>
+</html>

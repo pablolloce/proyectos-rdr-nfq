@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* BBVA: fondo Midnight (nunca negro puro). */
+html,
+body {
+  background: #070e46;
+}
+
+::selection {
+  background: #001391;
+  color: #f7f8f8;
+}
+
+/* Cursor del sistema oculto solo con ratón (en táctil se mantiene). */
+@media (pointer: fine) {
+  * {
+    cursor: none;
+  }
+}

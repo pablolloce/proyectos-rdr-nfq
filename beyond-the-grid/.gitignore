@@ -1,0 +1,10 @@
+# dependencias
+/node_modules
+
+# artefactos de build de Next
+/.next
+/out
+
+# logs y varios
+npm-debug.log*
+.DS_Store
