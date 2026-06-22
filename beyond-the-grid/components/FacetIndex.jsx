@@ -2,21 +2,17 @@
 
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Html, Line, Icosahedron, MeshDistortMaterial, Environment, Lightformer, MarchingCubes, MarchingCube } from "@react-three/drei";
+import { Html, Line, Icosahedron, MeshDistortMaterial, Environment, Lightformer } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
 /**
- * Hub 3D = letras R · D · R generadas como SUPERFICIE IMPLÍCITA (metaballs +
- * marching cubes): se colocan "bolas" a lo largo del esqueleto de cada letra y se
- * fusionan en una malla LISA y UNIFORME con forma de letra. Encima va el MISMO
- * material que la esfera original (MeshDistortMaterial) -> la letra ONDULA y
- * cambia de forma igual que la esfera, sin teselado feo.
- *
- * Cada enlace = una porción angular: etiqueta fuera unida por una línea; se
- * interactúa con la PROPIA letra (raycast -> porción por ángulo). Control = gema externa.
+ * Hub 3D = letras R · D · R sólidas, acabado premium (reflejos del entorno + luz
+ * superior, como la esfera) con una ondulación suave del material. Bordes
+ * redondeados y limpios. Cada porción angular = un enlace (etiqueta fuera con
+ * línea); se interactúa con la PROPIA letra (raycast). Control = gema externa.
  */
 const SECTIONS = [
   { num: "01", title: "Formaciones", color: "#85C8FF", glyph: "R", items: [
@@ -42,38 +38,43 @@ const SECTIONS = [
   ] },
 ];
 
+const DZ = 0.9;
 const LETX = 6.6;
 const LBL_R = 3.1;
-const FRONT = 1.6;
-const NORM = 2.4; // escala del campo de marching cubes (coords letra -> campo [-1,1])
-
-// Esqueleto de cada letra (trazos como polilíneas). Las bolas se reparten encima.
-const SKELETON = {
-  R: [
-    [[-1, -2], [-1, 2]],                                    // asta
-    [[-1, 2], [0.2, 2], [0.78, 1.25], [0.2, 0.5], [-1, 0.5]], // bucle
-    [[-0.25, 0.5], [0.98, -2]],                             // pata
-  ],
-  D: [
-    [[-1, -2], [-1, 2]],                                    // asta
-    [[-1, 2], [0.45, 1.45], [0.98, 0], [0.45, -1.45], [-1, -2]], // panza
-  ],
-};
-function ballsFor(glyph, spacing = 0.26) {
-  const out = [];
-  SKELETON[glyph].forEach((pts) => {
-    for (let i = 0; i < pts.length - 1; i++) {
-      const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
-      const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy);
-      const steps = Math.max(1, Math.round(len / spacing));
-      for (let s = 0; s <= steps; s++) { const t = s / steps; out.push([ax + dx * t, ay + dy * t]); }
-    }
-  });
-  return out;
-}
+const FRONT = DZ / 2 + 0.1;
 
 const hint = (it) => (it.copy ? "⧉" : it.key ? "↗" : "→");
 const aria = (it) => it.label + (it.copy ? " · copiar enlace" : it.key ? " · abrir en pestaña nueva" : " · abrir");
+
+function shapeD() {
+  const s = new THREE.Shape();
+  s.moveTo(-1.5, -2); s.lineTo(-1.5, 2); s.lineTo(-0.5, 2);
+  s.absarc(-0.5, 0, 2, Math.PI / 2, -Math.PI / 2, true);
+  s.lineTo(-1.5, -2);
+  const h = new THREE.Path();
+  h.moveTo(-0.78, -1.28); h.lineTo(-0.78, 1.28); h.lineTo(-0.5, 1.28);
+  h.absarc(-0.5, 0, 1.28, Math.PI / 2, -Math.PI / 2, true); h.lineTo(-0.78, -1.28);
+  s.holes.push(h);
+  return s;
+}
+function shapeR() {
+  const s = new THREE.Shape();
+  s.moveTo(-1.4, -2); s.lineTo(-1.4, 2); s.lineTo(-0.1, 2);
+  s.absarc(-0.1, 1.15, 0.92, Math.PI / 2, -Math.PI / 2, true);
+  s.lineTo(0.25, 0.2); s.lineTo(1.18, -2); s.lineTo(0.48, -2);
+  s.lineTo(-0.55, 0.2); s.lineTo(-0.55, -2); s.lineTo(-1.4, -2);
+  const h = new THREE.Path();
+  h.moveTo(-0.62, 1.62); h.lineTo(-0.62, 0.66); h.lineTo(-0.1, 0.66);
+  h.absarc(-0.1, 1.15, 0.49, -Math.PI / 2, Math.PI / 2, false); h.lineTo(-0.62, 1.62);
+  s.holes.push(h);
+  return s;
+}
+function letterGeometry(glyph) {
+  const shape = glyph === "D" ? shapeD() : shapeR();
+  const g = new THREE.ExtrudeGeometry(shape, { depth: DZ, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.24, bevelSegments: 6, steps: 1, curveSegments: 56 });
+  g.center();
+  return g;
+}
 
 function activate(item, getUrl, copyLink, navInternal) {
   if (item.copy) { copyLink(item.key); return; }
@@ -94,9 +95,9 @@ function StudioEnv() {
   );
 }
 
-function Letter({ x, section, balls, activeKey, setActiveKey, onAct }) {
+function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
   const grp = useRef();
-  const mcRef = useRef();
+  const meshRef = useRef();
   const mat = useRef();
   const n = section.items.length;
   const letterActive = activeKey != null && activeKey.startsWith(section.num + ".");
@@ -105,16 +106,17 @@ function Letter({ x, section, balls, activeKey, setActiveKey, onAct }) {
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     if (grp.current) {
-      grp.current.rotation.y = Math.sin(t * 0.3 + x) * 0.08;
-      grp.current.rotation.z = Math.sin(t * 0.4 + x) * 0.03;
+      grp.current.rotation.z = Math.sin(t * 0.45 + x) * 0.04;
+      grp.current.rotation.x = -0.06 + Math.sin(t * 0.33 + x) * 0.04;
+      grp.current.rotation.y = Math.sin(t * 0.26 + x) * 0.06;
       grp.current.position.y = Math.sin(t * 0.5 + x) * 0.18;
     }
-    if (mat.current) mat.current.emissiveIntensity = THREE.MathUtils.lerp(mat.current.emissiveIntensity, letterActive ? 0.4 : 0.12, 0.1);
+    if (mat.current) mat.current.emissiveIntensity = THREE.MathUtils.lerp(mat.current.emissiveIntensity, letterActive ? 0.4 : 0.1, 0.12);
   });
 
   function sectorAt(point) {
     const p = point.clone();
-    mcRef.current.worldToLocal(p);
+    meshRef.current.worldToLocal(p);
     let rel = Math.atan2(p.y, p.x) + Math.PI / 2;
     rel = ((rel % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
     return Math.floor(rel / (2 * Math.PI / n)) % n;
@@ -122,17 +124,13 @@ function Letter({ x, section, balls, activeKey, setActiveKey, onAct }) {
 
   return (
     <group ref={grp} position={[x, 0, 0]}>
-      {/* la LETRA como superficie implícita lisa, con el material de la esfera (ondula) */}
-      <MarchingCubes ref={mcRef} resolution={42} maxPolyCount={20000} enableUvs={false} enableColors={false} scale={NORM}
+      <mesh ref={meshRef} geometry={geo}
         onPointerMove={(e) => { e.stopPropagation(); setActiveKey(section.num + "." + sectorAt(e.point)); }}
         onPointerOut={() => setActiveKey(null)}
         onClick={(e) => { e.stopPropagation(); onAct(section.items[sectorAt(e.point)], section.color); }}>
-        <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.12}
-          roughness={0.06} metalness={0.4} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.5} distort={0.32} speed={1.4} />
-        {balls.map((b, i) => (
-          <MarchingCube key={i} position={[b[0] / NORM, b[1] / NORM, 0]} strength={0.42} subtract={9} />
-        ))}
-      </MarchingCubes>
+        <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.1}
+          roughness={0.06} metalness={0.4} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.5} distort={0.08} speed={1.2} />
+      </mesh>
 
       <Html center position={[0, 2.7, FRONT]} style={{ pointerEvents: "none" }}>
         <div style={{ textAlign: "center", whiteSpace: "nowrap" }}>
@@ -148,7 +146,7 @@ function Letter({ x, section, balls, activeKey, setActiveKey, onAct }) {
         const lx = Math.cos(mid) * LBL_R, ly = Math.sin(mid) * LBL_R;
         return (
           <group key={key}>
-            <Line points={[[Math.cos(mid) * 1.6, Math.sin(mid) * 1.6, FRONT], [lx, ly, FRONT]]}
+            <Line points={[[Math.cos(mid) * 1.55, Math.sin(mid) * 1.55, FRONT], [lx, ly, FRONT]]}
               color={active ? section.color : "#9fb0e0"} lineWidth={active ? 2.6 : 1.2} transparent opacity={active ? 1 : 0.4} />
             <Html center position={[lx, ly, FRONT]} zIndexRange={active ? [70, 0] : [40, 0]} style={{ pointerEvents: "auto" }}>
               <button data-hover type="button" aria-label={aria(item)}
@@ -208,7 +206,7 @@ function Scene3D({ letters, external, activeKey, setActiveKey, onAct }) {
   return (
     <group>
       {letters.map((s, i) => (
-        <Letter key={s.num} x={(i - (n - 1) / 2) * LETX} section={s} balls={s._balls} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />
+        <Letter key={s.num} x={(i - (n - 1) / 2) * LETX} section={s} geo={s._geo} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />
       ))}
       {external && (
         <External pos={[(n - 1) / 2 * LETX + LETX * 0.55, 2.4, 0]} section={external} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />
@@ -223,7 +221,7 @@ export default function FacetIndex() {
   const [activeKey, setActiveKey] = useState(null);
   const [nav, setNav] = useState(null);
 
-  const letters = useMemo(() => SECTIONS.filter((s) => !s.external).map((s) => ({ ...s, _balls: ballsFor(s.glyph) })), []);
+  const letters = useMemo(() => SECTIONS.filter((s) => !s.external).map((s) => ({ ...s, _geo: letterGeometry(s.glyph) })), []);
   const external = isCoordinador ? SECTIONS.find((s) => s.external) : null;
   const legendSections = external ? [...SECTIONS.filter((s) => !s.external), external] : SECTIONS.filter((s) => !s.external);
 
