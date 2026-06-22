@@ -12,7 +12,7 @@
    Prueba: enviarRecordatorioPrueba() (envía a PRUEBA_TO).
    =========================================================================== */
 
-const WEB_URL   = 'https://TU_USUARIO.github.io/TU_REPO/comidas.html'; // ← rellena (enlace para el botón del correo)
+const WEB_URL   = 'https://rdr-nfq.github.io/team-hub/comidas.html'; // ← enlace para el botón del correo
 const REMITE    = 'Comidas RDR';
 const PRUEBA_TO = 'pablo.llorente@nfq.es';
 
@@ -20,7 +20,7 @@ const PRUEBA_TO = 'pablo.llorente@nfq.es';
 // sin redirecciones ni páginas HTML de error. NO usar la URL de GitHub Pages: puede
 // redirigir (307) o, en red corporativa, ser bloqueada por el proxy y devolver HTML,
 // lo que rompe el JSON.parse ("Unexpected token '<', <!doctype...").
-const EQUIPO_JSON_URL = 'https://raw.githubusercontent.com/pablolloce/proyectos-rdr-nfq/main/equipo/equipo.json'; // ← ajusta usuario/repo/rama si cambian
+const EQUIPO_JSON_URL = 'https://raw.githubusercontent.com/rdr-nfq/team-hub/main/equipo/equipo.json'; // ← ajusta usuario/repo/rama si cambian
 
 // ── Disparadores (ejecutar una vez) ───────────────────────────────────────
 function crearTriggers() {
