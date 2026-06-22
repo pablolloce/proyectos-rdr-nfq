@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Html, Line, Icosahedron } from "@react-three/drei";
+import { Html, Line, Icosahedron, RoundedBox } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 import { useLinks } from "@/lib/links";
@@ -59,26 +59,27 @@ function wedgeGeometry(r, a0, a1, depth) {
   s.lineTo(Math.cos(a0) * r, Math.sin(a0) * r);
   s.absarc(0, 0, r, a0, a1, false);
   s.lineTo(0, 0);
-  const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.06, bevelSegments: 2, steps: 1, curveSegments: 20 });
+  const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.16, bevelSegments: 4, steps: 1, curveSegments: 24 });
   g.translate(0, 0, -depth / 2);
   return g;
 }
 
 // Piezas que forman cada letra (una por enlace). cx/cy = centro (para la línea).
 function buildR(n) {
-  const stem = { kind: "box", w: 0.62, h: 3.0, x: -0.85, y: 0, rot: 0, cx: -0.85, cy: 0 };
+  const W = 0.85; // trazo grueso (bubble)
+  const stem = { kind: "box", w: W, h: 3.0, x: -0.85, y: 0, rot: 0, cx: -0.85, cy: 0 };
   if (n <= 3) {
     return [
       stem,
-      { kind: "box", w: 1.7, h: 1.0, x: 0.12, y: 1.0, rot: 0, cx: 0.12, cy: 1.0 },
-      { kind: "box", w: 0.62, h: 2.0, x: 0.5, y: -0.85, rot: -0.5, cx: 0.5, cy: -0.85 },
+      { kind: "box", w: 1.75, h: 1.3, x: 0.05, y: 0.85, rot: 0, cx: 0.05, cy: 0.85 }, // bucle
+      { kind: "box", w: W, h: 2.1, x: 0.18, y: -0.9, rot: -0.5, cx: 0.18, cy: -0.9 }, // pata (pegada al asta)
     ];
   }
   return [
     stem,
-    { kind: "box", w: 1.55, h: 0.85, x: 0.1, y: 1.12, rot: 0, cx: 0.1, cy: 1.12 },
-    { kind: "box", w: 0.62, h: 1.1, x: 0.78, y: 0.5, rot: 0, cx: 0.78, cy: 0.5 },
-    { kind: "box", w: 0.66, h: 2.0, x: 0.5, y: -0.85, rot: -0.5, cx: 0.5, cy: -0.85 },
+    { kind: "box", w: 1.6, h: 1.0, x: 0.05, y: 1.0, rot: 0, cx: 0.05, cy: 1.0 },      // arriba del bucle
+    { kind: "box", w: W, h: 1.35, x: 0.82, y: 0.4, rot: 0, cx: 0.82, cy: 0.4 },       // lado derecho del bucle
+    { kind: "box", w: W, h: 2.1, x: 0.18, y: -0.9, rot: -0.5, cx: 0.18, cy: -0.9 },   // pata
   ].slice(0, n);
 }
 function buildD(n) {
@@ -129,12 +130,14 @@ function Piece({ desc, color, active, setActive, onAct, item }) {
     onPointerOut: () => setActive(false),
     onClick: (e) => { e.stopPropagation(); onAct(item, color); },
   };
-  const mat = <meshPhysicalMaterial color={color} emissive={color} emissiveIntensity={0.24} metalness={0.2} roughness={0.32} clearcoat={1} clearcoatRoughness={0.16} />;
+  const mat = <meshPhysicalMaterial color={color} emissive={color} emissiveIntensity={0.24} metalness={0.15} roughness={0.28} clearcoat={1} clearcoatRoughness={0.14} />;
   if (desc.kind === "box") {
+    const radius = Math.min(desc.w, desc.h, DZ) * 0.46; // muy redondeado -> "bubble" (tipo cápsula)
     return (
-      <mesh {...common} position={[desc.x, desc.y, 0]} rotation={[0, 0, desc.rot || 0]}>
-        <boxGeometry args={[desc.w, desc.h, DZ]} />{mat}
-      </mesh>
+      <RoundedBox {...common} args={[desc.w, desc.h, DZ]} radius={radius} smoothness={5}
+        position={[desc.x, desc.y, 0]} rotation={[0, 0, desc.rot || 0]}>
+        {mat}
+      </RoundedBox>
     );
   }
   return <mesh {...common} geometry={desc.geo} position={[desc.x, desc.y, 0]}>{mat}</mesh>;
