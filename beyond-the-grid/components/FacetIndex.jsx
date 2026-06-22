@@ -210,7 +210,7 @@ export default function FacetIndex() {
   const [active, setActive] = useState(null);
   const [nav, setNav] = useState(null);
 
-  const { nodes, edgeGeo } = useMemo(() => {
+  const { nodes, edgeGeo, spokeGeo } = useMemo(() => {
     const { verts, edges } = icosa();
     const flat = [];
     SECTIONS.forEach((sec) => sec.items.forEach((item) => flat.push({ color: sec.color, section: sec.title, num: sec.num, item })));

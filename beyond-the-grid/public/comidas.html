@@ -149,6 +149,25 @@
   </style>
 </head>
 <body>
+<!-- RDR splash de carga (réplica del hub). Se autoelimina a ~1.7s. -->
+<div id="rdr-splash" aria-hidden="true">
+  <p class="rdr-splash-kicker">BBVA &times; NFQ</p>
+  <h1 class="rdr-splash-title">RDR Knowledge</h1>
+  <div class="rdr-splash-line"></div>
+</div>
+<style>
+#rdr-splash{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#001391;font-family:'Lato',system-ui,sans-serif}
+#rdr-splash{animation:rdrSplashOut .6s ease 1s forwards}
+#rdr-splash .rdr-splash-kicker{margin:0;font-size:12px;letter-spacing:.4em;text-transform:uppercase;color:#85C8FF;opacity:0;transform:translateY(8px);animation:rdrSplashIn .5s ease .05s forwards}
+#rdr-splash .rdr-splash-title{margin:12px 0 0;font-family:'Source Serif 4',Georgia,serif;font-weight:700;font-size:clamp(2rem,6vw,3.75rem);color:#F7F8F8;opacity:0;transform:translateY(12px);animation:rdrSplashIn .6s ease .15s forwards}
+#rdr-splash .rdr-splash-line{margin-top:32px;height:1px;width:160px;background:rgba(133,200,255,.6);transform:scaleX(0);transform-origin:left;animation:rdrSplashLine .8s ease .2s forwards}
+@keyframes rdrSplashIn{to{opacity:1;transform:translateY(0)}}
+@keyframes rdrSplashLine{to{transform:scaleX(1)}}
+@keyframes rdrSplashOut{to{opacity:0;visibility:hidden}}
+@media (prefers-reduced-motion:reduce){#rdr-splash{animation-delay:.3s}#rdr-splash *{animation:none;opacity:1;transform:none}}
+</style>
+<script>setTimeout(function(){var s=document.getElementById('rdr-splash');if(s&&s.remove)s.remove();},1700);</script>
+
   <a href="index.html" class="hub-back-btn" title="Volver al RDR Hub">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
     RDR Hub
