@@ -5,6 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Html, Line, Icosahedron, MeshDistortMaterial } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
+import { TessellateModifier } from "three/examples/jsm/modifiers/TessellateModifier.js";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
@@ -43,7 +44,6 @@ const SECTIONS = [
 
 const DZ = 0.9;
 const LETX = 6.4;
-const HITR = 2.7;
 const LBL_R = 3.1;
 const FRONT = DZ / 2 + 0.1;
 
@@ -75,18 +75,12 @@ function shapeR() {
 }
 function letterGeometry(glyph) {
   const shape = glyph === "D" ? shapeD() : shapeR();
-  // bisel grande -> bordes MUY redondeados y limpios
-  const g = new THREE.ExtrudeGeometry(shape, { depth: DZ, bevelEnabled: true, bevelThickness: 0.26, bevelSize: 0.26, bevelSegments: 8, steps: 1, curveSegments: 48 });
+  let g = new THREE.ExtrudeGeometry(shape, { depth: DZ, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.24, bevelSegments: 6, steps: 2, curveSegments: 40 });
   g.center();
+  g = g.toNonIndexed();
+  // teselar -> muchos vértices -> la ondulación (agua) se ve suave en toda la cara
+  g = new TessellateModifier(0.5, 4).modify(g);
   return g;
-}
-function hitWedge(a0, a1) {
-  const s = new THREE.Shape();
-  s.moveTo(0, 0);
-  s.lineTo(Math.cos(a0) * HITR, Math.sin(a0) * HITR);
-  s.absarc(0, 0, HITR, a0, a1, false);
-  s.lineTo(0, 0);
-  return new THREE.ShapeGeometry(s);
 }
 
 function activate(item, getUrl, copyLink, navInternal) {
@@ -127,32 +121,42 @@ function Bubbles({ count = 30 }) {
 
 function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
   const grp = useRef();
+  const meshRef = useRef();
   const mat = useRef();
   const n = section.items.length;
   const letterActive = activeKey != null && activeKey.startsWith(section.num + ".");
-  const sectors = useMemo(() => section.items.map((_, i) => {
-    const a0 = -Math.PI / 2 + i * (2 * Math.PI / n);
-    const a1 = a0 + 2 * Math.PI / n;
-    return { mid: (a0 + a1) / 2, hit: hitWedge(a0, a1) };
-  }), [n]);
+  // ángulos medios de cada porción (para colocar la etiqueta radialmente)
+  const mids = useMemo(() => section.items.map((_, i) => -Math.PI / 2 + i * (2 * Math.PI / n) + Math.PI / n), [n]);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     if (grp.current) {
-      grp.current.rotation.z = Math.sin(t * 0.7 + x) * 0.05;
-      grp.current.rotation.x = -0.1 + Math.sin(t * 0.5 + x) * 0.06;
-      grp.current.rotation.y = Math.sin(t * 0.4 + x) * 0.07;
-      grp.current.position.y = Math.sin(t * 0.8 + x) * 0.2;
+      grp.current.rotation.z = Math.sin(t * 0.5 + x) * 0.04;
+      grp.current.rotation.x = -0.08 + Math.sin(t * 0.35 + x) * 0.04;
+      grp.current.rotation.y = Math.sin(t * 0.28 + x) * 0.05;
+      grp.current.position.y = Math.sin(t * 0.5 + x) * 0.18;
     }
-    if (mat.current) mat.current.emissiveIntensity = THREE.MathUtils.lerp(mat.current.emissiveIntensity, letterActive ? 0.55 : 0.2, 0.15);
+    if (mat.current) mat.current.emissiveIntensity = THREE.MathUtils.lerp(mat.current.emissiveIntensity, letterActive ? 0.55 : 0.22, 0.12);
   });
+
+  // qué porción está bajo el punto pulsado (ángulo en coords locales de la letra)
+  function sectorAt(point) {
+    const p = point.clone();
+    meshRef.current.worldToLocal(p);
+    let rel = Math.atan2(p.y, p.x) + Math.PI / 2;
+    rel = ((rel % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    return Math.floor(rel / (2 * Math.PI / n)) % n;
+  }
 
   return (
     <group ref={grp} position={[x, 0, 0]}>
-      {/* letra: pieza única que ondula (gelatina/agua) */}
-      <mesh geometry={geo}>
-        <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.2}
-          roughness={0.16} metalness={0.1} clearcoat={1} clearcoatRoughness={0.08} distort={0.18} speed={2.2} />
+      {/* la LETRA: pieza única que ondula (agua). Se interactúa con ella directamente. */}
+      <mesh ref={meshRef} geometry={geo}
+        onPointerMove={(e) => { e.stopPropagation(); setActiveKey(section.num + "." + sectorAt(e.point)); }}
+        onPointerOut={() => setActiveKey(null)}
+        onClick={(e) => { e.stopPropagation(); onAct(section.items[sectorAt(e.point)], section.color); }}>
+        <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.22}
+          roughness={0.16} metalness={0.1} clearcoat={1} clearcoatRoughness={0.08} distort={0.3} speed={1.6} />
       </mesh>
 
       <Html center position={[0, 2.6, FRONT]} style={{ pointerEvents: "none" }}>
@@ -162,21 +166,14 @@ function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
         </div>
       </Html>
 
-      {sectors.map((sec, i) => {
+      {mids.map((mid, i) => {
         const item = section.items[i];
         const key = section.num + "." + i;
         const active = activeKey === key;
-        const lx = Math.cos(sec.mid) * LBL_R, ly = Math.sin(sec.mid) * LBL_R;
+        const lx = Math.cos(mid) * LBL_R, ly = Math.sin(mid) * LBL_R;
         return (
           <group key={key}>
-            {/* gajo invisible = área de click/hover de esta porción */}
-            <mesh geometry={sec.hit} position={[0, 0, FRONT]}
-              onPointerOver={(e) => { e.stopPropagation(); setActiveKey(key); }}
-              onPointerOut={() => setActiveKey(null)}
-              onClick={(e) => { e.stopPropagation(); onAct(item, section.color); }}>
-              <meshBasicMaterial transparent opacity={active ? 0.14 : 0} color={section.color} depthWrite={false} />
-            </mesh>
-            <Line points={[[Math.cos(sec.mid) * 1.5, Math.sin(sec.mid) * 1.5, FRONT], [lx, ly, FRONT]]}
+            <Line points={[[Math.cos(mid) * 1.55, Math.sin(mid) * 1.55, FRONT], [lx, ly, FRONT]]}
               color={active ? section.color : "#9fb0e0"} lineWidth={active ? 2.6 : 1.2} transparent opacity={active ? 1 : 0.4} />
             <Html center position={[lx, ly, FRONT]} zIndexRange={active ? [70, 0] : [40, 0]} style={{ pointerEvents: "auto" }}>
               <button data-hover type="button" aria-label={aria(item)}
