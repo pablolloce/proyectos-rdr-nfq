@@ -140,7 +140,7 @@ function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
         onPointerOut={() => setActiveKey(null)}
         onClick={(e) => { e.stopPropagation(); onAct(section.items[sectorAt(e.point)], section.color); }}>
         <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.16}
-          roughness={0.06} metalness={0.4} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.6} distort={0.22} speed={1.7} />
+          roughness={0.06} metalness={0.4} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.6} distort={0.28} speed={1.8} />
       </mesh>
 
       <Html center position={[0, TARGET_H / 2 + 0.6, FRONT]} style={{ pointerEvents: "none" }}>
