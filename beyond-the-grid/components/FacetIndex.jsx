@@ -77,7 +77,7 @@ function glyphGeometry(font, char) {
     else if (c.type === "Q") sp.quadraticCurveTo(c.x1, -c.y1, c.x, -c.y);
   });
   const shapes = sp.toShapes(true);
-  const g = new THREE.ExtrudeGeometry(shapes, { depth: DZ, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.14, bevelSegments: 5, steps: 1, curveSegments: 24 });
+  const g = new THREE.ExtrudeGeometry(shapes, { depth: DZ, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.09, bevelSegments: 4, steps: 1, curveSegments: 40 });
   g.center();
   g.computeBoundingBox();
   const h = g.boundingBox.max.y - g.boundingBox.min.y || 1;
@@ -140,7 +140,7 @@ function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
         onPointerOut={() => setActiveKey(null)}
         onClick={(e) => { e.stopPropagation(); onAct(section.items[sectorAt(e.point)], section.color); }}>
         <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.16}
-          side={THREE.DoubleSide} roughness={0.06} metalness={0.4} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.6} distort={0.14} speed={1.3} />
+          roughness={0.06} metalness={0.4} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.6} distort={0.22} speed={1.7} />
       </mesh>
 
       <Html center position={[0, TARGET_H / 2 + 0.6, FRONT]} style={{ pointerEvents: "none" }}>
@@ -266,10 +266,9 @@ export default function FacetIndex() {
             <StudioEnv />
             {geos && <Scene3D letters={letters} external={external} geos={geos} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />}
           </Suspense>
-          {/* Bloom desactivado temporalmente para aislar el "todo vacío" — se reactiva luego */}
-          {/* <EffectComposer>
-            <Bloom mipmapBlur intensity={0.7} luminanceThreshold={0.55} luminanceSmoothing={0.3} />
-          </EffectComposer> */}
+          <EffectComposer>
+            <Bloom mipmapBlur intensity={0.6} luminanceThreshold={0.6} luminanceSmoothing={0.35} />
+          </EffectComposer>
         </Canvas>
         <p className="pointer-events-none absolute inset-x-0 bottom-5 text-center text-xs uppercase tracking-[0.3em] text-serene/55">
           R · D · R — cada porción es un enlace · pulsa para abrir · o usa la lista (Tab)
