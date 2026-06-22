@@ -47,12 +47,14 @@ const SECTIONS = [
   ] },
 ];
 
-const COLS = 3;       // cubos por fila dentro de un bloque
+const COLS = 3;       // cubos por fila
+const ROWS = 3;       // cubos por columna
+const DEPTH = 2;      // capas de profundidad (losa 3×3×2 = 18 cubos por bloque)
 const CS = 1.0;       // tamaño del cubo
 const SP = 1.16;      // separación entre cubos (costura)
-const GAP_X = 1.7;    // separación horizontal entre bloques
-const GAP_Y = 2.1;    // separación vertical entre bloques (incluye título)
-const TILT = -0.14;   // inclinación fija (look isométrico de ejemplo.PNG)
+const GAP_X = 1.9;    // separación horizontal entre bloques
+const GAP_Y = 2.3;    // separación vertical entre bloques (incluye título)
+const TILT = -0.16;   // inclinación fija (look isométrico de ejemplo.PNG)
 
 const hint = (it) => (it.copy ? "⧉" : it.key ? "↗" : "→");
 const aria = (it) => it.label + (it.copy ? " · copiar enlace" : it.key ? " · abrir en pestaña nueva" : " · abrir");
@@ -65,23 +67,29 @@ function activate(item, getUrl, copyLink, navInternal) {
   else navInternal(u, item);
 }
 
-// Coloca los enlaces en una rejilla de COLS columnas y rellena la última fila.
+// Losa 3×3×2: los enlaces van en la CARA FRONTAL (capa d=0), de arriba-izq hacia
+// abajo-der; el resto de la cara y toda la capa trasera son cubos de relleno
+// (dan el grosor de la losa, como en ejemplo.PNG).
 function layoutBlock(section) {
   const items = section.items;
-  const rows = Math.ceil(items.length / COLS);
-  const slots = rows * COLS;
   const cells = [];
-  for (let i = 0; i < slots; i++) {
-    const col = i % COLS;
-    const row = Math.floor(i / COLS);
-    cells.push({
-      item: items[i] || null, // null = relleno
-      x: (col - (COLS - 1) / 2) * SP,
-      y: ((rows - 1) / 2 - row) * SP,
-      key: section.num + "." + i,
-    });
+  let li = 0;
+  for (let d = 0; d < DEPTH; d++) {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const front = d === 0;
+        const item = front && li < items.length ? items[li++] : null;
+        cells.push({
+          item, // null = relleno
+          x: (c - (COLS - 1) / 2) * SP,
+          y: ((ROWS - 1) / 2 - r) * SP,
+          z: ((DEPTH - 1) / 2) * SP - d * SP, // d=0 (frontal) hacia la cámara
+          key: section.num + "." + d + "." + r + "." + c,
+        });
+      }
+    }
   }
-  return { cells, rows, w: COLS * SP, h: rows * SP };
+  return { cells, rows: ROWS, w: COLS * SP, h: ROWS * SP };
 }
 
 function LinkCube({ cell, active, setActive, onAct }) {
@@ -105,12 +113,12 @@ function LinkCube({ cell, active, setActive, onAct }) {
   });
 
   return (
-    <group position={[cell.x, cell.y, 0]}>
+    <group position={[cell.x, cell.y, cell.z]}>
       <RoundedBox
         ref={ref}
         args={[CS, CS, CS]}
         radius={0.16}
-        smoothness={5}
+        smoothness={4}
         onPointerOver={(e) => { e.stopPropagation(); setActive(true); }}
         onPointerOut={() => setActive(false)}
         onPointerDown={(e) => { e.stopPropagation(); onAct(item); }}
@@ -156,7 +164,7 @@ function LinkCube({ cell, active, setActive, onAct }) {
 
 function FillerCube({ cell }) {
   return (
-    <RoundedBox args={[CS, CS, CS]} radius={0.16} smoothness={4} position={[cell.x, cell.y, 0]}>
+    <RoundedBox args={[CS, CS, CS]} radius={0.16} smoothness={3} position={[cell.x, cell.y, cell.z]}>
       <meshPhysicalMaterial color="#D7DCEA" emissive="#001391" emissiveIntensity={0.06}
         metalness={0.1} roughness={0.4} clearcoat={0.8} clearcoatRoughness={0.25} />
     </RoundedBox>
@@ -239,7 +247,7 @@ export default function FacetIndex() {
   const onAct = (item) =>
     activate(item, getUrl, copyLink, (url, it) => setNav({ url, label: it.label, color: it.color }));
 
-  const zoom = isCoordinador ? 58 : 66;
+  const zoom = isCoordinador ? 46 : 52;
 
   return (
     <div className="absolute inset-0 flex">
