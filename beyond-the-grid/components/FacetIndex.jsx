@@ -47,15 +47,20 @@ const SECTIONS = [
   ] },
 ];
 
-const COLS = 3;       // cubos por fila
-const ROWS = 3;       // cubos por columna
-const DEPTH = 2;      // capas de profundidad (losa 3×3×2 = 18 cubos por bloque)
-const CS = 1.0;       // tamaño del cubo
-const SP = 1.16;      // separación entre cubos (costura)
-const GAP_X = 1.9;    // separación horizontal entre bloques
-const GAP_Y = 2.3;    // separación vertical entre bloques (incluye título)
-const TILT = -0.26;   // inclinación fija: se ven las TAPAS (más profundidad)
-const BASE_YAW = -0.5; // giro base a vista 3/4: se ven los CANTOS (más profundidad)
+const COLS = 3;       // columnas por bloque
+const ROWS = 3;       // filas por bloque
+const DEPTH = 2;      // capas de profundidad (losa 3×3×2 = 18 piezas)
+// Piezas RECTANGULARES (apaisadas): caben mejor las etiquetas horizontales.
+const CW = 1.75;      // ancho
+const CH = 0.92;      // alto
+const CD = 0.85;      // fondo
+const SPX = CW + 0.18; // separación horizontal (costura)
+const SPY = CH + 0.16; // separación vertical
+const SPZ = CD + 0.12; // separación en profundidad
+const GAP_X = 1.8;    // separación horizontal entre bloques
+const GAP_Y = 1.9;    // separación vertical entre bloques (incluye título)
+const TILT = -0.24;   // inclinación: se ven las TAPAS
+const BASE_YAW = 0.5; // giro 3/4 hacia el OTRO lado
 
 // "Bubble": onda continua por cubo (flotar + latir). El desfase depende de la
 // posición del cubo -> recorre la losa como una ola. NO depende del ratón.
@@ -90,15 +95,15 @@ function layoutBlock(section) {
         const item = front && li < items.length ? items[li++] : null;
         cells.push({
           item, // null = relleno
-          x: (c - (COLS - 1) / 2) * SP,
-          y: ((ROWS - 1) / 2 - r) * SP,
-          z: ((DEPTH - 1) / 2) * SP - d * SP, // d=0 (frontal) hacia la cámara
+          x: (c - (COLS - 1) / 2) * SPX,
+          y: ((ROWS - 1) / 2 - r) * SPY,
+          z: ((DEPTH - 1) / 2) * SPZ - d * SPZ, // d=0 (frontal) hacia la cámara
           key: section.num + "." + d + "." + r + "." + c,
         });
       }
     }
   }
-  return { cells, rows: ROWS, w: COLS * SP, h: ROWS * SP };
+  return { cells, rows: ROWS, w: COLS * SPX, h: ROWS * SPY };
 }
 
 function LinkCube({ cell, active, setActive, onAct }) {
@@ -127,8 +132,8 @@ function LinkCube({ cell, active, setActive, onAct }) {
     <group position={[cell.x, cell.y, cell.z]}>
       <RoundedBox
         ref={ref}
-        args={[CS, CS, CS]}
-        radius={0.16}
+        args={[CW, CH, CD]}
+        radius={0.13}
         smoothness={4}
         onPointerOver={(e) => { e.stopPropagation(); setActive(true); }}
         onPointerOut={() => setActive(false)}
@@ -145,7 +150,7 @@ function LinkCube({ cell, active, setActive, onAct }) {
         />
       </RoundedBox>
 
-      <Html center position={[0, 0, CS * 0.5 + 0.05]} zIndexRange={[30, 0]}>
+      <Html center position={[0, 0, CD * 0.5 + 0.06]} zIndexRange={[30, 0]} style={{ pointerEvents: "auto" }}>
         <button
           data-hover
           type="button"
@@ -156,17 +161,20 @@ function LinkCube({ cell, active, setActive, onAct }) {
           onFocus={() => setActive(true)}
           onBlur={() => setActive(false)}
           style={{
+            display: "inline-flex", alignItems: "center", gap: "6px",
             whiteSpace: "nowrap", cursor: "pointer",
-            fontFamily: "var(--font-lato), Lato, sans-serif", fontSize: "12px", fontWeight: 700,
+            fontFamily: "var(--font-lato), Lato, sans-serif", fontSize: "13.5px", fontWeight: 700,
             color: active ? "#070E46" : "#0A1240",
-            background: active ? item.color : "rgba(247,248,248,.92)",
-            border: "1.5px solid " + item.color,
-            borderRadius: "999px", padding: "4px 11px",
-            boxShadow: active ? `0 8px 24px ${item.color}66` : "0 2px 8px rgba(0,0,0,.35)",
-            transition: "background .15s, color .15s, box-shadow .15s",
+            background: active ? item.color : "rgba(247,248,248,.95)",
+            border: "2px solid " + item.color,
+            borderRadius: "10px", padding: "6px 13px",
+            boxShadow: active ? `0 10px 26px ${item.color}77` : "0 3px 12px rgba(0,0,0,.4)",
+            transition: "background .15s, color .15s, box-shadow .15s, transform .15s",
+            transform: active ? "scale(1.06)" : "scale(1)",
           }}
         >
-          {item.label} <span aria-hidden style={{ opacity: 0.65 }}>{hint(item)}</span>
+          <span>{item.label}</span>
+          <span aria-hidden style={{ opacity: 0.6, fontSize: "12px" }}>{hint(item)}</span>
         </button>
       </Html>
     </group>
@@ -182,7 +190,7 @@ function FillerCube({ cell }) {
     ref.current.scale.setScalar(1 + b.ds);
   });
   return (
-    <RoundedBox ref={ref} args={[CS, CS, CS]} radius={0.16} smoothness={3} position={[cell.x, cell.y, cell.z]}>
+    <RoundedBox ref={ref} args={[CW, CH, CD]} radius={0.13} smoothness={3} position={[cell.x, cell.y, cell.z]}>
       <meshPhysicalMaterial color="#D7DCEA" emissive="#001391" emissiveIntensity={0.06}
         metalness={0.1} roughness={0.4} clearcoat={0.8} clearcoatRoughness={0.25} />
     </RoundedBox>
@@ -265,7 +273,7 @@ export default function FacetIndex() {
   const onAct = (item) =>
     activate(item, getUrl, copyLink, (url, it) => setNav({ url, label: it.label, color: it.color }));
 
-  const zoom = isCoordinador ? 42 : 48;
+  const zoom = isCoordinador ? 48 : 54;
 
   return (
     <div className="absolute inset-0 flex">
