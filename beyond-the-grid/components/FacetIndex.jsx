@@ -54,13 +54,13 @@ const DEPTH = 3;      // capas de profundidad (losa 3×3×3 = 27 piezas)
 const CW = 0.95;      // ancho
 const CH = 1.75;      // alto (verticales)
 const CD = 0.85;      // fondo
-const SPX = CW + 0.4;  // separación horizontal mayor: las etiquetas respiran
+const SPX = CW + 2.0;  // columnas bien separadas para que las etiquetas NO se solapen
 const SPY = CH + 0.16; // separación vertical (costura)
 const SPZ = CD + 0.12; // separación en profundidad
-const GAP_X = 1.8;    // separación horizontal entre bloques
-const GAP_Y = 1.9;    // separación vertical entre bloques (incluye título)
-const TILT = -0.24;   // inclinación: se ven las TAPAS
-const BASE_YAW = 0.5; // giro 3/4 hacia el OTRO lado
+const GAP_X = 3.0;    // más aire entre bloques (evita solape de etiquetas contiguas)
+const GAP_Y = 2.2;    // separación vertical entre bloques (incluye título)
+const TILT = -0.22;   // inclinación: se ven las TAPAS
+const BASE_YAW = 0.38; // giro 3/4 (algo menos: comprime menos las etiquetas)
 
 // "Bubble": onda continua por cubo (flotar + latir). El desfase depende de la
 // posición del cubo -> recorre la losa como una ola. NO depende del ratón.
@@ -150,7 +150,7 @@ function LinkCube({ cell, active, setActive, onAct }) {
         />
       </RoundedBox>
 
-      <Html center position={[0, 0, CD * 0.5 + 0.06]} zIndexRange={[30, 0]} style={{ pointerEvents: "auto" }}>
+      <Html center position={[0, 0, CD * 0.5 + 0.06]} zIndexRange={active ? [60, 0] : [30, 0]} style={{ pointerEvents: "auto" }}>
         <button
           data-hover
           type="button"
@@ -161,20 +161,20 @@ function LinkCube({ cell, active, setActive, onAct }) {
           onFocus={() => setActive(true)}
           onBlur={() => setActive(false)}
           style={{
-            display: "inline-flex", alignItems: "center", gap: "6px",
+            display: "inline-flex", alignItems: "center", gap: "5px",
             whiteSpace: "nowrap", cursor: "pointer",
-            fontFamily: "var(--font-lato), Lato, sans-serif", fontSize: "13.5px", fontWeight: 700,
+            fontFamily: "var(--font-lato), Lato, sans-serif", fontSize: "11.5px", fontWeight: 700,
             color: active ? "#070E46" : "#0A1240",
             background: active ? item.color : "rgba(247,248,248,.95)",
             border: "2px solid " + item.color,
-            borderRadius: "10px", padding: "6px 13px",
+            borderRadius: "9px", padding: "4px 9px",
             boxShadow: active ? `0 10px 26px ${item.color}77` : "0 3px 12px rgba(0,0,0,.4)",
             transition: "background .15s, color .15s, box-shadow .15s, transform .15s",
-            transform: active ? "scale(1.06)" : "scale(1)",
+            transform: active ? "scale(1.08)" : "scale(1)",
           }}
         >
           <span>{item.label}</span>
-          <span aria-hidden style={{ opacity: 0.6, fontSize: "12px" }}>{hint(item)}</span>
+          <span aria-hidden style={{ opacity: 0.6, fontSize: "11px" }}>{hint(item)}</span>
         </button>
       </Html>
     </group>
@@ -273,7 +273,7 @@ export default function FacetIndex() {
   const onAct = (item) =>
     activate(item, getUrl, copyLink, (url, it) => setNav({ url, label: it.label, color: it.color }));
 
-  const zoom = isCoordinador ? 40 : 46;
+  const zoom = isCoordinador ? 40 : 44;
 
   return (
     <div className="absolute inset-0 flex">
