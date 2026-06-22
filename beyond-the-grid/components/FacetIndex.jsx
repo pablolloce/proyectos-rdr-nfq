@@ -1,19 +1,25 @@
 "use client";
 
-import { Suspense, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Html, Line, Icosahedron, MeshDistortMaterial, Environment, Lightformer } from "@react-three/drei";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
+import opentype from "opentype.js";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
 /**
- * Hub 3D = letras R · D · R sólidas, acabado premium (reflejos del entorno + luz
- * superior, como la esfera) con una ondulación suave del material. Bordes
- * redondeados y limpios. Cada porción angular = un enlace (etiqueta fuera con
- * línea); se interactúa con la PROPIA letra (raycast). Control = gema externa.
+ * Hub 3D = letras R · D · R extruidas desde la fuente redondeada Baloo 2
+ * (opentype.js -> THREE.Shape -> ExtrudeGeometry). Acabado tipo yinger.dev:
+ * material reflectante con ondulación (MeshDistortMaterial) + reflejos de un
+ * Environment de Lightformers (luz superior) + BLOOM (postprocessing).
+ * Cada porción angular = un enlace; se interactúa con la letra (raycast por ángulo).
+ * Control = gema externa (solo coordinadores).
  */
+const FONT_URL = "fonts/Baloo2.ttf"; // public/fonts (servido bajo basePath /team-hub)
+
 const SECTIONS = [
   { num: "01", title: "Formaciones", color: "#85C8FF", glyph: "R", items: [
     { label: "¿Qué es RDR?",  href: "que-es-rdr.html" },
@@ -38,40 +44,34 @@ const SECTIONS = [
   ] },
 ];
 
-const DZ = 0.9;
+const DZ = 0.95;
 const LETX = 6.6;
-const LBL_R = 3.1;
+const LBL_R = 3.2;
 const FRONT = DZ / 2 + 0.1;
+const TARGET_H = 3.7; // alto de letra en el mundo
 
 const hint = (it) => (it.copy ? "⧉" : it.key ? "↗" : "→");
 const aria = (it) => it.label + (it.copy ? " · copiar enlace" : it.key ? " · abrir en pestaña nueva" : " · abrir");
 
-function shapeD() {
-  const s = new THREE.Shape();
-  s.moveTo(-1.5, -2); s.lineTo(-1.5, 2); s.lineTo(-0.5, 2);
-  s.absarc(-0.5, 0, 2, Math.PI / 2, -Math.PI / 2, true);
-  s.lineTo(-1.5, -2);
-  const h = new THREE.Path();
-  h.moveTo(-0.78, -1.28); h.lineTo(-0.78, 1.28); h.lineTo(-0.5, 1.28);
-  h.absarc(-0.5, 0, 1.28, Math.PI / 2, -Math.PI / 2, true); h.lineTo(-0.78, -1.28);
-  s.holes.push(h);
-  return s;
-}
-function shapeR() {
-  const s = new THREE.Shape();
-  s.moveTo(-1.4, -2); s.lineTo(-1.4, 2); s.lineTo(-0.1, 2);
-  s.absarc(-0.1, 1.15, 0.92, Math.PI / 2, -Math.PI / 2, true);
-  s.lineTo(0.25, 0.2); s.lineTo(1.18, -2); s.lineTo(0.48, -2);
-  s.lineTo(-0.55, 0.2); s.lineTo(-0.55, -2); s.lineTo(-1.4, -2);
-  const h = new THREE.Path();
-  h.moveTo(-0.62, 1.62); h.lineTo(-0.62, 0.66); h.lineTo(-0.1, 0.66);
-  h.absarc(-0.1, 1.15, 0.49, -Math.PI / 2, Math.PI / 2, false); h.lineTo(-0.62, 1.62);
-  s.holes.push(h);
-  return s;
-}
-function letterGeometry(glyph) {
-  const shape = glyph === "D" ? shapeD() : shapeR();
-  const g = new THREE.ExtrudeGeometry(shape, { depth: DZ, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.24, bevelSegments: 6, steps: 1, curveSegments: 56 });
+// Glifo de la fuente -> geometría extruida (con sus huecos). Se voltea la Y
+// (opentype usa Y hacia abajo) y se centra/escala a TARGET_H.
+function glyphGeometry(font, char) {
+  const glyph = font.charToGlyph(char);
+  const path = glyph.getPath(0, 0, 4); // tamaño em arbitrario; luego se normaliza
+  const sp = new THREE.ShapePath();
+  path.commands.forEach((c) => {
+    if (c.type === "M") sp.moveTo(c.x, -c.y);
+    else if (c.type === "L") sp.lineTo(c.x, -c.y);
+    else if (c.type === "C") sp.bezierCurveTo(c.x1, -c.y1, c.x2, -c.y2, c.x, -c.y);
+    else if (c.type === "Q") sp.quadraticCurveTo(c.x1, -c.y1, c.x, -c.y);
+  });
+  const shapes = sp.toShapes(true);
+  const g = new THREE.ExtrudeGeometry(shapes, { depth: DZ, bevelEnabled: true, bevelThickness: 0.16, bevelSize: 0.14, bevelSegments: 5, steps: 1, curveSegments: 24 });
+  g.center();
+  g.computeBoundingBox();
+  const h = g.boundingBox.max.y - g.boundingBox.min.y || 1;
+  const s = TARGET_H / h;
+  g.scale(s, s, 1);
   g.center();
   return g;
 }
@@ -107,11 +107,11 @@ function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
     const t = state.clock.elapsedTime;
     if (grp.current) {
       grp.current.rotation.z = Math.sin(t * 0.45 + x) * 0.04;
-      grp.current.rotation.x = -0.06 + Math.sin(t * 0.33 + x) * 0.04;
+      grp.current.rotation.x = -0.05 + Math.sin(t * 0.33 + x) * 0.04;
       grp.current.rotation.y = Math.sin(t * 0.26 + x) * 0.06;
       grp.current.position.y = Math.sin(t * 0.5 + x) * 0.18;
     }
-    if (mat.current) mat.current.emissiveIntensity = THREE.MathUtils.lerp(mat.current.emissiveIntensity, letterActive ? 0.4 : 0.1, 0.12);
+    if (mat.current) mat.current.emissiveIntensity = THREE.MathUtils.lerp(mat.current.emissiveIntensity, letterActive ? 0.5 : 0.16, 0.12);
   });
 
   function sectorAt(point) {
@@ -128,11 +128,11 @@ function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
         onPointerMove={(e) => { e.stopPropagation(); setActiveKey(section.num + "." + sectorAt(e.point)); }}
         onPointerOut={() => setActiveKey(null)}
         onClick={(e) => { e.stopPropagation(); onAct(section.items[sectorAt(e.point)], section.color); }}>
-        <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.1}
-          roughness={0.06} metalness={0.4} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.5} distort={0.08} speed={1.2} />
+        <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.16}
+          roughness={0.06} metalness={0.4} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.6} distort={0.14} speed={1.3} />
       </mesh>
 
-      <Html center position={[0, 2.7, FRONT]} style={{ pointerEvents: "none" }}>
+      <Html center position={[0, TARGET_H / 2 + 0.6, FRONT]} style={{ pointerEvents: "none" }}>
         <div style={{ textAlign: "center", whiteSpace: "nowrap" }}>
           <div style={{ fontSize: "10px", letterSpacing: ".25em", color: "rgba(133,200,255,.6)", fontFamily: "var(--font-lato), Lato, sans-serif" }}>{section.num}</div>
           <div style={{ fontSize: "17px", fontWeight: 700, color: "#F7F8F8", fontFamily: "var(--font-serif), Georgia, serif" }}>{section.title}</div>
@@ -146,7 +146,7 @@ function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
         const lx = Math.cos(mid) * LBL_R, ly = Math.sin(mid) * LBL_R;
         return (
           <group key={key}>
-            <Line points={[[Math.cos(mid) * 1.55, Math.sin(mid) * 1.55, FRONT], [lx, ly, FRONT]]}
+            <Line points={[[Math.cos(mid) * 1.6, Math.sin(mid) * 1.6, FRONT], [lx, ly, FRONT]]}
               color={active ? section.color : "#9fb0e0"} lineWidth={active ? 2.6 : 1.2} transparent opacity={active ? 1 : 0.4} />
             <Html center position={[lx, ly, FRONT]} zIndexRange={active ? [70, 0] : [40, 0]} style={{ pointerEvents: "auto" }}>
               <button data-hover type="button" aria-label={aria(item)}
@@ -201,12 +201,12 @@ function External({ pos, section, activeKey, setActiveKey, onAct }) {
   );
 }
 
-function Scene3D({ letters, external, activeKey, setActiveKey, onAct }) {
+function Scene3D({ letters, external, geos, activeKey, setActiveKey, onAct }) {
   const n = letters.length;
   return (
     <group>
       {letters.map((s, i) => (
-        <Letter key={s.num} x={(i - (n - 1) / 2) * LETX} section={s} geo={s._geo} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />
+        <Letter key={s.num} x={(i - (n - 1) / 2) * LETX} section={s} geo={geos[s.glyph]} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />
       ))}
       {external && (
         <External pos={[(n - 1) / 2 * LETX + LETX * 0.55, 2.4, 0]} section={external} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />
@@ -220,10 +220,20 @@ export default function FacetIndex() {
   const { isCoordinador } = useAuth();
   const [activeKey, setActiveKey] = useState(null);
   const [nav, setNav] = useState(null);
+  const [geos, setGeos] = useState(null); // { R, D } geometrías de la fuente
 
-  const letters = useMemo(() => SECTIONS.filter((s) => !s.external).map((s) => ({ ...s, _geo: letterGeometry(s.glyph) })), []);
+  useEffect(() => {
+    let alive = true;
+    opentype.load(FONT_URL, (err, font) => {
+      if (err || !alive || !font) { if (err) console.warn("font:", err); return; }
+      setGeos({ R: glyphGeometry(font, "R"), D: glyphGeometry(font, "D") });
+    });
+    return () => { alive = false; };
+  }, []);
+
+  const letters = SECTIONS.filter((s) => !s.external);
   const external = isCoordinador ? SECTIONS.find((s) => s.external) : null;
-  const legendSections = external ? [...SECTIONS.filter((s) => !s.external), external] : SECTIONS.filter((s) => !s.external);
+  const legendSections = external ? [...letters, external] : letters;
 
   const onAct = (item, color) =>
     activate(item, getUrl, copyLink, (url, it) => setNav({ url, label: it.label, color: color || "#85C8FF" }));
@@ -239,8 +249,11 @@ export default function FacetIndex() {
           <pointLight position={[-8, -3, 6]} intensity={1.4} color="#1D7CF4" />
           <Suspense fallback={null}>
             <StudioEnv />
-            <Scene3D letters={letters} external={external} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />
+            {geos && <Scene3D letters={letters} external={external} geos={geos} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />}
           </Suspense>
+          <EffectComposer>
+            <Bloom mipmapBlur intensity={0.7} luminanceThreshold={0.55} luminanceSmoothing={0.3} radius={0.7} />
+          </EffectComposer>
         </Canvas>
         <p className="pointer-events-none absolute inset-x-0 bottom-5 text-center text-xs uppercase tracking-[0.3em] text-serene/55">
           R · D · R — cada porción es un enlace · pulsa para abrir · o usa la lista (Tab)
