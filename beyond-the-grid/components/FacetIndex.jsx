@@ -77,7 +77,7 @@ function glyphGeometry(font, char) {
     else if (c.type === "Q") sp.quadraticCurveTo(c.x1, -c.y1, c.x, -c.y);
   });
   const shapes = sp.toShapes(true);
-  const g = new THREE.ExtrudeGeometry(shapes, { depth: DZ, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.09, bevelSegments: 4, steps: 1, curveSegments: 40 });
+  const g = new THREE.ExtrudeGeometry(shapes, { depth: DZ, bevelEnabled: true, bevelThickness: 0.06, bevelSize: 0.05, bevelSegments: 3, steps: 1, curveSegments: 40 });
   g.center();
   g.computeBoundingBox();
   const h = g.boundingBox.max.y - g.boundingBox.min.y || 1;
