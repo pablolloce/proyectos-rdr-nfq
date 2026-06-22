@@ -18,7 +18,18 @@ import { useAuth } from "./AuthGate";
  * Cada porción angular = un enlace; se interactúa con la letra (raycast por ángulo).
  * Control = gema externa (solo coordinadores).
  */
-const FONT_URL = "fonts/Baloo2.ttf"; // public/fonts (servido bajo basePath /team-hub)
+// public/fonts servido bajo basePath. Probamos varias rutas por robustez (dev/prod).
+const FONT_URLS = ["/team-hub/fonts/Baloo2.ttf", "/fonts/Baloo2.ttf", "fonts/Baloo2.ttf"];
+
+async function loadFont() {
+  for (const url of FONT_URLS) {
+    try {
+      const r = await fetch(url);
+      if (r.ok) return opentype.parse(await r.arrayBuffer(), {});
+    } catch (e) { /* probar siguiente ruta */ }
+  }
+  throw new Error("No se pudo cargar Baloo2.ttf desde: " + FONT_URLS.join(", "));
+}
 
 const SECTIONS = [
   { num: "01", title: "Formaciones", color: "#85C8FF", glyph: "R", items: [
@@ -70,9 +81,9 @@ function glyphGeometry(font, char) {
   g.center();
   g.computeBoundingBox();
   const h = g.boundingBox.max.y - g.boundingBox.min.y || 1;
-  const s = TARGET_H / h;
-  g.scale(s, s, 1);
+  g.scale(TARGET_H / h, TARGET_H / h, 1);
   g.center();
+  console.info(`[FacetIndex] glifo "${char}": ${shapes.length} shape(s), ${g.attributes.position.count} vértices`, g.boundingBox);
   return g;
 }
 
@@ -129,7 +140,7 @@ function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
         onPointerOut={() => setActiveKey(null)}
         onClick={(e) => { e.stopPropagation(); onAct(section.items[sectorAt(e.point)], section.color); }}>
         <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.16}
-          roughness={0.06} metalness={0.4} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.6} distort={0.14} speed={1.3} />
+          side={THREE.DoubleSide} roughness={0.06} metalness={0.4} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.6} distort={0.14} speed={1.3} />
       </mesh>
 
       <Html center position={[0, TARGET_H / 2 + 0.6, FRONT]} style={{ pointerEvents: "none" }}>
@@ -224,10 +235,14 @@ export default function FacetIndex() {
 
   useEffect(() => {
     let alive = true;
-    opentype.load(FONT_URL, (err, font) => {
-      if (err || !alive || !font) { if (err) console.warn("font:", err); return; }
-      setGeos({ R: glyphGeometry(font, "R"), D: glyphGeometry(font, "D") });
-    });
+    loadFont()
+      .then((font) => {
+        if (!alive) return;
+        const g = { R: glyphGeometry(font, "R"), D: glyphGeometry(font, "D") };
+        console.info("[FacetIndex] fuente cargada, geometrías listas", g);
+        setGeos(g);
+      })
+      .catch((e) => console.error("[FacetIndex] error cargando fuente:", e));
     return () => { alive = false; };
   }, []);
 
@@ -251,9 +266,10 @@ export default function FacetIndex() {
             <StudioEnv />
             {geos && <Scene3D letters={letters} external={external} geos={geos} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />}
           </Suspense>
-          <EffectComposer>
-            <Bloom mipmapBlur intensity={0.7} luminanceThreshold={0.55} luminanceSmoothing={0.3} radius={0.7} />
-          </EffectComposer>
+          {/* Bloom desactivado temporalmente para aislar el "todo vacío" — se reactiva luego */}
+          {/* <EffectComposer>
+            <Bloom mipmapBlur intensity={0.7} luminanceThreshold={0.55} luminanceSmoothing={0.3} />
+          </EffectComposer> */}
         </Canvas>
         <p className="pointer-events-none absolute inset-x-0 bottom-5 text-center text-xs uppercase tracking-[0.3em] text-serene/55">
           R · D · R — cada porción es un enlace · pulsa para abrir · o usa la lista (Tab)
