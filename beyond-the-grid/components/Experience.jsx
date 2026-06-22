@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { pointer } from "@/lib/pointerStore";
 import { LinksProvider } from "@/lib/links";
 import LoadingScreen from "./LoadingScreen";
-import CustomCursor from "./CustomCursor";
 import AuthGate from "./AuthGate";
 import Header from "./Header";
 import LinkCloud from "./LinkCloud";
@@ -42,7 +41,6 @@ export default function Experience() {
 
   return (
     <LinksProvider>
-      <CustomCursor />
       <LoadingScreen />
       <AuthGate>
         <div className="relative z-10 flex h-screen flex-col">
