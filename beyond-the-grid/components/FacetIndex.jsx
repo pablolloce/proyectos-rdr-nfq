@@ -5,7 +5,6 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Html, Line, Icosahedron, MeshDistortMaterial, Environment, Lightformer } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
-import { TessellateModifier } from "three/examples/jsm/modifiers/TessellateModifier.js";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
@@ -75,11 +74,10 @@ function shapeR() {
 }
 function letterGeometry(glyph) {
   const shape = glyph === "D" ? shapeD() : shapeR();
-  let g = new THREE.ExtrudeGeometry(shape, { depth: DZ, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.24, bevelSegments: 6, steps: 2, curveSegments: 40 });
+  // Geometría LIMPIA (sin teselar). Bisel generoso + curvas finas = bordes suaves
+  // sin desgarros. El look "bubble" lo dan los reflejos del entorno + clearcoat.
+  const g = new THREE.ExtrudeGeometry(shape, { depth: DZ, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.24, bevelSegments: 6, steps: 1, curveSegments: 56 });
   g.center();
-  g = g.toNonIndexed();
-  // teselar -> muchos vértices -> la ondulación (agua) se ve suave en toda la cara
-  g = new TessellateModifier(0.5, 4).modify(g);
   return g;
 }
 
@@ -141,7 +139,7 @@ function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
         onPointerOut={() => setActiveKey(null)}
         onClick={(e) => { e.stopPropagation(); onAct(section.items[sectorAt(e.point)], section.color); }}>
         <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.1}
-          roughness={0.08} metalness={0.35} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.5} distort={0.22} speed={1.4} />
+          roughness={0.08} metalness={0.35} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.5} distort={0.05} speed={1.0} />
       </mesh>
 
       <Html center position={[0, 2.6, FRONT]} style={{ pointerEvents: "none" }}>
