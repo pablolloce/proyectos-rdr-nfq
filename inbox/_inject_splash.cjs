@@ -1,5 +1,7 @@
-// Inyecta el splash de carga "RDR Knowledge" (réplica del LoadingScreen del hub)
-// en cada HTML de destino. Idempotente: si ya está, lo salta.
+// Reinyecta el splash de carga "RDR Knowledge" tras el <body> REAL.
+// Arregla el bug previo: el regex cazaba un <body> dentro de un comentario CSS
+// (tokens.css: "aplicar al <section> o al <body>") y metía el splash en el <style>.
+// Ahora: 1) elimina cualquier splash previo, 2) lo inserta tras el <body> a inicio de línea.
 const fs = require("fs");
 const path = require("path");
 
@@ -27,31 +29,40 @@ const SNIPPET = `
 <script>setTimeout(function(){var s=document.getElementById('rdr-splash');if(s&&s.remove)s.remove();},1700);</script>
 `;
 
+// Elimina cualquier inyección previa (exacta o variantes con CRLF).
+function stripSplash(html) {
+  html = html.split(SNIPPET).join("");
+  // por si las dudas, elimina bloque por marcadores (comentario -> script de borrado)
+  html = html.replace(/\n?<!-- RDR splash de carga[\s\S]*?rdr-splash'\);if\(s&&s\.remove\)s\.remove\(\);},1700\);<\/script>\n?/g, "");
+  return html;
+}
+
 function listHtml(dir) {
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir).filter((f) => f.endsWith(".html")).map((f) => path.join(dir, f));
 }
 
-// Raíz (sin index.html: es la puerta de acceso) + public + public/formacion
 const targets = [
   ...listHtml(ROOT).filter((f) => path.basename(f).toLowerCase() !== "index.html"),
   ...listHtml(PUBLIC),
   ...listHtml(path.join(PUBLIC, "formacion")),
 ];
 
-let injected = 0, skipped = 0, failed = 0;
+let ok = 0, failed = 0;
 for (const file of targets) {
   try {
     let html = fs.readFileSync(file, "utf8");
-    if (html.includes('id="rdr-splash"')) { skipped++; continue; }
-    if (!/<body[^>]*>/i.test(html)) { console.warn("  · sin <body>:", file); failed++; continue; }
-    html = html.replace(/(<body[^>]*>)/i, (m) => m + SNIPPET);
+    html = stripSplash(html);
+    // <body> REAL = el que abre línea (descarta el "<body>" de comentarios CSS).
+    const re = /^([ \t]*<body[^>]*>)/im;
+    if (!re.test(html)) { console.warn("  · sin <body> a inicio de línea:", path.relative(ROOT, file)); failed++; continue; }
+    html = html.replace(re, (m) => m + SNIPPET);
     fs.writeFileSync(file, html, "utf8");
-    injected++;
-    console.log("  + " + path.relative(ROOT, file));
+    ok++;
+    console.log("  ✓ " + path.relative(ROOT, file));
   } catch (e) {
     failed++;
     console.error("  ! " + file + " -> " + e.message);
   }
 }
-console.log(`\nInyectados: ${injected} · ya tenían: ${skipped} · fallos: ${failed} · total objetivo: ${targets.length}`);
+console.log(`\nOK: ${ok} · fallos: ${failed} · total: ${targets.length}`);

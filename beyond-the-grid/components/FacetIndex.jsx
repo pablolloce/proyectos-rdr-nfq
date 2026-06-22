@@ -2,19 +2,18 @@
 
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Html, Environment, Lightformer } from "@react-three/drei";
+import { Html, Sphere, MeshDistortMaterial, Environment, Lightformer } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
-import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
 /**
- * Hub 3D = icosaedro de alambre PIVOTANDO sobre la esfera distorsionada original.
- * Los 12 enlaces (Formaciones+Equipo+Proyectos) van en los 12 vértices del
- * icosaedro; cada vértice es un nodo-link con su cartel. La esfera del centro es
- * la "original" (MeshDistortMaterial). Coordinación = nodo externo (solo coord.).
- * Al pasar el ratón sobre un nodo, el icosaedro se detiene para poder pulsar.
+ * Hub 3D = malla esférica (constelación 3D, tipo nuevo_enfoque) PIVOTANDO sobre
+ * la esfera distorsionada original. Un nodo por enlace repartido por la esfera
+ * (Fibonacci) -> caben todos, incluido Control (Coordinación), abajo. Radios
+ * desde el centro + aristas a vecinos = la "figura de líneas" en 3D.
+ * Al pasar el ratón sobre un nodo, la malla se detiene para poder pulsar.
  */
 const SECTIONS = [
   { num: "01", title: "Formaciones", color: "#85C8FF", items: [
@@ -35,43 +34,40 @@ const SECTIONS = [
     { label: "GitHub",        key: "githubBBVA", copy: true },
     { label: "Drive",         key: "driveBBVA", copy: true },
   ] },
+  { num: "04", title: "Coordinación", color: "#9694FF", coordOnly: true, items: [
+    { label: "Control", href: "control.html" },
+  ] },
 ];
-const COORD = { num: "04", title: "Coordinación", color: "#9694FF", items: [{ label: "Control", href: "control.html" }] };
 
-const SPHERE_R = 2.0;  // esfera central (como la original / control.html)
-const CAGE_R = 4.9;    // radio del icosaedro
+const SPHERE_R = 1.7;  // esfera distorsionada central (la original)
+const CAGE_R = 4.8;    // radio de la malla de nodos
 const NODE_R = 0.28;
 
 const hint = (it) => (it.copy ? "⧉" : it.key ? "↗" : "→");
 const aria = (it) => it.label + (it.copy ? " · copiar enlace" : it.key ? " · abrir en pestaña nueva" : " · abrir");
 
-function activate(item, getUrl, copyLink, navInternal) {
+function activate(item, getUrl, copyLink) {
   if (item.copy) { copyLink(item.key); return; }
   const u = item.href || getUrl(item.key) || "#";
   if (!u || u === "#") return;
   if (item.key || /^https?:/i.test(u)) window.open(u, "_blank", "noopener");
-  else navInternal(u, item);
+  else window.location.href = u; // navega directo: la página destino ya muestra su splash
 }
 
-// 12 vértices del icosaedro (proporción áurea) + sus 30 aristas. Ordenados de
-// arriba abajo para que los colores de sección queden agrupados por latitud.
-function icosa() {
-  const t = (1 + Math.sqrt(5)) / 2;
-  let raw = [
-    [-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0],
-    [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
-    [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1],
-  ];
-  raw.sort((a, b) => b[1] - a[1]); // por Y descendente
-  const len = Math.hypot(1, t, 0);
-  const verts = raw.map((v) => [(v[0] / len) * CAGE_R, (v[1] / len) * CAGE_R, (v[2] / len) * CAGE_R]);
-  const edges = [];
-  for (let i = 0; i < 12; i++)
-    for (let j = i + 1; j < 12; j++) {
-      const d2 = (raw[i][0] - raw[j][0]) ** 2 + (raw[i][1] - raw[j][1]) ** 2 + (raw[i][2] - raw[j][2]) ** 2;
-      if (Math.abs(d2 - 4) < 0.2) edges.push([i, j]);
-    }
-  return { verts, edges };
+const dist2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
+
+// N puntos repartidos por la esfera (espiral de Fibonacci): arriba->abajo, así
+// las secciones quedan en bandas (Formaciones arriba ... Coordinación abajo).
+function fibSphere(N, R) {
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const pts = [];
+  for (let i = 0; i < N; i++) {
+    const y = N === 1 ? 0 : 1 - (i / (N - 1)) * 2;
+    const r = Math.sqrt(Math.max(0, 1 - y * y));
+    const th = golden * i;
+    pts.push([Math.cos(th) * r * R, y * R, Math.sin(th) * r * R]);
+  }
+  return pts;
 }
 
 function StudioEnv() {
@@ -85,46 +81,40 @@ function StudioEnv() {
   );
 }
 
-// Esfera central como control.html: icosaedro de alambre + núcleo translúcido.
-function ControlSphere() {
+// Esfera distorsionada original (sin parallax de ratón: solo auto-animación).
+function CentralSphere() {
   const ref = useRef();
-  const wireGeo = useMemo(() => new THREE.IcosahedronGeometry(SPHERE_R, 1), []);
   useFrame((s) => {
     if (!ref.current) return;
-    ref.current.rotation.y = s.clock.elapsedTime * 0.18;
-    ref.current.rotation.x = s.clock.elapsedTime * 0.08;
+    ref.current.rotation.y = s.clock.elapsedTime * 0.08;
+    ref.current.position.y = Math.sin(s.clock.elapsedTime * 0.4) * 0.08;
   });
   return (
-    <group ref={ref}>
-      <mesh>
-        <icosahedronGeometry args={[SPHERE_R * 0.66, 2]} />
-        <meshBasicMaterial color="#1D7CF4" transparent opacity={0.35} />
-      </mesh>
-      <lineSegments>
-        <wireframeGeometry args={[wireGeo]} />
-        <lineBasicMaterial color="#85C8FF" transparent opacity={0.6} />
-      </lineSegments>
-    </group>
+    <Sphere ref={ref} args={[SPHERE_R, 160, 160]}>
+      <MeshDistortMaterial color="#1D7CF4" roughness={0.06} metalness={0.4} clearcoat={1}
+        clearcoatRoughness={0.12} envMapIntensity={1.5} distort={0.4} speed={1.4} />
+    </Sphere>
   );
 }
 
-function Node({ pos, color, item, nodeKey, active, setActive, onAct }) {
+function Node({ node, active, setActive, onAct }) {
   const ref = useRef();
   useFrame(() => {
     if (ref.current) ref.current.scale.setScalar(THREE.MathUtils.lerp(ref.current.scale.x, active ? 1.6 : 1, 0.18));
   });
+  const { pos, color, item, nodeKey } = node;
   return (
     <group position={pos}>
       <mesh ref={ref}
         onPointerOver={(e) => { e.stopPropagation(); setActive(nodeKey); }}
         onPointerOut={() => setActive(null)}
-        onClick={(e) => { e.stopPropagation(); onAct(item, color); }}>
+        onClick={(e) => { e.stopPropagation(); onAct(item); }}>
         <sphereGeometry args={[NODE_R, 24, 24]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={active ? 1.5 : 0.7} roughness={0.25} metalness={0.3} />
       </mesh>
       <Html center position={[0, 0.55, 0]} zIndexRange={active ? [80, 0] : [40, 0]} style={{ pointerEvents: "auto" }}>
         <button data-hover type="button" aria-label={aria(item)}
-          onClick={() => onAct(item, color)}
+          onClick={() => onAct(item)}
           onMouseEnter={() => setActive(nodeKey)} onMouseLeave={() => setActive(null)}
           onFocus={() => setActive(nodeKey)} onBlur={() => setActive(null)}
           style={{
@@ -142,8 +132,7 @@ function Node({ pos, color, item, nodeKey, active, setActive, onAct }) {
   );
 }
 
-// Icosaedro de alambre que pivota (se frena al interactuar con un nodo).
-// edgeGeo = aristas del icosaedro; spokeGeo = radios desde el centro (nuevo_enfoque 3D).
+// Malla de nodos que pivota (se frena al interactuar con un nodo).
 function Cage({ nodes, edgeGeo, spokeGeo, active, setActive, onAct }) {
   const grp = useRef();
   const activeRef = useRef(active);
@@ -151,55 +140,19 @@ function Cage({ nodes, edgeGeo, spokeGeo, active, setActive, onAct }) {
   useFrame((s, dt) => {
     if (!grp.current) return;
     if (activeRef.current == null) grp.current.rotation.y += dt * 0.12; // pivota; pausa al hover
-    grp.current.rotation.x = Math.sin(s.clock.elapsedTime * 0.13) * 0.18;
+    grp.current.rotation.x = Math.sin(s.clock.elapsedTime * 0.13) * 0.16;
   });
   return (
     <group ref={grp}>
       <lineSegments geometry={spokeGeo}>
-        <lineBasicMaterial color="#9fb0e0" transparent opacity={0.22} />
+        <lineBasicMaterial color="#9fb0e0" transparent opacity={0.2} />
       </lineSegments>
       <lineSegments geometry={edgeGeo}>
-        <lineBasicMaterial color="#85C8FF" transparent opacity={0.45} />
+        <lineBasicMaterial color="#85C8FF" transparent opacity={0.4} />
       </lineSegments>
       {nodes.map((n) => (
-        <Node key={n.nodeKey} pos={n.pos} color={n.color} item={n.item} nodeKey={n.nodeKey}
-          active={active === n.nodeKey} setActive={setActive} onAct={onAct} />
+        <Node key={n.nodeKey} node={n} active={active === n.nodeKey} setActive={setActive} onAct={onAct} />
       ))}
-    </group>
-  );
-}
-
-function ExternalNode({ section, active, setActive, onAct }) {
-  const ref = useRef();
-  const item = section.items[0];
-  const nodeKey = "ext";
-  useFrame((s) => {
-    if (!ref.current) return;
-    ref.current.position.y = -6.1 + Math.sin(s.clock.elapsedTime * 1.1) * 0.18;
-    ref.current.rotation.y = s.clock.elapsedTime * 0.6;
-    ref.current.scale.setScalar(THREE.MathUtils.lerp(ref.current.scale.x, active === nodeKey ? 1.5 : 1, 0.2));
-  });
-  return (
-    <group>
-      <mesh ref={ref} position={[0, -6.1, 0]}
-        onPointerOver={(e) => { e.stopPropagation(); setActive(nodeKey); }}
-        onPointerOut={() => setActive(null)}
-        onClick={(e) => { e.stopPropagation(); onAct(item, section.color); }}>
-        <icosahedronGeometry args={[0.5, 0]} />
-        <meshStandardMaterial color={section.color} emissive={section.color} emissiveIntensity={active === nodeKey ? 1.3 : 0.6} flatShading metalness={0.3} roughness={0.2} />
-      </mesh>
-      <Html center position={[0, -7, 0]} zIndexRange={[60, 0]} style={{ pointerEvents: "auto" }}>
-        <button data-hover type="button" aria-label={aria(item)}
-          onClick={() => onAct(item, section.color)}
-          onMouseEnter={() => setActive(nodeKey)} onMouseLeave={() => setActive(null)}
-          style={{
-            fontFamily: "var(--font-lato), Lato, sans-serif", fontSize: "12px", fontWeight: 700, cursor: "pointer",
-            color: active === nodeKey ? "#070E46" : "#F7F8F8", background: active === nodeKey ? section.color : "rgba(10,18,74,.92)",
-            border: "1.5px solid " + section.color, borderRadius: "999px", padding: "3px 11px",
-          }}>
-          Coordinación · {item.label}
-        </button>
-      </Html>
     </group>
   );
 }
@@ -208,28 +161,39 @@ export default function FacetIndex() {
   const { getUrl, copyLink } = useLinks();
   const { isCoordinador } = useAuth();
   const [active, setActive] = useState(null);
-  const [nav, setNav] = useState(null);
+
+  const sections = useMemo(() => SECTIONS.filter((s) => !s.coordOnly || isCoordinador), [isCoordinador]);
 
   const { nodes, edgeGeo, spokeGeo } = useMemo(() => {
-    const { verts, edges } = icosa();
     const flat = [];
-    SECTIONS.forEach((sec) => sec.items.forEach((item) => flat.push({ color: sec.color, section: sec.title, num: sec.num, item })));
+    sections.forEach((sec) => sec.items.forEach((item) => flat.push({ color: sec.color, section: sec.title, num: sec.num, item })));
+    const N = flat.length;
+    const verts = fibSphere(N, CAGE_R);
     const nodes = verts.map((pos, i) => ({ ...flat[i], pos, nodeKey: "n" + i }));
-    const pts = [];
-    edges.forEach(([a, b]) => { pts.push(...verts[a], ...verts[b]); });
+
+    // Aristas: cada nodo a sus 3 vecinos más cercanos (sin duplicar).
+    const seen = new Set(), epts = [];
+    for (let i = 0; i < N; i++) {
+      const d = [];
+      for (let j = 0; j < N; j++) if (j !== i) d.push([dist2(verts[i], verts[j]), j]);
+      d.sort((a, b) => a[0] - b[0]);
+      for (let k = 0; k < Math.min(3, d.length); k++) {
+        const j = d[k][1], key = i < j ? i + "-" + j : j + "-" + i;
+        if (!seen.has(key)) { seen.add(key); epts.push(...verts[i], ...verts[j]); }
+      }
+    }
     const edgeGeo = new THREE.BufferGeometry();
-    edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+    edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(epts, 3));
+
     const spts = [];
-    verts.forEach((v) => { spts.push(0, 0, 0, v[0], v[1], v[2]); }); // radios centro -> vértice
+    verts.forEach((v) => spts.push(0, 0, 0, v[0], v[1], v[2]));
     const spokeGeo = new THREE.BufferGeometry();
     spokeGeo.setAttribute("position", new THREE.Float32BufferAttribute(spts, 3));
+
     return { nodes, edgeGeo, spokeGeo };
-  }, []);
+  }, [sections]);
 
-  const onAct = (item, color) =>
-    activate(item, getUrl, copyLink, (url, it) => setNav({ url, label: it.label, color: color || "#85C8FF" }));
-
-  const legendSections = isCoordinador ? [...SECTIONS, COORD] : SECTIONS;
+  const onAct = (item) => activate(item, getUrl, copyLink);
   let gi = 0;
 
   return (
@@ -243,21 +207,20 @@ export default function FacetIndex() {
           <pointLight position={[-8, -3, 6]} intensity={1.4} color="#1D7CF4" />
           <Suspense fallback={null}>
             <StudioEnv />
-            <ControlSphere />
+            <CentralSphere />
             <Cage nodes={nodes} edgeGeo={edgeGeo} spokeGeo={spokeGeo} active={active} setActive={setActive} onAct={onAct} />
-            {isCoordinador && <ExternalNode section={COORD} active={active} setActive={setActive} onAct={onAct} />}
           </Suspense>
           <EffectComposer>
             <Bloom mipmapBlur intensity={0.7} luminanceThreshold={0.55} luminanceSmoothing={0.35} />
           </EffectComposer>
         </Canvas>
         <p className="pointer-events-none absolute inset-x-0 bottom-5 text-center text-xs uppercase tracking-[0.3em] text-serene/55">
-          Cada vértice es un enlace · pulsa para abrir (el icosaedro se detiene al pasar el ratón) · o usa la lista (Tab)
+          Cada nodo es un enlace · pulsa para abrir (la malla se detiene al pasar el ratón) · o usa la lista (Tab)
         </p>
       </div>
 
       <aside className="hidden w-64 shrink-0 overflow-auto border-l border-serene/10 p-4 md:block">
-        {legendSections.map((sec) => (
+        {sections.map((sec) => (
           <div key={sec.num} className="mb-4">
             <p className="mb-2 flex items-center gap-2 font-display text-xs uppercase tracking-[0.2em]" style={{ color: sec.color }}>
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: sec.color }} />
@@ -265,11 +228,11 @@ export default function FacetIndex() {
             </p>
             <ul className="space-y-1">
               {sec.items.map((it) => {
-                const key = sec === COORD ? "ext" : "n" + gi++;
+                const key = "n" + gi++;
                 return (
                   <li key={it.label}>
                     <button data-hover type="button" aria-label={aria(it)}
-                      onClick={() => onAct(it, sec.color)}
+                      onClick={() => onAct(it)}
                       onMouseEnter={() => setActive(key)} onMouseLeave={() => setActive(null)}
                       onFocus={() => setActive(key)} onBlur={() => setActive(null)}
                       className={"flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-serene " +
@@ -285,21 +248,6 @@ export default function FacetIndex() {
           </div>
         ))}
       </aside>
-
-      <AnimatePresence>
-        {nav && (
-          <motion.div className="fixed inset-0 z-[100] flex items-center justify-center bg-midnight"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
-            onAnimationComplete={() => { window.location.href = nav.url; }}>
-            <div className="text-center">
-              <div className="mx-auto mb-5 h-10 w-10 animate-spin rounded-full border-2 border-serene/25" style={{ borderTopColor: nav.color }} />
-              <p className="font-display text-xs uppercase tracking-[0.3em] text-serene/60">Abriendo</p>
-              <p className="mt-1 font-display text-2xl font-bold" style={{ color: nav.color }}>{nav.label}</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
