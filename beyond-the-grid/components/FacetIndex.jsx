@@ -53,7 +53,7 @@ const aria = (it) => it.label + (it.copy ? " · copiar enlace" : it.key ? " · a
 
 function hexToRgb(h) { h = h.replace("#", ""); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); }
 function mix(hex, t) { const a = hexToRgb(hex); const c = a.map((v) => Math.round(v + (255 - v) * t)); return `rgb(${c[0]},${c[1]},${c[2]})`; }
-const shade = (hex, i, n) => mix(hex, 0.06 + 0.4 * (n > 1 ? i / (n - 1) : 0));
+const shade = (hex, i, n) => mix(hex, 0.0 + 0.52 * (n > 1 ? i / (n - 1) : 0));
 
 // --- Formas sólidas de letra (centradas luego con geometry.center()) ---
 function shapeD() {
@@ -61,6 +61,11 @@ function shapeD() {
   s.moveTo(-1.5, -2); s.lineTo(-1.5, 2); s.lineTo(-0.5, 2);
   s.absarc(-0.5, 0, 2, Math.PI / 2, -Math.PI / 2, true); // bulto a la derecha
   s.lineTo(-1.5, -2);
+  const h = new THREE.Path(); // contador (hueco)
+  h.moveTo(-0.75, -1.32); h.lineTo(-0.75, 1.32); h.lineTo(-0.5, 1.32);
+  h.absarc(-0.5, 0, 1.32, Math.PI / 2, -Math.PI / 2, true);
+  h.lineTo(-0.75, -1.32);
+  s.holes.push(h);
   return s;
 }
 function shapeR() {
@@ -68,18 +73,23 @@ function shapeR() {
   s.moveTo(-1.4, -2);
   s.lineTo(-1.4, 2);
   s.lineTo(-0.1, 2);
-  s.absarc(-0.1, 1.15, 0.9, Math.PI / 2, -Math.PI / 2, true); // bucle
+  s.absarc(-0.1, 1.15, 0.9, Math.PI / 2, -Math.PI / 2, true); // bucle exterior
   s.lineTo(0.2, 0.25);
   s.lineTo(1.15, -2);   // pata (lado externo)
   s.lineTo(0.45, -2);   // pata (lado interno)
   s.lineTo(-0.55, 0.25);
   s.lineTo(-0.55, -2);  // lado derecho del asta
   s.lineTo(-1.4, -2);
+  const h = new THREE.Path(); // contador del bucle (hueco)
+  h.moveTo(-0.6, 1.62); h.lineTo(-0.6, 0.68); h.lineTo(-0.1, 0.68);
+  h.absarc(-0.1, 1.15, 0.47, -Math.PI / 2, Math.PI / 2, false); // bulto interior a la derecha
+  h.lineTo(-0.6, 1.62);
+  s.holes.push(h);
   return s;
 }
 function letterGeometry(glyph) {
   const shape = glyph === "D" ? shapeD() : shapeR();
-  const g = new THREE.ExtrudeGeometry(shape, { depth: DZ, bevelEnabled: true, bevelThickness: 0.14, bevelSize: 0.14, bevelSegments: 4, steps: 1, curveSegments: 26 });
+  const g = new THREE.ExtrudeGeometry(shape, { depth: DZ, bevelEnabled: true, bevelThickness: 0.12, bevelSize: 0.12, bevelSegments: 6, steps: 1, curveSegments: 44 });
   g.center();
   return g;
 }
@@ -122,7 +132,7 @@ function Sector({ geo, planes, hit, color, accent, mid, active, setActive, onAct
     <group ref={ref}>
       {/* porción visible: la LETRA recortada a este gajo */}
       <mesh geometry={geo}>
-        <meshPhysicalMaterial color={color} emissive={accent} emissiveIntensity={0.28} metalness={0.18} roughness={0.3} clearcoat={1} clearcoatRoughness={0.16} clippingPlanes={planes} side={THREE.DoubleSide} />
+        <meshPhysicalMaterial color={color} emissive={accent} emissiveIntensity={0.28} metalness={0.2} roughness={0.22} clearcoat={1} clearcoatRoughness={0.08} clippingPlanes={planes} side={THREE.DoubleSide} />
       </mesh>
       {/* área de click (gajo invisible) */}
       <mesh geometry={hit} position={[0, 0, FRONT]}
