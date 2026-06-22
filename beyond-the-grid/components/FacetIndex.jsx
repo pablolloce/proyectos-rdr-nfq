@@ -2,20 +2,20 @@
 
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Html, Line, Icosahedron, MeshDistortMaterial, Environment, Lightformer } from "@react-three/drei";
+import { Html, Line, Icosahedron, MeshTransmissionMaterial, Environment, Lightformer } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
 /**
- * Hub 3D = letras R · D · R "dentro del agua": cada letra es una pieza ÚNICA,
- * muy redondeada, que ONDULA como gelatina (MeshDistortMaterial), con burbujas
- * subiendo de fondo y mucha animación. Bordes limpios (sin cortes duros).
+ * Hub 3D = letras R · D · R con TEXTURA LÍQUIDA (MeshTransmissionMaterial:
+ * cristal/agua con refracción + distorsión animada en el shader -> líquido sin
+ * desgarrar la malla). Bordes redondeados (bisel grande) + reflejos del entorno.
  *
  * Cada enlace = una porción angular de la letra: su etiqueta va fuera, unida por
- * una línea; al señalar (etiqueta o porción) la letra brilla y la línea se marca.
- * El click va sobre un gajo invisible que cubre esa porción. Control = gema externa.
+ * una línea. Se interactúa con la PROPIA letra (raycast); la porción se calcula
+ * por el ángulo del punto pulsado. Control = gema externa.
  */
 const SECTIONS = [
   { num: "01", title: "Formaciones", color: "#85C8FF", glyph: "R", items: [
@@ -76,7 +76,7 @@ function letterGeometry(glyph) {
   const shape = glyph === "D" ? shapeD() : shapeR();
   // Geometría LIMPIA (sin teselar). Bisel generoso + curvas finas = bordes suaves
   // sin desgarros. El look "bubble" lo dan los reflejos del entorno + clearcoat.
-  const g = new THREE.ExtrudeGeometry(shape, { depth: DZ, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.24, bevelSegments: 6, steps: 1, curveSegments: 56 });
+  const g = new THREE.ExtrudeGeometry(shape, { depth: DZ, bevelEnabled: true, bevelThickness: 0.34, bevelSize: 0.3, bevelSegments: 9, steps: 1, curveSegments: 64 });
   g.center();
   return g;
 }
@@ -138,8 +138,14 @@ function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
         onPointerMove={(e) => { e.stopPropagation(); setActiveKey(section.num + "." + sectorAt(e.point)); }}
         onPointerOut={() => setActiveKey(null)}
         onClick={(e) => { e.stopPropagation(); onAct(section.items[sectorAt(e.point)], section.color); }}>
-        <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.1}
-          roughness={0.08} metalness={0.35} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.5} distort={0.05} speed={1.0} />
+        <MeshTransmissionMaterial ref={mat}
+          color={section.color} attenuationColor={section.color} attenuationDistance={1.3}
+          thickness={1.4} roughness={0.18} transmission={1} ior={1.35}
+          chromaticAberration={0.05} anisotropy={0.25}
+          distortion={0.5} distortionScale={0.4} temporalDistortion={0.4}
+          samples={4} resolution={256}
+          emissive={section.color} emissiveIntensity={0.08}
+          clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.4} />
       </mesh>
 
       <Html center position={[0, 2.6, FRONT]} style={{ pointerEvents: "none" }}>
