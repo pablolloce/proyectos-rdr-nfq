@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Html, Line, Icosahedron, MeshDistortMaterial } from "@react-three/drei";
+import { Html, Line, Icosahedron, MeshDistortMaterial, Environment, Lightformer } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 import { TessellateModifier } from "three/examples/jsm/modifiers/TessellateModifier.js";
@@ -91,31 +91,16 @@ function activate(item, getUrl, copyLink, navInternal) {
   else navInternal(u, item);
 }
 
-// Burbujas de fondo subiendo (efecto agua)
-function Bubbles({ count = 30 }) {
-  const ref = useRef();
-  const data = useMemo(() => Array.from({ length: count }, () => ({
-    x: (Math.random() - 0.5) * 24, y0: Math.random() * 16, z: -2.5 - Math.random() * 5,
-    r: 0.06 + Math.random() * 0.18, sp: 0.4 + Math.random() * 0.7, ph: Math.random() * 6.28,
-  })), [count]);
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-  useFrame((state) => {
-    if (!ref.current) return;
-    const t = state.clock.elapsedTime;
-    data.forEach((b, i) => {
-      const y = ((b.y0 + t * b.sp) % 16) - 8;
-      dummy.position.set(b.x + Math.sin(t * 0.6 + b.ph) * 0.35, y, b.z);
-      dummy.scale.setScalar(b.r * (0.85 + Math.sin(t * 2 + b.ph) * 0.15));
-      dummy.updateMatrix();
-      ref.current.setMatrixAt(i, dummy.matrix);
-    });
-    ref.current.instanceMatrix.needsUpdate = true;
-  });
+// Entorno de estudio (reflejos + luz superior) SIN HDRI remoto -> look "bubble"
+// premium como la esfera, sin depender de la red.
+function StudioEnv() {
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, count]}>
-      <sphereGeometry args={[1, 16, 16]} />
-      <meshPhysicalMaterial color="#bfe2ff" transparent opacity={0.26} roughness={0.08} metalness={0} clearcoat={1} />
-    </instancedMesh>
+    <Environment resolution={256}>
+      <Lightformer form="rect" intensity={4.5} position={[0, 6, 3]} scale={[14, 5, 1]} color="#ffffff" />   {/* foco superior */}
+      <Lightformer form="rect" intensity={1.5} position={[-7, 1, 2]} scale={[5, 10, 1]} color="#85C8FF" />
+      <Lightformer form="rect" intensity={1.2} position={[7, -1, 2]} scale={[5, 10, 1]} color="#1D7CF4" />
+      <Lightformer form="ring" intensity={2.2} position={[0, 2, -6]} scale={6} color="#ffffff" />
+    </Environment>
   );
 }
 
@@ -136,7 +121,7 @@ function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
       grp.current.rotation.y = Math.sin(t * 0.28 + x) * 0.05;
       grp.current.position.y = Math.sin(t * 0.5 + x) * 0.18;
     }
-    if (mat.current) mat.current.emissiveIntensity = THREE.MathUtils.lerp(mat.current.emissiveIntensity, letterActive ? 0.55 : 0.22, 0.12);
+    if (mat.current) mat.current.emissiveIntensity = THREE.MathUtils.lerp(mat.current.emissiveIntensity, letterActive ? 0.4 : 0.1, 0.12);
   });
 
   // qué porción está bajo el punto pulsado (ángulo en coords locales de la letra)
@@ -155,8 +140,8 @@ function Letter({ x, section, geo, activeKey, setActiveKey, onAct }) {
         onPointerMove={(e) => { e.stopPropagation(); setActiveKey(section.num + "." + sectorAt(e.point)); }}
         onPointerOut={() => setActiveKey(null)}
         onClick={(e) => { e.stopPropagation(); onAct(section.items[sectorAt(e.point)], section.color); }}>
-        <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.22}
-          roughness={0.16} metalness={0.1} clearcoat={1} clearcoatRoughness={0.08} distort={0.3} speed={1.6} />
+        <MeshDistortMaterial ref={mat} color={section.color} emissive={section.color} emissiveIntensity={0.1}
+          roughness={0.08} metalness={0.35} clearcoat={1} clearcoatRoughness={0.12} envMapIntensity={1.5} distort={0.22} speed={1.4} />
       </mesh>
 
       <Html center position={[0, 2.6, FRONT]} style={{ pointerEvents: "none" }}>
@@ -234,7 +219,6 @@ function Scene3D({ letters, external, activeKey, setActiveKey, onAct }) {
   const n = letters.length;
   return (
     <group ref={grp}>
-      <Bubbles />
       {letters.map((s, i) => (
         <Letter key={s.num} x={(i - (n - 1) / 2) * LETX} section={s} geo={s._geo} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />
       ))}
@@ -263,13 +247,12 @@ export default function FacetIndex() {
       <div className="relative flex-1">
         <Canvas camera={{ position: [1.4, 0.8, 24], fov: 32 }} onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
           dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance" }}>
-          <color attach="background" args={["#061046"]} />
-          <fog attach="fog" args={["#061046", 18, 40]} />
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[5, 9, 10]} intensity={2.3} color="#F7F8F8" />
-          <pointLight position={[-9, -2, 9]} intensity={1.8} color="#1D7CF4" />
-          <pointLight position={[9, 4, 6]} intensity={1.5} color="#85C8FF" />
+          <color attach="background" args={["#070E46"]} />
+          <ambientLight intensity={0.4} />
+          <directionalLight position={[2, 9, 6]} intensity={2.0} color="#F7F8F8" />
+          <pointLight position={[-8, -3, 6]} intensity={1.4} color="#1D7CF4" />
           <Suspense fallback={null}>
+            <StudioEnv />
             <Scene3D letters={letters} external={external} activeKey={activeKey} setActiveKey={setActiveKey} onAct={onAct} />
           </Suspense>
         </Canvas>
