@@ -2,18 +2,18 @@
 
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Html, Sphere, MeshDistortMaterial, Environment, Lightformer } from "@react-three/drei";
+import { Html, Sphere, MeshDistortMaterial, Environment } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
 /**
- * Hub 3D = malla esférica (constelación 3D, tipo nuevo_enfoque) PIVOTANDO sobre
- * la esfera distorsionada original. Un nodo por enlace repartido por la esfera
- * (Fibonacci) -> caben todos, incluido Control (Coordinación), abajo. Radios
- * desde el centro + aristas a vecinos = la "figura de líneas" en 3D.
- * Al pasar el ratón sobre un nodo, la malla se detiene para poder pulsar.
+ * Hub 3D a pantalla completa = esfera distorsionada ORIGINAL (HDRI city, look
+ * realista) en el centro, rodeada de una malla esférica que pivota. La malla
+ * tiene CAP vértices FIJOS (no dependen del nº de enlaces): los primeros N son
+ * nodos-link (incluido Control); el resto son juntas de reserva -> al quitar
+ * Control o al añadir nodos futuros, la figura no cambia. Header y menú flotan.
  */
 const SECTIONS = [
   { num: "01", title: "Formaciones", color: "#85C8FF", items: [
@@ -39,9 +39,11 @@ const SECTIONS = [
   ] },
 ];
 
-const SPHERE_R = 1.7;  // esfera distorsionada central (la original)
-const CAGE_R = 4.8;    // radio de la malla de nodos
-const NODE_R = 0.28;
+const HDRI = "/team-hub/hdri/city_1k.hdr";
+const SPHERE_R = 2.4;   // esfera central prominente (como la original)
+const CAGE_R = 6.2;     // radio de la malla (llega cerca de los bordes)
+const NODE_R = 0.3;
+const CAP = 20;         // vértices FIJOS de la figura (capacidad; sube si hacen falta)
 
 const hint = (it) => (it.copy ? "⧉" : it.key ? "↗" : "→");
 const aria = (it) => it.label + (it.copy ? " · copiar enlace" : it.key ? " · abrir en pestaña nueva" : " · abrir");
@@ -51,13 +53,12 @@ function activate(item, getUrl, copyLink) {
   const u = item.href || getUrl(item.key) || "#";
   if (!u || u === "#") return;
   if (item.key || /^https?:/i.test(u)) window.open(u, "_blank", "noopener");
-  else window.location.href = u; // navega directo: la página destino ya muestra su splash
+  else window.location.href = u; // navega directo (la página destino muestra su splash)
 }
 
 const dist2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
 
-// N puntos repartidos por la esfera (espiral de Fibonacci): arriba->abajo, así
-// las secciones quedan en bandas (Formaciones arriba ... Coordinación abajo).
+// CAP puntos FIJOS por la esfera (espiral de Fibonacci): independientes del nº de links.
 function fibSphere(N, R) {
   const golden = Math.PI * (3 - Math.sqrt(5));
   const pts = [];
@@ -70,24 +71,13 @@ function fibSphere(N, R) {
   return pts;
 }
 
-function StudioEnv() {
-  return (
-    <Environment resolution={256}>
-      <Lightformer form="rect" intensity={4.5} position={[0, 6, 3]} scale={[14, 5, 1]} color="#ffffff" />
-      <Lightformer form="rect" intensity={1.5} position={[-7, 1, 2]} scale={[5, 10, 1]} color="#85C8FF" />
-      <Lightformer form="rect" intensity={1.2} position={[7, -1, 2]} scale={[5, 10, 1]} color="#1D7CF4" />
-      <Lightformer form="ring" intensity={2.2} position={[0, 2, -6]} scale={6} color="#ffffff" />
-    </Environment>
-  );
-}
-
-// Esfera distorsionada original (sin parallax de ratón: solo auto-animación).
+// Esfera distorsionada original (auto-animación, sin parallax de ratón).
 function CentralSphere() {
   const ref = useRef();
   useFrame((s) => {
     if (!ref.current) return;
     ref.current.rotation.y = s.clock.elapsedTime * 0.08;
-    ref.current.position.y = Math.sin(s.clock.elapsedTime * 0.4) * 0.08;
+    ref.current.position.y = Math.sin(s.clock.elapsedTime * 0.4) * 0.1;
   });
   return (
     <Sphere ref={ref} args={[SPHERE_R, 160, 160]}>
@@ -112,7 +102,7 @@ function Node({ node, active, setActive, onAct }) {
         <sphereGeometry args={[NODE_R, 24, 24]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={active ? 1.5 : 0.7} roughness={0.25} metalness={0.3} />
       </mesh>
-      <Html center position={[0, 0.55, 0]} zIndexRange={active ? [80, 0] : [40, 0]} style={{ pointerEvents: "auto" }}>
+      <Html center position={[0, 0.6, 0]} zIndexRange={active ? [80, 0] : [40, 0]} style={{ pointerEvents: "auto" }}>
         <button data-hover type="button" aria-label={aria(item)}
           onClick={() => onAct(item)}
           onMouseEnter={() => setActive(nodeKey)} onMouseLeave={() => setActive(null)}
@@ -132,24 +122,30 @@ function Node({ node, active, setActive, onAct }) {
   );
 }
 
-// Malla de nodos que pivota (se frena al interactuar con un nodo).
-function Cage({ nodes, edgeGeo, spokeGeo, active, setActive, onAct }) {
+// Malla de CAP vértices que pivota (se frena al interactuar con un nodo).
+function Cage({ nodes, spares, edgeGeo, spokeGeo, active, setActive, onAct }) {
   const grp = useRef();
   const activeRef = useRef(active);
   activeRef.current = active;
   useFrame((s, dt) => {
     if (!grp.current) return;
-    if (activeRef.current == null) grp.current.rotation.y += dt * 0.12; // pivota; pausa al hover
-    grp.current.rotation.x = Math.sin(s.clock.elapsedTime * 0.13) * 0.16;
+    if (activeRef.current == null) grp.current.rotation.y += dt * 0.1; // pivota; pausa al hover
+    grp.current.rotation.x = Math.sin(s.clock.elapsedTime * 0.12) * 0.16;
   });
   return (
     <group ref={grp}>
       <lineSegments geometry={spokeGeo}>
-        <lineBasicMaterial color="#9fb0e0" transparent opacity={0.2} />
+        <lineBasicMaterial color="#9fb0e0" transparent opacity={0.18} />
       </lineSegments>
       <lineSegments geometry={edgeGeo}>
-        <lineBasicMaterial color="#85C8FF" transparent opacity={0.4} />
+        <lineBasicMaterial color="#85C8FF" transparent opacity={0.38} />
       </lineSegments>
+      {spares.map((p, i) => (
+        <mesh key={"s" + i} position={p}>
+          <sphereGeometry args={[NODE_R * 0.45, 12, 12]} />
+          <meshStandardMaterial color="#4a5a8a" emissive="#2a3566" emissiveIntensity={0.4} roughness={0.5} />
+        </mesh>
+      ))}
       {nodes.map((n) => (
         <Node key={n.nodeKey} node={n} active={active === n.nodeKey} setActive={setActive} onAct={onAct} />
       ))}
@@ -164,18 +160,18 @@ export default function FacetIndex() {
 
   const sections = useMemo(() => SECTIONS.filter((s) => !s.coordOnly || isCoordinador), [isCoordinador]);
 
-  const { nodes, edgeGeo, spokeGeo } = useMemo(() => {
+  const { nodes, spares, edgeGeo, spokeGeo } = useMemo(() => {
     const flat = [];
     sections.forEach((sec) => sec.items.forEach((item) => flat.push({ color: sec.color, section: sec.title, num: sec.num, item })));
-    const N = flat.length;
-    const verts = fibSphere(N, CAGE_R);
-    const nodes = verts.map((pos, i) => ({ ...flat[i], pos, nodeKey: "n" + i }));
+    const verts = fibSphere(CAP, CAGE_R); // posiciones FIJAS (no dependen de flat.length)
+    const nodes = flat.slice(0, CAP).map((f, i) => ({ ...f, pos: verts[i], nodeKey: "n" + i }));
+    const spares = verts.slice(nodes.length);
 
-    // Aristas: cada nodo a sus 3 vecinos más cercanos (sin duplicar).
+    // Aristas: cada vértice a sus 3 vecinos más cercanos (sin duplicar).
     const seen = new Set(), epts = [];
-    for (let i = 0; i < N; i++) {
+    for (let i = 0; i < CAP; i++) {
       const d = [];
-      for (let j = 0; j < N; j++) if (j !== i) d.push([dist2(verts[i], verts[j]), j]);
+      for (let j = 0; j < CAP; j++) if (j !== i) d.push([dist2(verts[i], verts[j]), j]);
       d.sort((a, b) => a[0] - b[0]);
       for (let k = 0; k < Math.min(3, d.length); k++) {
         const j = d[k][1], key = i < j ? i + "-" + j : j + "-" + i;
@@ -190,36 +186,35 @@ export default function FacetIndex() {
     const spokeGeo = new THREE.BufferGeometry();
     spokeGeo.setAttribute("position", new THREE.Float32BufferAttribute(spts, 3));
 
-    return { nodes, edgeGeo, spokeGeo };
+    return { nodes, spares, edgeGeo, spokeGeo };
   }, [sections]);
 
   const onAct = (item) => activate(item, getUrl, copyLink);
   let gi = 0;
 
   return (
-    <div className="absolute inset-0 flex">
-      <div className="relative flex-1">
-        <Canvas camera={{ position: [0, 0, 26], fov: 34 }} onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
-          dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance" }}>
-          <color attach="background" args={["#070E46"]} />
-          <ambientLight intensity={0.45} />
-          <directionalLight position={[2, 9, 6]} intensity={2.0} color="#F7F8F8" />
-          <pointLight position={[-8, -3, 6]} intensity={1.4} color="#1D7CF4" />
-          <Suspense fallback={null}>
-            <StudioEnv />
-            <CentralSphere />
-            <Cage nodes={nodes} edgeGeo={edgeGeo} spokeGeo={spokeGeo} active={active} setActive={setActive} onAct={onAct} />
-          </Suspense>
-          <EffectComposer>
-            <Bloom mipmapBlur intensity={0.7} luminanceThreshold={0.55} luminanceSmoothing={0.35} />
-          </EffectComposer>
-        </Canvas>
-        <p className="pointer-events-none absolute inset-x-0 bottom-5 text-center text-xs uppercase tracking-[0.3em] text-serene/55">
-          Cada nodo es un enlace · pulsa para abrir (la malla se detiene al pasar el ratón) · o usa la lista (Tab)
-        </p>
-      </div>
+    <div className="absolute inset-0">
+      <Canvas camera={{ position: [0, 0, 18], fov: 45 }} onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
+        dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance" }} className="!absolute inset-0">
+        <color attach="background" args={["#070E46"]} />
+        <ambientLight intensity={0.4} />
+        <directionalLight position={[3, 3, 3]} intensity={2.2} color="#F7F8F8" />
+        <directionalLight position={[-4, -2, -3]} intensity={0.6} color="#1D7CF4" />
+        <Suspense fallback={null}>
+          <Environment files={HDRI} />
+          <CentralSphere />
+          <Cage nodes={nodes} spares={spares} edgeGeo={edgeGeo} spokeGeo={spokeGeo} active={active} setActive={setActive} onAct={onAct} />
+        </Suspense>
+        <EffectComposer>
+          <Bloom mipmapBlur intensity={0.55} luminanceThreshold={0.6} luminanceSmoothing={0.35} />
+        </EffectComposer>
+      </Canvas>
 
-      <aside className="hidden w-64 shrink-0 overflow-auto border-l border-serene/10 p-4 md:block">
+      <p className="pointer-events-none absolute inset-x-0 bottom-5 z-20 text-center text-xs uppercase tracking-[0.3em] text-serene/55">
+        Cada nodo es un enlace · pulsa para abrir (la malla se detiene al pasar el ratón) · o usa la lista
+      </p>
+
+      <aside className="pointer-events-auto absolute right-4 top-28 bottom-16 z-20 hidden w-60 overflow-auto rounded-2xl border border-serene/10 bg-midnight/40 p-4 backdrop-blur-md md:block">
         {sections.map((sec) => (
           <div key={sec.num} className="mb-4">
             <p className="mb-2 flex items-center gap-2 font-display text-xs uppercase tracking-[0.2em]" style={{ color: sec.color }}>

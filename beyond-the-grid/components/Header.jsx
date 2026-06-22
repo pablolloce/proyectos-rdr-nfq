@@ -7,7 +7,7 @@ export default function Header() {
   const { email, logout } = useAuth();
 
   return (
-    <header className="mx-auto flex w-full max-w-7xl shrink-0 items-center justify-between gap-6 px-6 pb-5 pt-7">
+    <header className="pointer-events-none absolute inset-x-0 top-0 z-30 mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-6 pt-7">
       <div className="min-w-0">
         <h1 className="font-display text-2xl font-bold leading-tight text-sand md:text-3xl">
           RDR Knowledge
@@ -15,13 +15,13 @@ export default function Header() {
         <p className="mt-0.5 text-sm text-serene/80">Hub de documentación · BBVA × NFQ</p>
       </div>
 
-      <div className="flex shrink-0 items-center gap-4">
+      <div className="pointer-events-auto flex shrink-0 items-center gap-4">
         {email && <span className="hidden text-xs text-sand/50 lg:inline">{email}</span>}
         <button
           data-hover
           type="button"
           onClick={logout}
-          className="rounded-full border border-serene/30 px-4 py-2 font-sans text-xs font-bold uppercase tracking-wider text-sand transition-colors hover:border-serene"
+          className="rounded-full border border-serene/30 bg-midnight/40 px-4 py-2 font-sans text-xs font-bold uppercase tracking-wider text-sand backdrop-blur-md transition-colors hover:border-serene"
         >
           Cerrar sesión
         </button>

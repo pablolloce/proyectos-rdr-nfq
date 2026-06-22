@@ -43,11 +43,10 @@ export default function Experience() {
     <LinksProvider>
       <LoadingScreen />
       <AuthGate>
-        <div className="relative z-10 flex h-screen flex-col">
+        <div className="relative h-screen w-screen overflow-hidden">
+          {/* Canvas 3D a pantalla COMPLETA; el resto flota encima */}
+          {desktop ? <FacetIndex /> : <div className="h-full overflow-auto pt-24"><LinkCloud /></div>}
           <Header />
-          <main className="relative flex-1">
-            {desktop ? <FacetIndex /> : <div className="h-full overflow-auto"><LinkCloud /></div>}
-          </main>
         </div>
       </AuthGate>
     </LinksProvider>
