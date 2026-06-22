@@ -54,7 +54,16 @@ const CS = 1.0;       // tamaño del cubo
 const SP = 1.16;      // separación entre cubos (costura)
 const GAP_X = 1.9;    // separación horizontal entre bloques
 const GAP_Y = 2.3;    // separación vertical entre bloques (incluye título)
-const TILT = -0.16;   // inclinación fija (look isométrico de ejemplo.PNG)
+const TILT = -0.26;   // inclinación fija: se ven las TAPAS (más profundidad)
+const BASE_YAW = -0.5; // giro base a vista 3/4: se ven los CANTOS (más profundidad)
+
+// "Bubble": onda continua por cubo (flotar + latir). El desfase depende de la
+// posición del cubo -> recorre la losa como una ola. NO depende del ratón.
+function bubbleAt(t, cell) {
+  const phase = cell.x * 0.9 + cell.y * 0.6 + cell.z * 1.6;
+  const w = Math.sin(t * 1.35 + phase);
+  return { dz: w * 0.14, ds: w * 0.05 };
+}
 
 const hint = (it) => (it.copy ? "⧉" : it.key ? "↗" : "→");
 const aria = (it) => it.label + (it.copy ? " · copiar enlace" : it.key ? " · abrir en pestaña nueva" : " · abrir");
@@ -101,14 +110,16 @@ function LinkCube({ cell, active, setActive, onAct }) {
   useFrame((state) => {
     if (!ref.current) return;
     const t = state.clock.elapsedTime;
-    lift.current = THREE.MathUtils.lerp(lift.current, active ? 0.55 : 0, 0.2);
-    ref.current.position.z = lift.current;
-    const s = THREE.MathUtils.lerp(ref.current.scale.x, active ? 1.12 : 1, 0.2);
+    const b = bubbleAt(t, cell);
+    lift.current = THREE.MathUtils.lerp(lift.current, active ? 0.6 : 0, 0.2);
+    ref.current.position.z = lift.current + b.dz;            // flotar (bubble) + elevar al hover
+    const target = (active ? 1.14 : 1) * (1 + b.ds);         // latir (bubble) + crecer al hover
+    const s = THREE.MathUtils.lerp(ref.current.scale.x, target, 0.25);
     ref.current.scale.setScalar(s);
-    // costura que late: pequeño pulso de emisión continuo
+    // costura que late
     if (ref.current.material) {
-      const base = active ? 0.85 : 0.4;
-      ref.current.material.emissiveIntensity = base + Math.sin(t * 1.6 + phase) * 0.1;
+      const base = active ? 0.9 : 0.42;
+      ref.current.material.emissiveIntensity = base + Math.sin(t * 1.7 + phase) * 0.12;
     }
   });
 
@@ -163,8 +174,15 @@ function LinkCube({ cell, active, setActive, onAct }) {
 }
 
 function FillerCube({ cell }) {
+  const ref = useRef();
+  useFrame((state) => {
+    if (!ref.current) return;
+    const b = bubbleAt(state.clock.elapsedTime, cell);
+    ref.current.position.set(cell.x, cell.y, cell.z + b.dz);
+    ref.current.scale.setScalar(1 + b.ds);
+  });
   return (
-    <RoundedBox args={[CS, CS, CS]} radius={0.16} smoothness={3} position={[cell.x, cell.y, cell.z]}>
+    <RoundedBox ref={ref} args={[CS, CS, CS]} radius={0.16} smoothness={3} position={[cell.x, cell.y, cell.z]}>
       <meshPhysicalMaterial color="#D7DCEA" emissive="#001391" emissiveIntensity={0.06}
         metalness={0.1} roughness={0.4} clearcoat={0.8} clearcoatRoughness={0.25} />
     </RoundedBox>
@@ -203,9 +221,9 @@ function Assembly({ blocks, activeKey, setActiveKey, onAct }) {
   useFrame((state) => {
     if (!grp.current) return;
     const t = state.clock.elapsedTime;
-    grp.current.rotation.x = TILT;
-    grp.current.rotation.y = Math.sin(t * 0.35) * 0.18;  // balanceo continuo (no ratón)
-    grp.current.position.y = Math.sin(t * 0.6) * 0.12;    // flotar
+    grp.current.rotation.x = TILT;                          // tapas visibles
+    grp.current.rotation.y = BASE_YAW + Math.sin(t * 0.3) * 0.13; // cantos visibles + balanceo
+    grp.current.position.y = Math.sin(t * 0.6) * 0.1;       // flotar global
   });
   return (
     <group ref={grp}>
@@ -247,7 +265,7 @@ export default function FacetIndex() {
   const onAct = (item) =>
     activate(item, getUrl, copyLink, (url, it) => setNav({ url, label: it.label, color: it.color }));
 
-  const zoom = isCoordinador ? 46 : 52;
+  const zoom = isCoordinador ? 42 : 48;
 
   return (
     <div className="absolute inset-0 flex">
