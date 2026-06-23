@@ -5,7 +5,6 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Html, Sphere, MeshDistortMaterial, Environment, PerformanceMonitor } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
-import { ConvexGeometry } from "three-stdlib";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
@@ -45,8 +44,8 @@ const HDRI = "/team-hub/hdri/city_1k.hdr";
 const SPHERE_R = 2.4;   // esfera central prominente (como la original)
 const CAGE_R = 5.0;     // radio de la malla (más cerca de la esfera)
 const NODE_R = 0.3;
-const CAP = 20;         // vértices FIJOS de la figura (capacidad; sube si hacen falta)
-const ZSQUASH = 0.5;    // achata la malla en profundidad -> nodos mirando a cámara (no detrás)
+const CAP = 26;         // vértices FIJOS de la figura (capacidad; sube si hacen falta)
+const ROCK = 0.22;      // amplitud del balanceo en Y (rad) -> suave, los links no llegan detrás
 
 const hint = (it) => (it.copy ? "⧉" : it.key ? "↗" : "→");
 const aria = (it) => it.label + (it.copy ? " · copiar enlace" : it.key ? " · abrir en pestaña nueva" : " · abrir");
@@ -69,7 +68,7 @@ function fibSphere(N, R) {
     const y = N === 1 ? 0 : 1 - (i / (N - 1)) * 2;
     const r = Math.sqrt(Math.max(0, 1 - y * y));
     const th = golden * i;
-    pts.push([Math.cos(th) * r * R, y * R, Math.sin(th) * r * R * ZSQUASH]);
+    pts.push([Math.cos(th) * r * R, y * R, Math.sin(th) * r * R]);
   }
   return pts;
 }
@@ -98,12 +97,12 @@ function Node({ node, active, setActive, onAct }) {
   const { pos, color, item, nodeKey } = node;
   return (
     <group position={pos}>
-      <mesh ref={ref} renderOrder={5}
+      <mesh ref={ref}
         onPointerOver={(e) => { e.stopPropagation(); setActive(nodeKey); }}
         onPointerOut={() => setActive(null)}
         onClick={(e) => { e.stopPropagation(); onAct(item); }}>
         <sphereGeometry args={[NODE_R, 16, 16]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={active ? 1.5 : 0.7} roughness={0.25} metalness={0.3} depthTest={false} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={active ? 1.5 : 0.7} roughness={0.25} metalness={0.3} />
       </mesh>
       <Html center position={[0, 0.6, 0]} zIndexRange={active ? [80, 0] : [40, 0]} style={{ pointerEvents: "auto" }}>
         <button data-hover type="button" aria-label={aria(item)}
@@ -136,8 +135,8 @@ function Cage({ nodes, spares, edgeGeo, active, setActive, onAct }) {
     if (!grp.current) return;
     if (activeRef.current == null) phase.current += dt; // avanza solo si no hay hover (se congela)
     const t = phase.current;
-    grp.current.rotation.y = Math.sin(t * 0.22) * 0.5;  // balanceo ±28° (no vuelta completa -> nada va detrás)
-    grp.current.rotation.x = Math.sin(t * 0.16) * 0.1;
+    grp.current.rotation.y = Math.sin(t * 0.25) * ROCK;  // balanceo suave -> los links no llegan detrás
+    grp.current.rotation.x = Math.sin(t * 0.18) * 0.07;
   });
   return (
     <group ref={grp}>
@@ -172,35 +171,25 @@ export default function FacetIndex() {
       ALL.push({ color: sec.color, section: sec.title, coordOnly: !!sec.coordOnly, item })));
     const verts = fibSphere(CAP, CAGE_R);
     const NALL = ALL.length;
-    // reparte los enlaces por TODA la altura (slot 0..CAP-1), conservando el orden por color
-    const assigned = ALL.map((f, k) => {
-      const slot = Math.round((k * (CAP - 1)) / (NALL - 1));
-      return { ...f, slot, pos: verts[slot], nodeKey: "n" + k };
-    });
+    // Slots FIJOS: los NALL vértices más FRONTALES (mayor Z) son los de link ->
+    // los links nunca quedan detrás; las reservas caen a los lados/detrás.
+    // Dentro de esos frontales, se ordenan por Y para agrupar por color (sección).
+    const frontIdx = verts.map((v, i) => i).sort((a, b) => verts[b][2] - verts[a][2]).slice(0, NALL);
+    frontIdx.sort((a, b) => verts[b][1] - verts[a][1]);
+    const assigned = ALL.map((f, k) => ({ ...f, slot: frontIdx[k], pos: verts[frontIdx[k]], nodeKey: "n" + k }));
     const nodes = assigned.filter((a) => !a.coordOnly || isCoordinador);
     const used = new Set(nodes.map((a) => a.slot));
     const spares = verts.filter((_, i) => !used.has(i));
 
-    // Aristas: casco convexo de la figura -> malla COMPLETA (sin conexiones que falten).
-    let edgeGeo;
-    try {
-      const hull = new ConvexGeometry(verts.map((v) => new THREE.Vector3(v[0], v[1], v[2])));
-      edgeGeo = new THREE.EdgesGeometry(hull, 1);
-    } catch (e) {
-      // fallback: vecinos más cercanos
-      const seen = new Set(), epts = [];
-      for (let i = 0; i < CAP; i++) {
-        const d = [];
-        for (let j = 0; j < CAP; j++) if (j !== i) d.push([dist2(verts[i], verts[j]), j]);
-        d.sort((a, b) => a[0] - b[0]);
-        for (let k = 0; k < Math.min(4, d.length); k++) {
-          const j = d[k][1], key = i < j ? i + "-" + j : j + "-" + i;
-          if (!seen.has(key)) { seen.add(key); epts.push(...verts[i], ...verts[j]); }
-        }
-      }
-      edgeGeo = new THREE.BufferGeometry();
-      edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(epts, 3));
-    }
+    // Aristas: pares dentro de un umbral de distancia (red limpia, ni pocas ni demasiadas).
+    let minD = Infinity;
+    for (let i = 0; i < CAP; i++) for (let j = i + 1; j < CAP; j++) { const d = dist2(verts[i], verts[j]); if (d < minD) minD = d; }
+    const thr = minD * 1.85; // dist² -> equivale a ~1.36x la distancia mínima (sube para más aristas)
+    const epts = [];
+    for (let i = 0; i < CAP; i++) for (let j = i + 1; j < CAP; j++)
+      if (dist2(verts[i], verts[j]) <= thr) epts.push(...verts[i], ...verts[j]);
+    const edgeGeo = new THREE.BufferGeometry();
+    edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(epts, 3));
 
     return { nodes, spares, edgeGeo };
   }, [isCoordinador]);
