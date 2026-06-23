@@ -197,7 +197,7 @@ export default function FacetIndex() {
 
   return (
     <div className="absolute inset-0">
-      <Canvas camera={{ position: [0, 0, 14], fov: 45 }} onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
+      <Canvas camera={{ position: [0, 0, 19], fov: 45 }} onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
         dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance" }} className="!absolute inset-0">
         <color attach="background" args={["#070E46"]} />
         <ambientLight intensity={0.4} />
