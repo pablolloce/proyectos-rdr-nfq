@@ -181,10 +181,15 @@ export default function FacetIndex() {
     const used = new Set(nodes.map((a) => a.slot));
     const spares = verts.filter((_, i) => !used.has(i));
 
-    // Aristas: pares dentro de un umbral de distancia (red limpia, ni pocas ni demasiadas).
-    let minD = Infinity;
-    for (let i = 0; i < CAP; i++) for (let j = i + 1; j < CAP; j++) { const d = dist2(verts[i], verts[j]); if (d < minD) minD = d; }
-    const thr = minD * 1.85; // dist² -> equivale a ~1.36x la distancia mínima (sube para más aristas)
+    // Aristas: umbral relativo al vecino más cercano de CADA vértice (no al mínimo global),
+    // así todos conectan y la densidad es uniforme (red limpia, ni pocas ni demasiadas).
+    let dmax2 = 0; // la mayor de las "distancias al vecino más cercano"
+    for (let i = 0; i < CAP; i++) {
+      let nn = Infinity;
+      for (let j = 0; j < CAP; j++) if (j !== i) { const d = dist2(verts[i], verts[j]); if (d < nn) nn = d; }
+      if (nn > dmax2) dmax2 = nn;
+    }
+    const thr = dmax2 * 2.0; // dist² -> ~1.4x del vecino más cercano (sube para más aristas, baja para menos)
     const epts = [];
     for (let i = 0; i < CAP; i++) for (let j = i + 1; j < CAP; j++)
       if (dist2(verts[i], verts[j]) <= thr) epts.push(...verts[i], ...verts[j]);
