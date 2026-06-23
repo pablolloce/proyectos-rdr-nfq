@@ -1220,7 +1220,7 @@ textarea.inline-input {
 
   <section id="panel-SECUENCIA" class="panel card">
     <h3>Orden del pase</h3>
-    <p style="color: var(--bbva-gray-4);">Diseña el orden de ejecución. Debe incluir PARADA, ARRANQUE y todos los componentes (códigos) entre medias.</p>
+    <p style="color: var(--bbva-gray-4);">Diseña el orden de ejecución. Debe incluir PARADA, ARRANQUE y todos los componentes (códigos) después de la PARADA. Los despliegues y aperiódicos pueden ir antes o después del ARRANQUE.</p>
 
     <div class="orden-builder" id="orden-builder">
       <div class="orden-builder__row">
@@ -1993,10 +1993,12 @@ function actualizarValidador() {
         if (esRemedy) {
           if (idxC >= idxA) faltan.push(cod);
         } else {
-          if (idxC <= idxP || idxC >= idxA) faltan.push(cod);
+          // Despliegues y aperiódicos pueden ir antes O después del ARRANQUE.
+          // Solo exigimos que vayan después de la PARADA.
+          if (idxC <= idxP) faltan.push(cod);
         }
       });
-      if (faltan.length > 0) { seqOk = false; msgSeq = "Faltan paquetes o están fuera del bloque principal: " + faltan.join(", "); }
+      if (faltan.length > 0) { seqOk = false; msgSeq = "Faltan paquetes o están antes de la PARADA: " + faltan.join(", "); }
     }
   } else { seqOk = false; msgSeq = "Diseña el orden del pase (falta parada y arranque)"; }
 
