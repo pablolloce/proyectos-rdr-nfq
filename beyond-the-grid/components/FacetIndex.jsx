@@ -11,9 +11,10 @@ import { useAuth } from "./AuthGate";
 /**
  * Hub 3D a pantalla completa = esfera distorsionada ORIGINAL (HDRI city, look
  * realista) en el centro, rodeada de una malla esférica que pivota. La malla
- * tiene CAP vértices FIJOS (no dependen del nº de enlaces): los primeros N son
- * nodos-link (incluido Control); el resto son juntas de reserva -> al quitar
- * Control o al añadir nodos futuros, la figura no cambia. Header y menú flotan.
+ * tiene CAP vértices FIJOS; los enlaces se asignan a SLOTS fijos repartidos de
+ * arriba a abajo (orden por secciones = agrupados por color). Lo no usado son
+ * juntas de reserva -> al faltar Control o al añadir nodos futuros, la figura no
+ * cambia. Solo aristas entre vértices (sin radios al centro). Header y menú flotan.
  */
 const SECTIONS = [
   { num: "01", title: "Formaciones", color: "#85C8FF", items: [
@@ -41,7 +42,7 @@ const SECTIONS = [
 
 const HDRI = "/team-hub/hdri/city_1k.hdr";
 const SPHERE_R = 2.4;   // esfera central prominente (como la original)
-const CAGE_R = 6.2;     // radio de la malla (llega cerca de los bordes)
+const CAGE_R = 5.0;     // radio de la malla (más cerca de la esfera)
 const NODE_R = 0.3;
 const CAP = 20;         // vértices FIJOS de la figura (capacidad; sube si hacen falta)
 
@@ -123,7 +124,8 @@ function Node({ node, active, setActive, onAct }) {
 }
 
 // Malla de CAP vértices que pivota (se frena al interactuar con un nodo).
-function Cage({ nodes, spares, edgeGeo, spokeGeo, active, setActive, onAct }) {
+// Solo aristas vértice-a-vértice (sin radios al centro).
+function Cage({ nodes, spares, edgeGeo, active, setActive, onAct }) {
   const grp = useRef();
   const activeRef = useRef(active);
   activeRef.current = active;
@@ -134,9 +136,6 @@ function Cage({ nodes, spares, edgeGeo, spokeGeo, active, setActive, onAct }) {
   });
   return (
     <group ref={grp}>
-      <lineSegments geometry={spokeGeo}>
-        <lineBasicMaterial color="#9fb0e0" transparent opacity={0.18} />
-      </lineSegments>
       <lineSegments geometry={edgeGeo}>
         <lineBasicMaterial color="#85C8FF" transparent opacity={0.38} />
       </lineSegments>
@@ -160,14 +159,23 @@ export default function FacetIndex() {
 
   const sections = useMemo(() => SECTIONS.filter((s) => !s.coordOnly || isCoordinador), [isCoordinador]);
 
-  const { nodes, spares, edgeGeo, spokeGeo } = useMemo(() => {
-    const flat = [];
-    sections.forEach((sec) => sec.items.forEach((item) => flat.push({ color: sec.color, section: sec.title, num: sec.num, item })));
-    const verts = fibSphere(CAP, CAGE_R); // posiciones FIJAS (no dependen de flat.length)
-    const nodes = flat.slice(0, CAP).map((f, i) => ({ ...f, pos: verts[i], nodeKey: "n" + i }));
-    const spares = verts.slice(nodes.length);
+  const { nodes, spares, edgeGeo } = useMemo(() => {
+    // Lista COMPLETA (incluye Control) -> slots fijos que no dependen del nº visible.
+    const ALL = [];
+    SECTIONS.forEach((sec) => sec.items.forEach((item) =>
+      ALL.push({ color: sec.color, section: sec.title, coordOnly: !!sec.coordOnly, item })));
+    const verts = fibSphere(CAP, CAGE_R);
+    const NALL = ALL.length;
+    // reparte los enlaces por TODA la altura (slot 0..CAP-1), conservando el orden por color
+    const assigned = ALL.map((f, k) => {
+      const slot = Math.round((k * (CAP - 1)) / (NALL - 1));
+      return { ...f, slot, pos: verts[slot], nodeKey: "n" + k };
+    });
+    const nodes = assigned.filter((a) => !a.coordOnly || isCoordinador);
+    const used = new Set(nodes.map((a) => a.slot));
+    const spares = verts.filter((_, i) => !used.has(i));
 
-    // Aristas: cada vértice a sus 3 vecinos más cercanos (sin duplicar).
+    // Aristas: cada vértice a sus 3 vecinos más cercanos (toda la figura, fija).
     const seen = new Set(), epts = [];
     for (let i = 0; i < CAP; i++) {
       const d = [];
@@ -181,20 +189,15 @@ export default function FacetIndex() {
     const edgeGeo = new THREE.BufferGeometry();
     edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(epts, 3));
 
-    const spts = [];
-    verts.forEach((v) => spts.push(0, 0, 0, v[0], v[1], v[2]));
-    const spokeGeo = new THREE.BufferGeometry();
-    spokeGeo.setAttribute("position", new THREE.Float32BufferAttribute(spts, 3));
-
-    return { nodes, spares, edgeGeo, spokeGeo };
-  }, [sections]);
+    return { nodes, spares, edgeGeo };
+  }, [isCoordinador]);
 
   const onAct = (item) => activate(item, getUrl, copyLink);
   let gi = 0;
 
   return (
     <div className="absolute inset-0">
-      <Canvas camera={{ position: [0, 0, 18], fov: 45 }} onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
+      <Canvas camera={{ position: [0, 0, 14], fov: 45 }} onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
         dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance" }} className="!absolute inset-0">
         <color attach="background" args={["#070E46"]} />
         <ambientLight intensity={0.4} />
@@ -203,7 +206,7 @@ export default function FacetIndex() {
         <Suspense fallback={null}>
           <Environment files={HDRI} />
           <CentralSphere />
-          <Cage nodes={nodes} spares={spares} edgeGeo={edgeGeo} spokeGeo={spokeGeo} active={active} setActive={setActive} onAct={onAct} />
+          <Cage nodes={nodes} spares={spares} edgeGeo={edgeGeo} active={active} setActive={setActive} onAct={onAct} />
         </Suspense>
         <EffectComposer>
           <Bloom mipmapBlur intensity={0.55} luminanceThreshold={0.6} luminanceSmoothing={0.35} />
