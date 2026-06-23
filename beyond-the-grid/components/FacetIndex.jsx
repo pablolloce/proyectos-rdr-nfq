@@ -45,6 +45,7 @@ const SPHERE_R = 2.4;   // esfera central prominente (como la original)
 const CAGE_R = 5.0;     // radio de la malla (más cerca de la esfera)
 const NODE_R = 0.3;
 const CAP = 20;         // vértices FIJOS de la figura (capacidad; sube si hacen falta)
+const ZSQUASH = 0.6;    // achata la malla en profundidad -> nodos mirando a cámara (no detrás)
 
 const hint = (it) => (it.copy ? "⧉" : it.key ? "↗" : "→");
 const aria = (it) => it.label + (it.copy ? " · copiar enlace" : it.key ? " · abrir en pestaña nueva" : " · abrir");
@@ -67,7 +68,7 @@ function fibSphere(N, R) {
     const y = N === 1 ? 0 : 1 - (i / (N - 1)) * 2;
     const r = Math.sqrt(Math.max(0, 1 - y * y));
     const th = golden * i;
-    pts.push([Math.cos(th) * r * R, y * R, Math.sin(th) * r * R]);
+    pts.push([Math.cos(th) * r * R, y * R, Math.sin(th) * r * R * ZSQUASH]);
   }
   return pts;
 }
@@ -81,7 +82,7 @@ function CentralSphere() {
     ref.current.position.y = Math.sin(s.clock.elapsedTime * 0.4) * 0.1;
   });
   return (
-    <Sphere ref={ref} args={[SPHERE_R, 160, 160]}>
+    <Sphere ref={ref} args={[SPHERE_R, 96, 96]}>
       <MeshDistortMaterial color="#1D7CF4" roughness={0.06} metalness={0.4} clearcoat={1}
         clearcoatRoughness={0.12} envMapIntensity={1.5} distort={0.4} speed={1.4} />
     </Sphere>
@@ -100,7 +101,7 @@ function Node({ node, active, setActive, onAct }) {
         onPointerOver={(e) => { e.stopPropagation(); setActive(nodeKey); }}
         onPointerOut={() => setActive(null)}
         onClick={(e) => { e.stopPropagation(); onAct(item); }}>
-        <sphereGeometry args={[NODE_R, 24, 24]} />
+        <sphereGeometry args={[NODE_R, 16, 16]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={active ? 1.5 : 0.7} roughness={0.25} metalness={0.3} />
       </mesh>
       <Html center position={[0, 0.6, 0]} zIndexRange={active ? [80, 0] : [40, 0]} style={{ pointerEvents: "auto" }}>
@@ -127,12 +128,15 @@ function Node({ node, active, setActive, onAct }) {
 // Solo aristas vértice-a-vértice (sin radios al centro).
 function Cage({ nodes, spares, edgeGeo, active, setActive, onAct }) {
   const grp = useRef();
+  const phase = useRef(0);
   const activeRef = useRef(active);
   activeRef.current = active;
   useFrame((s, dt) => {
     if (!grp.current) return;
-    if (activeRef.current == null) grp.current.rotation.y += dt * 0.1; // pivota; pausa al hover
-    grp.current.rotation.x = Math.sin(s.clock.elapsedTime * 0.12) * 0.16;
+    if (activeRef.current == null) phase.current += dt; // avanza solo si no hay hover (se congela)
+    const t = phase.current;
+    grp.current.rotation.y = Math.sin(t * 0.22) * 0.5;  // balanceo ±28° (no vuelta completa -> nada va detrás)
+    grp.current.rotation.x = Math.sin(t * 0.16) * 0.1;
   });
   return (
     <group ref={grp}>
@@ -141,7 +145,7 @@ function Cage({ nodes, spares, edgeGeo, active, setActive, onAct }) {
       </lineSegments>
       {spares.map((p, i) => (
         <mesh key={"s" + i} position={p}>
-          <sphereGeometry args={[NODE_R * 0.45, 12, 12]} />
+          <sphereGeometry args={[NODE_R * 0.45, 8, 8]} />
           <meshStandardMaterial color="#4a5a8a" emissive="#2a3566" emissiveIntensity={0.4} roughness={0.5} />
         </mesh>
       ))}
@@ -198,7 +202,7 @@ export default function FacetIndex() {
   return (
     <div className="absolute inset-0">
       <Canvas camera={{ position: [0, 0, 19], fov: 45 }} onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
-        dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance" }} className="!absolute inset-0">
+        dpr={[1, 1.25]} gl={{ antialias: true, powerPreference: "high-performance" }} className="!absolute inset-0">
         <color attach="background" args={["#070E46"]} />
         <ambientLight intensity={0.4} />
         <directionalLight position={[3, 3, 3]} intensity={2.2} color="#F7F8F8" />
@@ -217,7 +221,7 @@ export default function FacetIndex() {
         Cada nodo es un enlace · pulsa para abrir (la malla se detiene al pasar el ratón) · o usa la lista
       </p>
 
-      <aside className="pointer-events-auto absolute right-4 top-28 bottom-16 z-20 hidden w-60 overflow-auto rounded-2xl border border-serene/10 bg-midnight/40 p-4 backdrop-blur-md md:block">
+      <aside className="pointer-events-auto absolute right-4 top-28 bottom-16 z-20 hidden w-60 overflow-auto rounded-2xl border border-serene/10 bg-midnight/85 p-4 md:block">
         {sections.map((sec) => (
           <div key={sec.num} className="mb-4">
             <p className="mb-2 flex items-center gap-2 font-display text-xs uppercase tracking-[0.2em]" style={{ color: sec.color }}>

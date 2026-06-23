@@ -21,7 +21,7 @@ export default function Header() {
           data-hover
           type="button"
           onClick={logout}
-          className="rounded-full border border-serene/30 bg-midnight/40 px-4 py-2 font-sans text-xs font-bold uppercase tracking-wider text-sand backdrop-blur-md transition-colors hover:border-serene"
+          className="rounded-full border border-serene/30 bg-midnight/70 px-4 py-2 font-sans text-xs font-bold uppercase tracking-wider text-sand transition-colors hover:border-serene"
         >
           Cerrar sesión
         </button>
