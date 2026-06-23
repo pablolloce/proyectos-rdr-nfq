@@ -2,9 +2,10 @@
 
 import { Suspense, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Html, Sphere, MeshDistortMaterial, Environment } from "@react-three/drei";
+import { Html, Sphere, MeshDistortMaterial, Environment, PerformanceMonitor } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
+import { ConvexGeometry } from "three-stdlib";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
@@ -45,7 +46,7 @@ const SPHERE_R = 2.4;   // esfera central prominente (como la original)
 const CAGE_R = 5.0;     // radio de la malla (más cerca de la esfera)
 const NODE_R = 0.3;
 const CAP = 20;         // vértices FIJOS de la figura (capacidad; sube si hacen falta)
-const ZSQUASH = 0.6;    // achata la malla en profundidad -> nodos mirando a cámara (no detrás)
+const ZSQUASH = 0.5;    // achata la malla en profundidad -> nodos mirando a cámara (no detrás)
 
 const hint = (it) => (it.copy ? "⧉" : it.key ? "↗" : "→");
 const aria = (it) => it.label + (it.copy ? " · copiar enlace" : it.key ? " · abrir en pestaña nueva" : " · abrir");
@@ -97,12 +98,12 @@ function Node({ node, active, setActive, onAct }) {
   const { pos, color, item, nodeKey } = node;
   return (
     <group position={pos}>
-      <mesh ref={ref}
+      <mesh ref={ref} renderOrder={5}
         onPointerOver={(e) => { e.stopPropagation(); setActive(nodeKey); }}
         onPointerOut={() => setActive(null)}
         onClick={(e) => { e.stopPropagation(); onAct(item); }}>
         <sphereGeometry args={[NODE_R, 16, 16]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={active ? 1.5 : 0.7} roughness={0.25} metalness={0.3} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={active ? 1.5 : 0.7} roughness={0.25} metalness={0.3} depthTest={false} />
       </mesh>
       <Html center position={[0, 0.6, 0]} zIndexRange={active ? [80, 0] : [40, 0]} style={{ pointerEvents: "auto" }}>
         <button data-hover type="button" aria-label={aria(item)}
@@ -160,6 +161,7 @@ export default function FacetIndex() {
   const { getUrl, copyLink } = useLinks();
   const { isCoordinador } = useAuth();
   const [active, setActive] = useState(null);
+  const [degraded, setDegraded] = useState(false); // modo bajo recursos (VDI): sin bloom, menos DPR
 
   const sections = useMemo(() => SECTIONS.filter((s) => !s.coordOnly || isCoordinador), [isCoordinador]);
 
@@ -179,19 +181,26 @@ export default function FacetIndex() {
     const used = new Set(nodes.map((a) => a.slot));
     const spares = verts.filter((_, i) => !used.has(i));
 
-    // Aristas: cada vértice a sus 3 vecinos más cercanos (toda la figura, fija).
-    const seen = new Set(), epts = [];
-    for (let i = 0; i < CAP; i++) {
-      const d = [];
-      for (let j = 0; j < CAP; j++) if (j !== i) d.push([dist2(verts[i], verts[j]), j]);
-      d.sort((a, b) => a[0] - b[0]);
-      for (let k = 0; k < Math.min(3, d.length); k++) {
-        const j = d[k][1], key = i < j ? i + "-" + j : j + "-" + i;
-        if (!seen.has(key)) { seen.add(key); epts.push(...verts[i], ...verts[j]); }
+    // Aristas: casco convexo de la figura -> malla COMPLETA (sin conexiones que falten).
+    let edgeGeo;
+    try {
+      const hull = new ConvexGeometry(verts.map((v) => new THREE.Vector3(v[0], v[1], v[2])));
+      edgeGeo = new THREE.EdgesGeometry(hull, 1);
+    } catch (e) {
+      // fallback: vecinos más cercanos
+      const seen = new Set(), epts = [];
+      for (let i = 0; i < CAP; i++) {
+        const d = [];
+        for (let j = 0; j < CAP; j++) if (j !== i) d.push([dist2(verts[i], verts[j]), j]);
+        d.sort((a, b) => a[0] - b[0]);
+        for (let k = 0; k < Math.min(4, d.length); k++) {
+          const j = d[k][1], key = i < j ? i + "-" + j : j + "-" + i;
+          if (!seen.has(key)) { seen.add(key); epts.push(...verts[i], ...verts[j]); }
+        }
       }
+      edgeGeo = new THREE.BufferGeometry();
+      edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(epts, 3));
     }
-    const edgeGeo = new THREE.BufferGeometry();
-    edgeGeo.setAttribute("position", new THREE.Float32BufferAttribute(epts, 3));
 
     return { nodes, spares, edgeGeo };
   }, [isCoordinador]);
@@ -202,8 +211,10 @@ export default function FacetIndex() {
   return (
     <div className="absolute inset-0">
       <Canvas camera={{ position: [0, 0, 19], fov: 45 }} onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
-        dpr={[1, 1.25]} gl={{ antialias: true, powerPreference: "high-performance" }} className="!absolute inset-0">
+        dpr={degraded ? 1 : [1, 1.25]} gl={{ antialias: true, powerPreference: "high-performance" }} className="!absolute inset-0">
         <color attach="background" args={["#070E46"]} />
+        {/* Si el fps cae (VDI sin GPU): baja el DPR y desactiva el bloom (la pasada más cara). */}
+        <PerformanceMonitor onDecline={() => setDegraded(true)} />
         <ambientLight intensity={0.4} />
         <directionalLight position={[3, 3, 3]} intensity={2.2} color="#F7F8F8" />
         <directionalLight position={[-4, -2, -3]} intensity={0.6} color="#1D7CF4" />
@@ -212,9 +223,11 @@ export default function FacetIndex() {
           <CentralSphere />
           <Cage nodes={nodes} spares={spares} edgeGeo={edgeGeo} active={active} setActive={setActive} onAct={onAct} />
         </Suspense>
-        <EffectComposer>
-          <Bloom mipmapBlur intensity={0.55} luminanceThreshold={0.6} luminanceSmoothing={0.35} />
-        </EffectComposer>
+        {!degraded && (
+          <EffectComposer>
+            <Bloom mipmapBlur intensity={0.55} luminanceThreshold={0.6} luminanceSmoothing={0.35} />
+          </EffectComposer>
+        )}
       </Canvas>
 
       <p className="pointer-events-none absolute inset-x-0 bottom-5 z-20 text-center text-xs uppercase tracking-[0.3em] text-serene/55">
