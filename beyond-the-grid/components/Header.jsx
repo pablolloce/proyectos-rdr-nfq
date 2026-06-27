@@ -25,16 +25,16 @@ export default function Header() {
           <Link
             href={backHref}
             aria-label="Volver al inicio"
-            className="inline-flex shrink-0 items-center gap-2 rounded-full border-[1.5px] border-serene/35 bg-midnight/70 px-4 py-2.5 font-sans text-xs font-bold uppercase tracking-[0.08em] text-sand shadow-[0_4px_14px_rgba(0,0,0,0.3)] backdrop-blur transition hover:-translate-y-px hover:border-serene/70 hover:bg-midnight/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+            className="inline-flex shrink-0 items-center gap-0 rounded-full border-[1.5px] border-serene/35 bg-midnight/70 p-2.5 font-sans text-xs font-bold uppercase tracking-[0.08em] text-sand shadow-[0_4px_14px_rgba(0,0,0,0.3)] backdrop-blur transition hover:-translate-y-px hover:border-serene/70 hover:bg-midnight/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene min-[460px]:gap-2 min-[460px]:px-4 min-[460px]:py-2.5"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
-            Inicio
+            <span className="hidden min-[460px]:inline">Inicio</span>
           </Link>
         )}
-        <div className="min-w-0">
-          <h1 className="font-display text-xl font-bold leading-tight text-sand sm:text-2xl md:text-3xl">
+        <div className="hidden min-w-0 min-[460px]:block">
+          <h1 className="truncate font-display text-xl font-bold leading-tight text-sand sm:text-2xl md:text-3xl">
             RDR Knowledge
           </h1>
           <p className="mt-0.5 truncate text-xs text-serene/80 sm:text-sm">{subtitle}</p>
