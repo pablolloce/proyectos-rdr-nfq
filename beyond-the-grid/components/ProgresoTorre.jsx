@@ -1,0 +1,177 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { motion, useReducedMotion } from "framer-motion";
+import { NIVELES, FORMACIONES, TRACKS, hrefDe, PROGRESO_EQUIPO } from "@/lib/formaciones";
+import { estadoCurso, resumen } from "@/lib/progreso";
+import { IconLock, IconCheck, IconArrow, IconPlay, IconGrad } from "./icons";
+
+const TuboTower = dynamic(() => import("./TuboTower"), { ssr: false });
+
+const n2 = (n) => String(n).padStart(2, "0");
+
+function useIsDesktop() {
+  const [d, setD] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia("(min-width: 1024px)");
+    const f = () => setD(m.matches);
+    f();
+    m.addEventListener("change", f);
+    return () => m.removeEventListener("change", f);
+  }, []);
+  return d;
+}
+
+function CursoCard({ f, completadas, niveles, onMarcar }) {
+  const st = estadoCurso(f, completadas, niveles);
+  const color = TRACKS[f.track].color;
+
+  if (st === "completada")
+    return (
+      <div className="flex items-center gap-3 rounded-2xl border border-lime/25 bg-lime/[0.07] p-3.5 backdrop-blur-md">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-lime/20 text-lime"><IconCheck size={16} /></span>
+        <a href={hrefDe(f)} className="flex-1 truncate text-sm font-semibold text-sand hover:underline focus-visible:outline-none focus-visible:underline">{f.titulo}</a>
+        <button type="button" onClick={() => onMarcar(f.archivo, false)} className="shrink-0 rounded-lg px-2 py-1 text-[11px] text-sand/55 transition hover:bg-white/10 hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene">Deshacer</button>
+      </div>
+    );
+
+  if (st === "disponible")
+    return (
+      <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.06] p-3.5 backdrop-blur-md transition hover:border-white/30">
+        <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold text-sand">{f.titulo}</div>
+          {f.duracion && <div className="text-[11px] tabular-nums text-sand/55">{f.duracion}</div>}
+        </div>
+        <a href={hrefDe(f)} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-serene/15 px-3 py-1.5 text-xs font-bold text-serene transition hover:bg-serene/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"><IconPlay size={12} /> Abrir</a>
+        <button type="button" onClick={() => onMarcar(f.archivo, true)} title="Marcar como completada" className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-white/12 text-sand/70 transition hover:border-lime/50 hover:text-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"><IconCheck size={14} /></button>
+      </div>
+    );
+
+  return (
+    <div aria-disabled="true" className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-3.5 text-sand/40">
+      <IconLock size={16} className="shrink-0" />
+      <span className="flex-1 truncate text-sm">{f.titulo}</span>
+      <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">{st === "proximamente" ? "Próximamente" : "Bloqueado"}</span>
+    </div>
+  );
+}
+
+function Node({ nv }) {
+  const e = nv.estado;
+  const cls =
+    e === "completado" ? "border-lime/60 bg-lime/20 text-lime"
+      : e === "actual" ? "border-serene/70 bg-serene/15 text-serene shadow-[0_0_24px_-4px_rgba(133,200,255,.7)]"
+        : "border-white/15 bg-midnight/80 text-sand/45";
+  return (
+    <div className={`relative z-10 grid h-14 w-14 place-items-center rounded-2xl border-2 font-display text-sm font-bold backdrop-blur ${cls}`}>
+      {e === "completado" ? <IconCheck size={22} /> : e === "bloqueado" || e === "proximamente" ? <IconLock size={18} /> : `N${n2(nv.n)}`}
+      {e === "actual" && <span className="absolute -inset-1 -z-10 animate-ping rounded-2xl border border-serene/40" />}
+    </div>
+  );
+}
+
+function LevelSection({ lvl, nv, completadas, niveles, onMarcar, reduce, isLast }) {
+  const items = FORMACIONES.filter((f) => f.nivel === lvl.n);
+  const dim = nv.estado === "bloqueado";
+  return (
+    <motion.section
+      aria-labelledby={`niv-${lvl.n}`}
+      initial={{ opacity: 0, y: reduce ? 0 : 44 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: false, amount: 0.25 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      className="relative grid grid-cols-[3.5rem_1fr] gap-x-4 gap-y-3 pb-12"
+    >
+      {/* línea espina entre nodos */}
+      {!isLast && <span aria-hidden className="absolute left-[1.75rem] top-14 -z-0 h-[calc(100%-2rem)] w-px -translate-x-1/2 bg-gradient-to-b from-white/25 to-white/5" />}
+
+      <div className="row-span-2"><Node nv={nv} /></div>
+
+      <div className={dim ? "opacity-60" : ""}>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="font-display text-xs font-bold tabular-nums text-serene/70">N{n2(lvl.n)}</span>
+          <h2 id={`niv-${lvl.n}`} className="font-display text-lg font-bold text-sand sm:text-xl">{lvl.titulo}</h2>
+          {nv.estado === "completado" && <span className="rounded-full bg-lime/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-lime">Completado</span>}
+          {nv.estado === "actual" && <span className="rounded-full bg-serene/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-serene">Tu nivel</span>}
+          {nv.tieneContenido && <span className="ml-auto tabular-nums text-xs text-sand/55">{nv.hechos}/{nv.total}</span>}
+        </div>
+        <p className="mt-0.5 text-sm text-sand/60">{lvl.subtitulo}</p>
+      </div>
+
+      <div className="col-start-2 space-y-2.5">
+        {items.map((f) => (
+          <CursoCard key={f.titulo} f={f} completadas={completadas} niveles={niveles} onMarcar={onMarcar} />
+        ))}
+      </div>
+    </motion.section>
+  );
+}
+
+export default function ProgresoTorre({ niveles, completadas, current, onMarcar }) {
+  const desktop = useIsDesktop();
+  const reduce = useReducedMotion();
+  const r = resumen(completadas);
+
+  return (
+    <main className="relative">
+      {/* Fondo: tubo 3D (desktop) o espina CSS (móvil) */}
+      {desktop ? (
+        <TuboTower frac={r.pct / 100} />
+      ) : (
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+          <span className="absolute left-1/2 top-0 h-full w-24 -translate-x-1/2 bg-gradient-to-b from-serene/15 via-purple/10 to-transparent blur-2xl" />
+          <span className="rdr-blob left-[-10%] top-[20%] h-64 w-64" style={{ background: "#1D7CF4" }} />
+        </div>
+      )}
+
+      <div className="relative z-10 mx-auto w-full max-w-2xl px-5 pb-32 pt-28 sm:px-6">
+        {/* Hero */}
+        <header className="mb-14 rounded-3xl bg-midnight/35 px-4 py-6 text-center backdrop-blur-sm">
+          <p className="font-sans text-xs font-bold uppercase tracking-[0.4em] text-serene/80">Ruta formativa</p>
+          <h1 className="mt-3 font-display text-4xl font-bold leading-none text-sand sm:text-5xl">La Torre RDR</h1>
+          <p className="mx-auto mt-3 max-w-md text-sm text-sand/65">Desciende por la torre: cada nivel que completas desbloquea el siguiente.</p>
+          <div className="mx-auto mt-6 max-w-xs">
+            <div className="mb-1.5 flex items-center justify-between text-xs">
+              <span className="font-bold uppercase tracking-wider text-serene/80">Tu progreso</span>
+              <span className="tabular-nums text-sand/70">{r.hechos}/{r.total} · {r.pct}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuenow={r.pct} aria-valuemin={0} aria-valuemax={100}>
+              <div className="h-full rounded-full bg-gradient-to-r from-serene to-lime transition-[width] duration-700" style={{ width: `${r.pct}%` }} />
+            </div>
+          </div>
+          {!reduce && (
+            <div className="mt-8 flex justify-center text-serene/60" aria-hidden>
+              <span className="animate-bounce"><IconArrow size={22} style={{ transform: "rotate(90deg)" }} /></span>
+            </div>
+          )}
+        </header>
+
+        {/* Niveles */}
+        {NIVELES.map((lvl, i) => (
+          <LevelSection
+            key={lvl.n}
+            lvl={lvl}
+            nv={niveles[lvl.n]}
+            completadas={completadas}
+            niveles={niveles}
+            onMarcar={onMarcar}
+            reduce={reduce}
+            isLast={i === NIVELES.length - 1}
+          />
+        ))}
+
+        {/* Progreso del equipo */}
+        <a href={PROGRESO_EQUIPO} className="group mt-4 flex items-center gap-3 rounded-2xl border border-serene/25 bg-serene/10 px-4 py-3.5 backdrop-blur-md transition hover:border-serene/50 hover:bg-serene/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-serene/15 text-serene"><IconGrad size={18} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-bold text-sand">Progreso del equipo</span>
+            <span className="block truncate text-xs text-sand/60">Avance y certificados de todo el equipo</span>
+          </span>
+          <IconArrow size={16} className="shrink-0 text-serene transition-transform group-hover:translate-x-1" />
+        </a>
+      </div>
+    </main>
+  );
+}
