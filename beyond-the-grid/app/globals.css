@@ -30,8 +30,9 @@ body {
 .rdr-blob {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(70px);
-  opacity: 0.5;
+  filter: blur(58px);
+  opacity: 0.6;
+  mix-blend-mode: screen; /* aditivo: las manchas BRILLAN sobre el Midnight */
   will-change: transform;
   animation: rdr-float 14s ease-in-out infinite;
 }
@@ -45,19 +46,37 @@ body {
   }
 }
 
-/* Entrada escalonada de las tarjetas bento. */
+/* Entrada escalonada de las tarjetas bento (solo opacidad: el transform lo
+   usa el tilt 3D, no deben competir). */
 @keyframes rdr-rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 .rdr-rise {
-  animation: rdr-rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: rdr-rise 0.45s ease both;
+}
+
+/* Tilt 3D dirigido por puntero (las vars --rx/--ry/--mx/--my las fija el JS). */
+.rdr-tilt {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 0.14s ease-out, border-color 0.2s ease, background-color 0.2s ease;
+  will-change: transform;
+}
+/* Foco que sigue al cursor dentro de la tarjeta. */
+.rdr-spot {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.group:hover .rdr-spot,
+.group:focus-visible .rdr-spot {
+  opacity: 1;
 }
 
 /* Respeta prefers-reduced-motion: corta animaciones/transiciones CSS.
