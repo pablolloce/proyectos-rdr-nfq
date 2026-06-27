@@ -67,7 +67,7 @@ const FRAG = `
     if (r > 0.5) discard;
     float a = smoothstep(0.5, 0.04, r);
     vec3 col = vColor + vGlow * 0.7;
-    gl_FragColor = vec4(col, a * (0.28 + vGlow * 0.5));
+    gl_FragColor = vec4(col, a * (0.34 + vGlow * 0.5));
   }
 `;
 
@@ -211,14 +211,18 @@ export default function EstructuraTower({ estados, activeLevel }) {
           <Cloud estados={estados} reduce={reduce} />
         </Canvas>
       </div>
-      {/* Scrim de legibilidad: oscurece la banda central (donde vive el contenido)
-          dejando las partículas visibles en los márgenes. */}
+      {/* Scrim de legibilidad + color: oscurece la banda central (donde vive el
+          contenido) y añade una aurora de color sutil en los márgenes. */}
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "linear-gradient(90deg, transparent 0%, rgba(7,14,70,.55) 20%, rgba(7,14,70,.78) 50%, rgba(7,14,70,.55) 80%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, rgba(7,14,70,.62) 16%, rgba(7,14,70,.88) 50%, rgba(7,14,70,.62) 84%, transparent 100%)," +
+            "radial-gradient(42% 42% at 9% 16%, rgba(29,124,244,.28), transparent 70%)," +
+            "radial-gradient(40% 40% at 92% 24%, rgba(150,148,255,.24), transparent 70%)," +
+            "radial-gradient(46% 46% at 88% 88%, rgba(136,231,131,.20), transparent 72%)," +
+            "radial-gradient(40% 40% at 10% 90%, rgba(255,181,107,.16), transparent 72%)",
         }}
       />
     </>
