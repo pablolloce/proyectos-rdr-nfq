@@ -2,41 +2,33 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { pointer } from "@/lib/pointerStore";
 import { LinksProvider } from "@/lib/links";
 import LoadingScreen from "./LoadingScreen";
 import AuthGate from "./AuthGate";
 import Header from "./Header";
 import LinkCloud from "./LinkCloud";
 
-// Esfera fragmentada (cada fragmento = link): solo cliente (WebGL).
+// Esfera + malla de nodos (cada nodo = link): solo cliente (WebGL).
 const FacetIndex = dynamic(() => import("./FacetIndex"), { ssr: false });
 
-// En móvil fragmentos diminutos no son cómodos -> lista (LinkCloud).
+// En móvil y tablet la malla 3D con pills no es cómoda al tacto -> lista (LinkCloud).
 function useIsDesktop() {
   const [d, setD] = useState(true);
   useEffect(() => {
-    const m = window.matchMedia("(min-width: 768px)");
+    const m = window.matchMedia("(min-width: 1024px)");
     const f = () => setD(m.matches);
-    f(); m.addEventListener("change", f);
+    f();
+    m.addEventListener("change", f);
     return () => m.removeEventListener("change", f);
   }, []);
   return d;
 }
 
 /**
- * Index: esfera premium que se FRAGMENTA en partes, y cada parte es un link
- * (se separa al pasar el ratón). En móvil, lista de chips. Tras la puerta de acceso.
+ * Index: malla 3D donde cada nodo es un link (la figura se frena al pasar el
+ * ratón). En pantallas pequeñas, lista de chips. Todo tras la puerta de acceso.
  */
 export default function Experience() {
-  useEffect(() => {
-    const onMove = (e) => {
-      pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-      pointer.y = (e.clientY / window.innerHeight) * 2 - 1;
-    };
-    window.addEventListener("mousemove", onMove);
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
   const desktop = useIsDesktop();
 
   return (
@@ -45,8 +37,19 @@ export default function Experience() {
       <AuthGate>
         <div className="relative h-screen w-screen overflow-hidden">
           {/* Canvas 3D a pantalla COMPLETA; el resto flota encima */}
-          {desktop ? <FacetIndex /> : <div className="h-full overflow-auto pt-24"><LinkCloud /></div>}
+          {desktop ? (
+            <FacetIndex />
+          ) : (
+            <div className="h-full overflow-auto pb-16 pt-24">
+              <LinkCloud />
+            </div>
+          )}
           <Header />
+          {/* Co-branding NFQ (regla nº5 CLAUDE.md: NFQ en todas las vistas, menor que BBVA). */}
+          <footer className="pointer-events-none absolute bottom-4 left-6 z-20 flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-[0.25em] text-sand/60">Hecho por</span>
+            <img src="/team-hub/logos/nfq-white.png" alt="NFQ" className="h-4 w-auto md:h-5" />
+          </footer>
         </div>
       </AuthGate>
     </LinksProvider>

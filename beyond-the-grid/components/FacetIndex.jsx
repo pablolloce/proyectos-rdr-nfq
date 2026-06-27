@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Html, Sphere, MeshDistortMaterial, Environment, PerformanceMonitor } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
@@ -73,18 +74,19 @@ function fibSphere(N, R) {
   return pts;
 }
 
-// Esfera distorsionada original (auto-animación, sin parallax de ratón).
-function CentralSphere() {
+// Esfera distorsionada original (auto-animación). Se detiene si el usuario
+// pide menos movimiento (prefers-reduced-motion).
+function CentralSphere({ reduce }) {
   const ref = useRef();
   useFrame((s) => {
-    if (!ref.current) return;
+    if (!ref.current || reduce) return;
     ref.current.rotation.y = s.clock.elapsedTime * 0.08;
     ref.current.position.y = Math.sin(s.clock.elapsedTime * 0.4) * 0.1;
   });
   return (
     <Sphere ref={ref} args={[SPHERE_R, 96, 96]}>
       <MeshDistortMaterial color="#1D7CF4" roughness={0.06} metalness={0.4} clearcoat={1}
-        clearcoatRoughness={0.12} envMapIntensity={1.5} distort={0.4} speed={1.4} />
+        clearcoatRoughness={0.12} envMapIntensity={1.5} distort={reduce ? 0.12 : 0.4} speed={reduce ? 0 : 1.4} />
     </Sphere>
   );
 }
@@ -105,7 +107,7 @@ function Node({ node, active, setActive, onAct }) {
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={active ? 1.5 : 0.7} roughness={0.25} metalness={0.3} />
       </mesh>
       <Html center position={[0, 0.6, 0]} zIndexRange={active ? [80, 0] : [40, 0]} style={{ pointerEvents: "auto" }}>
-        <button data-hover type="button" aria-label={aria(item)}
+        <button className="rdr-node-btn" type="button" aria-label={aria(item)}
           onClick={() => onAct(item)}
           onMouseEnter={() => setActive(nodeKey)} onMouseLeave={() => setActive(null)}
           onFocus={() => setActive(nodeKey)} onBlur={() => setActive(null)}
@@ -126,14 +128,14 @@ function Node({ node, active, setActive, onAct }) {
 
 // Malla de CAP vértices que pivota (se frena al interactuar con un nodo).
 // Solo aristas vértice-a-vértice (sin radios al centro).
-function Cage({ nodes, spares, edgeGeo, active, setActive, onAct }) {
+function Cage({ nodes, spares, edgeGeo, active, setActive, onAct, reduce }) {
   const grp = useRef();
   const phase = useRef(0);
   const activeRef = useRef(active);
   activeRef.current = active;
   useFrame((s, dt) => {
     if (!grp.current) return;
-    if (activeRef.current == null) phase.current += dt; // avanza solo si no hay hover (se congela)
+    if (activeRef.current == null && !reduce) phase.current += dt; // avanza solo si no hay hover ni reduced-motion
     const t = phase.current;
     grp.current.rotation.y = Math.sin(t * 0.25) * ROCK;  // balanceo suave -> los links no llegan detrás
     grp.current.rotation.x = Math.sin(t * 0.18) * 0.07;
@@ -161,6 +163,15 @@ export default function FacetIndex() {
   const { isCoordinador } = useAuth();
   const [active, setActive] = useState(null);
   const [degraded, setDegraded] = useState(false); // modo bajo recursos (VDI): sin bloom, menos DPR
+  const reduce = useReducedMotion();                // respeta prefers-reduced-motion
+
+  // Pausa el render del Canvas cuando la pestaña no está visible (ahorra GPU/batería en VDI).
+  const [frameloop, setFrameloop] = useState("always");
+  useEffect(() => {
+    const onVis = () => setFrameloop(document.hidden ? "never" : "always");
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
 
   const sections = useMemo(() => SECTIONS.filter((s) => !s.coordOnly || isCoordinador), [isCoordinador]);
 
@@ -204,7 +215,7 @@ export default function FacetIndex() {
 
   return (
     <div className="absolute inset-0">
-      <Canvas camera={{ position: [0, 0, 19], fov: 45 }} onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
+      <Canvas frameloop={frameloop} camera={{ position: [0, 0, 19], fov: 45 }} onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
         dpr={degraded ? 1 : [1, 1.25]} gl={{ antialias: true, powerPreference: "high-performance" }} className="!absolute inset-0">
         <color attach="background" args={["#070E46"]} />
         {/* Si el fps cae (VDI sin GPU): baja el DPR y desactiva el bloom (la pasada más cara). */}
@@ -214,8 +225,8 @@ export default function FacetIndex() {
         <directionalLight position={[-4, -2, -3]} intensity={0.6} color="#1D7CF4" />
         <Suspense fallback={null}>
           <Environment files={HDRI} />
-          <CentralSphere />
-          <Cage nodes={nodes} spares={spares} edgeGeo={edgeGeo} active={active} setActive={setActive} onAct={onAct} />
+          <CentralSphere reduce={reduce} />
+          <Cage nodes={nodes} spares={spares} edgeGeo={edgeGeo} active={active} setActive={setActive} onAct={onAct} reduce={reduce} />
         </Suspense>
         {!degraded && (
           <EffectComposer>
@@ -224,7 +235,7 @@ export default function FacetIndex() {
         )}
       </Canvas>
 
-      <p className="pointer-events-none absolute inset-x-0 bottom-5 z-20 text-center text-xs uppercase tracking-[0.3em] text-serene/55">
+      <p className="pointer-events-none absolute inset-x-0 bottom-5 z-20 text-center text-xs uppercase tracking-[0.3em] text-serene/70">
         Cada nodo es un enlace · pulsa para abrir (la malla se detiene al pasar el ratón) · o usa la lista
       </p>
 
@@ -247,8 +258,8 @@ export default function FacetIndex() {
                       className={"flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-serene " +
                         (active === key ? "bg-white/10" : "hover:bg-white/5")}>
                       <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: sec.color }} />
-                      <span className="flex-1 truncate text-sand/85">{it.label}</span>
-                      <span aria-hidden className="shrink-0 text-serene/50">{hint(it)}</span>
+                      <span className="flex-1 truncate text-sand/90">{it.label}</span>
+                      <span aria-hidden className="shrink-0 text-serene/70">{hint(it)}</span>
                     </button>
                   </li>
                 );

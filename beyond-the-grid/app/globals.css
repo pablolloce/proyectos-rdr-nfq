@@ -2,13 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-/* BBVA: fondo Midnight (nunca negro puro). */
+/* BBVA: fondo Midnight (nunca negro puro) + esquema oscuro nativo. */
 html,
 body {
   background: #070e46;
+  color-scheme: dark;
 }
 
 ::selection {
   background: #001391;
   color: #f7f8f8;
+}
+
+/* Foco visible global y consistente para navegación por teclado (a11y). */
+:focus-visible {
+  outline: 2px solid #85c8ff;
+  outline-offset: 2px;
+}
+
+/* Botones-nodo del hub 3D (llevan estilo inline) -> anillo de foco por teclado. */
+.rdr-node-btn:focus-visible {
+  outline: 2px solid #85c8ff;
+  outline-offset: 3px;
+}
+
+/* Respeta prefers-reduced-motion: corta animaciones/transiciones CSS.
+   Las animaciones JS (R3F y Framer) se desactivan dentro de sus componentes. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

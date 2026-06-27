@@ -48,6 +48,7 @@ export default function AuthGate({ children, onAuthed }) {
   const [isCoordinador, setCoord] = useState(false);
   const [msg, setMsg] = useState("");
   const [configErr, setConfigErr] = useState("");
+  const [teamErr, setTeamErr] = useState("");
 
   const team = useRef([]);
   const btnRef = useRef(null);
@@ -130,6 +131,10 @@ export default function AuthGate({ children, onAuthed }) {
       await loadTeam();
       if (cancelled) return;
 
+      // Si el equipo no cargó (red/proxy corporativo), avisa: nadie podría entrar.
+      if (!team.current.length)
+        setTeamErr("No se pudo cargar la lista del equipo (¿red o proxy corporativo?). Recarga la página.");
+
       // 1) ¿sesión cacheada válida?
       const cached = localStorage.getItem(AUTH_KEY);
       if (cached && emailPermitido(cached)) {
@@ -191,8 +196,9 @@ export default function AuthGate({ children, onAuthed }) {
 
             {msg && <p className="mt-4 text-sm text-mandarin">{msg}</p>}
             {configErr && <p className="mt-4 text-sm text-mandarin">{configErr}</p>}
+            {teamErr && <p className="mt-4 text-sm text-mandarin">{teamErr}</p>}
 
-            <p className="mt-8 text-xs text-sand/50">
+            <p className="mt-8 text-xs text-sand/70">
               Válido con tu correo <b>@nfq.es</b>, <b>@nter.es</b> o <b>@nfq.mx</b> del equipo.
             </p>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 
@@ -59,22 +59,22 @@ const SECTIONS = [
 /** Chip de cristal flotante. Acción: → interno · ↗ externo · ⧉ copiar. */
 function Chip({ item, delay }) {
   const { getUrl, copyLink } = useLinks();
+  const reduce = useReducedMotion();
   const accent = COLORS[item.color] || COLORS.serene;
   const arrow = item.copy ? "⧉" : item.open ? "↗" : "→";
 
   const props = {
-    "data-hover": true,
     className:
-      "group inline-flex items-center gap-3 rounded-full border px-6 py-3.5 shadow-lg transition-colors",
+      "group inline-flex items-center gap-3 rounded-full border px-6 py-3.5 shadow-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight",
     // Cristal oscuro Midnight (sin backdrop-blur -> sin coste por frame).
     style: { borderColor: rgba(accent, 0.45), backgroundColor: "rgba(10, 18, 74, 0.72)" },
-    // Entrada + flotación continua (cada chip con su fase via delay).
+    // Entrada + flotación continua (cada chip con su fase via delay). Sin flotación si reduced-motion.
     initial: { opacity: 0, scale: 0.9 },
-    animate: { opacity: 1, scale: 1, y: [0, -5, 0] },
+    animate: { opacity: 1, scale: 1, y: reduce ? 0 : [0, -5, 0] },
     transition: {
       opacity: { duration: 0.5, delay },
       scale: { duration: 0.4, delay },
-      y: { duration: 3.8, repeat: Infinity, ease: "easeInOut", delay },
+      ...(reduce ? {} : { y: { duration: 3.8, repeat: Infinity, ease: "easeInOut", delay } }),
     },
     whileHover: {
       scale: 1.06,
@@ -123,7 +123,7 @@ export default function LinkCloud() {
       {sections.map((section) => (
         <div key={section.num} className="flex max-w-3xl flex-col items-center gap-3">
           <p className="font-display text-xs font-bold uppercase tracking-[0.3em] text-serene/80">
-            <span className="text-serene/40">{section.num}</span> · {section.title}
+            <span className="text-serene/60">{section.num}</span> · {section.title}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {section.items.map((item) => (
