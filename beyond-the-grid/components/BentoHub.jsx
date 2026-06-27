@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { useReducedMotion } from "framer-motion";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 import {
@@ -13,6 +15,36 @@ const rgba = (hex, a) => {
   const h = hex.replace("#", "");
   return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
 };
+
+// Tilt 3D + spotlight dirigidos por el puntero (escribe --rx/--ry/--mx/--my).
+function useTilt(disabled) {
+  const ref = useRef(null);
+  const raf = useRef(0);
+  const onPointerMove = (e) => {
+    if (disabled) return;
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width;
+    const py = (e.clientY - r.top) / r.height;
+    cancelAnimationFrame(raf.current);
+    raf.current = requestAnimationFrame(() => {
+      el.style.setProperty("--ry", ((px - 0.5) * 8).toFixed(2) + "deg");
+      el.style.setProperty("--rx", ((0.5 - py) * 8).toFixed(2) + "deg");
+      el.style.setProperty("--mx", (px * 100).toFixed(1) + "%");
+      el.style.setProperty("--my", (py * 100).toFixed(1) + "%");
+    });
+  };
+  const onPointerLeave = () => {
+    const el = ref.current;
+    if (!el) return;
+    cancelAnimationFrame(raf.current);
+    el.style.setProperty("--rx", "0deg");
+    el.style.setProperty("--ry", "0deg");
+  };
+  useEffect(() => () => cancelAnimationFrame(raf.current), []);
+  return { ref, onPointerMove, onPointerLeave };
+}
 
 // Estructura por TIPO. Cada sección = una columna. Acciones:
 // page (html), route (ruta Next), open (externo links.json), copy (portapapeles).
@@ -59,8 +91,24 @@ const COORD_SECTION = {
 const HintIcon = (action) => (action === "copy" ? IconCopy : action === "open" ? IconExternal : IconArrow);
 
 function AmbientBackground() {
+  const ref = useRef(null);
+  const reduce = useReducedMotion();
+  useEffect(() => {
+    if (reduce) return;
+    let raf = 0;
+    const onMove = (e) => {
+      const x = e.clientX / window.innerWidth - 0.5;
+      const y = e.clientY / window.innerHeight - 0.5;
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        if (ref.current) ref.current.style.transform = `translate3d(${(x * 28).toFixed(1)}px, ${(y * 28).toFixed(1)}px, 0)`;
+      });
+    };
+    window.addEventListener("pointermove", onMove);
+    return () => { window.removeEventListener("pointermove", onMove); cancelAnimationFrame(raf); };
+  }, [reduce]);
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div ref={ref} aria-hidden className="pointer-events-none fixed inset-[-3%] -z-10 overflow-hidden transition-transform duration-300 ease-out">
       <span className="rdr-blob left-[-8%] top-[6%] h-80 w-80" style={{ background: "#1D7CF4" }} />
       <span className="rdr-blob right-[4%] top-[-8%] h-72 w-72" style={{ background: "#85C8FF", animationDelay: "-3s" }} />
       <span className="rdr-blob bottom-[-12%] right-[-4%] h-96 w-96" style={{ background: "#9694FF", animationDelay: "-7s" }} />
@@ -86,7 +134,7 @@ function ActionPill({ a, accent }) {
 }
 
 const CARD =
-  "rdr-rise group relative box-border flex w-full items-center gap-3.5 overflow-hidden rounded-xl border p-4 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight";
+  "rdr-rise rdr-tilt group relative box-border flex w-full items-center gap-3.5 overflow-hidden rounded-xl border p-4 backdrop-blur-md hover:border-white/30 lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight";
 
 function CardInner({ item, accent }) {
   const { icon: Icon } = item;
@@ -108,16 +156,19 @@ function CardInner({ item, accent }) {
 
 function Card({ item, accent, delay }) {
   const { getUrl, copyLink } = useLinks();
+  const reduce = useReducedMotion();
+  const tilt = useTilt(reduce);
   const style = { animationDelay: `${delay}ms` };
-  const cls = `${CARD} border-white/10 bg-white/[0.055] hover:border-white/30 hover:bg-white/[0.1]`;
+  const cls = `${CARD} bg-white/[0.055] hover:bg-white/[0.1]`;
   const aria = item.label;
 
   // Multi-acción: título + pills (no es un único enlace).
   if (item.actions) {
     const { icon: Icon } = item;
     return (
-      <div className={`rdr-rise relative box-border flex w-full flex-col justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.055] p-4 backdrop-blur-md lg:min-h-0 lg:flex-1`} style={style}>
-        <div className="flex items-center gap-3.5">
+      <div {...tilt} className="rdr-rise rdr-tilt group relative box-border flex w-full flex-col justify-center gap-3 overflow-hidden rounded-xl border border-white/10 bg-white/[0.055] p-4 backdrop-blur-md hover:border-white/30 lg:min-h-0 lg:flex-1" style={style}>
+        <span aria-hidden className="rdr-spot" style={{ background: `radial-gradient(160px circle at var(--mx,50%) var(--my,50%), ${rgba(accent, 0.2)}, transparent 70%)` }} />
+        <div className="relative flex items-center gap-3.5">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border" style={{ borderColor: rgba(accent, 0.3), background: rgba(accent, 0.12), color: accent }}>
             <Icon size={22} />
           </span>
@@ -126,7 +177,7 @@ function Card({ item, accent, delay }) {
             {item.desc && <span className="block truncate text-[13px] text-sand/60">{item.desc}</span>}
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="relative flex gap-2">
           {item.actions.map((a) => <ActionPill key={a.label} a={a} accent={accent} />)}
         </div>
       </div>
@@ -134,25 +185,29 @@ function Card({ item, accent, delay }) {
   }
 
   if (item.action === "route")
-    return <Link href={item.target} aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></Link>;
+    return <Link {...tilt} href={item.target} aria-label={aria} className={`${cls} border-white/10`} style={style}><CardInner item={item} accent={accent} /></Link>;
   if (item.action === "page")
-    return <a href={item.target} aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></a>;
+    return <a {...tilt} href={item.target} aria-label={aria} className={`${cls} border-white/10`} style={style}><CardInner item={item} accent={accent} /></a>;
   if (item.action === "open") {
     const url = getUrl(item.target);
-    if (!url) return <div aria-disabled="true" title="Enlace no disponible aún" className={`${cls} cursor-not-allowed opacity-50`} style={style}><CardInner item={item} accent={accent} /></div>;
-    return <a href={url} target="_blank" rel="noopener noreferrer" aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></a>;
+    if (!url) return <div {...tilt} aria-disabled="true" title="Enlace no disponible aún" className={`${cls} cursor-not-allowed border-white/10 opacity-50`} style={style}><CardInner item={item} accent={accent} /></div>;
+    return <a {...tilt} href={url} target="_blank" rel="noopener noreferrer" aria-label={aria} className={`${cls} border-white/10`} style={style}><CardInner item={item} accent={accent} /></a>;
   }
-  return <button type="button" onClick={() => copyLink(item.target)} aria-label={aria} className={`${cls} text-left`} style={style}><CardInner item={item} accent={accent} /></button>;
+  return <button {...tilt} type="button" onClick={() => copyLink(item.target)} aria-label={aria} className={`${cls} border-white/10 text-left`} style={style}><CardInner item={item} accent={accent} /></button>;
 }
 
 function FeatureCard({ item, accent, delay }) {
+  const reduce = useReducedMotion();
+  const tilt = useTilt(reduce);
   return (
     <Link
+      {...tilt}
       href={item.target}
       aria-label={`${item.label} — ${item.desc}`}
-      className="rdr-rise group relative box-border flex w-full flex-col justify-center gap-2 overflow-hidden rounded-2xl border border-serene/30 bg-gradient-to-br from-white/[0.1] to-white/[0.03] p-5 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:border-serene/60 lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight"
+      className="rdr-rise rdr-tilt group relative box-border flex w-full flex-col justify-center gap-2 overflow-hidden rounded-2xl border border-serene/30 bg-gradient-to-br from-white/[0.1] to-white/[0.03] p-5 backdrop-blur-md hover:border-serene/60 lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight"
       style={{ animationDelay: `${delay}ms` }}
     >
+      <span aria-hidden className="rdr-spot" style={{ background: "radial-gradient(200px circle at var(--mx,50%) var(--my,50%), rgba(133,200,255,.22), transparent 70%)" }} />
       <span aria-hidden className="pointer-events-none absolute -right-5 -top-5 text-serene/15 transition-transform duration-500 group-hover:rotate-12"><IconOrbit size={140} /></span>
       <span className="grid h-12 w-12 place-items-center rounded-xl border border-serene/40 text-serene" style={{ background: "linear-gradient(145deg, rgba(133,200,255,.25), rgba(133,200,255,.06))" }}><IconGrad size={26} /></span>
       <div className="relative mt-1">
