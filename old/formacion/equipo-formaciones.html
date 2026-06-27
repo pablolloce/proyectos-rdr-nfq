@@ -11,354 +11,112 @@
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,700;1,8..60,700&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bbva-electric-blue: #001391;
-    --bbva-serene-blue:   #85C8FF;
-    --bbva-white:    #FFFFFF;
-    --bbva-sand:     #F7F8F8;
-    --bbva-gray-2:   #E2E6EA;
-    --bbva-gray-3:   #CAD1D8;
-    --bbva-gray-4:   #ADB8C2;
-    --bbva-gray-5:   #46536D;
-    --bbva-midnight: #070E46;
-    --bbva-canary:   #FFE761;
-    --bbva-lime:     #88E783;
-    --bbva-mandarin: #FFB56B;
-    --bbva-purple:   #9694FF;
-    --bbva-font-display: "Source Serif 4", Georgia, serif;
-    --bbva-font-body:    "Lato", "Helvetica Neue", Arial, sans-serif;
-    --track-funcional: var(--bbva-electric-blue);
-    --track-tecnico:   #1E8E3E;
-    --track-welcome:   var(--bbva-midnight);
-    --track-cross:     #6A37D1;
+    --bbva-electric-blue:#001391; --bbva-serene-blue:#85C8FF; --bbva-sand:#F7F8F8;
+    --bbva-midnight:#070E46; --bbva-canary:#FFE761; --bbva-lime:#88E783;
+    --bbva-mandarin:#FFB56B; --bbva-purple:#9694FF;
+    --bbva-font-display:"Source Serif 4",Georgia,serif;
+    --bbva-font-body:"Lato","Helvetica Neue",Arial,sans-serif;
+    --c-funcional:#85C8FF; --c-tecnico:#88E783; --c-cross:#9694FF; --c-welcome:#FFE761;
   }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;font-family:var(--bbva-font-body);background:var(--bbva-midnight);color:var(--bbva-sand);line-height:1.5;min-height:100%;}
+  body{position:relative;overflow-x:hidden;}
+  body::before{content:"";position:fixed;inset:-12%;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(38% 38% at 14% 10%, rgba(29,124,244,.30), transparent 70%),
+      radial-gradient(34% 34% at 86% 6%, rgba(133,200,255,.20), transparent 70%),
+      radial-gradient(44% 44% at 84% 96%, rgba(150,148,255,.20), transparent 70%),
+      radial-gradient(40% 40% at 12% 94%, rgba(136,231,131,.15), transparent 70%);
+    filter:blur(8px);}
+  main,.hero,.site-footer,.back-to-hub{position:relative;z-index:1;}
+  a{color:inherit;}
 
-  * { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0;
-    font-family: var(--bbva-font-body);
-    background: var(--bbva-sand);
-    color: var(--bbva-electric-blue);
-    line-height: 1.5;
-  }
+  .back-to-hub{position:fixed;top:20px;left:20px;display:inline-flex;align-items:center;gap:8px;
+    background:rgba(7,14,70,.7);color:var(--bbva-sand);padding:8px 16px;font-weight:700;font-size:12px;
+    letter-spacing:.06em;text-transform:uppercase;text-decoration:none;border-radius:9999px;
+    border:1.5px solid rgba(133,200,255,.35);backdrop-filter:blur(8px);transition:all .2s;z-index:100;}
+  .back-to-hub:hover{border-color:rgba(133,200,255,.7);transform:translateY(-1px);}
+  .back-to-hub svg{width:14px;height:14px;}
 
-  /* Botón volver */
-  .back-to-hub {
-    position: fixed; top: 20px; left: 20px;
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(7, 14, 70, 0.92);
-    color: var(--bbva-sand);
-    padding: 8px 16px;
-    font-family: var(--bbva-font-body);
-    font-weight: 700; font-size: 12px;
-    letter-spacing: 0.06em; text-transform: uppercase;
-    text-decoration: none;
-    border-radius: 9999px;
-    border: 1.5px solid rgba(133, 200, 255, 0.35);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-    transition: background 0.2s, transform 0.2s, border-color 0.2s;
-    z-index: 100;
-  }
-  .back-to-hub:hover {
-    background: rgba(7, 14, 70, 0.98);
-    border-color: rgba(133, 200, 255, 0.6);
-    transform: translateY(-1px);
-  }
-  .back-to-hub svg { width: 14px; height: 14px; }
+  .hero{max-width:1120px;margin:0 auto;padding:92px 24px 16px;display:flex;align-items:center;justify-content:space-between;gap:24px;}
+  .hero__antetitle{margin:0;font-size:12px;font-weight:700;letter-spacing:.35em;text-transform:uppercase;color:var(--bbva-serene-blue);}
+  .hero__title{margin:8px 0 0;font-family:var(--bbva-font-display);font-weight:700;font-size:clamp(2rem,5vw,3.25rem);color:var(--bbva-sand);line-height:1.04;}
+  .hero__sub{margin:10px 0 0;max-width:48ch;color:rgba(247,248,248,.7);font-size:14px;}
+  .hero__status{margin-top:16px;display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:9999px;
+    background:rgba(136,231,131,.14);border:1px solid rgba(136,231,131,.4);color:var(--bbva-lime);font-size:12px;font-weight:700;}
+  .hero__status .dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor;}
+  .hero__deco{width:150px;height:150px;flex-shrink:0;opacity:.85;}
+  @media(max-width:760px){.hero{flex-direction:column;align-items:flex-start;}.hero__deco{display:none;}}
+  .hero__bbva{height:26px;width:auto;display:block;margin:0 0 12px;}
+  img[alt="NFQ"],img[alt="nfq"],.site-footer img{height:22px;width:auto;display:inline-block;vertical-align:middle;}
 
-  /* HERO */
-  .hero {
-    background: var(--bbva-electric-blue);
-    color: var(--bbva-sand);
-    padding: 80px 64px 64px;
-    position: relative;
-    overflow: hidden;
-  }
-  .hero__inner { max-width: 1280px; margin: 0 auto; position: relative; z-index: 2; }
-  .hero__bbva {
-    height: 40px; width: auto; margin-bottom: 48px;
-    filter: brightness(0) invert(1);
-  }
-  .hero__antetitle {
-    font-weight: 700; font-size: 12px;
-    text-transform: uppercase; letter-spacing: 0.12em;
-    color: var(--bbva-canary); margin-bottom: 16px;
-  }
-  .hero__title {
-    font-family: var(--bbva-font-display);
-    font-weight: 700;
-    font-size: clamp(40px, 5vw, 72px);
-    line-height: 1.0; margin: 0 0 16px 0;
-    max-width: 20ch;
-  }
-  .hero__sub {
-    font-size: clamp(15px, 1.2vw, 18px);
-    max-width: 60ch; line-height: 1.5; opacity: 0.92; margin: 0;
-  }
-  .hero__status {
-    margin-top: 32px;
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(255, 231, 97, 0.15);
-    border: 1px solid rgba(255, 231, 97, 0.4);
-    color: var(--bbva-canary);
-    padding: 8px 14px;
-    border-radius: 9999px;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  .hero__status .dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--bbva-canary);
-    animation: pulse 1.8s ease-in-out infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-  .hero__deco {
-    position: absolute; right: -80px; bottom: -80px;
-    width: 380px; height: 380px;
-    pointer-events: none; opacity: 0.22;
-  }
+  main{max-width:1120px;margin:0 auto;padding:8px 24px 80px;}
+  .section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
+  .section-head h2{margin:0;font-family:var(--bbva-font-display);font-weight:700;font-size:20px;color:var(--bbva-sand);}
+  .section-head__sub{margin:4px 0 0;font-size:13px;color:rgba(247,248,248,.6);}
 
-  /* SECCIÓN PRINCIPAL */
-  main {
-    max-width: 1280px; margin: 0 auto; padding: 56px 64px;
-  }
+  .filters{display:flex;gap:8px;flex-wrap:wrap;}
+  .filter-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;padding:8px 14px;border-radius:9999px;
+    font-family:var(--bbva-font-body);font-size:12px;font-weight:700;background:rgba(255,255,255,.05);
+    color:rgba(247,248,248,.8);border:1px solid rgba(255,255,255,.12);transition:all .2s;}
+  .filter-btn .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4);}
+  .filter-btn--funcional .dot{background:var(--c-funcional);}
+  .filter-btn--tecnico .dot{background:var(--c-tecnico);}
+  .filter-btn--cross .dot{background:var(--c-cross);}
+  .filter-btn:hover{border-color:rgba(133,200,255,.5);color:var(--bbva-sand);}
+  .filter-btn.is-active{background:rgba(133,200,255,.16);border-color:rgba(133,200,255,.6);color:var(--bbva-sand);}
 
-  /* Cabecera de sección */
-  .section-head {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 24px;
-    margin-bottom: 32px;
-    align-items: end;
-  }
-  .section-head h2 {
-    font-family: var(--bbva-font-display);
-    font-size: clamp(24px, 2.2vw, 32px);
-    font-weight: 700;
-    color: var(--bbva-electric-blue);
-    margin: 0 0 4px 0;
-  }
-  .section-head__sub {
-    font-size: 14px;
-    color: var(--bbva-gray-5);
-    margin: 0;
-  }
+  .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:20px;}
 
-  /* Filtros track */
-  .filters {
-    display: flex; gap: 8px; flex-wrap: wrap;
-  }
-  .filter-btn {
-    border: 1.5px solid var(--bbva-gray-3);
-    background: var(--bbva-white);
-    color: var(--bbva-electric-blue);
-    padding: 8px 14px;
-    border-radius: 9999px;
-    font-family: var(--bbva-font-body);
-    font-weight: 700; font-size: 12px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    display: inline-flex; align-items: center; gap: 6px;
-  }
-  .filter-btn:hover { border-color: var(--bbva-electric-blue); }
-  .filter-btn .dot { width: 7px; height: 7px; border-radius: 50%; }
-  .filter-btn--all       .dot { background: var(--bbva-electric-blue); }
-  .filter-btn--funcional .dot { background: var(--track-funcional); }
-  .filter-btn--tecnico   .dot { background: var(--track-tecnico); }
-  .filter-btn--cross     .dot { background: var(--track-cross); }
-  .filter-btn.is-active {
-    background: var(--bbva-electric-blue);
-    color: var(--bbva-sand);
-    border-color: var(--bbva-electric-blue);
-  }
-  .filter-btn.is-active .dot { background: var(--bbva-canary); }
+  /* ===== Carta FIFA ===== */
+  .fifa{--c:var(--bbva-serene-blue);position:relative;overflow:hidden;border-radius:20px;padding:18px 18px 16px;
+    background-color:#0a1352;
+    background:linear-gradient(160deg,color-mix(in srgb,var(--c) 30%,#0a1352) 0%,#0a1352 54%,#070e2e 100%);
+    border:1px solid color-mix(in srgb,var(--c) 45%,transparent);
+    box-shadow:0 12px 30px -14px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08);
+    transition:transform .22s cubic-bezier(.22,1,.36,1),box-shadow .22s,border-color .22s;}
+  .fifa--funcional{--c:var(--c-funcional);} .fifa--tecnico{--c:var(--c-tecnico);}
+  .fifa--cross{--c:var(--c-cross);} .fifa--welcome{--c:var(--c-welcome);}
+  .fifa:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--c) 75%,transparent);
+    box-shadow:0 22px 46px -16px rgba(0,0,0,.7),0 0 30px -10px color-mix(in srgb,var(--c) 65%,transparent),inset 0 1px 0 rgba(255,255,255,.12);}
+  .fifa__shine{position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+    background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.16) 50%,transparent 62%);
+    transform:translateX(-130%);transition:transform .8s cubic-bezier(.16,1,.3,1);}
+  .fifa:hover .fifa__shine{transform:translateX(130%);}
+  .fifa__top{position:relative;display:flex;align-items:center;gap:12px;}
+  .fifa__rating{display:flex;flex-direction:column;align-items:center;line-height:1;min-width:54px;}
+  .fifa__ovr{font-family:var(--bbva-font-display);font-weight:700;font-size:42px;color:var(--bbva-sand);text-shadow:0 2px 10px rgba(0,0,0,.45);}
+  .fifa__pos{margin-top:4px;font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--c);}
+  .fifa__track-ic{margin-top:8px;width:26px;height:2px;background:var(--c);border-radius:2px;opacity:.55;}
+  .fifa__avatar{margin-left:auto;width:74px;height:74px;border-radius:50%;display:grid;place-items:center;
+    font-family:var(--bbva-font-display);font-weight:700;font-size:26px;color:var(--bbva-sand);
+    background:radial-gradient(circle at 30% 25%,color-mix(in srgb,var(--c) 42%,#0a1352),#0a1352);
+    border:2px solid color-mix(in srgb,var(--c) 70%,transparent);
+    box-shadow:0 0 20px -5px color-mix(in srgb,var(--c) 75%,transparent);}
+  .fifa__name{position:relative;margin:14px 0 0;text-align:center;font-family:var(--bbva-font-display);
+    font-weight:700;font-size:19px;color:var(--bbva-sand);text-transform:uppercase;letter-spacing:.01em;}
+  .fifa__divider{height:1px;margin:12px 0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--c) 55%,transparent),transparent);}
+  .fifa__stats{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;}
+  .fifa__stats>div{display:flex;flex-direction:column;gap:2px;}
+  .fifa__stats b{font-family:var(--bbva-font-display);font-weight:700;font-size:18px;color:var(--bbva-sand);font-variant-numeric:tabular-nums;}
+  .fifa__stats span{font-size:9px;font-weight:800;letter-spacing:.08em;color:rgba(247,248,248,.5);}
+  .fifa__courses{position:relative;margin-top:14px;display:flex;flex-wrap:wrap;gap:6px;}
+  .fifa__course{--cc:var(--bbva-serene-blue);font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:9999px;
+    color:var(--cc);background:color-mix(in srgb,var(--cc) 16%,transparent);border:1px solid color-mix(in srgb,var(--cc) 32%,transparent);}
+  .fifa__course--funcional{--cc:var(--c-funcional);} .fifa__course--tecnico{--cc:var(--c-tecnico);}
+  .fifa__course--cross{--cc:var(--c-cross);} .fifa__course--welcome{--cc:var(--c-welcome);}
+  .fifa__empty{font-size:12px;color:rgba(247,248,248,.45);font-style:italic;padding:2px 0;}
 
-  /* Grid del equipo */
-  .team-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 20px;
-  }
+  .status-card{grid-column:1/-1;text-align:center;padding:40px 24px;border-radius:18px;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);}
+  .status-card h3{margin:0 0 6px;font-family:var(--bbva-font-display);color:var(--bbva-sand);}
+  .status-card p{margin:0;color:rgba(247,248,248,.6);font-size:14px;}
+  .status-card--error{border-color:rgba(255,181,107,.4);background:rgba(255,181,107,.08);}
+  .status-card code{background:rgba(255,255,255,.1);padding:1px 6px;border-radius:6px;font-size:12px;}
 
-  /* Tarjeta de persona */
-  .person {
-    background: var(--bbva-white);
-    border: 1px solid var(--bbva-gray-2);
-    border-radius: 16px;
-    padding: 24px;
-    border-top: 4px solid var(--bbva-gray-3);
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .person--funcional { border-top-color: var(--track-funcional); }
-  .person--tecnico   { border-top-color: var(--track-tecnico); }
-  .person--cross     { border-top-color: var(--track-cross); }
-
-  .person__header {
-    display: grid;
-    grid-template-columns: 56px 1fr;
-    gap: 14px;
-    align-items: center;
-  }
-  .person__avatar {
-    width: 56px; height: 56px;
-    border-radius: 50%;
-    background: var(--bbva-electric-blue);
-    color: var(--bbva-sand);
-    display: grid; place-items: center;
-    font-family: var(--bbva-font-display);
-    font-weight: 700; font-size: 22px;
-    line-height: 1;
-  }
-  .person--funcional .person__avatar { background: var(--track-funcional); }
-  .person--tecnico   .person__avatar { background: var(--track-tecnico); }
-  .person--cross     .person__avatar { background: var(--track-cross); }
-  .person__name {
-    font-family: var(--bbva-font-display);
-    font-weight: 700; font-size: 17px;
-    color: var(--bbva-electric-blue);
-    margin: 0;
-    line-height: 1.15;
-  }
-  .person__role {
-    font-size: 12px;
-    color: var(--bbva-gray-5);
-    margin: 2px 0 0 0;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 700;
-  }
-
-  /* Stats */
-  .person__stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    background: var(--bbva-sand);
-    padding: 12px;
-    border-radius: 12px;
-  }
-  .person__stat {
-    text-align: center;
-  }
-  .person__stat-value {
-    font-family: var(--bbva-font-display);
-    font-weight: 700;
-    font-size: 24px;
-    color: var(--bbva-electric-blue);
-    line-height: 1;
-  }
-  .person__stat-label {
-    font-size: 10px;
-    color: var(--bbva-gray-5);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 700;
-    margin-top: 4px;
-  }
-
-  /* Badges */
-  .person__badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    min-height: 28px;
-  }
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
-    border-radius: 9999px;
-    font-size: 11px;
-    font-weight: 700;
-    background: var(--bbva-gray-2);
-    color: var(--bbva-gray-5);
-  }
-  .badge--welcome   { background: var(--bbva-canary); color: var(--bbva-midnight); }
-  .badge--funcional {
-    background: color-mix(in srgb, var(--bbva-serene-blue) 50%, white);
-    color: var(--track-funcional);
-  }
-  .badge--tecnico {
-    background: color-mix(in srgb, var(--bbva-lime) 50%, white);
-    color: var(--track-tecnico);
-  }
-  .badge--cross {
-    background: color-mix(in srgb, var(--bbva-purple) 50%, white);
-    color: var(--track-cross);
-  }
-  .badge::before {
-    content: "✓";
-    font-size: 11px;
-  }
-  .person__badges--empty {
-    color: var(--bbva-gray-4);
-    font-style: italic;
-    font-size: 12px;
-    padding: 4px 0;
-  }
-
-  /* Estados de carga / error */
-  .status-card {
-    grid-column: 1 / -1;
-    background: var(--bbva-white);
-    border-radius: 16px;
-    padding: 32px;
-    text-align: center;
-    border: 1px dashed var(--bbva-gray-3);
-  }
-  .status-card--error {
-    background: color-mix(in srgb, var(--bbva-mandarin) 18%, white);
-    border-color: var(--bbva-mandarin);
-  }
-  .status-card h3 {
-    font-family: var(--bbva-font-display);
-    color: var(--bbva-electric-blue);
-    margin: 0 0 8px 0;
-  }
-  .status-card p {
-    color: var(--bbva-gray-5);
-    margin: 0;
-    font-size: 14px;
-  }
-  .status-card code {
-    background: var(--bbva-gray-2);
-    color: var(--bbva-electric-blue);
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-  }
-
-  /* FOOTER */
-  .site-footer {
-    border-top: 1px solid var(--bbva-gray-2);
-    padding: 32px 64px;
-    background: var(--bbva-white);
-  }
-  .site-footer__inner {
-    max-width: 1280px; margin: 0 auto;
-    display: flex; justify-content: space-between; align-items: center;
-    gap: 24px; flex-wrap: wrap;
-  }
-  .site-footer__credit {
-    display: flex; align-items: center; gap: 12px;
-    font-size: 13px; color: var(--bbva-gray-5);
-  }
-  .site-footer__credit img { height: 22px; }
-  .site-footer__note { font-size: 12px; color: var(--bbva-gray-4); }
-
-  @media (max-width: 720px) {
-    .hero { padding: 56px 24px 48px; }
-    main { padding: 40px 24px; }
-    .section-head { grid-template-columns: 1fr; }
-    .site-footer { padding: 24px; }
-  }
+  .site-footer{max-width:1120px;margin:0 auto;padding:24px;border-top:1px solid rgba(255,255,255,.08);}
+  .site-footer__inner{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12px;color:rgba(247,248,248,.5);}
+  .site-footer__credit{display:flex;gap:6px;}
 </style>
 </head>
 <body>
@@ -494,48 +252,43 @@
   }
 
   function renderPerson(person, catalog, progress) {
-    // Filtrar progresos de esta persona
     const userRecords = progress.filter(r => r.userId === person.id);
     const completedIds = new Set(userRecords.map(r => r.courseId));
-    const completedCourses = catalog.filter(c => completedIds.has(c.id));
-
-    // Calcular nivel máximo alcanzado
-    const maxLevel = completedCourses.length > 0
-      ? Math.max(...completedCourses.map(c => c.nivel))
-      : null;
-
-    // Construir badges
-    const badgesHtml = completedCourses.length === 0
-      ? '<div class="person__badges--empty">Sin formaciones completadas todavía</div>'
-      : completedCourses
-          .sort((a, b) => a.nivel - b.nivel)
-          .map(c => `<span class="badge badge--${c.track}" title="Nivel ${c.nivel}">${c.nombre}</span>`)
-          .join('');
-
-    // Etiqueta legible para la pista
-    const trackLabels = { funcional: 'Funcional', tecnico: 'Técnico', cross: 'Cross', welcome: 'Onboarding' };
-    const trackLabel = trackLabels[person.track] || person.track || '—';
-
+    const completedCourses = catalog
+      .filter(c => completedIds.has(c.id))
+      .sort((a, b) => (a.nivel - b.nivel) || String(a.nombre).localeCompare(String(b.nombre)));
+    const n = completedCourses.length;
+    const maxLevel = n ? Math.max(...completedCourses.map(c => c.nivel || 0)) : 0;
+    const byTrack = (t) => completedCourses.filter(c => c.track === t).length;
+    const ovr = n === 0 ? 50 : Math.min(99, 52 + n * 5 + maxLevel * 2);
+    const track = person.track || 'cross';
+    const POS = { funcional: 'FUN', tecnico: 'TÉC', cross: 'CRS', welcome: 'WEL' };
+    const pos = POS[track] || 'RDR';
+    const courses = n === 0
+      ? '<div class="fifa__empty">Sin formaciones completadas todavía</div>'
+      : completedCourses.map(c =>
+          `<span class="fifa__course fifa__course--${c.track || 'cross'}" title="Nivel ${c.nivel}">${c.nombre}</span>`
+        ).join('');
     return `
-      <article class="person person--${person.track || 'cross'}" data-track="${person.track || 'cross'}">
-        <header class="person__header">
-          <div class="person__avatar">${initials(person.nombre)}</div>
-          <div>
-            <h3 class="person__name">${person.nombre}</h3>
-            <p class="person__role">${trackLabel}</p>
+      <article class="fifa fifa--${track}" data-track="${track}">
+        <div class="fifa__shine"></div>
+        <div class="fifa__top">
+          <div class="fifa__rating">
+            <span class="fifa__ovr">${ovr}</span>
+            <span class="fifa__pos">${pos}</span>
+            <span class="fifa__track-ic"></span>
           </div>
-        </header>
-        <div class="person__stats">
-          <div class="person__stat">
-            <div class="person__stat-value">${completedCourses.length}</div>
-            <div class="person__stat-label">Cursos</div>
-          </div>
-          <div class="person__stat">
-            <div class="person__stat-value">${maxLevel !== null ? maxLevel : '—'}</div>
-            <div class="person__stat-label">Nivel máx.</div>
-          </div>
+          <div class="fifa__avatar">${initials(person.nombre)}</div>
         </div>
-        <div class="person__badges">${badgesHtml}</div>
+        <h3 class="fifa__name">${person.nombre}</h3>
+        <div class="fifa__divider"></div>
+        <div class="fifa__stats">
+          <div><b>${byTrack('funcional')}</b><span>FUN</span></div>
+          <div><b>${byTrack('tecnico')}</b><span>TÉC</span></div>
+          <div><b>${byTrack('cross')}</b><span>CRS</span></div>
+          <div><b>${n}</b><span>TOTAL</span></div>
+        </div>
+        <div class="fifa__courses">${courses}</div>
       </article>
     `;
   }
@@ -575,7 +328,7 @@
       btn.addEventListener('click', () => {
         const filter = btn.dataset.filter;
         buttons.forEach(b => b.classList.toggle('is-active', b === btn));
-        document.querySelectorAll('.person').forEach(p => {
+        document.querySelectorAll('.fifa').forEach(p => {
           const matches = filter === 'all' || p.dataset.track === filter;
           p.style.display = matches ? '' : 'none';
         });
