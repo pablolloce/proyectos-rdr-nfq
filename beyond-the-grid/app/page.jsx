@@ -1,6 +1,11 @@
-import Experience from "@/components/Experience";
+import Shell from "@/components/Shell";
+import BentoHub from "@/components/BentoHub";
 
-// Server Component mínimo: delega toda la experiencia (cliente) en <Experience/>.
+// Index: bento grid glassmorphism (rápido y accesible, sin WebGL).
 export default function Home() {
-  return <Experience />;
+  return (
+    <Shell>
+      <BentoHub />
+    </Shell>
+  );
 }

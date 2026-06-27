@@ -23,7 +23,7 @@ import Script from "next/script";
  *   https://rdr-nfq.github.io   y   http://localhost:3000
  */
 const AUTH_KEY = "rdr_auth_email";
-const EQUIPO_URL = "equipo/equipo.json"; // relativo (resuelve con basePath)
+const EQUIPO_URL = "/team-hub/equipo/equipo.json"; // absoluto: funciona desde / y /formacion/
 const GOOGLE_CLIENT_ID =
   "535974839401-54e3t5n61nbc0c31corcfr56gplj8svl.apps.googleusercontent.com";
 

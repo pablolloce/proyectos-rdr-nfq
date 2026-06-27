@@ -18,8 +18,8 @@ import Toast from "@/components/Toast";
  * - copyLink(key): copia al portapapeles y muestra un toast.
  * - showToast(msg): aviso flotante.
  *
- * La ruta es relativa ('links/...') igual que en el original: con basePath
- * "/team-hub" se resuelve a /team-hub/links/links.json (el fichero vive en
+ * Ruta absoluta con basePath ("/team-hub/links/links.json") para que funcione
+ * desde cualquier ruta, incluida la anidada /formacion/ (el fichero vive en
  * public/links/links.json).
  */
 const LinksContext = createContext(null);
@@ -31,7 +31,7 @@ export function LinksProvider({ children }) {
   const timer = useRef();
 
   useEffect(() => {
-    fetch("links/links.json", { cache: "no-store" })
+    fetch("/team-hub/links/links.json", { cache: "no-store" })
       .then((r) => {
         if (!r.ok) throw new Error("HTTP " + r.status);
         return r.json();
