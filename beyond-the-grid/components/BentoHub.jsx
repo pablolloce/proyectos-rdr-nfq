@@ -158,7 +158,7 @@ function Card({ item, accent, delay }) {
   if (item.action === "route")
     return <Link {...tilt} href={item.target} aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></Link>;
   if (item.action === "page")
-    return <a {...tilt} href={item.target} aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></a>;
+    return <a {...tilt} href={item.target} data-prerender aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></a>;
   if (item.action === "open") {
     const url = getUrl(item.target);
     if (!url) return <div {...tilt} aria-disabled="true" title="Enlace no disponible aún" className={`${cls} cursor-not-allowed opacity-50`} style={style}><CardInner item={item} accent={accent} /></div>;

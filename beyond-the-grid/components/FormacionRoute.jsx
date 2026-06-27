@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "./AuthGate";
-import { PROGRESO_URL, completadasDe, estadoNiveles, nivelActual, marcar, onProgreso, cargarRemoto } from "@/lib/progreso";
+import { PROGRESO_URL, completadasDe, estadoNiveles, nivelActual, marcar, onProgreso, cargarRemoto, getRemotoCache } from "@/lib/progreso";
 import ProgresoTorre from "./ProgresoTorre";
 import ProgresoSkeleton from "./ProgresoSkeleton";
 
@@ -25,14 +25,16 @@ export default function FormacionRoute() {
     return () => { alive = false; };
   }, []);
 
-  // Progreso real desde el backend de formaciones (por email -> userId).
-  // remotoReady gobierna el skeleton: esperamos a la info de cuenta para no
-  // pintar "nivel 0" y saltar luego. Tope de 5s para no bloquear si el backend
-  // tarda/falla (entonces se muestra lo que haya: semilla + localStorage).
+  // Progreso real del backend (por email -> userId), patrón SWR:
+  //  - si hay caché del último progreso, se muestra AL INSTANTE (sin skeleton)
+  //    y se refresca en 2º plano en silencio.
+  //  - primera visita (sin caché): skeleton hasta que resuelva (tope 5s).
   useEffect(() => {
     let alive = true;
-    setRemotoReady(false);
     if (!email) { setRemotoReady(true); return; }
+    const cached = getRemotoCache(email);
+    if (cached) { setRemoto(cached); setRemotoReady(true); } // SWR: instantáneo
+    else setRemotoReady(false);
     const done = () => { if (alive) setRemotoReady(true); };
     cargarRemoto(email).then((s) => { if (alive) setRemoto(s); }).catch(() => {}).finally(done);
     const t = setTimeout(done, 5000);
@@ -50,8 +52,16 @@ export default function FormacionRoute() {
   const current = useMemo(() => nivelActual(niveles), [niveles]);
   const onMarcar = useCallback((archivo, done) => marcar(email, archivo, done), [email]);
 
-  // Skeleton mientras carga semilla + info de cuenta (sin blanco ni salto).
-  if (seed === null || !remotoReady) return <ProgresoSkeleton />;
+  // No-flash: si la carga acaba en <300ms no se muestra skeleton (evita parpadeo).
+  const ready = seed !== null && remotoReady;
+  const [showSkel, setShowSkel] = useState(false);
+  useEffect(() => {
+    if (ready) { setShowSkel(false); return; }
+    const t = setTimeout(() => setShowSkel(true), 300);
+    return () => clearTimeout(t);
+  }, [ready]);
+
+  if (!ready) return showSkel ? <ProgresoSkeleton /> : null;
 
   return <ProgresoTorre niveles={niveles} completadas={completadas} current={current} onMarcar={onMarcar} />;
 }

@@ -57,7 +57,7 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
         )}
         <div className="min-w-0 flex-1">
           {/* enlace estirado: cubre toda la tarjeta */}
-          <a href={hrefDe(f)} onClick={(e) => { if (plainClick(e)) { e.preventDefault(); leaveTo(hrefDe(f), f.titulo); } }} aria-label={`${done ? "Repasar" : "Abrir"} ${f.titulo}`} className="block truncate text-sm font-semibold text-sand after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-serene">
+          <a href={hrefDe(f)} data-prerender onClick={(e) => { if (plainClick(e)) { e.preventDefault(); leaveTo(hrefDe(f), f.titulo); } }} aria-label={`${done ? "Repasar" : "Abrir"} ${f.titulo}`} className="block truncate text-sm font-semibold text-sand after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-serene">
             {f.titulo}
           </a>
           <span className="text-[11px] tabular-nums text-sand/55">

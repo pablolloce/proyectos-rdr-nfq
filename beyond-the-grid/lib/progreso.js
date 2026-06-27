@@ -7,6 +7,7 @@
 import { NIVELES, FORMACIONES, isDisponible } from "./formaciones";
 
 const LS_PREFIX = "rdr_prog_";
+const REMOTE_PREFIX = "rdr_remote_"; // caché SWR del progreso real del backend
 const EVT = "rdr-progreso";
 export const PROGRESO_URL = "/team-hub/progreso.json";
 
@@ -18,6 +19,16 @@ export function getLocal(email) {
     return new Set(JSON.parse(localStorage.getItem(lsKey(email)) || "[]"));
   } catch {
     return new Set();
+  }
+}
+
+/** Caché del último progreso remoto conocido (SWR): null si nunca se cargó. */
+export function getRemotoCache(email) {
+  try {
+    const v = localStorage.getItem(REMOTE_PREFIX + norm(email));
+    return v ? new Set(JSON.parse(v)) : null;
+  } catch {
+    return null;
   }
 }
 
@@ -94,6 +105,8 @@ export async function cargarRemoto(email) {
     const records = (data && data.records) || [];
     const out = new Set();
     records.filter((r) => r.userId === me.id).forEach((r) => { const a = archivoDeRecord(r); if (a) out.add(a); });
+    // Guarda en caché (SWR): la próxima visita muestra esto al instante.
+    try { localStorage.setItem(REMOTE_PREFIX + norm(email), JSON.stringify([...out])); } catch {}
     return out;
   } catch {
     return new Set();

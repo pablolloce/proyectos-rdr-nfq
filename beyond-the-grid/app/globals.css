@@ -172,6 +172,32 @@ body {
   }
 }
 
+/* Barra de progreso de navegación (arriba, estilo GitHub/YouTube). */
+.rdr-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 120;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.rdr-navbar[data-active="true"] {
+  opacity: 1;
+}
+.rdr-navbar[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, #85c8ff, #88e783, transparent);
+  animation: rdr-bar-slide 1s ease-in-out infinite;
+}
+
 /* Respeta prefers-reduced-motion: corta animaciones/transiciones CSS.
    Las animaciones JS (R3F y Framer) se desactivan dentro de sus componentes. */
 @media (prefers-reduced-motion: reduce) {

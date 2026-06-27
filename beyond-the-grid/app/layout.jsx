@@ -27,6 +27,17 @@ export default function RootLayout({ children }) {
       <html lang="es" className={`${serif.variable} ${lato.variable}`}>
         <body className="bg-midnight font-sans text-sand antialiased">
           <AppFrame>{children}</AppFrame>
+          {/* Speculation Rules: prerenderiza el destino al pasar el ratón
+              (eagerness moderate) -> abrir una página/formación casi instantáneo.
+              Solo Chromium; el resto lo ignora (degradación elegante). */}
+          <script
+            type="speculationrules"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                prerender: [{ where: { selector_matches: "a[data-prerender]" }, eagerness: "moderate" }],
+              }),
+            }}
+          />
         </body>
       </html>
     </ViewTransitions>

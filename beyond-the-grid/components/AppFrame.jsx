@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { LinksProvider } from "@/lib/links";
 import LoadingScreen from "./LoadingScreen";
@@ -44,16 +44,40 @@ function NavVeil({ veil }) {
   );
 }
 
+function NavBar({ active }) {
+  return <div aria-hidden className="rdr-navbar" data-active={active ? "true" : "false"} />;
+}
+
 export default function AppFrame({ children }) {
   const [veil, setVeil] = useState(null);
+  const [navActive, setNavActive] = useState(false);
+  const veilTimer = useRef(0);
 
+  // Velo de formación con NO-FLASH: navega ya (si está prerenderizado, instantáneo
+  // y el velo no llega a salir) y solo muestra el velo si tarda >180ms.
   const leaveTo = useCallback((href, title) => {
     if (!href) return;
-    setVeil({ title });
-    // breve margen para que el velo pinte antes de la navegación dura
-    window.setTimeout(() => {
-      window.location.href = href;
-    }, 230);
+    clearTimeout(veilTimer.current);
+    veilTimer.current = window.setTimeout(() => setVeil({ title }), 180);
+    window.location.href = href;
+  }, []);
+
+  // Barra de progreso para navegaciones DURAS a páginas .html del hub, con
+  // no-flash (solo si tardan >180ms). Las formaciones (/formacion/*.html) usan el
+  // velo: su onClick hace preventDefault, así que aquí se ignoran (defaultPrevented).
+  useEffect(() => {
+    let t = 0;
+    const onClick = (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = e.target && e.target.closest ? e.target.closest("a") : null;
+      if (!a || a.target === "_blank") return;
+      const href = a.getAttribute("href") || "";
+      if (!/\.html(\?|#|$)/.test(href)) return;
+      clearTimeout(t);
+      t = window.setTimeout(() => setNavActive(true), 180);
+    };
+    document.addEventListener("click", onClick);
+    return () => { document.removeEventListener("click", onClick); clearTimeout(t); };
   }, []);
 
   return (
@@ -61,6 +85,7 @@ export default function AppFrame({ children }) {
       <LoadingScreen />
       <AuthGate>
         <NavCtx.Provider value={{ leaveTo }}>
+          <NavBar active={navActive} />
           <div className="relative min-h-dvh w-full">
             <Header />
             {children}
