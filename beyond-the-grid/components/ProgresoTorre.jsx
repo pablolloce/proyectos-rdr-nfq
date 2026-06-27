@@ -30,7 +30,8 @@ function useIsDesktop() {
 
 function CursoCard({ f, completadas, niveles, onMarcar }) {
   const st = estadoCurso(f, completadas, niveles);
-  const color = TRACKS[f.track].color;
+  const tr = TRACKS[f.track];
+  const color = tr.color;
   const done = st === "completada";
   const reduce = useReducedMotion();
   const tilt = useTilt(reduce);
@@ -55,8 +56,9 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
           <a href={hrefDe(f)} data-prerender aria-label={`${done ? "Repasar" : "Abrir"} ${f.titulo}`} className="block truncate text-sm font-semibold text-sand after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-serene">
             {f.titulo}
           </a>
-          <span className="text-[11px] tabular-nums text-sand/55">
-            {done ? <span className="font-semibold uppercase tracking-wide text-lime/80">Completada · repasar</span> : f.duracion}
+          <span className="mt-0.5 flex items-center gap-2 text-[11px] text-sand/55">
+            <span className="inline-flex shrink-0 items-center rounded-full px-1.5 py-px text-[10px] font-bold uppercase tracking-wide" style={{ color: tr.color, backgroundColor: hexA(tr.color, 0.16) }}>{tr.nombre}</span>
+            <span className="truncate tabular-nums">{done ? <span className="font-semibold uppercase tracking-wide text-lime/80">Completada · repasar</span> : f.duracion}</span>
           </span>
         </div>
         <span aria-hidden className={`relative hidden items-center gap-1 text-xs font-bold sm:flex ${done ? "text-lime" : "text-serene"} opacity-0 transition-opacity group-hover:opacity-100`}>
@@ -79,6 +81,7 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
     <div aria-disabled="true" className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-3.5 text-sand/40">
       <IconLock size={16} className="shrink-0" />
       <span className="flex-1 truncate text-sm">{f.titulo}</span>
+      <span className="hidden shrink-0 items-center rounded-full px-1.5 py-px text-[10px] font-bold uppercase tracking-wide sm:inline-flex" style={{ color: hexA(tr.color, 0.75), backgroundColor: hexA(tr.color, 0.1) }}>{tr.nombre}</span>
       <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">{st === "proximamente" ? "Próximamente" : "Bloqueado"}</span>
     </div>
   );

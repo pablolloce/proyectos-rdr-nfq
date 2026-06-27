@@ -48,11 +48,11 @@ const VERT = `
     vec3 radial = normalize(vec3(p.x, 0.0, p.z) + 0.0001);
     p += radial * focus * 0.8;
     vGlow = focus;
-    // parallax con el ratón
-    p.x += uMouse.x * 0.6;
-    p.y += uMouse.y * 0.35;
+    // parallax con el ratón (suave)
+    p.x += uMouse.x * 0.45;
+    p.y += uMouse.y * 0.28;
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
-    gl_PointSize = (9.0 + 30.0 * aRand + focus * 60.0) * uPixelRatio / max(-mv.z, 0.1);
+    gl_PointSize = (9.0 + 28.0 * aRand + focus * 40.0) * uPixelRatio / max(-mv.z, 0.1);
     gl_Position = projectionMatrix * mv;
   }
 `;
@@ -71,16 +71,13 @@ const FRAG = `
   }
 `;
 
+// Solo la POSICIÓN de scroll [0,1] (la velocidad provocaba giros descontrolados).
 function useScrollRef() {
-  const ref = useRef({ p: 0, v: 0 });
+  const ref = useRef(0);
   useEffect(() => {
-    let last = 0;
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight;
-      const p = max > 0 ? window.scrollY / max : 0;
-      ref.current.v = p - last;
-      ref.current.p = p;
-      last = p;
+      ref.current = max > 0 ? window.scrollY / max : 0;
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -145,7 +142,7 @@ function Cloud({ estados, activeLevel, reduce }) {
           uFocusY: { value: 0 },
           uFocusStr: { value: 0.3 },
           uMouse: { value: new THREE.Vector2() },
-          uPixelRatio: { value: Math.min(2, typeof window !== "undefined" ? window.devicePixelRatio : 1) },
+          uPixelRatio: { value: Math.min(1.75, typeof window !== "undefined" ? window.devicePixelRatio : 1) },
         },
         vertexShader: VERT,
         fragmentShader: FRAG,
@@ -156,15 +153,23 @@ function Cloud({ estados, activeLevel, reduce }) {
     []
   );
 
-  useFrame((s, dt) => {
+  useFrame((_, dt) => {
+    dt = Math.min(dt, 0.05); // clamp: evita saltos tras lag o cambio de pestaña
+    const ease = (r) => 1 - Math.pow(1 - r, dt * 60); // amortiguación independiente de FPS
     const u = material.uniforms;
     if (!reduce) u.uTime.value += dt;
     const targetY = levelCenterY(activeLevel == null ? 0 : activeLevel);
-    u.uFocusY.value += (targetY - u.uFocusY.value) * 0.06;
-    u.uFocusStr.value += ((activeLevel == null ? 0.35 : 1.0) - u.uFocusStr.value) * 0.05;
-    u.uMouse.value.x += ((reduce ? 0 : mouse.current.x) - u.uMouse.value.x) * 0.05;
-    u.uMouse.value.y += ((reduce ? 0 : mouse.current.y) - u.uMouse.value.y) * 0.05;
-    if (pts.current) pts.current.rotation.y += (reduce ? 0 : dt * 0.05) + scroll.current.v * 4;
+    u.uFocusY.value += (targetY - u.uFocusY.value) * ease(0.06);
+    u.uFocusStr.value += ((activeLevel == null ? 0.35 : 1.0) - u.uFocusStr.value) * ease(0.05);
+    u.uMouse.value.x += ((reduce ? 0 : mouse.current.x) - u.uMouse.value.x) * ease(0.045);
+    u.uMouse.value.y += ((reduce ? 0 : mouse.current.y) - u.uMouse.value.y) * ease(0.045);
+    const o = pts.current;
+    if (o) {
+      o.rotation.y += reduce ? 0 : dt * 0.04; // giro lento constante
+      // inclinación suave según la POSICIÓN de scroll (amortiguada, sin velocidad)
+      const tilt = reduce ? 0 : scroll.current * 0.5 - 0.25;
+      o.rotation.x += (tilt - o.rotation.x) * ease(0.05);
+    }
   });
 
   return <points ref={pts} geometry={geometry} material={material} />;
@@ -180,7 +185,7 @@ export default function EstructuraTower({ estados, activeLevel }) {
   }, []);
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
-      <Canvas frameloop={frameloop} dpr={[1, 2]} camera={{ position: [0, 0, 9], fov: 55 }} gl={{ antialias: true, powerPreference: "high-performance" }}>
+      <Canvas frameloop={frameloop} dpr={[1, 1.75]} camera={{ position: [0, 0, 9], fov: 55 }} gl={{ antialias: true, powerPreference: "high-performance" }}>
         <color attach="background" args={["#070E46"]} />
         <Cloud estados={estados} activeLevel={activeLevel} reduce={reduce} />
       </Canvas>
