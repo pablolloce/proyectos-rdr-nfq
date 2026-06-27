@@ -72,7 +72,7 @@ function Node({ nv }) {
   );
 }
 
-function LevelSection({ lvl, nv, completadas, niveles, onMarcar, reduce, isLast }) {
+function LevelSection({ lvl, nv, completadas, niveles, onMarcar, onActivate, reduce, isLast }) {
   const items = FORMACIONES.filter((f) => f.nivel === lvl.n);
   const dim = nv.estado === "bloqueado";
   return (
@@ -81,6 +81,8 @@ function LevelSection({ lvl, nv, completadas, niveles, onMarcar, reduce, isLast 
       initial={{ opacity: 0, y: reduce ? 0 : 44 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: false, amount: 0.25 }}
+      onViewportEnter={() => onActivate(lvl.n)}
+      onMouseEnter={() => onActivate(lvl.n)}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className="relative grid grid-cols-[3.5rem_1fr] gap-x-4 gap-y-3 pb-12"
     >
@@ -115,11 +117,15 @@ export default function ProgresoTorre({ niveles, completadas, current, onMarcar 
   const r = resumen(completadas);
   const estados = NIVELES.map((l) => niveles[l.n].estado);
 
+  // Nivel "activo" con el que interactúa la estructura 3D (scroll/hover).
+  const [activeLevel, setActiveLevel] = useState(current);
+  useEffect(() => setActiveLevel(current), [current]);
+
   return (
     <main className="relative">
-      {/* Fondo: estructura 3D (desktop) o espina CSS (móvil) */}
+      {/* Fondo: estructura 3D interactiva (desktop) o espina CSS (móvil) */}
       {desktop ? (
-        <EstructuraTower estados={estados} />
+        <EstructuraTower estados={estados} activeLevel={activeLevel} />
       ) : (
         <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
           <span className="absolute left-1/2 top-0 h-full w-24 -translate-x-1/2 bg-gradient-to-b from-serene/15 via-purple/10 to-transparent blur-2xl" />
@@ -163,6 +169,7 @@ export default function ProgresoTorre({ niveles, completadas, current, onMarcar 
             completadas={completadas}
             niveles={niveles}
             onMarcar={onMarcar}
+            onActivate={setActiveLevel}
             reduce={reduce}
             isLast={i === NIVELES.length - 1}
           />
