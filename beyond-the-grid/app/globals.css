@@ -128,6 +128,50 @@ body {
   }
 }
 
+/* Skeleton con shimmer para estados de carga (mejor que un spinner en >1s). */
+.rdr-skel {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+.rdr-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(133, 200, 255, 0.14), transparent);
+  animation: rdr-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes rdr-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Barra de progreso indeterminada (velo de carga). */
+.rdr-bar {
+  position: relative;
+  overflow: hidden;
+}
+.rdr-bar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, #85c8ff, transparent);
+  animation: rdr-bar-slide 1.1s ease-in-out infinite;
+}
+@keyframes rdr-bar-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
 /* Respeta prefers-reduced-motion: corta animaciones/transiciones CSS.
    Las animaciones JS (R3F y Framer) se desactivan dentro de sus componentes. */
 @media (prefers-reduced-motion: reduce) {

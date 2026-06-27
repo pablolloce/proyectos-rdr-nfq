@@ -57,7 +57,7 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
         )}
         <div className="min-w-0 flex-1">
           {/* enlace estirado: cubre toda la tarjeta */}
-          <a href={hrefDe(f)} onClick={(e) => { if (plainClick(e)) { e.preventDefault(); leaveTo(hrefDe(f), "Abriendo formación…"); } }} aria-label={`${done ? "Repasar" : "Abrir"} ${f.titulo}`} className="block truncate text-sm font-semibold text-sand after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-serene">
+          <a href={hrefDe(f)} onClick={(e) => { if (plainClick(e)) { e.preventDefault(); leaveTo(hrefDe(f), f.titulo); } }} aria-label={`${done ? "Repasar" : "Abrir"} ${f.titulo}`} className="block truncate text-sm font-semibold text-sand after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-serene">
             {f.titulo}
           </a>
           <span className="text-[11px] tabular-nums text-sand/55">
@@ -183,7 +183,7 @@ export default function ProgresoTorre({ niveles, completadas, current, onMarcar 
             </div>
           </div>
           {/* Progreso del equipo (arriba) */}
-          <a href={PROGRESO_EQUIPO} onClick={(e) => { if (plainClick(e)) { e.preventDefault(); leaveTo(PROGRESO_EQUIPO, "Abriendo…"); } }} className="group mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-serene/30 bg-serene/10 px-4 py-2 text-xs font-bold text-serene backdrop-blur-md transition hover:border-serene/60 hover:bg-serene/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene">
+          <a href={PROGRESO_EQUIPO} onClick={(e) => { if (plainClick(e)) { e.preventDefault(); leaveTo(PROGRESO_EQUIPO, "Progreso del equipo"); } }} className="group mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-serene/30 bg-serene/10 px-4 py-2 text-xs font-bold text-serene backdrop-blur-md transition hover:border-serene/60 hover:bg-serene/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene">
             <IconGrad size={15} /> Progreso del equipo
             <IconArrow size={14} className="transition-transform group-hover:translate-x-1" />
           </a>

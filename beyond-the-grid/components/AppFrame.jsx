@@ -30,10 +30,14 @@ function NavVeil({ veil }) {
           transition={{ duration: 0.22, ease: "easeOut" }}
           role="status"
           aria-live="polite"
-          className="fixed inset-0 z-[110] flex flex-col items-center justify-center gap-5 bg-midnight"
+          className="fixed inset-0 z-[110] flex flex-col items-center justify-center gap-3 bg-midnight px-6 text-center"
         >
-          <span aria-hidden className="h-9 w-9 animate-spin rounded-full border-2 border-serene/25 border-t-serene" />
-          <p className="font-sans text-xs uppercase tracking-[0.35em] text-serene/80">{veil.label}</p>
+          <p className="font-sans text-[11px] font-bold uppercase tracking-[0.4em] text-serene/80">BBVA × NFQ</p>
+          <h3 className="max-w-md font-display text-2xl font-bold leading-tight text-sand sm:text-3xl">
+            {veil.title || "Abriendo…"}
+          </h3>
+          <p className="text-xs text-sand/55">Cargando formación…</p>
+          <div aria-hidden className="mt-3 h-1 w-48 overflow-hidden rounded-full bg-white/10 rdr-bar" />
         </motion.div>
       )}
     </AnimatePresence>
@@ -43,9 +47,9 @@ function NavVeil({ veil }) {
 export default function AppFrame({ children }) {
   const [veil, setVeil] = useState(null);
 
-  const leaveTo = useCallback((href, label = "Abriendo…") => {
+  const leaveTo = useCallback((href, title) => {
     if (!href) return;
-    setVeil({ label });
+    setVeil({ title });
     // breve margen para que el velo pinte antes de la navegación dura
     window.setTimeout(() => {
       window.location.href = href;
