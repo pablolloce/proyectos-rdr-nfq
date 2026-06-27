@@ -2118,6 +2118,23 @@ window.CertSystem = (function() {
     });
 
     btn.addEventListener('click', () => generateCertificate(sel));
+
+    // Auto-selección de la persona por el correo de la sesión del hub (mismo
+    // origen -> localStorage compartido). El usuario puede cambiarlo si no es él.
+    try {
+      var _email = (localStorage.getItem('rdr_auth_email') || '').trim().toLowerCase();
+      if (_email) {
+        var _me = team.find(function (p) { return String(p.email || '').toLowerCase() === _email; });
+        if (_me) {
+          sel.value = _me.id;
+          sel.dispatchEvent(new Event('change'));
+          var _fb = document.getElementById('cert-feedback');
+          if (_fb) _fb.textContent = 'Identificado como ' + _me.nombre + ' por tu sesión.';
+          var _lbl = document.querySelector('label[for="cert-user"]');
+          if (_lbl) _lbl.textContent = 'Tu nombre (detectado por tu sesión)';
+        }
+      }
+    } catch (_e) {}
   }
 
   /**
