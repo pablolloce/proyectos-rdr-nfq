@@ -25,7 +25,7 @@ export default function Header() {
           Cerrar sesión
         </button>
         {/* Logo oficial BBVA (blanco sobre Midnight) — regla dura nº4 CLAUDE.md. */}
-        <img src="/team-hub/logos/bbva-white.png" alt="BBVA" className="h-6 w-auto md:h-7" />
+        <img src="/team-hub/logos/bbva-white.png?v=2" alt="BBVA" className="h-6 w-auto md:h-7" />
       </div>
     </header>
   );

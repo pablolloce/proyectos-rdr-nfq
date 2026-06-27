@@ -48,7 +48,7 @@ export default function Experience() {
           {/* Co-branding NFQ (regla nº5 CLAUDE.md: NFQ en todas las vistas, menor que BBVA). */}
           <footer className="pointer-events-none absolute bottom-4 left-6 z-20 flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-[0.25em] text-sand/60">Hecho por</span>
-            <img src="/team-hub/logos/nfq-white.png" alt="NFQ" className="h-6 w-auto" />
+            <img src="/team-hub/logos/nfq-white.png?v=2" alt="NFQ" className="h-6 w-auto" />
           </footer>
         </div>
       </AuthGate>
