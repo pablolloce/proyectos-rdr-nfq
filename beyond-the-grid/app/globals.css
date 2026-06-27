@@ -85,6 +85,49 @@ body {
   opacity: 1;
 }
 
+/* ── View Transitions ────────────────────────────────────────────────
+   Cross-document (entre páginas .html y las rutas Next): morph nativo del
+   navegador. Same-document (index <-> /formacion) lo dispara la librería. */
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.34s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* Elemento compartido: tarjeta "HUB Formativo" <-> hero de /formacion. */
+::view-transition-group(vt-formacion) {
+  animation-duration: 0.42s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Barra de progreso de scroll en /formacion (scroll-driven, GPU, sin JS).
+   Fallback: sin soporte queda invisible (scaleX 0). */
+.rdr-scrollbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 60;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, #85c8ff, #88e783);
+  pointer-events: none;
+}
+@supports (animation-timeline: scroll()) {
+  .rdr-scrollbar {
+    animation: rdr-scrollprogress linear both;
+    animation-timeline: scroll(root);
+  }
+}
+@keyframes rdr-scrollprogress {
+  to {
+    transform: scaleX(1);
+  }
+}
+
 /* Respeta prefers-reduced-motion: corta animaciones/transiciones CSS.
    Las animaciones JS (R3F y Framer) se desactivan dentro de sus componentes. */
 @media (prefers-reduced-motion: reduce) {
@@ -95,5 +138,14 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+  /* Sin morph de View Transitions ni barra de scroll. */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+  .rdr-scrollbar {
+    animation: none !important;
   }
 }

@@ -1,15 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { useReducedMotion } from "framer-motion";
 import { useTilt } from "@/lib/useTilt";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
-import { useNav } from "./AppFrame";
-
-// Click "normal" (sin modificadores ni botón central) -> navegación con velo.
-const plainClick = (e) => !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1);
 import {
   IconBook, IconLink, IconUtensils, IconCalendar, IconRefresh, IconClock,
   IconRocket, IconCode, IconFolder, IconShield, IconArrow, IconExternal,
@@ -131,7 +127,6 @@ function CardInner({ item, accent }) {
 
 function Card({ item, accent, delay }) {
   const { getUrl, copyLink } = useLinks();
-  const { leaveTo } = useNav();
   const reduce = useReducedMotion();
   const tilt = useTilt(reduce);
   const style = { animationDelay: `${delay}ms`, borderColor: rgba(accent, 0.5), "--pc": rgba(accent, 0.75) };
@@ -163,7 +158,7 @@ function Card({ item, accent, delay }) {
   if (item.action === "route")
     return <Link {...tilt} href={item.target} aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></Link>;
   if (item.action === "page")
-    return <a {...tilt} href={item.target} onClick={(e) => { if (plainClick(e)) { e.preventDefault(); leaveTo(item.target); } }} aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></a>;
+    return <a {...tilt} href={item.target} aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></a>;
   if (item.action === "open") {
     const url = getUrl(item.target);
     if (!url) return <div {...tilt} aria-disabled="true" title="Enlace no disponible aún" className={`${cls} cursor-not-allowed opacity-50`} style={style}><CardInner item={item} accent={accent} /></div>;
@@ -181,7 +176,7 @@ function FeatureCard({ item, accent, delay }) {
       href={item.target}
       aria-label={`${item.label} — ${item.desc}`}
       className="rdr-rise rdr-tilt group relative box-border flex w-full flex-col justify-center gap-2 overflow-hidden rounded-2xl border bg-gradient-to-br from-white/[0.1] to-white/[0.03] p-5 backdrop-blur-md lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight"
-      style={{ animationDelay: `${delay}ms`, borderColor: rgba(accent, 0.5), "--pc": rgba(accent, 0.75) }}
+      style={{ animationDelay: `${delay}ms`, borderColor: rgba(accent, 0.5), "--pc": rgba(accent, 0.75), viewTransitionName: "vt-formacion" }}
     >
       <span aria-hidden className="rdr-spot" style={{ background: "radial-gradient(200px circle at var(--mx,50%) var(--my,50%), rgba(133,200,255,.22), transparent 70%)" }} />
       <span aria-hidden className="pointer-events-none absolute -right-5 -top-5 text-serene/15 transition-transform duration-500 group-hover:rotate-12"><IconOrbit size={140} /></span>
