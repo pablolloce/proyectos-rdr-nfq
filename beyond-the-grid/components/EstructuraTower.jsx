@@ -71,25 +71,9 @@ const FRAG = `
   }
 `;
 
-// Solo la POSICIÓN de scroll [0,1] (la velocidad provocaba giros descontrolados).
-function useScrollRef() {
-  const ref = useRef(0);
-  useEffect(() => {
-    const onScroll = () => {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      ref.current = max > 0 ? window.scrollY / max : 0;
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-  return ref;
-}
-
 function Cloud({ estados, activeLevel, reduce }) {
   const pts = useRef();
   const mouse = useRef({ x: 0, y: 0 });
-  const scroll = useScrollRef();
 
   useEffect(() => {
     const onMove = (e) => {
@@ -163,13 +147,10 @@ function Cloud({ estados, activeLevel, reduce }) {
     u.uFocusStr.value += ((activeLevel == null ? 0.35 : 1.0) - u.uFocusStr.value) * ease(0.05);
     u.uMouse.value.x += ((reduce ? 0 : mouse.current.x) - u.uMouse.value.x) * ease(0.045);
     u.uMouse.value.y += ((reduce ? 0 : mouse.current.y) - u.uMouse.value.y) * ease(0.045);
-    const o = pts.current;
-    if (o) {
-      o.rotation.y += reduce ? 0 : dt * 0.04; // giro lento constante
-      // inclinación suave según la POSICIÓN de scroll (amortiguada, sin velocidad)
-      const tilt = reduce ? 0 : scroll.current * 0.5 - 0.25;
-      o.rotation.x += (tilt - o.rotation.x) * ease(0.05);
-    }
+    // Solo un giro lento constante. NADA acoplado al scroll bruto (causaba el
+    // movimiento vertical "suben y bajan"): la reacción al scroll es la banda del
+    // nivel activo (uFocusY), que ya es suave.
+    if (pts.current && !reduce) pts.current.rotation.y += dt * 0.04;
   });
 
   return <points ref={pts} geometry={geometry} material={material} />;
