@@ -218,11 +218,11 @@ export default function EstructuraTower({ estados, activeLevel }) {
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "linear-gradient(90deg, transparent 0%, rgba(7,14,70,.62) 16%, rgba(7,14,70,.88) 50%, rgba(7,14,70,.62) 84%, transparent 100%)," +
-            "radial-gradient(42% 42% at 9% 16%, rgba(29,124,244,.28), transparent 70%)," +
-            "radial-gradient(40% 40% at 92% 24%, rgba(150,148,255,.24), transparent 70%)," +
-            "radial-gradient(46% 46% at 88% 88%, rgba(136,231,131,.20), transparent 72%)," +
-            "radial-gradient(40% 40% at 10% 90%, rgba(255,181,107,.16), transparent 72%)",
+            "linear-gradient(90deg, transparent 0%, rgba(7,14,70,.5) 13%, rgba(7,14,70,.9) 50%, rgba(7,14,70,.5) 87%, transparent 100%)," +
+            "radial-gradient(60% 55% at 4% 12%, rgba(29,124,244,.55), transparent 72%)," +
+            "radial-gradient(55% 52% at 97% 20%, rgba(150,148,255,.5), transparent 72%)," +
+            "radial-gradient(60% 55% at 95% 92%, rgba(136,231,131,.42), transparent 74%)," +
+            "radial-gradient(55% 52% at 4% 94%, rgba(255,181,107,.34), transparent 74%)",
         }}
       />
     </>
