@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useReducedMotion } from "framer-motion";
+import { useTilt } from "@/lib/useTilt";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 import {
@@ -15,36 +16,6 @@ const rgba = (hex, a) => {
   const h = hex.replace("#", "");
   return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
 };
-
-// Tilt 3D + spotlight dirigidos por el puntero (escribe --rx/--ry/--mx/--my).
-function useTilt(disabled) {
-  const ref = useRef(null);
-  const raf = useRef(0);
-  const onPointerMove = (e) => {
-    if (disabled) return;
-    const el = ref.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const px = (e.clientX - r.left) / r.width;
-    const py = (e.clientY - r.top) / r.height;
-    cancelAnimationFrame(raf.current);
-    raf.current = requestAnimationFrame(() => {
-      el.style.setProperty("--ry", ((px - 0.5) * 8).toFixed(2) + "deg");
-      el.style.setProperty("--rx", ((0.5 - py) * 8).toFixed(2) + "deg");
-      el.style.setProperty("--mx", (px * 100).toFixed(1) + "%");
-      el.style.setProperty("--my", (py * 100).toFixed(1) + "%");
-    });
-  };
-  const onPointerLeave = () => {
-    const el = ref.current;
-    if (!el) return;
-    cancelAnimationFrame(raf.current);
-    el.style.setProperty("--rx", "0deg");
-    el.style.setProperty("--ry", "0deg");
-  };
-  useEffect(() => () => cancelAnimationFrame(raf.current), []);
-  return { ref, onPointerMove, onPointerLeave };
-}
 
 // Estructura por TIPO. Cada sección = una columna. Acciones:
 // page (html), route (ruta Next), open (externo links.json), copy (portapapeles).
@@ -150,6 +121,7 @@ function CardInner({ item, accent }) {
         {item.desc && <span className="block truncate text-[13px] text-sand/60">{item.desc}</span>}
       </span>
       <Hint size={17} className="shrink-0 text-sand/40 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-sand/85" />
+      <span aria-hidden className="rdr-sheen" />
     </>
   );
 }
@@ -180,6 +152,7 @@ function Card({ item, accent, delay }) {
         <div className="relative flex gap-2">
           {item.actions.map((a) => <ActionPill key={a.label} a={a} accent={accent} />)}
         </div>
+        <span aria-hidden className="rdr-sheen" />
       </div>
     );
   }
@@ -215,13 +188,15 @@ function FeatureCard({ item, accent, delay }) {
         <span className="block text-sm text-sand/70">{item.desc}</span>
       </div>
       <span className="relative mt-1 flex items-center gap-1.5 text-sm font-bold text-serene">Explorar la ruta <IconArrow size={16} className="transition-transform group-hover:translate-x-1" /></span>
+      <span aria-hidden className="rdr-sheen" />
     </Link>
   );
 }
 
 function TypeColumn({ sec, delay }) {
   return (
-    <section aria-labelledby={`col-${sec.id}`} className="flex min-h-0 flex-col rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 backdrop-blur-sm" style={{ boxShadow: `inset 0 2px 0 ${rgba(sec.color, 0.5)}` }}>
+    <section aria-labelledby={`col-${sec.id}`} className="relative flex min-h-0 flex-col rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 backdrop-blur-sm">
+      <span aria-hidden className="rdr-edge" style={{ color: sec.color }} />
       <div className="mb-4 flex items-center gap-2 px-1">
         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: sec.color }} />
         <span className="font-display text-xs font-bold tabular-nums" style={{ color: sec.color }}>{sec.n}</span>

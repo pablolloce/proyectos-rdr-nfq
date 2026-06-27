@@ -5,11 +5,16 @@ import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "framer-motion";
 import { NIVELES, FORMACIONES, TRACKS, hrefDe, PROGRESO_EQUIPO } from "@/lib/formaciones";
 import { estadoCurso, resumen } from "@/lib/progreso";
+import { useTilt } from "@/lib/useTilt";
 import { IconLock, IconCheck, IconArrow, IconPlay, IconGrad } from "./icons";
 
 const EstructuraTower = dynamic(() => import("./EstructuraTower"), { ssr: false });
 
 const n2 = (n) => String(n).padStart(2, "0");
+const hexA = (hex, a) => {
+  const h = hex.replace("#", "");
+  return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
+};
 
 function useIsDesktop() {
   const [d, setD] = useState(false);
@@ -27,15 +32,19 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
   const st = estadoCurso(f, completadas, niveles);
   const color = TRACKS[f.track].color;
   const done = st === "completada";
+  const reduce = useReducedMotion();
+  const tilt = useTilt(reduce);
+  const spotColor = done ? "#88E783" : color;
 
   // Toda la tarjeta es clicable (stretched-link) -> acceso rápido. Las acciones
-  // secundarias (marcar/deshacer) van por encima (z-10).
+  // secundarias (marcar/deshacer) van por encima (z-10). Tilt + spotlight + sheen.
   if (done || st === "disponible") {
     const base = done
       ? "border-lime/25 bg-lime/[0.07] hover:border-lime/55 hover:bg-lime/[0.13]"
       : "border-white/12 bg-white/[0.06] hover:border-serene/55 hover:bg-white/[0.11]";
     return (
-      <div className={`group relative flex items-center gap-3 rounded-2xl border p-3.5 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 ${base}`}>
+      <div {...tilt} className={`rdr-tilt group relative flex items-center gap-3 overflow-hidden rounded-2xl border p-3.5 backdrop-blur-md ${base}`}>
+        <span aria-hidden className="rdr-spot" style={{ background: `radial-gradient(150px circle at var(--mx,50%) var(--my,50%), ${hexA(spotColor, 0.22)}, transparent 70%)` }} />
         {done ? (
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-lime/20 text-lime"><IconCheck size={16} /></span>
         ) : (
@@ -62,6 +71,7 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
         >
           {done ? "Deshacer" : <IconCheck size={14} />}
         </button>
+        <span aria-hidden className="rdr-sheen" />
       </div>
     );
   }

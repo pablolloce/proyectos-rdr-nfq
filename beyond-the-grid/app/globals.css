@@ -72,11 +72,42 @@ body {
   position: absolute;
   inset: 0;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.25s ease;
 }
 .group:hover .rdr-spot,
 .group:focus-visible .rdr-spot {
   opacity: 1;
+}
+
+/* Sheen: reflejo diagonal que recorre la tarjeta al hover/focus. */
+.rdr-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.14) 50%, transparent 65%);
+  transform: translateX(-130%);
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.group:hover .rdr-sheen,
+.group:focus-visible .rdr-sheen {
+  transform: translateX(130%);
+}
+
+/* Pulso del borde superior de color (columnas / secciones). color = acento. */
+.rdr-edge {
+  position: absolute;
+  top: 0;
+  left: 1rem;
+  right: 1rem;
+  height: 2px;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: rdr-edge-pulse 2.8s ease-in-out infinite;
+}
+@keyframes rdr-edge-pulse {
+  0%, 100% { opacity: 0.4; box-shadow: 0 0 4px currentColor; }
+  50% { opacity: 1; box-shadow: 0 0 16px currentColor; }
 }
 
 /* Respeta prefers-reduced-motion: corta animaciones/transiciones CSS.
