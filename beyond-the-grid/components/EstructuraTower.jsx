@@ -66,8 +66,8 @@ const FRAG = `
     float r = length(c);
     if (r > 0.5) discard;
     float a = smoothstep(0.5, 0.04, r);
-    vec3 col = vColor + vGlow * 0.9;
-    gl_FragColor = vec4(col, a * (0.42 + vGlow * 0.55));
+    vec3 col = vColor + vGlow * 0.7;
+    gl_FragColor = vec4(col, a * (0.28 + vGlow * 0.5));
   }
 `;
 
@@ -204,11 +204,23 @@ export default function EstructuraTower({ estados, activeLevel }) {
     return () => document.removeEventListener("visibilitychange", v);
   }, []);
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
-      <Canvas frameloop={frameloop} dpr={[1, 1.75]} camera={{ position: [0, 0, 9], fov: 55 }} gl={{ antialias: true, powerPreference: "high-performance" }}>
-        <color attach="background" args={["#070E46"]} />
-        <Cloud estados={estados} reduce={reduce} />
-      </Canvas>
-    </div>
+    <>
+      <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
+        <Canvas frameloop={frameloop} dpr={[1, 1.75]} camera={{ position: [0, 0, 9], fov: 55 }} gl={{ antialias: true, powerPreference: "high-performance" }}>
+          <color attach="background" args={["#070E46"]} />
+          <Cloud estados={estados} reduce={reduce} />
+        </Canvas>
+      </div>
+      {/* Scrim de legibilidad: oscurece la banda central (donde vive el contenido)
+          dejando las partículas visibles en los márgenes. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent 0%, rgba(7,14,70,.55) 20%, rgba(7,14,70,.78) 50%, rgba(7,14,70,.55) 80%, transparent 100%)",
+        }}
+      />
+    </>
   );
 }
