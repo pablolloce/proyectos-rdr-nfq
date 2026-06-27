@@ -19,10 +19,10 @@ const TURNS = 3.0;
 const BASE_R = 2.7;
 
 const COLS = {
-  completado: [0.55, 0.95, 0.55], // lime brillante
-  actual: [0.55, 0.83, 1.0], // serene brillante
-  proximamente: [0.58, 0.55, 1.0], // periwinkle/púrpura (futuro, ahora con color)
-  bloqueado: [0.42, 0.5, 0.95], // azul medio (visible, no negro)
+  completado: [0.6, 1.0, 0.6], // lime
+  actual: [0.6, 0.88, 1.0], // serene
+  proximamente: [0.68, 0.64, 1.0], // periwinkle/púrpura
+  bloqueado: [0.55, 0.66, 1.0], // azul claro (visible)
 };
 const levelCenterY = (L) => ((L + 0.5) / LV) * HEIGHT - HEIGHT / 2;
 
@@ -66,8 +66,8 @@ const FRAG = `
     float r = length(c);
     if (r > 0.5) discard;
     float a = smoothstep(0.5, 0.04, r);
-    vec3 col = vColor + vGlow * 0.6;
-    gl_FragColor = vec4(col, a * (0.72 + vGlow * 0.4));
+    vec3 col = vColor * 1.5 + vGlow * 0.6;
+    gl_FragColor = vec4(col, a * (0.92 + vGlow * 0.3));
   }
 `;
 
@@ -218,7 +218,7 @@ export default function EstructuraTower({ estados, activeLevel }) {
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "linear-gradient(90deg, transparent 0%, transparent 16%, rgba(7,14,70,.62) 33%, rgba(7,14,70,.62) 67%, transparent 84%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, transparent 18%, rgba(7,14,70,.5) 35%, rgba(7,14,70,.5) 65%, transparent 82%, transparent 100%)",
         }}
       />
     </>
