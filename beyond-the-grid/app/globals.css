@@ -64,8 +64,13 @@ body {
 .rdr-tilt {
   transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
   transform-style: preserve-3d;
-  transition: transform 0.14s ease-out, border-color 0.2s ease, background-color 0.2s ease;
+  transition: transform 0.14s ease-out, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.25s ease;
   will-change: transform;
+}
+/* El borde de color se ILUMINA al pasar el ratón o seleccionar (--pc = acento). */
+.rdr-tilt:hover,
+.rdr-tilt:focus-within {
+  box-shadow: 0 0 0 1px var(--pc, transparent), 0 0 20px -3px var(--pc, transparent);
 }
 /* Foco que sigue al cursor dentro de la tarjeta. */
 .rdr-spot {
@@ -78,17 +83,6 @@ body {
 .group:hover .rdr-spot,
 .group:focus-visible .rdr-spot {
   opacity: 1;
-}
-
-/* Borde de color que LATE en cada tarjeta (--pc = color de acento).
-   Incluye la entrada (rise) para no duplicar la propiedad animation. */
-.rdr-pulse {
-  animation: rdr-rise 0.45s ease both, rdr-bp 2.8s ease-in-out infinite;
-  will-change: box-shadow;
-}
-@keyframes rdr-bp {
-  0%, 100% { box-shadow: 0 0 6px -3px var(--pc, transparent); }
-  50% { box-shadow: 0 0 18px -1px var(--pc, transparent); }
 }
 
 /* Respeta prefers-reduced-motion: corta animaciones/transiciones CSS.

@@ -105,7 +105,7 @@ function ActionPill({ a, accent }) {
 }
 
 const CARD =
-  "rdr-pulse rdr-tilt group relative box-border flex w-full items-center gap-3.5 overflow-hidden rounded-xl border p-4 backdrop-blur-md lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight";
+  "rdr-rise rdr-tilt group relative box-border flex w-full items-center gap-3.5 overflow-hidden rounded-xl border p-4 backdrop-blur-md lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight";
 
 function CardInner({ item, accent }) {
   const { icon: Icon } = item;
@@ -137,7 +137,7 @@ function Card({ item, accent, delay }) {
   if (item.actions) {
     const { icon: Icon } = item;
     return (
-      <div {...tilt} className="rdr-pulse rdr-tilt group relative box-border flex w-full flex-col justify-center gap-3 overflow-hidden rounded-xl border bg-white/[0.055] p-4 backdrop-blur-md lg:min-h-0 lg:flex-1" style={style}>
+      <div {...tilt} className="rdr-rise rdr-tilt group relative box-border flex w-full flex-col justify-center gap-3 overflow-hidden rounded-xl border bg-white/[0.055] p-4 backdrop-blur-md lg:min-h-0 lg:flex-1" style={style}>
         <span aria-hidden className="rdr-spot" style={{ background: `radial-gradient(160px circle at var(--mx,50%) var(--my,50%), ${rgba(accent, 0.2)}, transparent 70%)` }} />
         <div className="relative flex items-center gap-3.5">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border" style={{ borderColor: rgba(accent, 0.3), background: rgba(accent, 0.12), color: accent }}>
@@ -175,7 +175,7 @@ function FeatureCard({ item, accent, delay }) {
       {...tilt}
       href={item.target}
       aria-label={`${item.label} — ${item.desc}`}
-      className="rdr-pulse rdr-tilt group relative box-border flex w-full flex-col justify-center gap-2 overflow-hidden rounded-2xl border bg-gradient-to-br from-white/[0.1] to-white/[0.03] p-5 backdrop-blur-md lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight"
+      className="rdr-rise rdr-tilt group relative box-border flex w-full flex-col justify-center gap-2 overflow-hidden rounded-2xl border bg-gradient-to-br from-white/[0.1] to-white/[0.03] p-5 backdrop-blur-md lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight"
       style={{ animationDelay: `${delay}ms`, borderColor: rgba(accent, 0.5), "--pc": rgba(accent, 0.75) }}
     >
       <span aria-hidden className="rdr-spot" style={{ background: "radial-gradient(200px circle at var(--mx,50%) var(--my,50%), rgba(133,200,255,.22), transparent 70%)" }} />
@@ -192,7 +192,7 @@ function FeatureCard({ item, accent, delay }) {
 
 function TypeColumn({ sec, delay }) {
   return (
-    <section aria-labelledby={`col-${sec.id}`} className="flex min-h-0 flex-col rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 backdrop-blur-sm">
+    <section aria-labelledby={`col-${sec.id}`} className="flex min-h-0 flex-col rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 backdrop-blur-sm" style={{ boxShadow: `inset 0 2px 0 ${rgba(sec.color, 0.7)}` }}>
       <div className="mb-4 flex items-center gap-2 px-1">
         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: sec.color }} />
         <span className="font-display text-xs font-bold tabular-nums" style={{ color: sec.color }}>{sec.n}</span>
