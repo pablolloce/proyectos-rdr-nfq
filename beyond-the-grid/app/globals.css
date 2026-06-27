@@ -80,34 +80,15 @@ body {
   opacity: 1;
 }
 
-/* Sheen: reflejo diagonal que recorre la tarjeta al hover/focus. */
-.rdr-sheen {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.14) 50%, transparent 65%);
-  transform: translateX(-130%);
-  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+/* Borde de color que LATE en cada tarjeta (--pc = color de acento).
+   Incluye la entrada (rise) para no duplicar la propiedad animation. */
+.rdr-pulse {
+  animation: rdr-rise 0.45s ease both, rdr-bp 2.8s ease-in-out infinite;
+  will-change: box-shadow;
 }
-.group:hover .rdr-sheen,
-.group:focus-visible .rdr-sheen {
-  transform: translateX(130%);
-}
-
-/* Pulso del borde superior de color (columnas / secciones). color = acento. */
-.rdr-edge {
-  position: absolute;
-  top: 0;
-  left: 1rem;
-  right: 1rem;
-  height: 2px;
-  border-radius: 9999px;
-  background: currentColor;
-  animation: rdr-edge-pulse 2.8s ease-in-out infinite;
-}
-@keyframes rdr-edge-pulse {
-  0%, 100% { opacity: 0.4; box-shadow: 0 0 4px currentColor; }
-  50% { opacity: 1; box-shadow: 0 0 16px currentColor; }
+@keyframes rdr-bp {
+  0%, 100% { box-shadow: 0 0 6px -3px var(--pc, transparent); }
+  50% { box-shadow: 0 0 18px -1px var(--pc, transparent); }
 }
 
 /* Respeta prefers-reduced-motion: corta animaciones/transiciones CSS.

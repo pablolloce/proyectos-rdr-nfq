@@ -105,7 +105,7 @@ function ActionPill({ a, accent }) {
 }
 
 const CARD =
-  "rdr-rise rdr-tilt group relative box-border flex w-full items-center gap-3.5 overflow-hidden rounded-xl border p-4 backdrop-blur-md hover:border-white/30 lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight";
+  "rdr-pulse rdr-tilt group relative box-border flex w-full items-center gap-3.5 overflow-hidden rounded-xl border p-4 backdrop-blur-md lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight";
 
 function CardInner({ item, accent }) {
   const { icon: Icon } = item;
@@ -121,7 +121,6 @@ function CardInner({ item, accent }) {
         {item.desc && <span className="block truncate text-[13px] text-sand/60">{item.desc}</span>}
       </span>
       <Hint size={17} className="shrink-0 text-sand/40 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-sand/85" />
-      <span aria-hidden className="rdr-sheen" />
     </>
   );
 }
@@ -130,7 +129,7 @@ function Card({ item, accent, delay }) {
   const { getUrl, copyLink } = useLinks();
   const reduce = useReducedMotion();
   const tilt = useTilt(reduce);
-  const style = { animationDelay: `${delay}ms` };
+  const style = { animationDelay: `${delay}ms`, borderColor: rgba(accent, 0.5), "--pc": rgba(accent, 0.75) };
   const cls = `${CARD} bg-white/[0.055] hover:bg-white/[0.1]`;
   const aria = item.label;
 
@@ -138,7 +137,7 @@ function Card({ item, accent, delay }) {
   if (item.actions) {
     const { icon: Icon } = item;
     return (
-      <div {...tilt} className="rdr-rise rdr-tilt group relative box-border flex w-full flex-col justify-center gap-3 overflow-hidden rounded-xl border border-white/10 bg-white/[0.055] p-4 backdrop-blur-md hover:border-white/30 lg:min-h-0 lg:flex-1" style={style}>
+      <div {...tilt} className="rdr-pulse rdr-tilt group relative box-border flex w-full flex-col justify-center gap-3 overflow-hidden rounded-xl border bg-white/[0.055] p-4 backdrop-blur-md lg:min-h-0 lg:flex-1" style={style}>
         <span aria-hidden className="rdr-spot" style={{ background: `radial-gradient(160px circle at var(--mx,50%) var(--my,50%), ${rgba(accent, 0.2)}, transparent 70%)` }} />
         <div className="relative flex items-center gap-3.5">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border" style={{ borderColor: rgba(accent, 0.3), background: rgba(accent, 0.12), color: accent }}>
@@ -152,21 +151,20 @@ function Card({ item, accent, delay }) {
         <div className="relative flex gap-2">
           {item.actions.map((a) => <ActionPill key={a.label} a={a} accent={accent} />)}
         </div>
-        <span aria-hidden className="rdr-sheen" />
       </div>
     );
   }
 
   if (item.action === "route")
-    return <Link {...tilt} href={item.target} aria-label={aria} className={`${cls} border-white/10`} style={style}><CardInner item={item} accent={accent} /></Link>;
+    return <Link {...tilt} href={item.target} aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></Link>;
   if (item.action === "page")
-    return <a {...tilt} href={item.target} aria-label={aria} className={`${cls} border-white/10`} style={style}><CardInner item={item} accent={accent} /></a>;
+    return <a {...tilt} href={item.target} aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></a>;
   if (item.action === "open") {
     const url = getUrl(item.target);
-    if (!url) return <div {...tilt} aria-disabled="true" title="Enlace no disponible aún" className={`${cls} cursor-not-allowed border-white/10 opacity-50`} style={style}><CardInner item={item} accent={accent} /></div>;
-    return <a {...tilt} href={url} target="_blank" rel="noopener noreferrer" aria-label={aria} className={`${cls} border-white/10`} style={style}><CardInner item={item} accent={accent} /></a>;
+    if (!url) return <div {...tilt} aria-disabled="true" title="Enlace no disponible aún" className={`${cls} cursor-not-allowed opacity-50`} style={style}><CardInner item={item} accent={accent} /></div>;
+    return <a {...tilt} href={url} target="_blank" rel="noopener noreferrer" aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></a>;
   }
-  return <button {...tilt} type="button" onClick={() => copyLink(item.target)} aria-label={aria} className={`${cls} border-white/10 text-left`} style={style}><CardInner item={item} accent={accent} /></button>;
+  return <button {...tilt} type="button" onClick={() => copyLink(item.target)} aria-label={aria} className={`${cls} text-left`} style={style}><CardInner item={item} accent={accent} /></button>;
 }
 
 function FeatureCard({ item, accent, delay }) {
@@ -177,8 +175,8 @@ function FeatureCard({ item, accent, delay }) {
       {...tilt}
       href={item.target}
       aria-label={`${item.label} — ${item.desc}`}
-      className="rdr-rise rdr-tilt group relative box-border flex w-full flex-col justify-center gap-2 overflow-hidden rounded-2xl border border-serene/30 bg-gradient-to-br from-white/[0.1] to-white/[0.03] p-5 backdrop-blur-md hover:border-serene/60 lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight"
-      style={{ animationDelay: `${delay}ms` }}
+      className="rdr-pulse rdr-tilt group relative box-border flex w-full flex-col justify-center gap-2 overflow-hidden rounded-2xl border bg-gradient-to-br from-white/[0.1] to-white/[0.03] p-5 backdrop-blur-md lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight"
+      style={{ animationDelay: `${delay}ms`, borderColor: rgba(accent, 0.5), "--pc": rgba(accent, 0.75) }}
     >
       <span aria-hidden className="rdr-spot" style={{ background: "radial-gradient(200px circle at var(--mx,50%) var(--my,50%), rgba(133,200,255,.22), transparent 70%)" }} />
       <span aria-hidden className="pointer-events-none absolute -right-5 -top-5 text-serene/15 transition-transform duration-500 group-hover:rotate-12"><IconOrbit size={140} /></span>
@@ -188,15 +186,13 @@ function FeatureCard({ item, accent, delay }) {
         <span className="block text-sm text-sand/70">{item.desc}</span>
       </div>
       <span className="relative mt-1 flex items-center gap-1.5 text-sm font-bold text-serene">Explorar la ruta <IconArrow size={16} className="transition-transform group-hover:translate-x-1" /></span>
-      <span aria-hidden className="rdr-sheen" />
     </Link>
   );
 }
 
 function TypeColumn({ sec, delay }) {
   return (
-    <section aria-labelledby={`col-${sec.id}`} className="relative flex min-h-0 flex-col rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 backdrop-blur-sm">
-      <span aria-hidden className="rdr-edge" style={{ color: sec.color }} />
+    <section aria-labelledby={`col-${sec.id}`} className="flex min-h-0 flex-col rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 backdrop-blur-sm">
       <div className="mb-4 flex items-center gap-2 px-1">
         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: sec.color }} />
         <span className="font-display text-xs font-bold tabular-nums" style={{ color: sec.color }}>{sec.n}</span>

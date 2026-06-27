@@ -43,7 +43,7 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
       ? "border-lime/25 bg-lime/[0.07] hover:border-lime/55 hover:bg-lime/[0.13]"
       : "border-white/12 bg-white/[0.06] hover:border-serene/55 hover:bg-white/[0.11]";
     return (
-      <div {...tilt} className={`rdr-tilt group relative flex items-center gap-3 overflow-hidden rounded-2xl border p-3.5 backdrop-blur-md ${base}`}>
+      <div {...tilt} style={{ "--pc": hexA(spotColor, 0.7) }} className={`rdr-pulse rdr-tilt group relative flex items-center gap-3 overflow-hidden rounded-2xl border p-3.5 backdrop-blur-md ${base}`}>
         <span aria-hidden className="rdr-spot" style={{ background: `radial-gradient(150px circle at var(--mx,50%) var(--my,50%), ${hexA(spotColor, 0.22)}, transparent 70%)` }} />
         {done ? (
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-lime/20 text-lime"><IconCheck size={16} /></span>
@@ -71,7 +71,6 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
         >
           {done ? "Deshacer" : <IconCheck size={14} />}
         </button>
-        <span aria-hidden className="rdr-sheen" />
       </div>
     );
   }
