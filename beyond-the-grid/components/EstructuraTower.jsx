@@ -71,9 +71,11 @@ const FRAG = `
   }
 `;
 
-function Cloud({ estados, activeLevel, reduce }) {
+function Cloud({ estados, reduce }) {
   const pts = useRef();
   const mouse = useRef({ x: 0, y: 0 });
+  const target = useRef(0); // nivel continuo objetivo (medido de las secciones [data-level])
+  const cur = useRef(0); // nivel continuo amortiguado -> descenso suave
 
   useEffect(() => {
     const onMove = (e) => {
@@ -82,6 +84,38 @@ function Cloud({ estados, activeLevel, reduce }) {
     };
     window.addEventListener("pointermove", onMove);
     return () => window.removeEventListener("pointermove", onMove);
+  }, []);
+
+  // Nivel continuo bajo una línea de referencia: qué sección cruza ~42% del alto.
+  // Estable (las posiciones de sección son layout) y sincronizado con el scroll.
+  useEffect(() => {
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const secs = document.querySelectorAll("[data-level]");
+      if (!secs.length) return;
+      const refY = window.innerHeight * 0.42;
+      const arr = [];
+      secs.forEach((s) => { const r = s.getBoundingClientRect(); arr.push([Number(s.dataset.level), r.top + r.height / 2]); });
+      arr.sort((a, b) => a[0] - b[0]);
+      let lv = arr[arr.length - 1][0];
+      if (refY <= arr[0][1]) lv = arr[0][0];
+      else {
+        for (let i = 0; i < arr.length - 1; i++) {
+          if (refY >= arr[i][1] && refY <= arr[i + 1][1]) {
+            const t = (refY - arr[i][1]) / ((arr[i + 1][1] - arr[i][1]) || 1);
+            lv = arr[i][0] + t * (arr[i + 1][0] - arr[i][0]);
+            break;
+          }
+        }
+      }
+      target.current = lv;
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(measure); };
+    measure();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => { window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); cancelAnimationFrame(raf); };
   }, []);
 
   const { geometry, levelOf } = useMemo(() => {
@@ -142,15 +176,20 @@ function Cloud({ estados, activeLevel, reduce }) {
     const ease = (r) => 1 - Math.pow(1 - r, dt * 60); // amortiguación independiente de FPS
     const u = material.uniforms;
     if (!reduce) u.uTime.value += dt;
-    const targetY = levelCenterY(activeLevel == null ? 0 : activeLevel);
-    u.uFocusY.value += (targetY - u.uFocusY.value) * ease(0.06);
-    u.uFocusStr.value += ((activeLevel == null ? 0.35 : 1.0) - u.uFocusStr.value) * ease(0.05);
+    // Nivel continuo amortiguado -> la estructura BAJA EN ESPIRAL al scrollear:
+    // se traslada para centrar el nivel actual (desciende) y gira (espiral).
+    cur.current += (target.current - cur.current) * ease(0.09);
+    const focusY = levelCenterY(cur.current);
+    u.uFocusY.value = focusY; // la banda del nivel centrado brilla
+    u.uFocusStr.value += (0.95 - u.uFocusStr.value) * ease(0.05);
     u.uMouse.value.x += ((reduce ? 0 : mouse.current.x) - u.uMouse.value.x) * ease(0.045);
     u.uMouse.value.y += ((reduce ? 0 : mouse.current.y) - u.uMouse.value.y) * ease(0.045);
-    // Solo un giro lento constante. NADA acoplado al scroll bruto (causaba el
-    // movimiento vertical "suben y bajan"): la reacción al scroll es la banda del
-    // nivel activo (uFocusY), que ya es suave.
-    if (pts.current && !reduce) pts.current.rotation.y += dt * 0.04;
+    const o = pts.current;
+    if (o) {
+      o.position.y = -focusY; // centra el nivel actual -> al bajar el scroll, baja
+      const targetRot = reduce ? 0 : cur.current * 0.7; // gira al descender = espiral
+      o.rotation.y += (targetRot - o.rotation.y) * ease(0.08);
+    }
   });
 
   return <points ref={pts} geometry={geometry} material={material} />;
@@ -168,7 +207,7 @@ export default function EstructuraTower({ estados, activeLevel }) {
     <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
       <Canvas frameloop={frameloop} dpr={[1, 1.75]} camera={{ position: [0, 0, 9], fov: 55 }} gl={{ antialias: true, powerPreference: "high-performance" }}>
         <color attach="background" args={["#070E46"]} />
-        <Cloud estados={estados} activeLevel={activeLevel} reduce={reduce} />
+        <Cloud estados={estados} reduce={reduce} />
       </Canvas>
     </div>
   );
