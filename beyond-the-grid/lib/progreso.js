@@ -35,15 +35,65 @@ export function marcar(email, archivo, done = true) {
   return s;
 }
 
-/** Conjunto de cursos completados = semilla (progreso.json) ∪ localStorage. */
-export function completadasDe(email, seed) {
+/** Conjunto de cursos completados = semilla (progreso.json) ∪ localStorage ∪ remoto (backend). */
+export function completadasDe(email, seed, extra) {
   const base =
     (seed && seed.usuarios && seed.usuarios[norm(email)] && seed.usuarios[norm(email)].completados) ||
     (seed && seed.porDefecto && seed.porDefecto.completados) ||
     [];
   const s = getLocal(email);
   base.forEach((a) => s.add(a));
+  if (extra) extra.forEach((a) => s.add(a));
   return s;
+}
+
+// ── Backend de formaciones (solo lectura: las completaciones reales entran por
+//    certificados en Drive y el Apps Script las publica en GET {records:[...]}). ──
+// NFD + quitar todo lo no alfanumérico (los diacríticos quedan fuera de a-z0-9).
+const slug = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "");
+
+// Mapea un record del backend a un archivo de curso de nuestro catálogo.
+function archivoDeRecord(rec) {
+  const cid = rec.courseId;
+  const m = rec.courseMeta || {};
+  // 1) courseId coincide con el archivo
+  let f = FORMACIONES.find((x) => x.archivo && (x.archivo === cid || slug(x.archivo) === slug(cid)));
+  if (f) return f.archivo;
+  // 2) por nombre
+  if (m.nombre) {
+    const nm = slug(m.nombre);
+    f = FORMACIONES.find((x) => { const t = slug(x.titulo); return t === nm || t.includes(nm) || nm.includes(t); });
+    if (f) return f.archivo;
+  }
+  // 3) por (nivel, track) si es único y disponible
+  if (m.nivel != null && m.track) {
+    const cand = FORMACIONES.filter((x) => x.nivel === Number(m.nivel) && x.track === m.track && isDisponible(x));
+    if (cand.length === 1) return cand[0].archivo;
+  }
+  return null;
+}
+
+/** Lee el progreso REAL del backend para este email. Set de archivos completados. */
+export async function cargarRemoto(email) {
+  if (!email) return new Set();
+  try {
+    const [L, eq] = await Promise.all([
+      fetch("/team-hub/links/links.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch("/team-hub/equipo/equipo.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]);
+    const url = L && L.formacionesBackend && L.formacionesBackend.url;
+    if (!url) return new Set();
+    const team = (eq && eq.team) || [];
+    const me = team.find((p) => String(p.email || "").toLowerCase() === String(email).toLowerCase());
+    if (!me) return new Set();
+    const data = await fetch(url, { method: "GET" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    const records = (data && data.records) || [];
+    const out = new Set();
+    records.filter((r) => r.userId === me.id).forEach((r) => { const a = archivoDeRecord(r); if (a) out.add(a); });
+    return out;
+  } catch {
+    return new Set();
+  }
 }
 
 const dispNivel = (n) => FORMACIONES.filter((f) => f.nivel === n && isDisponible(f));

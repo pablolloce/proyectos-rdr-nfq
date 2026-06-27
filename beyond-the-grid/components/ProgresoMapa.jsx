@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Html, Line, OrbitControls } from "@react-three/drei";
+import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
 import { NIVELES, FORMACIONES, TRACKS, hrefDe } from "@/lib/formaciones";
 import { estadoCurso } from "@/lib/progreso";
@@ -20,8 +21,9 @@ const LOCK = "#5a6aa0";
 const DONE = "#88E783";
 const CUR = "#85C8FF";
 
-const levelX = (i) => Math.sin(i * 1.1) * 2.1;
-const levelPos = (i) => [levelX(i), i * GAP, Math.cos(i * 1.1) * 0.5];
+// Camino casi vertical: leve vaivén para dar vida sin desviarse del eje.
+const levelX = (i) => Math.sin(i * 0.8) * 0.85;
+const levelPos = (i) => [levelX(i), i * GAP, Math.cos(i * 0.8) * 0.3];
 
 function stationColor(estado) {
   if (estado === "completado") return DONE;
@@ -86,6 +88,72 @@ function CourseNode({ pos, color, locked, done, label, onOpen, onMarcar }) {
   );
 }
 
+// Partículas de energía que ascienden por el camino (vida ambiental).
+function Particles({ count = 150, height }) {
+  const ref = useRef();
+  const reduce = useReducedMotion();
+  const { positions, speeds } = useMemo(() => {
+    const positions = new Float32Array(count * 3);
+    const speeds = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 9;
+      positions[i * 3 + 1] = Math.random() * height - 3;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 7;
+      speeds[i] = 0.5 + Math.random() * 1.1;
+    }
+    return { positions, speeds };
+  }, [count, height]);
+  useFrame((_, dt) => {
+    const g = ref.current;
+    if (!g || reduce) return;
+    const arr = g.geometry.attributes.position.array;
+    for (let i = 0; i < count; i++) {
+      arr[i * 3 + 1] += speeds[i] * dt;
+      if (arr[i * 3 + 1] > height - 3) arr[i * 3 + 1] = -3;
+    }
+    g.geometry.attributes.position.needsUpdate = true;
+  });
+  return (
+    <points ref={ref}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+      </bufferGeometry>
+      <pointsMaterial size={0.07} color="#85C8FF" transparent opacity={0.7} sizeAttenuation depthWrite={false} />
+    </points>
+  );
+}
+
+// Faro "estás aquí": icosaedro que gira y late con un halo, en tu nivel actual.
+function Beacon({ pos }) {
+  const core = useRef();
+  const ring = useRef();
+  const reduce = useReducedMotion();
+  useFrame((s) => {
+    const t = s.clock.elapsedTime;
+    if (core.current) {
+      if (!reduce) { core.current.rotation.y = t * 0.8; core.current.rotation.x = t * 0.4; }
+      core.current.position.y = pos[1] + 1.15 + (reduce ? 0 : Math.sin(t * 1.6) * 0.16);
+    }
+    if (ring.current && !reduce) {
+      const k = 1 + Math.sin(t * 2) * 0.12;
+      ring.current.scale.set(k, k, k);
+      ring.current.rotation.z = t * 0.6;
+    }
+  });
+  return (
+    <group>
+      <mesh ref={core} position={[pos[0], pos[1] + 1.15, pos[2] + 0.3]}>
+        <icosahedronGeometry args={[0.4, 0]} />
+        <meshStandardMaterial color="#FFE761" emissive="#FFE761" emissiveIntensity={1.5} roughness={0.2} metalness={0.5} flatShading />
+      </mesh>
+      <mesh ref={ring} position={[pos[0], pos[1] + 1.15, pos[2] + 0.3]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.66, 0.025, 12, 40]} />
+        <meshStandardMaterial color="#FFE761" emissive="#FFE761" emissiveIntensity={1} transparent opacity={0.7} />
+      </mesh>
+    </group>
+  );
+}
+
 function Scene({ niveles, completadas, current, onMarcar }) {
   const controls = useRef();
   const targetY = current * GAP;
@@ -118,6 +186,8 @@ function Scene({ niveles, completadas, current, onMarcar }) {
       <directionalLight position={[5, 8, 6]} intensity={1.8} color="#F7F8F8" />
       <directionalLight position={[-6, -4, -2]} intensity={0.5} color="#1D7CF4" />
       <pointLight position={[0, targetY, 5]} intensity={0.8} color="#85C8FF" />
+
+      <Particles height={NIVELES.length * GAP + 4} />
 
       <Line points={points} vertexColors={colors} lineWidth={3} transparent opacity={0.6} />
 
@@ -158,7 +228,23 @@ function Scene({ niveles, completadas, current, onMarcar }) {
         );
       })}
 
+      <Beacon pos={levelPos(current)} />
+
       <OrbitControls ref={controls} enablePan={false} enableDamping dampingFactor={0.08} minDistance={6} maxDistance={20} minPolarAngle={0.6} maxPolarAngle={1.95} target={[0, targetY, 0]} />
+    </>
+  );
+}
+
+// Esquinas tipo "bracket" (guiño al estilo de referencia, en serene).
+function Corners() {
+  const c = "rgba(133,200,255,.55)";
+  const b = "pointer-events-none absolute h-3 w-3";
+  return (
+    <>
+      <span className={`${b} left-1.5 top-1.5 border-l border-t`} style={{ borderColor: c }} />
+      <span className={`${b} right-1.5 top-1.5 border-r border-t`} style={{ borderColor: c }} />
+      <span className={`${b} left-1.5 bottom-1.5 border-l border-b`} style={{ borderColor: c }} />
+      <span className={`${b} right-1.5 bottom-1.5 border-r border-b`} style={{ borderColor: c }} />
     </>
   );
 }
@@ -178,8 +264,11 @@ export default function ProgresoMapa({ niveles, completadas, current, onMarcar }
         Tu ruta de aprendizaje · arrastra para orbitar · completa un nivel para desbloquear el siguiente
       </p>
 
-      <aside className="pointer-events-auto absolute right-4 top-24 bottom-14 z-20 hidden w-80 overflow-auto rounded-2xl border border-white/10 bg-midnight/85 p-4 backdrop-blur-xl xl:block">
-        <ProgresoPanel niveles={niveles} completadas={completadas} current={current} onMarcar={onMarcar} />
+      <aside className="pointer-events-auto absolute right-4 top-24 bottom-14 z-20 hidden w-80 overflow-hidden rounded-2xl border border-white/10 bg-midnight/85 backdrop-blur-xl xl:block">
+        <Corners />
+        <div className="h-full overflow-auto p-4">
+          <ProgresoPanel niveles={niveles} completadas={completadas} current={current} onMarcar={onMarcar} />
+        </div>
       </aside>
     </div>
   );

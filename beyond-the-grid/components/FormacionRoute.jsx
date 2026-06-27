@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useAuth } from "./AuthGate";
-import { PROGRESO_URL, completadasDe, estadoNiveles, nivelActual, marcar, onProgreso } from "@/lib/progreso";
+import { PROGRESO_URL, completadasDe, estadoNiveles, nivelActual, marcar, onProgreso, cargarRemoto } from "@/lib/progreso";
 import ProgresoPanel from "./ProgresoPanel";
 
 // Mapa 3D (WebGL) solo cliente.
@@ -27,6 +27,7 @@ export default function FormacionRoute() {
   const { email } = useAuth();
   const desktop = useIsDesktop();
   const [seed, setSeed] = useState(null);
+  const [remoto, setRemoto] = useState(() => new Set()); // progreso real del backend
   const [completadas, setCompletadas] = useState(() => new Set());
 
   // Semilla compartida (progreso.json): todos parten de nivel 0.
@@ -39,10 +40,17 @@ export default function FormacionRoute() {
     return () => { alive = false; };
   }, []);
 
-  // Avance del usuario = semilla ∪ localStorage; se recalcula al completar cursos.
+  // Progreso real desde el backend de formaciones (por email -> userId).
+  useEffect(() => {
+    let alive = true;
+    if (email) cargarRemoto(email).then((s) => alive && setRemoto(s)).catch(() => {});
+    return () => { alive = false; };
+  }, [email]);
+
+  // Avance = semilla ∪ localStorage ∪ backend; se recalcula al completar cursos.
   const recompute = useCallback(() => {
-    if (seed) setCompletadas(completadasDe(email, seed));
-  }, [email, seed]);
+    if (seed) setCompletadas(completadasDe(email, seed, remoto));
+  }, [email, seed, remoto]);
   useEffect(() => { recompute(); }, [recompute]);
   useEffect(() => onProgreso(recompute), [recompute]);
 
