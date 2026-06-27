@@ -22,14 +22,14 @@ export const NIVELES = [
 // archivo -> se sirve en /team-hub/formacion/<archivo>
 export const FORMACIONES = [
   // ── Disponibles ───────────────────────────────────────────────
-  { track: "welcome", nivel: 0, titulo: "¿Qué es RDR?", archivo: "form-welcome-0-que-es-rdr.html", duracion: "~20 min", estado: "disponible" },
-  { track: "funcional", nivel: 1, titulo: "Finanzas Básico", archivo: "form-functional-1-finance-basic.html", duracion: "~65 min", estado: "disponible" },
-  { track: "tecnico", nivel: 1, titulo: "Tecnologías RDR", archivo: "form-tecnico-1-tecnologias-rdr.html", duracion: "~65 min", estado: "disponible" },
-  { track: "funcional", nivel: 2, titulo: "Instrucciones de Confirmación", archivo: "form-functional-2-instrucciones-confirmacion.html", duracion: "~50 min", estado: "disponible" },
-  { track: "funcional", nivel: 2, titulo: "Instrucciones de Liquidación", archivo: "form-functional-2-instrucciones-liquidacion.html", duracion: "~50 min", estado: "disponible" },
-  { track: "tecnico", nivel: 2, titulo: "SQL · PL/SQL", archivo: "form-tecnico-2-sql.html", duracion: "~55 min", estado: "disponible" },
-  { track: "tecnico", nivel: 2, titulo: "XML", archivo: "form-tecnico-2-xml.html", duracion: "~45 min", estado: "disponible" },
-  { track: "cross", nivel: 2, titulo: "Modelo de datos", archivo: "form-cross-2-modelo-datos-rdr.html", duracion: "~50 min", estado: "disponible" },
+  { track: "welcome", nivel: 0, titulo: "¿Qué es RDR?", archivo: "form-welcome-0-que-es-rdr.html", duracion: "~20 min", estado: "disponible", kw: ["queesrdr", "welcome", "quees", "formacioninicial"] },
+  { track: "funcional", nivel: 1, titulo: "Finanzas Básico", archivo: "form-functional-1-finance-basic.html", duracion: "~65 min", estado: "disponible", kw: ["finanzas", "financebasic", "finance", "basico", "cib"] },
+  { track: "tecnico", nivel: 1, titulo: "Tecnologías RDR", archivo: "form-tecnico-1-tecnologias-rdr.html", duracion: "~65 min", estado: "disponible", kw: ["tecnologias", "tecnologiasrdr", "technolog"] },
+  { track: "funcional", nivel: 2, titulo: "Instrucciones de Confirmación", archivo: "form-functional-2-instrucciones-confirmacion.html", duracion: "~50 min", estado: "disponible", kw: ["confirmacion", "confirma", "scis"] },
+  { track: "funcional", nivel: 2, titulo: "Instrucciones de Liquidación", archivo: "form-functional-2-instrucciones-liquidacion.html", duracion: "~50 min", estado: "disponible", kw: ["liquidacion", "liquida", "ssi", "sdi"] },
+  { track: "tecnico", nivel: 2, titulo: "SQL · PL/SQL", archivo: "form-tecnico-2-sql.html", duracion: "~55 min", estado: "disponible", kw: ["sql", "plsql"] },
+  { track: "tecnico", nivel: 2, titulo: "XML", archivo: "form-tecnico-2-xml.html", duracion: "~45 min", estado: "disponible", kw: ["xml"] },
+  { track: "cross", nivel: 2, titulo: "Modelo de datos", archivo: "form-cross-2-modelo-datos-rdr.html", duracion: "~50 min", estado: "disponible", kw: ["modelodatos", "modelodedatos", "modelo", "datamodel"] },
   // ── Próximamente (bolas bloqueadas) ───────────────────────────
   { track: "tecnico", nivel: 3, titulo: "Servicio Online", estado: "proximamente" },
   { track: "tecnico", nivel: 3, titulo: "Procesos Batch", estado: "proximamente" },

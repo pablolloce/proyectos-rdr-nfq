@@ -26,28 +26,45 @@ function useIsDesktop() {
 function CursoCard({ f, completadas, niveles, onMarcar }) {
   const st = estadoCurso(f, completadas, niveles);
   const color = TRACKS[f.track].color;
+  const done = st === "completada";
 
-  if (st === "completada")
+  // Toda la tarjeta es clicable (stretched-link) -> acceso rápido. Las acciones
+  // secundarias (marcar/deshacer) van por encima (z-10).
+  if (done || st === "disponible") {
+    const base = done
+      ? "border-lime/25 bg-lime/[0.07] hover:border-lime/55 hover:bg-lime/[0.13]"
+      : "border-white/12 bg-white/[0.06] hover:border-serene/55 hover:bg-white/[0.11]";
     return (
-      <div className="flex items-center gap-3 rounded-2xl border border-lime/25 bg-lime/[0.07] p-3.5 backdrop-blur-md">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-lime/20 text-lime"><IconCheck size={16} /></span>
-        <a href={hrefDe(f)} className="flex-1 truncate text-sm font-semibold text-sand hover:underline focus-visible:outline-none focus-visible:underline">{f.titulo}</a>
-        <button type="button" onClick={() => onMarcar(f.archivo, false)} className="shrink-0 rounded-lg px-2 py-1 text-[11px] text-sand/55 transition hover:bg-white/10 hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene">Deshacer</button>
-      </div>
-    );
-
-  if (st === "disponible")
-    return (
-      <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/[0.06] p-3.5 backdrop-blur-md transition hover:border-white/30">
-        <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+      <div className={`group relative flex items-center gap-3 rounded-2xl border p-3.5 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 ${base}`}>
+        {done ? (
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-lime/20 text-lime"><IconCheck size={16} /></span>
+        ) : (
+          <span className="h-3 w-3 shrink-0 rounded-full ring-4 ring-transparent transition-all group-hover:ring-white/5" style={{ backgroundColor: color }} />
+        )}
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold text-sand">{f.titulo}</div>
-          {f.duracion && <div className="text-[11px] tabular-nums text-sand/55">{f.duracion}</div>}
+          {/* enlace estirado: cubre toda la tarjeta */}
+          <a href={hrefDe(f)} aria-label={`${done ? "Repasar" : "Abrir"} ${f.titulo}`} className="block truncate text-sm font-semibold text-sand after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-serene">
+            {f.titulo}
+          </a>
+          <span className="text-[11px] tabular-nums text-sand/55">
+            {done ? <span className="font-semibold uppercase tracking-wide text-lime/80">Completada · repasar</span> : f.duracion}
+          </span>
         </div>
-        <a href={hrefDe(f)} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-serene/15 px-3 py-1.5 text-xs font-bold text-serene transition hover:bg-serene/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"><IconPlay size={12} /> Abrir</a>
-        <button type="button" onClick={() => onMarcar(f.archivo, true)} title="Marcar como completada" className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-white/12 text-sand/70 transition hover:border-lime/50 hover:text-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"><IconCheck size={14} /></button>
+        <span aria-hidden className={`relative hidden items-center gap-1 text-xs font-bold sm:flex ${done ? "text-lime" : "text-serene"} opacity-0 transition-opacity group-hover:opacity-100`}>
+          {done ? "Repasar" : <><IconPlay size={12} /> Abrir</>}
+        </span>
+        <IconArrow size={16} aria-hidden className={`relative shrink-0 transition-transform duration-200 group-hover:translate-x-1 ${done ? "text-lime/70" : "text-sand/40 group-hover:text-serene"}`} />
+        <button
+          type="button"
+          onClick={() => onMarcar(f.archivo, !done)}
+          title={done ? "Marcar como no completada" : "Marcar como completada"}
+          className={`relative z-10 grid h-8 shrink-0 place-items-center rounded-lg border text-[11px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene ${done ? "w-auto border-transparent px-2 text-sand/55 hover:bg-white/10 hover:text-sand" : "w-8 border-white/12 text-sand/70 hover:border-lime/50 hover:text-lime"}`}
+        >
+          {done ? "Deshacer" : <IconCheck size={14} />}
+        </button>
       </div>
     );
+  }
 
   return (
     <div aria-disabled="true" className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-3.5 text-sand/40">
@@ -137,8 +154,8 @@ export default function ProgresoTorre({ niveles, completadas, current, onMarcar 
         {/* Hero */}
         <header className="mb-14 rounded-3xl bg-midnight/35 px-4 py-6 text-center backdrop-blur-sm">
           <p className="font-sans text-xs font-bold uppercase tracking-[0.4em] text-serene/80">Ruta formativa</p>
-          <h1 className="mt-3 font-display text-4xl font-bold leading-none text-sand sm:text-5xl">La Torre RDR</h1>
-          <p className="mx-auto mt-3 max-w-md text-sm text-sand/65">Desciende por la torre: cada nivel que completas desbloquea el siguiente.</p>
+          <h1 className="mt-3 font-display text-4xl font-bold leading-none text-sand sm:text-5xl">Formaciones RDR</h1>
+          <p className="mx-auto mt-3 max-w-md text-sm text-sand/65">Avanza por niveles: cada nivel que completas desbloquea el siguiente.</p>
           <div className="mx-auto mt-6 max-w-xs">
             <div className="mb-1.5 flex items-center justify-between text-xs">
               <span className="font-bold uppercase tracking-wider text-serene/80">Tu progreso</span>

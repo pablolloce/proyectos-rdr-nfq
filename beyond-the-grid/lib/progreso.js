@@ -54,18 +54,22 @@ const slug = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[^a-
 
 // Mapea un record del backend a un archivo de curso de nuestro catálogo.
 function archivoDeRecord(rec) {
-  const cid = rec.courseId;
   const m = rec.courseMeta || {};
-  // 1) courseId coincide con el archivo
-  let f = FORMACIONES.find((x) => x.archivo && (x.archivo === cid || slug(x.archivo) === slug(cid)));
+  const blob = slug(rec.courseId) + "|" + slug(m.nombre); // todo el texto identificable del record
+  // 1) palabras clave distintivas (resuelve cursos que comparten nivel+track,
+  //    p.ej. Confirmación vs Liquidación en N2 funcional).
+  let f = FORMACIONES.find((x) => isDisponible(x) && (x.kw || []).some((k) => blob.includes(slug(k))));
   if (f) return f.archivo;
-  // 2) por nombre
+  // 2) courseId coincide con el archivo
+  f = FORMACIONES.find((x) => x.archivo && (x.archivo === rec.courseId || slug(x.archivo) === slug(rec.courseId)));
+  if (f) return f.archivo;
+  // 3) por nombre exacto/contenido
   if (m.nombre) {
     const nm = slug(m.nombre);
     f = FORMACIONES.find((x) => { const t = slug(x.titulo); return t === nm || t.includes(nm) || nm.includes(t); });
     if (f) return f.archivo;
   }
-  // 3) por (nivel, track) si es único y disponible
+  // 4) por (nivel, track) si es único y disponible
   if (m.nivel != null && m.track) {
     const cand = FORMACIONES.filter((x) => x.nivel === Number(m.nivel) && x.track === m.track && isDisponible(x));
     if (cand.length === 1) return cand[0].archivo;
@@ -150,11 +154,12 @@ export function nivelActual(niveles) {
   return conContenido.length ? conContenido[conContenido.length - 1] : 0;
 }
 
-/** Resumen global para barra de progreso. */
+/** Resumen global para barra de progreso: sobre el TOTAL de formaciones
+ *  (incluye las "próximamente"), no solo las disponibles. */
 export function resumen(completadas) {
-  const disponibles = FORMACIONES.filter(isDisponible);
-  const hechos = disponibles.filter((f) => completadas.has(f.archivo)).length;
-  return { hechos, total: disponibles.length, pct: disponibles.length ? Math.round((hechos / disponibles.length) * 100) : 0 };
+  const hechos = FORMACIONES.filter((f) => isDisponible(f) && completadas.has(f.archivo)).length;
+  const total = FORMACIONES.length;
+  return { hechos, total, pct: total ? Math.round((hechos / total) * 100) : 0 };
 }
 
 /** Suscripción a cambios de progreso (misma pestaña + entre pestañas). */
