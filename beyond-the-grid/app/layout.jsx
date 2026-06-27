@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Source_Serif_4, Lato } from "next/font/google";
+import AppFrame from "@/components/AppFrame";
 
 // BBVA: Source Serif 4 para titulares, Lato para el resto.
 const serif = Source_Serif_4({
@@ -22,7 +23,9 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="es" className={`${serif.variable} ${lato.variable}`}>
-      <body className="bg-midnight font-sans text-sand antialiased">{children}</body>
+      <body className="bg-midnight font-sans text-sand antialiased">
+        <AppFrame>{children}</AppFrame>
+      </body>
     </html>
   );
 }

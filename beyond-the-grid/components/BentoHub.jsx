@@ -6,6 +6,10 @@ import { useReducedMotion } from "framer-motion";
 import { useTilt } from "@/lib/useTilt";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
+import { useNav } from "./AppFrame";
+
+// Click "normal" (sin modificadores ni botón central) -> navegación con velo.
+const plainClick = (e) => !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1);
 import {
   IconBook, IconLink, IconUtensils, IconCalendar, IconRefresh, IconClock,
   IconRocket, IconCode, IconFolder, IconShield, IconArrow, IconExternal,
@@ -127,6 +131,7 @@ function CardInner({ item, accent }) {
 
 function Card({ item, accent, delay }) {
   const { getUrl, copyLink } = useLinks();
+  const { leaveTo } = useNav();
   const reduce = useReducedMotion();
   const tilt = useTilt(reduce);
   const style = { animationDelay: `${delay}ms`, borderColor: rgba(accent, 0.5), "--pc": rgba(accent, 0.75) };
@@ -158,7 +163,7 @@ function Card({ item, accent, delay }) {
   if (item.action === "route")
     return <Link {...tilt} href={item.target} aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></Link>;
   if (item.action === "page")
-    return <a {...tilt} href={item.target} aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></a>;
+    return <a {...tilt} href={item.target} onClick={(e) => { if (plainClick(e)) { e.preventDefault(); leaveTo(item.target); } }} aria-label={aria} className={cls} style={style}><CardInner item={item} accent={accent} /></a>;
   if (item.action === "open") {
     const url = getUrl(item.target);
     if (!url) return <div {...tilt} aria-disabled="true" title="Enlace no disponible aún" className={`${cls} cursor-not-allowed opacity-50`} style={style}><CardInner item={item} accent={accent} /></div>;

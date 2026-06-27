@@ -1,15 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "./AuthGate";
 
 /**
  * Cabecera fija (glass). Sesión + cerrar sesión + logo BBVA.
- * `backHref` (opcional) muestra un botón de volver — usado en rutas internas
- * como /formacion para regresar al hub.
+ * Detecta la ruta actual (vive en AppFrame, persistente): en /formacion muestra
+ * el botón de volver al hub y cambia el subtítulo.
  */
-export default function Header({ backHref, subtitle = "Hub de documentación · BBVA × NFQ" }) {
+export default function Header() {
   const { email, logout } = useAuth();
+  const pathname = usePathname();
+  const isFormacion = (pathname || "").startsWith("/formacion");
+  const backHref = isFormacion ? "/" : null;
+  const subtitle = isFormacion
+    ? "Ruta formativa · niveles 00–06"
+    : "Hub de documentación · BBVA × NFQ";
 
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-40 mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 pt-5 sm:px-6 sm:pt-6">

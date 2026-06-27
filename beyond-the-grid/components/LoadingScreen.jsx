@@ -4,16 +4,21 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 /**
- * Splash de marca BBVA. Ligero y se ejecuta UNA sola vez:
- *   - estado interno `visible`; a los ~900ms se oculta con un fundido.
- *   - sin props onComplete (evita el bug de re-ejecución por cambio de
- *     identidad del callback que hacía aparecer el loader dos veces).
- *   - fondo Electric Blue (#001391), nunca negro.
+ * Splash de marca BBVA. Se muestra UNA sola vez por sesión:
+ *   - flag en sessionStorage -> no reaparece al volver de páginas .html ni en
+ *     recargas dentro de la misma sesión (sí en una pestaña/sesión nueva).
+ *   - empieza oculto (evita parpadeo en SSR/hidratación) y se decide en cliente.
+ *   - a los ~900ms se oculta con un fundido. Fondo Electric Blue (#001391).
  */
 export default function LoadingScreen() {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    try {
+      if (sessionStorage.getItem("rdr_splash_done")) return;
+      sessionStorage.setItem("rdr_splash_done", "1");
+    } catch {}
+    setVisible(true);
     const t = setTimeout(() => setVisible(false), 900);
     return () => clearTimeout(t);
   }, []);

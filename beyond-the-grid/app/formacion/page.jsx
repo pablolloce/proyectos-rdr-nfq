@@ -1,11 +1,7 @@
-import Shell from "@/components/Shell";
 import FormacionRoute from "@/components/FormacionRoute";
 
-// HUB Formativo: la esfera 3D por niveles (antes era el index).
+// HUB Formativo: ruta por niveles con estructura 3D. El chrome (auth, cabecera,
+// transiciones) vive en AppFrame (layout); la cabecera detecta esta ruta.
 export default function FormacionPage() {
-  return (
-    <Shell backHref="/" subtitle="Ruta formativa · niveles 00–06">
-      <FormacionRoute />
-    </Shell>
-  );
+  return <FormacionRoute />;
 }

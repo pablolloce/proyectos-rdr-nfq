@@ -1,11 +1,7 @@
-import Shell from "@/components/Shell";
 import BentoHub from "@/components/BentoHub";
 
 // Index: bento grid glassmorphism (rápido y accesible, sin WebGL).
+// El chrome (auth, cabecera, splash, transiciones) vive en AppFrame (layout).
 export default function Home() {
-  return (
-    <Shell>
-      <BentoHub />
-    </Shell>
-  );
+  return <BentoHub />;
 }
