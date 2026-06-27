@@ -86,7 +86,7 @@ function ActionPill({ a, accent }) {
 }
 
 const CARD =
-  "rdr-rise group relative box-border flex w-full items-center gap-3.5 overflow-hidden rounded-xl border p-4 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight";
+  "rdr-rise group relative box-border flex w-full items-center gap-3.5 overflow-hidden rounded-xl border p-4 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight";
 
 function CardInner({ item, accent }) {
   const { icon: Icon } = item;
@@ -116,7 +116,7 @@ function Card({ item, accent, delay }) {
   if (item.actions) {
     const { icon: Icon } = item;
     return (
-      <div className={`rdr-rise relative box-border flex w-full flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.055] p-4 backdrop-blur-md`} style={style}>
+      <div className={`rdr-rise relative box-border flex w-full flex-col justify-center gap-3 rounded-xl border border-white/10 bg-white/[0.055] p-4 backdrop-blur-md lg:min-h-0 lg:flex-1`} style={style}>
         <div className="flex items-center gap-3.5">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border" style={{ borderColor: rgba(accent, 0.3), background: rgba(accent, 0.12), color: accent }}>
             <Icon size={22} />
@@ -150,7 +150,7 @@ function FeatureCard({ item, accent, delay }) {
     <Link
       href={item.target}
       aria-label={`${item.label} — ${item.desc}`}
-      className="rdr-rise group relative box-border flex w-full flex-col gap-2 overflow-hidden rounded-2xl border border-serene/30 bg-gradient-to-br from-white/[0.1] to-white/[0.03] p-5 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:border-serene/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight"
+      className="rdr-rise group relative box-border flex w-full flex-col justify-center gap-2 overflow-hidden rounded-2xl border border-serene/30 bg-gradient-to-br from-white/[0.1] to-white/[0.03] p-5 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:border-serene/60 lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight"
       style={{ animationDelay: `${delay}ms` }}
     >
       <span aria-hidden className="pointer-events-none absolute -right-5 -top-5 text-serene/15 transition-transform duration-500 group-hover:rotate-12"><IconOrbit size={140} /></span>
@@ -172,7 +172,7 @@ function TypeColumn({ sec, delay }) {
         <span className="font-display text-xs font-bold tabular-nums" style={{ color: sec.color }}>{sec.n}</span>
         <h2 id={`col-${sec.id}`} className="font-display text-sm font-bold uppercase tracking-[0.15em] text-sand">{sec.title}</h2>
       </div>
-      <div className="flex flex-1 flex-col gap-3 lg:min-h-0 lg:justify-evenly">
+      <div className="flex flex-1 flex-col gap-3 lg:min-h-0">
         {sec.items.map((item, i) =>
           item.kind === "feature"
             ? <FeatureCard key={item.label} item={item} accent={sec.color} delay={delay + i * 35} />
