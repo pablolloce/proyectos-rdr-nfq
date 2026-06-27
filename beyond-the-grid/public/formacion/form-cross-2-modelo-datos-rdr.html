@@ -1333,7 +1333,7 @@ html, body { height: 100%; overflow: hidden; }
 </style>
 <script>setTimeout(function(){var s=document.getElementById('rdr-splash');if(s&&s.remove)s.remove();},1700);</script>
 
-<a href="../rdr-formacion.html" class="back-to-hub" title="Volver al hub de formaciones">
+<a href="/team-hub/formacion/" class="back-to-hub" title="Volver al hub de formaciones">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
   Formaciones
 </a>
@@ -2538,5 +2538,9 @@ window.CertSystem = (function() {
   window.addEventListener('hashchange', _goHash);
   window.addEventListener('load', ()=> setTimeout(_goHash, 250));
 </script>
+  <script id="rdr-leave">(function(){if(window.__rdrLeave)return;window.__rdrLeave=1;
+var RM=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+function hub(a){if(!a)return false;if((a.getAttribute('target')||'')==='_blank')return false;var h=a.getAttribute('href')||'';if(!h||h.charAt(0)==='#')return false;return /(^|\/)index\.html(\?|#|$)/.test(h)||/rdr-formacion\.html/.test(h)||/\/team-hub\/(formacion\/)?(\?|#|$)/.test(h);}
+document.addEventListener('click',function(e){if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;var a=e.target&&e.target.closest?e.target.closest('a'):null;if(!hub(a))return;if(RM)return;e.preventDefault();var o=document.createElement('div');o.setAttribute('aria-hidden','true');o.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#070E46;opacity:0;transition:opacity .22s ease;pointer-events:none';document.body.appendChild(o);o.getBoundingClientRect();o.style.opacity='1';setTimeout(function(){location.href=a.href;},200);},true);})();</script>
 </body>
 </html>
