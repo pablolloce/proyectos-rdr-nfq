@@ -24,7 +24,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <ViewTransitions>
-      <html lang="es" className={`${serif.variable} ${lato.variable}`}>
+      <html lang="es" className={`${serif.variable} ${lato.variable}`} style={{ backgroundColor: "#070E46" }}>
         <body className="bg-midnight font-sans text-sand antialiased">
           <AppFrame>{children}</AppFrame>
           {/* Speculation Rules: prerenderiza el destino al pasar el ratón
