@@ -542,6 +542,7 @@
   </style>
   <style id="rdr-backbtn">.hub-back-btn,.back-to-hub{position:fixed!important;top:20px!important;left:20px!important;z-index:100!important;display:inline-flex!important;align-items:center!important;gap:8px!important;padding:10px 16px!important;min-height:44px!important;width:auto!important;font-family:"Lato","Helvetica Neue",Arial,sans-serif!important;font-size:12px!important;font-weight:700!important;letter-spacing:.08em!important;text-transform:uppercase!important;color:#F7F8F8!important;text-decoration:none!important;background:rgba(7,14,70,.72)!important;border:1.5px solid rgba(133,200,255,.35)!important;border-radius:9999px!important;-webkit-backdrop-filter:blur(8px)!important;backdrop-filter:blur(8px)!important;box-shadow:0 4px 14px rgba(0,0,0,.3)!important;transition:border-color .2s,background .2s,transform .2s!important;cursor:pointer!important;}.hub-back-btn:hover,.back-to-hub:hover{border-color:rgba(133,200,255,.7)!important;background:rgba(7,14,70,.9)!important;transform:translateY(-1px)!important;}.hub-back-btn:focus-visible,.back-to-hub:focus-visible{outline:2px solid #85C8FF!important;outline-offset:3px!important;}.hub-back-btn svg,.back-to-hub svg{width:16px!important;height:16px!important;flex:0 0 auto!important;}@media (max-width:459px){.hub-back-btn,.back-to-hub{top:12px!important;left:12px!important;gap:0!important;font-size:0!important;letter-spacing:0!important;padding:11px!important;min-height:0!important;}.hub-back-btn svg,.back-to-hub svg{width:18px!important;height:18px!important;}}</style>
   <style id="rdr-pagefx">.loader-spinner,.ctl-spin{width:54px!important;height:54px!important;border:4px solid rgba(133,200,255,.18)!important;border-top-color:#85C8FF!important;border-right-color:#88E783!important;border-bottom-color:rgba(133,200,255,.18)!important;border-left-color:rgba(133,200,255,.18)!important;border-radius:50%!important;position:relative!important;box-sizing:border-box!important;animation:rdrSpin .85s cubic-bezier(.5,.15,.5,.85) infinite!important;}.loader-spinner::after,.ctl-spin::after{content:""!important;position:absolute!important;inset:7px!important;border-radius:50%!important;border:3px solid transparent!important;border-bottom-color:rgba(150,148,255,.92)!important;animation:rdrSpin 1.25s linear infinite reverse!important;}@keyframes rdrSpin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.loader-spinner,.ctl-spin{animation-duration:2.4s!important;}.loader-spinner::after,.ctl-spin::after{animation-duration:2.8s!important;}}#sidebar-header{padding-top:50px!important;}</style>
+  <style id="rdr-vac-fx">body{position:relative;z-index:0;}body::before{content:"";position:fixed;inset:-10%;z-index:-1;pointer-events:none;background:radial-gradient(42% 40% at 6% 4%,rgba(29,124,244,.28),transparent 70%),radial-gradient(40% 38% at 96% 6%,rgba(150,148,255,.22),transparent 70%),radial-gradient(44% 42% at 94% 97%,rgba(136,231,131,.2),transparent 72%),radial-gradient(42% 40% at 4% 97%,rgba(255,181,107,.2),transparent 72%);}#main-content{background:transparent!important;}@keyframes rdrVUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}.month-card{box-shadow:0 10px 30px -18px rgba(7,14,70,.35)!important;transition:transform .25s cubic-bezier(.22,1,.36,1),box-shadow .25s,border-color .25s!important;animation:rdrVUp .5s cubic-bezier(.22,1,.36,1) both;}.month-card:hover{transform:translateY(-4px);box-shadow:0 22px 44px -20px rgba(7,14,70,.45)!important;border-color:rgba(133,200,255,.6)!important;}.month-card.current-month{box-shadow:0 0 0 1px rgba(0,19,145,.15),0 16px 40px -18px rgba(0,19,145,.4)!important;}.day-count{margin-top:auto;align-self:center;display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:9999px;font-size:.72rem;font-weight:800;line-height:1;background:var(--bbva-electric-blue);color:#fff;box-shadow:0 2px 6px rgba(0,19,145,.3);}.day-count svg{opacity:.85;}.day-count--alerta{background:var(--bbva-mandarin);color:var(--bbva-electric-blue);box-shadow:0 2px 6px rgba(255,181,107,.5);}.day-cell.has-tooltip,.day-cell.has-people{cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;}.day-cell.has-tooltip:hover,.day-cell.has-people:hover{transform:translateY(-1px);box-shadow:0 6px 16px -6px rgba(0,19,145,.3);border-color:rgba(133,200,255,.7)!important;z-index:2;}@media(prefers-reduced-motion:reduce){.month-card{animation:none!important;}}</style>
 </head>
 <body>
 <!-- RDR splash de carga (réplica del hub). Se autoelimina a ~1.7s. -->
@@ -941,18 +942,11 @@
           if (disponibles < 10 && !isWeekend && !festivo) cell.classList.add('alerta-personal');
 
           if (ausenciasMostrar.length > 0) {
-            const dotsContainer = document.createElement('div');
-            dotsContainer.className = 'dots-container';
-            const MAX_DOTS = 8;
-
-            let arrPuntos = ausenciasMostrar.slice(0, MAX_DOTS);
-            arrPuntos.forEach(a => {
-              const color = datosGlobales.empleadosMap[a.nombre]?.color || 'var(--bbva-mandarin)';
-              dotsContainer.innerHTML += `<div class="dot" style="background-color:${color}"></div>`;
-            });
-
-            if (ausenciasMostrar.length > MAX_DOTS) dotsContainer.innerHTML += `<div class="more-dots">+${ausenciasMostrar.length - MAX_DOTS}</div>`;
-            cell.appendChild(dotsContainer);
+                        const _n = ausenciasMostrar.length;
+            const countEl = document.createElement('div');
+            countEl.className = 'day-count' + (cell.classList.contains('alerta-personal') ? ' day-count--alerta' : '');
+            countEl.innerHTML = "<svg viewBox='0 0 24 24' width='11' height='11' fill='currentColor' aria-hidden='true'><path d='M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z'/></svg><span>" + _n + "</span>";
+            cell.appendChild(countEl);
 
             if (ES_TOUCH) {
               // Móvil: tap abre el bottom sheet con la lista de ausentes
