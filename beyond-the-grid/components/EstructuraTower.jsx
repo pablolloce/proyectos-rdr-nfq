@@ -19,10 +19,10 @@ const TURNS = 3.0;
 const BASE_R = 2.7;
 
 const COLS = {
-  completado: [0.53, 0.91, 0.51], // lime
-  actual: [0.52, 0.78, 1.0], // serene
-  proximamente: [0.24, 0.30, 0.55],
-  bloqueado: [0.2, 0.26, 0.48],
+  completado: [0.55, 0.95, 0.55], // lime brillante
+  actual: [0.55, 0.83, 1.0], // serene brillante
+  proximamente: [0.58, 0.55, 1.0], // periwinkle/púrpura (futuro, ahora con color)
+  bloqueado: [0.42, 0.5, 0.95], // azul medio (visible, no negro)
 };
 const levelCenterY = (L) => ((L + 0.5) / LV) * HEIGHT - HEIGHT / 2;
 
@@ -66,8 +66,8 @@ const FRAG = `
     float r = length(c);
     if (r > 0.5) discard;
     float a = smoothstep(0.5, 0.04, r);
-    vec3 col = vColor + vGlow * 0.7;
-    gl_FragColor = vec4(col, a * (0.34 + vGlow * 0.5));
+    vec3 col = vColor + vGlow * 0.6;
+    gl_FragColor = vec4(col, a * (0.55 + vGlow * 0.45));
   }
 `;
 
@@ -218,11 +218,11 @@ export default function EstructuraTower({ estados, activeLevel }) {
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            "linear-gradient(90deg, transparent 0%, rgba(7,14,70,.5) 13%, rgba(7,14,70,.9) 50%, rgba(7,14,70,.5) 87%, transparent 100%)," +
-            "radial-gradient(60% 55% at 4% 12%, rgba(29,124,244,.55), transparent 72%)," +
-            "radial-gradient(55% 52% at 97% 20%, rgba(150,148,255,.5), transparent 72%)," +
-            "radial-gradient(60% 55% at 95% 92%, rgba(136,231,131,.42), transparent 74%)," +
-            "radial-gradient(55% 52% at 4% 94%, rgba(255,181,107,.34), transparent 74%)",
+            "linear-gradient(90deg, transparent 0%, rgba(7,14,70,.4) 14%, rgba(7,14,70,.8) 50%, rgba(7,14,70,.4) 86%, transparent 100%)," +
+            "radial-gradient(58% 52% at 4% 12%, rgba(29,124,244,.4), transparent 72%)," +
+            "radial-gradient(54% 50% at 97% 20%, rgba(150,148,255,.36), transparent 72%)," +
+            "radial-gradient(58% 54% at 95% 92%, rgba(136,231,131,.3), transparent 74%)," +
+            "radial-gradient(54% 50% at 4% 94%, rgba(255,181,107,.24), transparent 74%)",
         }}
       />
     </>
