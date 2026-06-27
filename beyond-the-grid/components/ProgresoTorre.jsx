@@ -121,7 +121,7 @@ function LevelSection({ lvl, nv, completadas, niveles, onMarcar, onActivate, red
 
       <div className="row-span-2"><Node nv={nv} /></div>
 
-      <div className={dim ? "opacity-60" : ""}>
+      <div className={dim ? "opacity-60" : ""} style={{ textShadow: "0 1px 12px rgba(7,14,70,0.92), 0 0 3px rgba(7,14,70,0.7)" }}>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="font-display text-xs font-bold tabular-nums text-serene/70">N{n2(lvl.n)}</span>
           <h2 id={`niv-${lvl.n}`} className="font-display text-lg font-bold text-sand sm:text-xl">{lvl.titulo}</h2>
