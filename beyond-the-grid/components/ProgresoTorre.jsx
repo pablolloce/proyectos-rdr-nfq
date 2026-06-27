@@ -7,7 +7,7 @@ import { NIVELES, FORMACIONES, TRACKS, hrefDe, PROGRESO_EQUIPO } from "@/lib/for
 import { estadoCurso, resumen } from "@/lib/progreso";
 import { IconLock, IconCheck, IconArrow, IconPlay, IconGrad } from "./icons";
 
-const TuboTower = dynamic(() => import("./TuboTower"), { ssr: false });
+const EstructuraTower = dynamic(() => import("./EstructuraTower"), { ssr: false });
 
 const n2 = (n) => String(n).padStart(2, "0");
 
@@ -113,12 +113,13 @@ export default function ProgresoTorre({ niveles, completadas, current, onMarcar 
   const desktop = useIsDesktop();
   const reduce = useReducedMotion();
   const r = resumen(completadas);
+  const estados = NIVELES.map((l) => niveles[l.n].estado);
 
   return (
     <main className="relative">
-      {/* Fondo: tubo 3D (desktop) o espina CSS (móvil) */}
+      {/* Fondo: estructura 3D (desktop) o espina CSS (móvil) */}
       {desktop ? (
-        <TuboTower frac={r.pct / 100} />
+        <EstructuraTower estados={estados} />
       ) : (
         <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
           <span className="absolute left-1/2 top-0 h-full w-24 -translate-x-1/2 bg-gradient-to-b from-serene/15 via-purple/10 to-transparent blur-2xl" />
@@ -141,6 +142,11 @@ export default function ProgresoTorre({ niveles, completadas, current, onMarcar 
               <div className="h-full rounded-full bg-gradient-to-r from-serene to-lime transition-[width] duration-700" style={{ width: `${r.pct}%` }} />
             </div>
           </div>
+          {/* Progreso del equipo (arriba) */}
+          <a href={PROGRESO_EQUIPO} className="group mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-serene/30 bg-serene/10 px-4 py-2 text-xs font-bold text-serene backdrop-blur-md transition hover:border-serene/60 hover:bg-serene/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene">
+            <IconGrad size={15} /> Progreso del equipo
+            <IconArrow size={14} className="transition-transform group-hover:translate-x-1" />
+          </a>
           {!reduce && (
             <div className="mt-8 flex justify-center text-serene/60" aria-hidden>
               <span className="animate-bounce"><IconArrow size={22} style={{ transform: "rotate(90deg)" }} /></span>
@@ -162,15 +168,6 @@ export default function ProgresoTorre({ niveles, completadas, current, onMarcar 
           />
         ))}
 
-        {/* Progreso del equipo */}
-        <a href={PROGRESO_EQUIPO} className="group mt-4 flex items-center gap-3 rounded-2xl border border-serene/25 bg-serene/10 px-4 py-3.5 backdrop-blur-md transition hover:border-serene/50 hover:bg-serene/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-serene/15 text-serene"><IconGrad size={18} /></span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-bold text-sand">Progreso del equipo</span>
-            <span className="block truncate text-xs text-sand/60">Avance y certificados de todo el equipo</span>
-          </span>
-          <IconArrow size={16} className="shrink-0 text-serene transition-transform group-hover:translate-x-1" />
-        </a>
       </div>
     </main>
   );
