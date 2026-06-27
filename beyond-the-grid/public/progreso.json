@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "actualizado": "2026-06-27",
+  "_doc": "Avance de formación por persona. Semilla compartida: todos parten de nivel 0 (completados vacío). El avance en vivo de cada usuario se guarda en localStorage del navegador y, si se configura, se sincroniza con el backend de formaciones. Para fijar progreso de alguien, añade su email en 'usuarios' con la lista de archivos de curso completados.",
+  "porDefecto": { "completados": [] },
+  "usuarios": {}
+}
