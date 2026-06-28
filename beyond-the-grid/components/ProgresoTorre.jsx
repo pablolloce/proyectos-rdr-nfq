@@ -69,7 +69,7 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
           type="button"
           onClick={() => onMarcar(f.archivo, !done)}
           title={done ? "Marcar como no completada" : "Marcar como completada"}
-          className={`relative z-10 grid h-8 shrink-0 place-items-center rounded-lg border text-[11px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene ${done ? "w-auto border-transparent px-2 text-sand/55 hover:bg-white/10 hover:text-sand" : "w-8 border-white/12 text-sand/70 hover:border-lime/50 hover:text-lime"}`}
+          className={`relative z-10 grid h-8 shrink-0 place-items-center rounded-lg border text-[11px] transition active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene ${done ? "w-auto border-transparent px-2 text-sand/55 hover:bg-white/10 hover:text-sand" : "w-8 border-white/12 text-sand/70 hover:border-lime/50 hover:text-lime"}`}
         >
           {done ? "Deshacer" : <IconCheck size={14} />}
         </button>

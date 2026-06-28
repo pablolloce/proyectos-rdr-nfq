@@ -72,6 +72,11 @@ body {
 .rdr-tilt:focus-within {
   box-shadow: 0 0 0 1px var(--pc, transparent), 0 0 20px -3px var(--pc, transparent);
 }
+/* Press scale: feedback táctil al pulsar (compone con el tilt, no lo pisa).
+   Clave en móvil, donde no hay tilt por puntero. */
+.rdr-tilt:active {
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(0.985);
+}
 /* Foco que sigue al cursor dentro de la tarjeta. */
 .rdr-spot {
   position: absolute;

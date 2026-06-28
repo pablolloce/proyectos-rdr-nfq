@@ -92,7 +92,7 @@ function AmbientBackground() {
 function ActionPill({ a, accent }) {
   const { getUrl, copyLink } = useLinks();
   const Glyph = a.icon || HintIcon(a.action);
-  const cls = "inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene";
+  const cls = "inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene";
   const style = { borderColor: rgba(accent, 0.3), background: rgba(accent, 0.1), color: accent };
   const inner = (<><Glyph size={14} /> {a.label}</>);
   if (a.action === "page") return <a href={a.target} className={cls} style={style}>{inner}</a>;

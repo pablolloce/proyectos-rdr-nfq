@@ -1,0 +1,281 @@
+/* ============================================================================
+   RDR · Capa de diseño compartida (BBVA × NFQ)
+   Unifica el lenguaje visual del HUB (Next.js) con las páginas de presentación
+   estáticas. Se enlaza en cada página con:
+     <link rel="stylesheet" href="/team-hub/styles/rdr-shared.css">
+   Es ADITIVA: define tokens (con alias para no romper nombres previos),
+   utilidades opt-in (.rdr-glass, .rdr-blob, .rdr-press, .rdr-reveal…) y dos
+   reglas globales seguras (focus-visible + prefers-reduced-motion).
+   ========================================================================== */
+
+:root {
+  /* Paleta oficial BBVA — nombres canónicos */
+  --bbva-electric-blue: #001391;
+  --bbva-serene-blue:   #85C8FF;
+  --bbva-midnight:      #070E46;
+  --bbva-sand:          #F7F8F8;
+  --bbva-white:         #FFFFFF;
+  --bbva-canary:        #FFE761;
+  --bbva-lime:          #88E783;
+  --bbva-aqua:          #8BE1E9;
+  --bbva-purple:        #9694FF;
+  --bbva-mandarin:      #FFB56B;
+
+  /* Alias cortos (compatibilidad con páginas que ya usan --serene, etc.).
+     No sobreescriben si la página los redefine después; solo aportan defaults. */
+  --electric: var(--bbva-electric-blue);
+  --serene:   var(--bbva-serene-blue);
+  --midnight: var(--bbva-midnight);
+  --sand:     var(--bbva-sand);
+  --canary:   var(--bbva-canary);
+  --lime:     var(--bbva-lime);
+  --aqua:     var(--bbva-aqua);
+  --purple:   var(--bbva-purple);
+  --mandarin: var(--bbva-mandarin);
+
+  /* Superficies glass (sobre fondos oscuros Midnight/Electric) */
+  --rdr-glass-bg:     rgba(247, 248, 248, 0.055);
+  --rdr-glass-bg-2:   rgba(247, 248, 248, 0.10);
+  --rdr-glass-border: rgba(133, 200, 255, 0.22);
+  --rdr-glass-blur:   12px;
+
+  /* Tipografías (las páginas ya cargan Source Serif 4 + Lato vía Google Fonts) */
+  --rdr-font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --rdr-font-body:    "Lato", "Helvetica Neue", Arial, sans-serif;
+
+  /* Ritmo de motion unificado con el hub */
+  --rdr-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ----------------------------------------------------------------------------
+   1) Foco visible global y consistente (a11y · WCAG). Igual que el hub.
+   -------------------------------------------------------------------------- */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--bbva-serene-blue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ----------------------------------------------------------------------------
+   2) Glassmorphism (opt-in). Para tarjetas/paneles sobre fondo OSCURO.
+   -------------------------------------------------------------------------- */
+.rdr-glass {
+  background: var(--rdr-glass-bg);
+  border: 1px solid var(--rdr-glass-border);
+  -webkit-backdrop-filter: blur(var(--rdr-glass-blur));
+  backdrop-filter: blur(var(--rdr-glass-blur));
+  border-radius: 16px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.25s ease,
+    transform 0.18s var(--rdr-ease-out);
+}
+/* El borde se ILUMINA con el acento al pasar el ratón (define --pc por elemento) */
+.rdr-glass:hover,
+.rdr-glass:focus-within {
+  background: var(--rdr-glass-bg-2);
+  box-shadow: 0 0 0 1px var(--pc, var(--rdr-glass-border)),
+    0 0 22px -4px var(--pc, rgba(133, 200, 255, 0.5));
+}
+
+/* ----------------------------------------------------------------------------
+   3) Micro-interacciones (opt-in): hover-lift + press scale. Da tacto moderno
+      y, en móvil (sin tilt por puntero), feedback al tocar.
+   -------------------------------------------------------------------------- */
+.rdr-press {
+  transition: transform 0.15s var(--rdr-ease-out), filter 0.15s ease, box-shadow 0.2s ease;
+}
+.rdr-press:hover {
+  transform: translateY(-1px);
+}
+.rdr-press:active {
+  transform: scale(0.985);
+}
+
+/* ----------------------------------------------------------------------------
+   4) Blobs ambientales (opt-in). SOLO sobre fondos oscuros (mix-blend screen).
+      Estructura recomendada:
+        <div class="rdr-ambient" aria-hidden="true">
+          <span class="rdr-blob" style="--c:#1D7CF4; left:-8%; top:6%; width:20rem; height:20rem"></span>
+          ...
+        </div>
+   -------------------------------------------------------------------------- */
+.rdr-ambient {
+  position: fixed;
+  inset: -3%;
+  z-index: -1; /* detrás del contenido, por encima del fondo Midnight del body */
+  overflow: hidden;
+  pointer-events: none;
+}
+.rdr-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(58px);
+  opacity: 0.55;
+  background: var(--c, #1d7cf4);
+  mix-blend-mode: screen; /* aditivo: BRILLA sobre Midnight */
+  will-change: transform;
+  animation: rdr-float 14s ease-in-out infinite;
+}
+@keyframes rdr-float {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(0, -26px, 0) scale(1.06); }
+}
+
+/* ----------------------------------------------------------------------------
+   5) Botón "Volver al hub" — versión ÚNICA y canónica (pill Electric Blue).
+      Sustituye a las 3-4 variantes inyectadas por página.
+   -------------------------------------------------------------------------- */
+.hub-back-btn,
+.rdr-hub-back {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 15px 7px 11px;
+  background: rgba(0, 19, 145, 0.88);
+  color: var(--bbva-sand);
+  font-family: var(--rdr-font-body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid rgba(133, 200, 255, 0.35);
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.22);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition: background 0.2s ease, transform 0.2s var(--rdr-ease-out),
+    border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.hub-back-btn:hover,
+.rdr-hub-back:hover {
+  background: rgba(7, 14, 70, 0.95);
+  border-color: rgba(133, 200, 255, 0.7);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.3);
+}
+.hub-back-btn svg,
+.rdr-hub-back svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ----------------------------------------------------------------------------
+   6) Splash de marca consistente (1× por sesión, lo controla un script mínimo).
+      Estructura:
+        <div id="rdr-splash" aria-hidden="true">
+          <p class="rdr-splash-kicker">BBVA × NFQ</p>
+          <h1 class="rdr-splash-title">RDR · Título</h1>
+          <span class="rdr-splash-line"></span>
+        </div>
+   -------------------------------------------------------------------------- */
+#rdr-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: var(--bbva-electric-blue);
+  opacity: 1;
+  transition: opacity 0.55s ease;
+}
+#rdr-splash.rdr-splash--out {
+  opacity: 0;
+  pointer-events: none;
+}
+.rdr-splash-kicker {
+  margin: 0;
+  font-family: var(--rdr-font-body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--bbva-serene-blue);
+}
+.rdr-splash-title {
+  margin: 0;
+  font-family: var(--rdr-font-display);
+  font-weight: 700;
+  font-size: clamp(28px, 5vw, 56px);
+  color: var(--bbva-sand);
+}
+.rdr-splash-line {
+  width: 160px;
+  height: 1px;
+  background: rgba(133, 200, 255, 0.6);
+  transform-origin: left;
+  animation: rdr-line 0.8s ease both;
+}
+@keyframes rdr-line {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* ----------------------------------------------------------------------------
+   7) Spinner sofisticado (bi-capa) unificado.
+        <span class="rdr-spin" role="status" aria-label="Cargando"></span>
+   -------------------------------------------------------------------------- */
+.rdr-spin {
+  display: inline-block;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 4px solid rgba(133, 200, 255, 0.18);
+  border-top-color: var(--bbva-serene-blue);
+  animation: rdr-spin 1.1s linear infinite;
+  position: relative;
+}
+.rdr-spin::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  border-bottom-color: rgba(150, 148, 255, 0.92);
+  animation: rdr-spin 1.45s linear infinite reverse;
+}
+@keyframes rdr-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ----------------------------------------------------------------------------
+   8) Scroll-reveal sin JS (animation-timeline: view()). Degradación elegante:
+      sin soporte, el contenido queda visible (no se oculta nunca por JS).
+        <div class="rdr-reveal"> … </div>
+   -------------------------------------------------------------------------- */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .rdr-reveal {
+      animation: rdr-reveal-kf linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 38%;
+    }
+    @keyframes rdr-reveal-kf {
+      from { opacity: 0; transform: translateY(26px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   9) prefers-reduced-motion: corta animaciones/transiciones (a11y global).
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .rdr-blob { animation: none !important; }
+}
