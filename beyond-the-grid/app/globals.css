@@ -65,12 +65,13 @@ body {
   transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
   transform-style: preserve-3d;
   transition: transform 0.14s ease-out, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.25s ease;
-  will-change: transform;
 }
-/* El borde de color se ILUMINA al pasar el ratón o seleccionar (--pc = acento). */
+/* El borde de color se ILUMINA al pasar el ratón o seleccionar (--pc = acento).
+   will-change SOLO durante interacción: evita promover ~17 capas GPU en reposo. */
 .rdr-tilt:hover,
 .rdr-tilt:focus-within {
   box-shadow: 0 0 0 1px var(--pc, transparent), 0 0 20px -3px var(--pc, transparent);
+  will-change: transform;
 }
 /* Press scale: feedback táctil al pulsar (compone con el tilt, no lo pisa).
    Clave en móvil, donde no hay tilt por puntero. */
@@ -88,6 +89,29 @@ body {
 .group:hover .rdr-spot,
 .group:focus-visible .rdr-spot {
   opacity: 1;
+}
+
+/* ── Modo "lite" (lib/useLowPower): equipos de poca capacidad / GPU integrada.
+   Quita lo más caro de componer —glass blur, blobs animados, tilt 3D y
+   spotlight— y deja paneles sólidos translúcidos legibles sobre el Midnight.
+   Resultado: el index pasa de re-difuminar 17 cristales por frame a pintar
+   paneles planos, y deja de trabajar en reposo. */
+html.rdr-lite [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+html.rdr-lite .rdr-tilt {
+  background-color: rgba(13, 22, 71, 0.82) !important; /* panel opaco: legible sin blur */
+  transform: none !important;
+  will-change: auto !important;
+}
+html.rdr-lite .rdr-blob {
+  animation: none !important;
+  filter: blur(34px);
+  opacity: 0.32;
+}
+html.rdr-lite .rdr-spot {
+  display: none !important;
 }
 
 /* Crossfade del SPA (index <-> /formacion) vía next-view-transitions. */

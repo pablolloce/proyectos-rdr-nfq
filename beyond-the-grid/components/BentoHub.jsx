@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { Link } from "next-view-transitions";
 import { useReducedMotion } from "framer-motion";
 import { useTilt } from "@/lib/useTilt";
+import { useLowPower } from "@/lib/useLowPower";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
 import {
@@ -61,11 +62,11 @@ const COORD_SECTION = {
 
 const HintIcon = (action) => (action === "copy" ? IconCopy : action === "open" ? IconExternal : IconArrow);
 
-function AmbientBackground() {
+function AmbientBackground({ lite }) {
   const ref = useRef(null);
   const reduce = useReducedMotion();
   useEffect(() => {
-    if (reduce) return;
+    if (reduce || lite) return;
     let raf = 0;
     const onMove = (e) => {
       const x = e.clientX / window.innerWidth - 0.5;
@@ -77,7 +78,7 @@ function AmbientBackground() {
     };
     window.addEventListener("pointermove", onMove);
     return () => { window.removeEventListener("pointermove", onMove); cancelAnimationFrame(raf); };
-  }, [reduce]);
+  }, [reduce, lite]);
   return (
     <div ref={ref} aria-hidden className="pointer-events-none fixed inset-[-3%] -z-10 overflow-hidden transition-transform duration-300 ease-out">
       <span className="rdr-blob left-[-8%] top-[6%] h-80 w-80" style={{ background: "#1D7CF4" }} />
@@ -211,12 +212,13 @@ function TypeColumn({ sec, delay }) {
 
 export default function BentoHub() {
   const { isCoordinador } = useAuth();
+  const lite = useLowPower();
   const sections = isCoordinador ? [...SECTIONS, COORD_SECTION] : SECTIONS;
   const gridCols = sections.length >= 4 ? "lg:grid-cols-4" : "lg:grid-cols-3";
 
   return (
     <main className="relative min-h-dvh w-full lg:h-dvh lg:overflow-hidden">
-      <AmbientBackground />
+      <AmbientBackground lite={lite} />
       <div className="mx-auto flex w-full max-w-7xl flex-col px-5 pb-8 pt-24 sm:px-6 lg:h-full lg:pb-8">
         {/* Columnas por tipo (el título va en el header) */}
         <div className={`grid grid-cols-1 gap-4 sm:grid-cols-2 ${gridCols} lg:min-h-0 lg:flex-1`}>

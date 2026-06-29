@@ -10,7 +10,9 @@ export function useTilt(disabled) {
   const ref = useRef(null);
   const raf = useRef(0);
   const onPointerMove = (e) => {
-    if (disabled) return;
+    // Equipos flojos (html.rdr-lite): no-op — el tilt/spotlight recompone los
+    // backdrop-filter en cada movimiento, que es justo lo que les hunde.
+    if (disabled || (typeof document !== "undefined" && document.documentElement.classList.contains("rdr-lite"))) return;
     const el = ref.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
