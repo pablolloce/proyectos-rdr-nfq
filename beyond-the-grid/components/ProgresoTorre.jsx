@@ -6,15 +6,10 @@ import { motion, useReducedMotion } from "framer-motion";
 import { NIVELES, FORMACIONES, TRACKS, hrefDe, PROGRESO_EQUIPO } from "@/lib/formaciones";
 import { estadoCurso, resumen } from "@/lib/progreso";
 import { useTilt } from "@/lib/useTilt";
+import { rgba as hexA, n2 } from "@/lib/ui";
 import { IconLock, IconCheck, IconArrow, IconPlay, IconGrad } from "./icons";
 
 const EstructuraTower = dynamic(() => import("./EstructuraTower"), { ssr: false });
-
-const n2 = (n) => String(n).padStart(2, "0");
-const hexA = (hex, a) => {
-  const h = hex.replace("#", "");
-  return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
-};
 
 function useIsDesktop() {
   const [d, setD] = useState(false);
@@ -56,7 +51,7 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
           <a href={hrefDe(f)} data-prerender aria-label={`${done ? "Repasar" : "Abrir"} ${f.titulo}`} className="block truncate text-sm font-semibold text-sand after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-serene">
             {f.titulo}
           </a>
-          <span className="mt-0.5 flex items-center gap-2 text-[11px] text-sand/55">
+          <span className="mt-0.5 flex items-center gap-2 text-[11px] text-sand/70">
             <span className="inline-flex shrink-0 items-center rounded-full px-1.5 py-px text-[10px] font-bold uppercase tracking-wide" style={{ color: tr.color, backgroundColor: hexA(tr.color, 0.16) }}>{tr.nombre}</span>
             <span className="truncate tabular-nums">{done ? <span className="font-semibold uppercase tracking-wide text-lime/80">Completada · repasar</span> : f.duracion}</span>
           </span>
@@ -69,7 +64,7 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
           type="button"
           onClick={() => onMarcar(f.archivo, !done)}
           title={done ? "Marcar como no completada" : "Marcar como completada"}
-          className={`relative z-10 grid h-8 shrink-0 place-items-center rounded-lg border text-[11px] transition active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene ${done ? "w-auto border-transparent px-2 text-sand/55 hover:bg-white/10 hover:text-sand" : "w-8 border-white/12 text-sand/70 hover:border-lime/50 hover:text-lime"}`}
+          className={`relative z-10 grid h-9 shrink-0 place-items-center rounded-lg border text-[11px] transition active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene ${done ? "w-auto border-transparent px-2.5 text-sand/70 hover:bg-white/10 hover:text-sand" : "w-9 border-white/12 text-sand/70 hover:border-lime/50 hover:text-lime"}`}
         >
           {done ? "Deshacer" : <IconCheck size={14} />}
         </button>
@@ -127,9 +122,9 @@ function LevelSection({ lvl, nv, completadas, niveles, onMarcar, onActivate, red
           <h2 id={`niv-${lvl.n}`} className="font-display text-lg font-bold text-sand sm:text-xl">{lvl.titulo}</h2>
           {nv.estado === "completado" && <span className="rounded-full bg-lime/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-lime">Completado</span>}
           {nv.estado === "actual" && <span className="rounded-full bg-serene/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-serene">Tu nivel</span>}
-          {nv.tieneContenido && <span className="ml-auto tabular-nums text-xs text-sand/55">{nv.hechos}/{nv.total}</span>}
+          {nv.tieneContenido && <span className="ml-auto tabular-nums text-xs text-sand/70">{nv.hechos}/{nv.total}</span>}
         </div>
-        <p className="mt-0.5 text-sm text-sand/60">{lvl.subtitulo}</p>
+        <p className="mt-0.5 text-sm text-sand/70">{lvl.subtitulo}</p>
       </div>
 
       <div className="col-start-2 space-y-2.5">
@@ -151,6 +146,16 @@ export default function ProgresoTorre({ niveles, completadas, current, onMarcar 
   const [activeLevel, setActiveLevel] = useState(current);
   useEffect(() => setActiveLevel(current), [current]);
 
+  // El hint de scroll se desvanece en cuanto el usuario empieza a desplazarse
+  // (una sola dirección: no reaparece, para no parpadear al volver arriba).
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => { if (window.scrollY > 24) setScrolled(true); };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <main className="relative">
       {/* Barra de progreso de scroll (CSS scroll-driven, sin JS) */}
@@ -169,8 +174,8 @@ export default function ProgresoTorre({ niveles, completadas, current, onMarcar 
         {/* Hero */}
         <header className="mb-14 rounded-3xl bg-midnight/35 px-4 py-6 text-center backdrop-blur-sm">
           <p className="font-sans text-xs font-bold uppercase tracking-[0.4em] text-serene/80">Ruta formativa</p>
-          <h1 className="mt-3 font-display text-4xl font-bold leading-none text-sand sm:text-5xl">Formaciones RDR</h1>
-          <p className="mx-auto mt-3 max-w-md text-sm text-sand/65">Avanza por niveles: cada nivel que completas desbloquea el siguiente.</p>
+          <h1 className="mt-3 font-display text-4xl font-bold leading-none tracking-tight text-sand sm:text-5xl">Formaciones RDR</h1>
+          <p className="mx-auto mt-3 max-w-md text-pretty text-sm text-sand/65">Avanza por niveles: cada nivel que completas desbloquea el siguiente.</p>
           <div className="mx-auto mt-6 max-w-xs">
             <div className="mb-1.5 flex items-center justify-between text-xs">
               <span className="font-bold uppercase tracking-wider text-serene/80">Tu progreso</span>
@@ -186,7 +191,7 @@ export default function ProgresoTorre({ niveles, completadas, current, onMarcar 
             <IconArrow size={14} className="transition-transform group-hover:translate-x-1" />
           </a>
           {!reduce && (
-            <div className="mt-8 flex justify-center text-serene/60" aria-hidden>
+            <div className={`pointer-events-none mt-8 flex justify-center text-serene/60 transition-opacity duration-500 ${scrolled ? "opacity-0" : "opacity-100"}`} aria-hidden>
               <span className="animate-bounce"><IconArrow size={22} style={{ transform: "rotate(90deg)" }} /></span>
             </div>
           )}

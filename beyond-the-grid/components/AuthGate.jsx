@@ -185,10 +185,10 @@ export default function AuthGate({ children, onAuthed }) {
             <p className="font-sans text-xs uppercase tracking-[0.3em] text-serene">
               RDR Knowledge · BBVA × NFQ
             </p>
-            <h1 className="mt-4 font-display text-3xl font-bold text-sand">
+            <h1 className="mt-4 font-display text-3xl font-bold tracking-tight text-sand">
               Acceso del equipo RDR
             </h1>
-            <p className="mt-3 text-sm text-sand/70">
+            <p className="mt-3 text-pretty text-sm text-sand/70">
               Inicia sesión con tu cuenta de Google del equipo para entrar al hub.
             </p>
 

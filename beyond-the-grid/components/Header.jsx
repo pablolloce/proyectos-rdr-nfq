@@ -36,7 +36,7 @@ export default function Header() {
         {/* Marca compacta en móviles muy estrechos (<460px), donde el título completo se oculta */}
         <span className="font-display text-lg font-bold leading-none text-sand min-[460px]:hidden">RDR</span>
         <div className="hidden min-w-0 min-[460px]:block">
-          <h1 className="truncate font-display text-xl font-bold leading-tight text-sand sm:text-2xl md:text-3xl">
+          <h1 className="truncate font-display text-xl font-bold leading-tight tracking-tight text-sand sm:text-2xl md:text-3xl">
             RDR Knowledge
           </h1>
           <p className="mt-0.5 truncate text-xs text-serene/80 sm:text-sm">{subtitle}</p>

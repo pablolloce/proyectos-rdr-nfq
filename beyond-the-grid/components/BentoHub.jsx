@@ -7,16 +7,12 @@ import { useTilt } from "@/lib/useTilt";
 import { useLowPower } from "@/lib/useLowPower";
 import { useLinks } from "@/lib/links";
 import { useAuth } from "./AuthGate";
+import { rgba } from "@/lib/ui";
 import {
   IconBook, IconLink, IconUtensils, IconCalendar, IconRefresh, IconClock,
   IconRocket, IconCode, IconFolder, IconShield, IconArrow, IconExternal,
   IconCopy, IconGrad, IconOrbit,
 } from "./icons";
-
-const rgba = (hex, a) => {
-  const h = hex.replace("#", "");
-  return `rgba(${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)},${a})`;
-};
 
 // Estructura por TIPO. Cada sección = una columna. Acciones:
 // page (html), route (ruta Next), open (externo links.json), copy (portapapeles).
@@ -119,7 +115,7 @@ function CardInner({ item, accent }) {
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[15px] font-bold text-sand">{item.label}</span>
-        {item.desc && <span className="block truncate text-[13px] text-sand/60">{item.desc}</span>}
+        {item.desc && <span className="block truncate text-[13px] text-sand/70">{item.desc}</span>}
       </span>
       <Hint size={17} className="shrink-0 text-sand/40 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-sand/85" />
     </>
@@ -146,7 +142,7 @@ function Card({ item, accent, delay }) {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[15px] font-bold text-sand">{item.label}</span>
-            {item.desc && <span className="block truncate text-[13px] text-sand/60">{item.desc}</span>}
+            {item.desc && <span className="block truncate text-[13px] text-sand/70">{item.desc}</span>}
           </span>
         </div>
         <div className="relative flex gap-2">
