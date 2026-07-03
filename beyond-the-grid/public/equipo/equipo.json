@@ -159,6 +159,22 @@
       "emailBBVA": "alvaro.albelda.contractor@bbva.com",
       "track": "funcional",
       "coordinador": false
+    },
+    {
+      "id": "T063291",
+      "nombre": "Carlos Jimenez",
+      "email": "carlos.jimenez.garcia@nter.es",
+      "emailBBVA": "carlos.jimenez.garcia.contractor@bbva.com",
+      "track": "funcional",
+      "coordinador": false
+    },
+    {
+      "id": "T070829",
+      "nombre": "Victor Molina",
+      "email": "victor.molina@nter.es",
+      "emailBBVA": "victor.molina.ruiz.contractor@bbva.com",
+      "track": "tecnico",
+      "coordinador": false
     }
   ]
 }
