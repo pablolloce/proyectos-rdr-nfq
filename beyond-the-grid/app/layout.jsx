@@ -24,7 +24,16 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <ViewTransitions>
-      <html lang="es" className={`${serif.variable} ${lato.variable}`} style={{ backgroundColor: "#070E46" }}>
+      <html lang="es" className={`${serif.variable} ${lato.variable}`}>
+        <head>
+          {/* Aplica el tema guardado ANTES del primer paint (sin destello):
+              la clase activa las variables CSS del modo claro en globals.css. */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `try{if(localStorage.getItem("rdr_theme")==="light"){var d=document.documentElement;d.classList.add("rdr-light");d.style.colorScheme="light"}}catch(e){}`,
+            }}
+          />
+        </head>
         <body className="bg-midnight font-sans text-sand antialiased">
           <AppFrame>{children}</AppFrame>
           {/* Speculation Rules: prerenderiza el destino al pasar el ratón

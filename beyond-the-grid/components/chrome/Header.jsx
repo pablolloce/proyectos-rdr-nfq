@@ -3,6 +3,7 @@
 import { Link } from "next-view-transitions";
 import { usePathname } from "next/navigation";
 import { useAuth } from "./AuthGate";
+import { useTheme } from "@/lib/theme";
 
 /**
  * Cabecera fija (glass). Sesión + cerrar sesión + logo BBVA.
@@ -11,6 +12,7 @@ import { useAuth } from "./AuthGate";
  */
 export default function Header() {
   const { email, logout } = useAuth();
+  const { theme, toggle } = useTheme();
   const pathname = usePathname();
   // Subtítulo por sección (la coincidencia más específica primero).
   const SUBTITLES = [
@@ -58,6 +60,27 @@ export default function Header() {
 
       <div className="flex shrink-0 items-center gap-3 sm:gap-4">
         {email && <span className="hidden text-xs text-sand/70 lg:inline">{email}</span>}
+        {/* Conmutador de tema claro/oscuro (persistente, sin FOUC) */}
+        <button
+          type="button"
+          onClick={toggle}
+          title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          className="grid h-9 w-9 place-items-center rounded-full border border-serene/30 bg-midnight/70 text-sand transition-colors hover:border-serene active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+        >
+          {theme === "dark" ? (
+            // Sol -> pasar a claro
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+            </svg>
+          ) : (
+            // Luna -> pasar a oscuro
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+            </svg>
+          )}
+        </button>
         <button
           type="button"
           onClick={logout}
@@ -65,8 +88,12 @@ export default function Header() {
         >
           Salir
         </button>
-        {/* Logo oficial BBVA (blanco sobre Midnight) — regla dura nº4 CLAUDE.md. */}
-        <img src="/team-hub/logos/bbva-white.png?v=2" alt="BBVA" className="h-6 w-auto md:h-7" />
+        {/* Logo oficial BBVA — regla dura nº4: WHITE sobre Midnight, RGB sobre claros. */}
+        <img
+          src={theme === "light" ? "/team-hub/logos/bbva-rgb.png" : "/team-hub/logos/bbva-white.png?v=2"}
+          alt="BBVA"
+          className="h-6 w-auto md:h-7"
+        />
       </div>
       </div>
     </header>

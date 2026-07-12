@@ -2,11 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
-/* BBVA: fondo Midnight (nunca negro puro) + esquema oscuro nativo. */
+/* ── Tokens por tema (tripletas RGB para que Tailwind componga el alfa).
+   Oscuro (por defecto): paleta BBVA tal cual sobre Midnight.
+   Claro (html.rdr-light): fondo Sand, tinta Midnight, glass en tinta Electric
+   y acentos oscurecidos para mantener contraste AA como texto. ────────── */
+:root {
+  --c-midnight: 7 14 70; /* fondo base */
+  --c-sand: 247 248 248; /* tinta principal */
+  --c-white: 255 255 255; /* glass / bordes / superficies traslúcidas */
+  --c-serene: 133 200 255;
+  --c-lime: 136 231 131;
+  --c-canary: 255 231 97;
+  --c-aqua: 139 225 233;
+  --c-purple: 150 148 255;
+  --c-mandarin: 255 181 107;
+}
+html.rdr-light {
+  --c-midnight: 247 248 248; /* bg-midnight pasa a Sand */
+  --c-sand: 7 14 70; /* text-sand pasa a tinta Midnight */
+  --c-white: 0 19 145; /* glass/bordes: tinte Electric sobre claro */
+  --c-serene: 21 95 168; /* #155FA8 */
+  --c-lime: 27 122 62; /* #1B7A3E */
+  --c-canary: 138 109 0; /* #8A6D00 */
+  --c-aqua: 14 116 144; /* #0E7490 */
+  --c-purple: 91 75 214; /* #5B4BD6 */
+  --c-mandarin: 192 86 33; /* #C05621 */
+}
+
+/* BBVA: fondo Midnight (nunca negro puro) / Sand en claro. */
 html,
 body {
-  background: #070e46;
+  background: rgb(var(--c-midnight));
   color-scheme: dark;
+}
+html.rdr-light,
+html.rdr-light body {
+  color-scheme: light;
 }
 
 ::selection {
@@ -16,13 +47,13 @@ body {
 
 /* Foco visible global y consistente para navegación por teclado (a11y). */
 :focus-visible {
-  outline: 2px solid #85c8ff;
+  outline: 2px solid rgb(var(--c-serene));
   outline-offset: 2px;
 }
 
 /* Botones-nodo del hub 3D (llevan estilo inline) -> anillo de foco por teclado. */
 .rdr-node-btn:focus-visible {
-  outline: 2px solid #85c8ff;
+  outline: 2px solid rgb(var(--c-serene));
   outline-offset: 3px;
 }
 
@@ -89,7 +120,7 @@ html.rdr-lite [class*="backdrop-blur"] {
   backdrop-filter: none !important;
 }
 html.rdr-lite .rdr-tilt {
-  background-color: rgba(13, 22, 71, 0.82) !important; /* panel opaco: legible sin blur */
+  background-color: rgb(var(--c-midnight) / 0.92) !important; /* panel opaco: legible sin blur */
   transform: none !important;
   will-change: auto !important;
 }
@@ -119,7 +150,7 @@ html.rdr-lite .rdr-spot {
   z-index: 60;
   transform: scaleX(0);
   transform-origin: 0 50%;
-  background: linear-gradient(90deg, #85c8ff, #88e783);
+  background: linear-gradient(90deg, rgb(var(--c-serene)), rgb(var(--c-lime)));
   pointer-events: none;
 }
 @supports (animation-timeline: scroll()) {
@@ -138,14 +169,14 @@ html.rdr-lite .rdr-spot {
 .rdr-skel {
   position: relative;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(var(--c-white) / 0.06);
 }
 .rdr-skel::after {
   content: "";
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(133, 200, 255, 0.14), transparent);
+  background: linear-gradient(90deg, transparent, rgb(var(--c-serene) / 0.14), transparent);
   animation: rdr-shimmer 1.4s ease-in-out infinite;
 }
 @keyframes rdr-shimmer {
@@ -174,4 +205,20 @@ html.rdr-lite .rdr-spot {
   .rdr-scrollbar {
     animation: none !important;
   }
+}
+
+/* ── Ajustes específicos del modo claro ── */
+/* El arte generativo es nocturno (fondo navy): en claro se oculta y quedan
+   los tintes ambientales. */
+html.rdr-light .rdr-art {
+  display: none;
+}
+/* Luz ambiental aún más sutil sobre Sand. */
+html.rdr-light .rdr-blob {
+  opacity: 0.1;
+}
+/* Sombra de las tarjetas glass: en claro una elevación suave y neutra. */
+html.rdr-light .rdr-tilt:hover,
+html.rdr-light .rdr-tilt:focus-within {
+  box-shadow: 0 0 0 1px var(--pc, transparent), 0 8px 24px -8px rgb(7 14 70 / 0.18);
 }

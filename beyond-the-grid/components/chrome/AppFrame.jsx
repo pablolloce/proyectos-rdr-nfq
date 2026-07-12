@@ -1,9 +1,17 @@
 "use client";
 
 import { LinksProvider } from "@/lib/links";
+import { ThemeProvider, useTheme } from "@/lib/theme";
 import LoadingScreen from "./LoadingScreen";
 import AuthGate from "./AuthGate";
 import Header from "./Header";
+
+/* Logo NFQ según tema (blanco sobre Midnight, negro sobre Sand). */
+function NfqLogo() {
+  const { theme } = useTheme();
+  const src = theme === "light" ? "/team-hub/logos/nfq-black.png" : "/team-hub/logos/nfq-white.png?v=2";
+  return <img src={src} alt="NFQ" className="h-6 w-auto" />;
+}
 
 /**
  * Chrome PERSISTENTE de la app: proveedor de enlaces + splash (1×sesión) +
@@ -16,19 +24,21 @@ import Header from "./Header";
  */
 export default function AppFrame({ children }) {
   return (
-    <LinksProvider>
-      <LoadingScreen />
-      <AuthGate>
-        <div className="relative min-h-dvh w-full">
-          <Header />
-          {children}
-          {/* Co-branding NFQ (regla nº5 CLAUDE.md: presente y menor que BBVA). */}
-          <footer className="pointer-events-none fixed bottom-3 left-5 z-30 flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-[0.25em] text-sand/60">Hecho por</span>
-            <img src="/team-hub/logos/nfq-white.png?v=2" alt="NFQ" className="h-6 w-auto" />
-          </footer>
-        </div>
-      </AuthGate>
-    </LinksProvider>
+    <ThemeProvider>
+      <LinksProvider>
+        <LoadingScreen />
+        <AuthGate>
+          <div className="relative min-h-dvh w-full">
+            <Header />
+            {children}
+            {/* Co-branding NFQ (regla nº5 CLAUDE.md: presente y menor que BBVA). */}
+            <footer className="pointer-events-none fixed bottom-3 left-5 z-30 flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-[0.25em] text-sand/60">Hecho por</span>
+              <NfqLogo />
+            </footer>
+          </div>
+        </AuthGate>
+      </LinksProvider>
+    </ThemeProvider>
   );
 }

@@ -11,7 +11,7 @@ export default function ArtBanner({ src, className = "" }) {
   return (
     <div
       aria-hidden
-      className={`pointer-events-none absolute inset-x-0 top-0 -z-10 h-[46vh] overflow-hidden ${className}`}
+      className={`rdr-art pointer-events-none absolute inset-x-0 top-0 -z-10 h-[46vh] overflow-hidden ${className}`}
     >
       <img
         src={src}

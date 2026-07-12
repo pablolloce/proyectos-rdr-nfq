@@ -35,7 +35,7 @@ export default function LoadingScreen() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="font-sans text-xs uppercase tracking-[0.4em] text-serene"
+            className="font-sans text-xs uppercase tracking-[0.4em] text-[#85C8FF]"
           >
             BBVA × NFQ
           </motion.p>
@@ -43,7 +43,7 @@ export default function LoadingScreen() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.08 }}
-            className="mt-3 font-display text-4xl font-bold tracking-tight text-sand md:text-6xl"
+            className="mt-3 font-display text-4xl font-bold tracking-tight text-[#F7F8F8] md:text-6xl"
           >
             RDR Knowledge
           </motion.h1>
@@ -51,7 +51,7 @@ export default function LoadingScreen() {
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
-            className="mt-8 h-px w-40 origin-left bg-serene/60"
+            className="mt-8 h-px w-40 origin-left bg-[#85C8FF]/60"
           />
         </motion.div>
       )}

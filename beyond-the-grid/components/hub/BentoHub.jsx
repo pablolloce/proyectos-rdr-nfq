@@ -9,6 +9,7 @@ import { useLinks } from "@/lib/links";
 import { useAuth } from "../chrome/AuthGate";
 import { rgba } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
+import { useAccentMap } from "@/lib/theme";
 import {
   IconBook, IconLink, IconUtensils, IconCalendar, IconRefresh, IconClock,
   IconRocket, IconCode, IconFolder, IconShield, IconArrow, IconExternal,
@@ -89,9 +90,11 @@ function AmbientBackground({ lite }) {
 // Pill de acción (para tarjetas multi-acción).
 function ActionPill({ a, accent }) {
   const { getUrl, copyLink } = useLinks();
+  const mapAccent = useAccentMap();
   const Glyph = a.icon || HintIcon(a.action);
   const cls = "inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-bold transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene";
-  const style = { borderColor: rgba(accent, 0.3), background: rgba(accent, 0.1), color: accent };
+  // Texto/icono con acento temado (legible en claro); tintes de fondo/borde con el hex original.
+  const style = { borderColor: rgba(accent, 0.3), background: rgba(accent, 0.1), color: mapAccent(accent) };
   const inner = (<><Glyph size={14} /> {a.label}</>);
   if (a.action === "page") return <a href={a.target} className={cls} style={style}>{inner}</a>;
   if (a.action === "open") {
@@ -109,11 +112,12 @@ const CARD =
 
 function CardInner({ item, accent }) {
   const { icon: Icon } = item;
+  const mapAccent = useAccentMap();
   const Hint = HintIcon(item.action);
   return (
     <>
       <span aria-hidden className="rdr-spot" style={{ background: `radial-gradient(140px circle at var(--mx,50%) var(--my,50%), ${rgba(accent, 0.22)}, transparent 70%)` }} />
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border" style={{ borderColor: rgba(accent, 0.3), background: rgba(accent, 0.12), color: accent }}>
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border" style={{ borderColor: rgba(accent, 0.3), background: rgba(accent, 0.12), color: mapAccent(accent) }}>
         <Icon size={22} />
       </span>
       <span className="min-w-0 flex-1">
@@ -127,6 +131,7 @@ function CardInner({ item, accent }) {
 
 function Card({ item, accent, delay }) {
   const { getUrl, copyLink } = useLinks();
+  const mapAccent = useAccentMap();
   const reduce = useReducedMotion();
   const tilt = useTilt(reduce);
   const style = { animationDelay: `${delay}ms`, borderColor: rgba(accent, 0.5), "--pc": rgba(accent, 0.75) };
@@ -140,7 +145,7 @@ function Card({ item, accent, delay }) {
       <div {...tilt} className="rdr-rise rdr-tilt group relative box-border flex w-full flex-col justify-center gap-3 overflow-hidden rounded-2xl border bg-white/[0.055] p-4 backdrop-blur-md lg:min-h-0 lg:flex-1" style={style}>
         <span aria-hidden className="rdr-spot" style={{ background: `radial-gradient(160px circle at var(--mx,50%) var(--my,50%), ${rgba(accent, 0.2)}, transparent 70%)` }} />
         <div className="relative flex items-center gap-3.5">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border" style={{ borderColor: rgba(accent, 0.3), background: rgba(accent, 0.12), color: accent }}>
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border" style={{ borderColor: rgba(accent, 0.3), background: rgba(accent, 0.12), color: mapAccent(accent) }}>
             <Icon size={22} />
           </span>
           <span className="min-w-0 flex-1">
@@ -191,11 +196,12 @@ function FeatureCard({ item, accent, delay }) {
 }
 
 function TypeColumn({ sec, delay }) {
+  const mapAccent = useAccentMap();
   return (
     <section aria-labelledby={`col-${sec.id}`} className="flex min-h-0 flex-col rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4 backdrop-blur-sm" style={{ boxShadow: `inset 0 2px 0 ${rgba(sec.color, 0.7)}` }}>
       <div className="mb-4 flex items-center gap-2 px-1">
         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: sec.color }} />
-        <span className="font-display text-xs font-bold tabular-nums" style={{ color: sec.color }}>{sec.n}</span>
+        <span className="font-display text-xs font-bold tabular-nums" style={{ color: mapAccent(sec.color) }}>{sec.n}</span>
         <h2 id={`col-${sec.id}`} className="font-display text-sm font-bold uppercase tracking-[0.15em] text-sand">{sec.title}</h2>
       </div>
       <div className="flex flex-1 flex-col gap-3 lg:min-h-0">
