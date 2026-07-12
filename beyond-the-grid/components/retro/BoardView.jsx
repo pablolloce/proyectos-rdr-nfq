@@ -3,19 +3,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { rgba } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
+import { useAccentMap } from "@/lib/theme";
 import {
   CATEGORIAS, FASES_NOMBRES, MEJORAS_COLOR, TERMOMETRO_OPCIONES,
   ordenarTarjetas, parseReconocimiento,
 } from "./constants";
 import { useRetroSession } from "./useRetroSession";
-import { GLASS, Modal, Skel } from "./ui";
+import { GLASS, Modal, Skel, usePanel } from "./ui";
 import {
   IconArrowL, IconBackward, IconChevronD, IconChevronR, IconForward,
   IconHeart, IconHeartFill, IconPlus, IconStar, IconThermo, IconUsers,
 } from "./icons";
 
 const BTN_PRIMARY =
-  "inline-flex items-center justify-center gap-1.5 rounded-lg bg-mandarin px-3 py-1.5 text-sm font-bold text-electric shadow transition hover:brightness-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene";
+  "inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#FFB56B] px-3 py-1.5 text-sm font-bold text-[#001391] shadow transition hover:brightness-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene";
 const BTN_GHOST =
   "inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.06] px-3 py-1.5 text-sm font-medium text-sand/80 transition hover:border-white/30 hover:bg-white/[0.1] hover:text-sand active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene";
 
@@ -30,8 +31,8 @@ function PhaseNav({ fase }) {
         return (
           <li key={nom} className="flex shrink-0 items-center gap-0.5">
             {active ? (
-              <span aria-current="step" className="flex items-center gap-1.5 rounded-full bg-mandarin px-3 py-1 font-bold text-electric shadow-sm">
-                <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-electric/15 text-[10px] tabular-nums">{n}</span>
+              <span aria-current="step" className="flex items-center gap-1.5 rounded-full bg-[#FFB56B] px-3 py-1 font-bold text-[#001391] shadow-sm">
+                <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[#001391]/15 text-[10px] tabular-nums">{n}</span>
                 {nom}
               </span>
             ) : (
@@ -49,6 +50,7 @@ function PhaseNav({ fase }) {
 
 /** Desplegable de participantes (solo organizador, como en el legacy). */
 function Participantes({ usuarios }) {
+  const panel = usePanel();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const unicos = useMemo(() => [...new Set(usuarios)], [usuarios]);
@@ -83,7 +85,7 @@ function Participantes({ usuarios }) {
         <IconChevronD size={12} className={`transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-30 mt-1.5 w-56 rounded-xl border border-white/12 bg-[#0d1642]/95 p-1.5 shadow-xl backdrop-blur-md">
+        <div className={`absolute right-0 top-full z-30 mt-1.5 w-56 rounded-xl ${panel} p-1.5`}>
           <p className="border-b border-white/10 px-2 pb-1.5 pt-1 text-[10px] font-bold uppercase tracking-wider text-sand/55">
             Participantes
           </p>
@@ -107,11 +109,12 @@ function Participantes({ usuarios }) {
 
 /** Tarjeta del tablero (con badge "Para:" en reconocimientos y corazón de votos). */
 function Tarjeta({ t, color, fase, onVotar }) {
+  const acc = useAccentMap();
   const { txt, dest } = parseReconocimiento(t);
   return (
     <article
       className="rounded-xl border border-white/10 bg-white/[0.05] p-3 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
-      style={{ borderLeft: `3px solid ${rgba(color, 0.85)}` }}
+      style={{ borderLeft: `3px solid ${rgba(acc(color), 0.85)}` }}
     >
       {dest && (
         <p className="mb-2">
@@ -144,14 +147,15 @@ function Tarjeta({ t, color, fase, onVotar }) {
 
 /** Columna del tablero con cabecera de acento y botón de añadir. */
 function Columna({ titulo, desc, color, children, vacia, addLabel, onAdd, delay = 0 }) {
+  const acc = useAccentMap();
   return (
     <section
       aria-label={titulo}
       className={`rdr-rise flex min-h-[180px] flex-col overflow-hidden ${GLASS} transition hover:border-white/25`}
-      style={{ boxShadow: `inset 0 2px 0 ${rgba(color, 0.75)}`, animationDelay: `${delay}ms` }}
+      style={{ boxShadow: `inset 0 2px 0 ${rgba(acc(color), 0.75)}`, animationDelay: `${delay}ms` }}
     >
       <div className="border-b border-white/10 p-3.5">
-        <h3 className="font-display text-base font-bold" style={{ color }}>{titulo}</h3>
+        <h3 className="font-display text-base font-bold" style={{ color: acc(color) }}>{titulo}</h3>
         <p className="mt-0.5 text-xs text-sand/55">{desc}</p>
       </div>
       <div className="flex-1 space-y-3 p-3">
@@ -164,7 +168,7 @@ function Columna({ titulo, desc, color, children, vacia, addLabel, onAdd, delay 
             type="button"
             onClick={onAdd}
             className="flex w-full items-center gap-2 rounded-lg p-2 text-left text-sm font-medium transition hover:bg-white/[0.07] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-            style={{ color }}
+            style={{ color: acc(color) }}
           >
             <IconPlus size={15} /> {addLabel}
           </button>
@@ -196,6 +200,7 @@ function BoardSkeleton() {
  *  1 Termómetro · 2 Grupo (añadir) · 3 Votar · 4 Comentamos (mejoras) · 5 Completo.
  */
 export default function BoardView({ gasGet, gasPost, sessionId, nombre, role, onSalir, alerta, toast }) {
+  const acc = useAccentMap();
   const fatal = (err) => {
     alerta("⚠️ Error de conexión: " + err.message);
     onSalir();
@@ -300,7 +305,7 @@ export default function BoardView({ gasGet, gasPost, sessionId, nombre, role, on
   const otros = [...new Set(usuarios)].filter((u) => u !== nombre);
 
   const termometro = (
-    <section aria-label="Termómetro de confianza" className={`rdr-rise flex flex-col overflow-hidden ${GLASS}`} style={{ boxShadow: `inset 0 2px 0 ${rgba(PALETTE.royal, 0.75)}` }}>
+    <section aria-label="Termómetro de confianza" className={`rdr-rise flex flex-col overflow-hidden ${GLASS}`} style={{ boxShadow: `inset 0 2px 0 ${rgba(acc(PALETTE.royal), 0.75)}` }}>
       <div className="border-b border-white/10 p-4">
         <h3 className="flex items-center gap-2 font-display text-base font-bold text-sand">
           <IconThermo size={17} className="text-serene" /> Termómetro
@@ -421,7 +426,7 @@ export default function BoardView({ gasGet, gasPost, sessionId, nombre, role, on
                   <article
                     key={m.id || i}
                     className="rounded-xl border border-white/10 bg-white/[0.05] p-3 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
-                    style={{ borderLeft: `3px solid ${rgba(MEJORAS_COLOR, 0.85)}` }}
+                    style={{ borderLeft: `3px solid ${rgba(acc(MEJORAS_COLOR), 0.85)}` }}
                   >
                     <p className="whitespace-pre-line text-sm leading-relaxed text-sand/90">{m.texto}</p>
                   </article>

@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { useLinks } from "@/lib/links";
 import { useTilt } from "@/hooks/useTilt";
 import { rgba } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
+import { useTheme, useAccentMap } from "@/lib/theme";
 import { normalizarColores } from "./constants";
 import EquipoPanel from "./EquipoPanel";
 import Calendario from "./Calendario";
@@ -50,9 +51,13 @@ function VacacionesSkeleton() {
 }
 
 function ErrorCard({ mensaje, onRetry }) {
+  const { theme } = useTheme();
+  // Rojo por tema: salmón sobre Midnight; sobre Sand, rojo oscuro con contraste AA.
+  const borde = theme === "light" ? "border-[#C53030]/40" : "border-[#FF7A7A]/40";
+  const tinta = theme === "light" ? "text-[#C53030]" : "text-[#FF9A9A]";
   return (
-    <div role="alert" className="mx-auto max-w-lg rounded-2xl border border-[#FF7A7A]/40 bg-[#C53030]/10 p-6 text-center backdrop-blur-md">
-      <span className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl border border-[#FF7A7A]/40 bg-[#C53030]/15 text-[#FF9A9A]">
+    <div role="alert" className={`mx-auto max-w-lg rounded-2xl border ${borde} bg-[#C53030]/10 p-6 text-center backdrop-blur-md`}>
+      <span className={`mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl border ${borde} bg-[#C53030]/15 ${tinta}`}>
         <IconAlert size={22} />
       </span>
       <h2 className="font-display text-lg font-bold text-sand">No se pudieron cargar los datos</h2>
@@ -72,12 +77,14 @@ function ErrorCard({ mensaje, onRetry }) {
 function SolicitarCard({ formUrl }) {
   const reduce = useReducedMotion();
   const tilt = useTilt(reduce);
+  const mapAccent = useAccentMap();
   const base =
     "rdr-tilt group relative flex items-center gap-3.5 overflow-hidden rounded-2xl border bg-white/[0.055] p-4 backdrop-blur-md transition hover:bg-white/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene";
   const inner = (
     <>
       <span aria-hidden className="rdr-spot" style={{ background: `radial-gradient(140px circle at var(--mx,50%) var(--my,50%), ${rgba(ACCENT, 0.22)}, transparent 70%)` }} />
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border" style={{ borderColor: rgba(ACCENT, 0.3), background: rgba(ACCENT, 0.12), color: ACCENT }}>
+      {/* Texto/icono con acento temado (legible en claro); tintes de fondo/borde con el hex original. */}
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border" style={{ borderColor: rgba(ACCENT, 0.3), background: rgba(ACCENT, 0.12), color: mapAccent(ACCENT) }}>
         <IconSun size={22} />
       </span>
       <span className="min-w-0 flex-1">
@@ -112,6 +119,7 @@ function SolicitarCard({ formUrl }) {
  */
 export default function VacacionesRoute() {
   const { getUrl, error: linksError } = useLinks();
+  const { theme } = useTheme();
   // La autenticación la pone el chrome (AuthGate en AppFrame): esta vista es
   // de solo lectura y no necesita email ni rol.
   const apiUrl = getUrl("vacacionesBackend");
@@ -140,7 +148,6 @@ export default function VacacionesRoute() {
         const d = await resp.json();
         if (d.error) throw new Error(d.error);
         if (cancelado) return;
-        normalizarColores(d);
         // Activos primero, luego alfabético (igual que el legacy).
         (d.empleados || []).sort((a, b) => {
           if (a.activo === b.activo) return a.nombre.localeCompare(b.nombre);
@@ -176,6 +183,11 @@ export default function VacacionesRoute() {
   const abrirDia = useCallback((dateStr, ausencias) => setSheet({ dateStr, ausencias }), []);
   const cerrarDia = useCallback(() => setSheet(null), []);
 
+  // Colores de equipo normalizados por TEMA (en oscuro se aclaran los oscuros,
+  // en claro se oscurecen los claros). Se recalcula desde los colores originales
+  // del backend al conmutar el tema (normalizarColores ya no muta).
+  const datosVis = useMemo(() => (datos ? normalizarColores(datos, theme) : null), [datos, theme]);
+
   const totalActivos = datos ? datos.empleados.filter((e) => e.activo).length : 0;
   const actualizado =
     datos && datos.generatedAt
@@ -202,8 +214,8 @@ export default function VacacionesRoute() {
               <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
                 <SolicitarCard formUrl={formUrl} />
                 <EquipoPanel
-                  empleados={datos.empleados}
-                  paletaEquipos={datos.paletaEquipos}
+                  empleados={datosVis.empleados}
+                  paletaEquipos={datosVis.paletaEquipos}
                   filtros={filtros}
                   onToggle={toggleFiltro}
                   onClear={limpiarFiltros}
@@ -215,9 +227,9 @@ export default function VacacionesRoute() {
               </div>
 
               {/* Calendario anual */}
-              <Calendario datos={datos} filtros={filtros} totalActivos={totalActivos} onOpenDay={abrirDia} />
+              <Calendario datos={datosVis} filtros={filtros} totalActivos={totalActivos} onOpenDay={abrirDia} />
             </div>
-            <DaySheet sheet={sheet} empleadosMap={datos.empleadosMap || {}} onClose={cerrarDia} />
+            <DaySheet sheet={sheet} empleadosMap={datosVis.empleadosMap || {}} onClose={cerrarDia} />
           </>
         )}
       </div>
@@ -226,9 +238,10 @@ export default function VacacionesRoute() {
 }
 
 function Hero({ actualizado }) {
+  const mapAccent = useAccentMap();
   return (
     <header className="mb-8">
-      <p className="font-sans text-xs font-bold uppercase tracking-[0.4em]" style={{ color: ACCENT }}>
+      <p className="font-sans text-xs font-bold uppercase tracking-[0.4em]" style={{ color: mapAccent(ACCENT) }}>
         Equipo · RDR
       </p>
       <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-sand sm:text-4xl">

@@ -47,6 +47,7 @@ export default function MenuView({
   onEntrar, onAbrirArchivo, alerta, confirma, toast,
 }) {
   const reduce = useReducedMotion();
+  const acc = useAccentMap(); // acentos inline legibles como TEXTO en ambos temas
   const tiltJoin = useTilt(reduce);
   const tiltHist = useTilt(reduce);
 
@@ -197,14 +198,14 @@ export default function MenuView({
         <span aria-hidden className="rdr-spot" style={{ background: `radial-gradient(220px circle at var(--mx,50%) var(--my,50%), ${rgba(ACCENT, 0.14)}, transparent 70%)` }} />
         <div className="relative">
           <h2 id="retro-menu-sesion" className="flex items-center gap-2.5 font-display text-xl font-bold text-sand">
-            <span className="grid h-9 w-9 place-items-center rounded-xl border" style={{ borderColor: rgba(ACCENT, 0.3), background: rgba(ACCENT, 0.12), color: ACCENT }}>
+            <span className="grid h-9 w-9 place-items-center rounded-xl border" style={{ borderColor: rgba(ACCENT, 0.3), background: rgba(ACCENT, 0.12), color: acc(ACCENT) }}>
               <IconEnter size={18} />
             </span>
             Sesión en vivo
           </h2>
           <p className="mt-1 text-sm text-sand/65">
             Entras como <b className="text-sand">{nombre}</b>{" "}
-            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider" style={{ background: rgba(role === "organizador" ? PALETTE.purple : PALETTE.serene, 0.16), color: role === "organizador" ? PALETTE.purple : PALETTE.serene }}>
+            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider" style={{ background: rgba(role === "organizador" ? PALETTE.purple : PALETTE.serene, 0.16), color: acc(role === "organizador" ? PALETTE.purple : PALETTE.serene) }}>
               {role}
             </span>
           </p>
@@ -256,7 +257,7 @@ export default function MenuView({
           {role === "organizador" && (
             <div className="mt-6 space-y-5 border-t border-white/10 pt-5">
               <div>
-                <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider" style={{ color: ACCENT }}>
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider" style={{ color: acc(ACCENT) }}>
                   <IconCalendarPlus size={14} /> Crear nueva sesión
                 </p>
                 <div className="space-y-3 rounded-xl border p-3.5" style={{ borderColor: rgba(ACCENT, 0.25), background: rgba(ACCENT, 0.06) }}>

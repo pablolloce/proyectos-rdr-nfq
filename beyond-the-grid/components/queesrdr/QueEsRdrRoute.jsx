@@ -11,6 +11,7 @@
 //   05 Ecosistema de integración → RDR en cifras + cierre.
 
 import { useReducedMotion } from "framer-motion";
+import { useAccentMap } from "@/lib/theme";
 import { useLowPower } from "@/hooks/useLowPower";
 import { PALETTE } from "@/lib/palette";
 import { rgba } from "@/lib/ui";
@@ -48,6 +49,7 @@ function AmbientBackground({ lite }) {
 }
 
 function Hero({ reduce }) {
+  const mapAccent = useAccentMap(); // número de módulo legible en claro; el borde-tinte conserva el hex original
   return (
     <header className="pb-4 pt-6 sm:pt-10">
       <Reveal>
@@ -75,7 +77,7 @@ function Hero({ reduce }) {
                 className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 backdrop-blur-sm transition hover:bg-white/[0.09] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
                 style={{ borderLeft: `3px solid ${m.color}` }}
               >
-                <span className="font-display text-xs font-bold tabular-nums" style={{ color: m.color }}>{m.n}</span>
+                <span className="font-display text-xs font-bold tabular-nums" style={{ color: mapAccent(m.color) }}>{m.n}</span>
                 <span className="flex-1 text-sm font-semibold text-sand/85 transition group-hover:text-sand">{m.t}</span>
                 <span aria-hidden className="text-sand/35 transition-transform group-hover:translate-x-0.5 group-hover:text-sand/70">→</span>
               </a>

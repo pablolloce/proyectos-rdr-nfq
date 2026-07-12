@@ -13,7 +13,7 @@ import {
   validarIdTraspasoValor,
   isT,
 } from "./backend";
-import { ACCENT, BTN, BtnIcon, CARD_CLS, INPUT_CLS, SELECT_CLS, LABEL_CLS, AutoTextarea, Empty } from "./ui";
+import { BTN, BtnIcon, CARD_CLS, INPUT_CLS, SELECT_CLS, LABEL_CLS, AutoTextarea, Empty } from "./ui";
 import { IconTrash, IconSave, IconCheck, IconX, IconAlert, IconPlus } from "./icons";
 
 /* Vista 1 · Preparación: proyectos + componentes + validador.

@@ -143,6 +143,7 @@ function Filtros({ filtro, onFiltro }) {
 function PersonaCard({ persona, datos, sinBackend, delay }) {
   const reduce = useReducedMotion();
   const tilt = useTilt(reduce);
+  const acc = useAccentMap(); // TRACKS como TEXTO -> tono AA por tema (tintes/bordes rgba conservan el hex original)
   const tr = TRACKS[persona.track] || TRACKS.cross;
   const color = tr.color;
 
@@ -167,7 +168,7 @@ function PersonaCard({ persona, datos, sinBackend, delay }) {
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-display text-lg font-bold leading-tight text-sand">{persona.nombre}</h3>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide" style={{ color, backgroundColor: rgba(color, 0.16) }}>
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide" style={{ color: acc(color), backgroundColor: rgba(color, 0.16) }}>
               {tr.nombre}
             </span>
             {!sinBackend && (
@@ -179,7 +180,7 @@ function PersonaCard({ persona, datos, sinBackend, delay }) {
         </div>
         <div className="shrink-0 text-right">
           <span className="block font-display text-3xl font-bold leading-none tabular-nums text-sand">{datos.ovr}</span>
-          <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color }}>
+          <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: acc(color) }}>
             {POS[persona.track] || "RDR"}
           </span>
         </div>
@@ -225,7 +226,7 @@ function PersonaCard({ persona, datos, sinBackend, delay }) {
                 key={c.id}
                 title={`Nivel ${c.nivel}`}
                 className="rounded-full border px-2 py-0.5 text-[11px] font-bold"
-                style={{ color: cc, backgroundColor: rgba(cc, 0.14), borderColor: rgba(cc, 0.32) }}
+                style={{ color: acc(cc), backgroundColor: rgba(cc, 0.14), borderColor: rgba(cc, 0.32) }}
               >
                 {c.nombre}
               </span>

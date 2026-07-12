@@ -6,7 +6,7 @@ import { useLayoutEffect, useRef } from "react";
    Glass sobre Midnight con acento lime (#88E783), como la sección
    "Proyectos" del hub. */
 
-export const ACCENT = "#88E783"; // PALETTE.lime
+export const ACCENT = "#88E783"; // PALETTE.lime · como TEXTO inline pásalo por useAccent() (modo claro)
 
 // Tarjeta glass estándar (misma receta que el hub/formación).
 export const CARD_CLS =

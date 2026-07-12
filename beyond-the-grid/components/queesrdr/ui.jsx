@@ -6,6 +6,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { rgba } from "@/lib/ui";
+import { useAccentMap } from "@/lib/theme";
 
 const EASE = [0.16, 1, 0.3, 1];
 
@@ -38,8 +39,9 @@ export function Section({ id, children, className = "" }) {
 
 /** Etiqueta pequeña sobre los titulares (equivale al ante-title del legacy). */
 export function Kicker({ color = "#85C8FF", children }) {
+  const mapAccent = useAccentMap(); // texto de acento legible en claro
   return (
-    <p className="font-sans text-[11px] font-bold uppercase tracking-[0.28em]" style={{ color }}>
+    <p className="font-sans text-[11px] font-bold uppercase tracking-[0.28em]" style={{ color: mapAccent(color) }}>
       {children}
     </p>
   );
@@ -68,11 +70,12 @@ export function Lead({ children, className = "" }) {
  * (número de módulo + gran titular serif + descripción), con línea de acento.
  */
 export function ModuleDivider({ n, color, title, desc }) {
+  const mapAccent = useAccentMap(); // texto temado; el punto-swatch conserva el hex original
   return (
     <Reveal className="pb-12 pt-24 sm:pb-16 sm:pt-32">
       <div className="flex items-center gap-3">
         <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
-        <span className="font-sans text-xs font-bold uppercase tracking-[0.35em]" style={{ color }}>
+        <span className="font-sans text-xs font-bold uppercase tracking-[0.35em]" style={{ color: mapAccent(color) }}>
           Módulo {n}
         </span>
       </div>
@@ -113,9 +116,10 @@ export function EdgeCard({ accent = "#85C8FF", title, children, className = "" }
 
 /** Cifra destacada (KPI). */
 export function Stat({ value, label, sub, color = "#85C8FF" }) {
+  const mapAccent = useAccentMap(); // cifra con acento legible en claro; el inset del Glass mantiene el hex original
   return (
     <Glass accent={color} className="flex flex-col items-center gap-1 px-4 py-6 text-center">
-      <span className="font-display text-4xl font-bold leading-none tracking-tight sm:text-5xl" style={{ color }}>
+      <span className="font-display text-4xl font-bold leading-none tracking-tight sm:text-5xl" style={{ color: mapAccent(color) }}>
         {value}
       </span>
       <span className="mt-1.5 text-sm font-bold text-sand">{label}</span>
@@ -126,10 +130,11 @@ export function Stat({ value, label, sub, color = "#85C8FF" }) {
 
 /** Pill de etiqueta con acento. */
 export function Pill({ color = "#85C8FF", children, className = "" }) {
+  const mapAccent = useAccentMap(); // texto temado; tintes de borde/fondo con el hex original
   return (
     <span
       className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${className}`}
-      style={{ color, borderColor: rgba(color, 0.4), background: rgba(color, 0.1) }}
+      style={{ color: mapAccent(color), borderColor: rgba(color, 0.4), background: rgba(color, 0.1) }}
     >
       {children}
     </span>
