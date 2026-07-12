@@ -5,6 +5,7 @@
 
 import { PALETTE } from "@/lib/palette";
 import { rgba } from "@/lib/ui";
+import { useAccentMap } from "@/lib/theme";
 import { Reveal, Section, ModuleDivider, BlockHeader } from "./ui";
 
 const C = PALETTE.lime;

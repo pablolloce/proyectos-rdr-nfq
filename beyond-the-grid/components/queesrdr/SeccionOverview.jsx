@@ -5,6 +5,7 @@
 
 import { PALETTE } from "@/lib/palette";
 import { rgba } from "@/lib/ui";
+import { useAccentMap } from "@/lib/theme";
 import { Reveal, Section, ModuleDivider, BlockHeader, Glass, KeyIdea, DotList, H3, Pill } from "./ui";
 
 const C = PALETTE.canary;
@@ -34,6 +35,7 @@ const JERARQUIA = [
 ];
 
 export default function SeccionOverview() {
+  const mapAccent = useAccentMap(); // canary como TEXTO legible en claro; tintes con hex original
   return (
     <Section id="overview">
       <ModuleDivider
@@ -147,7 +149,7 @@ export default function SeccionOverview() {
                 }}
               >
                 <p className="text-sm font-bold text-sand">
-                  <span className="mr-2 font-display tabular-nums" style={{ color: C }}>{niv.n}</span>
+                  <span className="mr-2 font-display tabular-nums" style={{ color: mapAccent(C) }}>{niv.n}</span>
                   {niv.t}
                 </p>
                 <p className="text-xs text-sand/65">{niv.d}</p>

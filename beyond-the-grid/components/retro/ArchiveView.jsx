@@ -105,11 +105,11 @@ export default function ArchiveView({ data, onVolver }) {
 
       {/* Mejoras */}
       {(data.mejoras || []).length > 0 && (
-        <section aria-label="Acciones de mejora" className={`rdr-rise mb-6 ${GLASS} p-6`} style={{ boxShadow: `inset 0 2px 0 ${rgba(MEJORAS_COLOR, 0.75)}`, animationDelay: "230ms" }}>
+        <section aria-label="Acciones de mejora" className={`rdr-rise mb-6 ${GLASS} p-6`} style={{ boxShadow: `inset 0 2px 0 ${rgba(acc(MEJORAS_COLOR), 0.75)}`, animationDelay: "230ms" }}>
           <h3 className="mb-4 font-display text-xl font-bold text-lime">Acciones de mejora 📈</h3>
           <div className="space-y-3">
             {data.mejoras.map((m, i) => (
-              <article key={m.id || i} className="rounded-xl border border-white/10 bg-lime/[0.06] p-3" style={{ borderLeft: `3px solid ${rgba(MEJORAS_COLOR, 0.85)}` }}>
+              <article key={m.id || i} className="rounded-xl border border-white/10 bg-lime/[0.06] p-3" style={{ borderLeft: `3px solid ${rgba(acc(MEJORAS_COLOR), 0.85)}` }}>
                 <p className="whitespace-pre-line text-sm leading-relaxed text-sand/90">{m.texto}</p>
               </article>
             ))}

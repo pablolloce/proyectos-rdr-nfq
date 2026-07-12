@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { rgba } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
+import { useTheme, useAccentMap } from "@/lib/theme";
 import {
   MESES, DIAS_SEMANA, MAX_DOTS, UMBRAL_ALERTA,
-  FESTIVO_STYLE, FESTIVO_NUM_COLOR, FESTIVO_LABEL,
+  festivoStyle, festivoNumColor, alertColor, FESTIVO_LABEL,
   dateKey, motivoDe,
 } from "./constants";
 
@@ -26,12 +27,19 @@ function useCanHover() {
 
 /** Tooltip flotante (sustituto React del tippy.js del legacy, solo desktop). */
 function DayTooltip({ tip }) {
+  const { theme } = useTheme();
+  const mapAccent = useAccentMap();
   if (!tip) return null;
   const left = Math.min(Math.max(tip.x, 150), (typeof window !== "undefined" ? window.innerWidth : 1200) - 150);
+  // Superficie sólida elevada por tema (mismo criterio que usePanel de /retro):
+  // navy sobre Midnight, panel casi blanco con tinta Midnight sobre Sand.
+  const panel = theme === "light"
+    ? "bg-[#FDFDFE]/95 shadow-[0_18px_40px_-12px_rgba(7,14,70,0.3)]"
+    : "bg-[#0c1656]/95 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.7)]";
   return (
     <div
       role="tooltip"
-      className="pointer-events-none fixed z-50 w-[280px] -translate-x-1/2 -translate-y-full rounded-xl border border-serene/25 bg-[#0c1656]/95 p-3 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.7)] backdrop-blur-md"
+      className={`pointer-events-none fixed z-50 w-[280px] -translate-x-1/2 -translate-y-full rounded-xl border border-serene/25 ${panel} p-3 backdrop-blur-md`}
       style={{ left, top: tip.y - 10 }}
     >
       <p className="text-[10px] font-bold uppercase tracking-[0.06em] text-serene">
@@ -44,7 +52,7 @@ function DayTooltip({ tip }) {
         return (
           <div key={`${a.nombre}-${i}`} className="mb-2 flex items-center justify-between gap-3 last:mb-0">
             <span className="flex min-w-0 items-center gap-2">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: emp?.color || PALETTE.serene }} />
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: emp?.color || mapAccent(PALETTE.serene) }} />
               <span className={`truncate text-[13px] text-sand ${emp && !emp.activo ? "opacity-60 line-through" : ""}`}>
                 {emp?.nombre || a.nombre}
               </span>
@@ -63,17 +71,22 @@ function DayTooltip({ tip }) {
 }
 
 function DayCell({ dia, dateStr, esHoy, esFinde, festivo, alerta, ausencias, empleadosMap, canHover, onOpenDay, onTip }) {
+  const { theme } = useTheme();
+  const light = theme === "light";
   const conGente = ausencias.length > 0;
 
   let cls = "relative flex min-h-[52px] flex-col rounded-md border p-1 transition sm:min-h-[48px]";
   const style = {};
   const sombras = [];
-  if (festivo && FESTIVO_STYLE[festivo]) {
-    Object.assign(style, FESTIVO_STYLE[festivo]);
+  if (festivo && festivoStyle(festivo, theme)) {
+    Object.assign(style, festivoStyle(festivo, theme));
   } else if (esHoy) {
+    // border-serene/80 es utilidad temada (claro -> #155FA8). El relleno
+    // electric al 50% del legacy se rebaja en claro (sería demasiado denso
+    // para la tinta Midnight del número y de los +N).
     cls += " border-serene/80";
-    style.background = "rgba(0,19,145,0.5)";
-    sombras.push("inset 0 0 0 1px rgba(133,200,255,0.6)");
+    style.background = light ? "rgba(0,19,145,0.08)" : "rgba(0,19,145,0.5)";
+    sombras.push(`inset 0 0 0 1px ${light ? "rgba(21,95,168,0.6)" : "rgba(133,200,255,0.6)"}`);
   } else if (esFinde) {
     cls += " border-white/10 bg-white/[0.07]";
   } else {
@@ -81,11 +94,11 @@ function DayCell({ dia, dateStr, esHoy, esFinde, festivo, alerta, ausencias, emp
   }
   // Alerta de personal: anillo rojo interior (compatible con el foco global,
   // que usa outline). Equivale al ::before rojo del legacy.
-  if (alerta) sombras.push("inset 0 0 0 2px #FF7A7A");
+  if (alerta) sombras.push(`inset 0 0 0 2px ${alertColor(theme)}`);
   if (sombras.length) style.boxShadow = sombras.join(", ");
   if (conGente) cls += " cursor-pointer hover:-translate-y-px hover:border-serene/60";
 
-  const numColor = esHoy ? undefined : festivo ? FESTIVO_NUM_COLOR[festivo] : undefined;
+  const numColor = esHoy ? undefined : festivo ? festivoNumColor(festivo, theme) : undefined;
 
   const inner = (
     <>

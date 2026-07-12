@@ -5,6 +5,7 @@
 
 import { PALETTE } from "@/lib/palette";
 import { rgba } from "@/lib/ui";
+import { useAccentMap } from "@/lib/theme";
 import { Reveal, Section, ModuleDivider, BlockHeader, Glass, KeyIdea, DotList, H3 } from "./ui";
 
 const C = PALETTE.serene;
@@ -33,6 +34,7 @@ const OFICINAS = [
 ];
 
 export default function SeccionContexto() {
+  const mapAccent = useAccentMap(); // acentos como TEXTO legibles en claro; tintes/bordes con hex original
   return (
     <Section id="contexto">
       <ModuleDivider
@@ -107,7 +109,7 @@ export default function SeccionContexto() {
       <Reveal className="mt-8 grid gap-3 md:grid-cols-3">
         {OFICINAS.map((o) => (
           <div key={o.nombre} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 backdrop-blur-sm" style={{ borderTop: `3px solid ${o.color}` }}>
-            <p className="font-display text-lg font-bold" style={{ color: o.color }}>{o.nombre}</p>
+            <p className="font-display text-lg font-bold" style={{ color: mapAccent(o.color) }}>{o.nombre}</p>
             <p className="mt-0.5 text-xs text-sand/60">{o.rol}</p>
             <DotList color={o.color} className="mt-3" items={o.items} />
             {o.quien && <p className="mt-3 text-xs text-sand/50">{o.quien}</p>}
@@ -116,9 +118,10 @@ export default function SeccionContexto() {
       </Reveal>
 
       <Reveal className="mt-4">
-        <div className="rounded-2xl border border-electric/60 bg-electric/40 px-5 py-4 text-center backdrop-blur-sm">
-          <p className="font-display text-base font-bold tracking-wide text-sand sm:text-lg">RDR — Reference Data Repository</p>
-          <p className="mt-0.5 text-[13px] text-sand/75">Da servicio transversal a Front, Middle y Back Office</p>
+        {/* Superficie Electric sólida: texto Sand LITERAL (text-sand en claro sería tinta midnight, ilegible sobre azul). */}
+        <div className="rounded-2xl border border-electric/60 bg-electric px-5 py-4 text-center backdrop-blur-sm">
+          <p className="font-display text-base font-bold tracking-wide text-[#F7F8F8] sm:text-lg">RDR — Reference Data Repository</p>
+          <p className="mt-0.5 text-[13px] text-[#F7F8F8]/75">Da servicio transversal a Front, Middle y Back Office</p>
         </div>
       </Reveal>
     </Section>
