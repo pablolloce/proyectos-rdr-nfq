@@ -12,6 +12,8 @@ import EquipoPanel from "./EquipoPanel";
 import Calendario from "./Calendario";
 import DaySheet from "./DaySheet";
 import { IconExternal, IconAlert, IconArrowLeft, IconRefresh, IconInfo, IconSun } from "./icons";
+import ArtBanner from "@/components/chrome/ArtBanner";
+import { ART } from "@/lib/art";
 
 // Acento de la ruta: mandarin (sección "Equipo" del hub, donde vive Vacaciones).
 const ACCENT = PALETTE.mandarin;
@@ -183,6 +185,7 @@ export default function VacacionesRoute() {
 
   return (
     <main className="relative min-h-dvh w-full">
+      <ArtBanner src={ART.equipo} />
       <AmbientBackground />
       <div className="mx-auto w-full max-w-7xl px-5 pb-24 pt-28 sm:px-6">
         {error ? (

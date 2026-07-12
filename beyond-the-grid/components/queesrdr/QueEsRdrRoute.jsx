@@ -22,6 +22,8 @@ import SeccionDetalle from "./SeccionDetalle";
 import SeccionCanales from "./SeccionCanales";
 import SeccionEcosistema from "./SeccionEcosistema";
 import SeccionCierre from "./SeccionCierre";
+import ArtBanner from "@/components/chrome/ArtBanner";
+import { ART } from "@/lib/art";
 
 // Índice de módulos (equivale a la agenda del deck; ancla a cada sección).
 const MODULOS = [
@@ -97,6 +99,7 @@ export default function QueEsRdrRoute() {
 
   return (
     <main className="relative">
+      <ArtBanner src={ART.formacion} />
       {/* Barra de progreso de scroll (scroll-driven CSS, como /formacion) */}
       <div aria-hidden className="rdr-scrollbar" />
       <AmbientBackground lite={lite} />

@@ -10,6 +10,8 @@ import BoardView from "./BoardView";
 import ArchiveView from "./ArchiveView";
 import { Blobs, DialogHost, GLASS, RetroToast, Skel } from "./ui";
 import { IconArrowL } from "./icons";
+import ArtBanner from "@/components/chrome/ArtBanner";
+import { ART } from "@/lib/art";
 
 const EQUIPO_URL = "/team-hub/equipo/equipo.json";
 
@@ -141,6 +143,7 @@ export default function RetroRoute() {
 
   return (
     <main className="relative min-h-dvh w-full">
+      <ArtBanner src={ART.equipo} />
       <Blobs />
 
       <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-24 pt-28 sm:px-6">

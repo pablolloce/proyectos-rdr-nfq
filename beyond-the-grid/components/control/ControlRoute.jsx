@@ -18,6 +18,8 @@ import TabCapacidad from "./TabCapacidad";
 import TabBolsa from "./TabBolsa";
 import TabGastos from "./TabGastos";
 import TabEncuestas from "./TabEncuestas";
+import ArtBanner from "@/components/chrome/ArtBanner";
+import { ART } from "@/lib/art";
 
 /**
  * Control RDR — migración de public/control.html a ruta Next.
@@ -227,6 +229,7 @@ export default function ControlRoute() {
 
   return (
     <main className="relative min-h-dvh">
+      <ArtBanner src={ART.coordinacion} />
       <AmbientBackground />
       <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-24 pt-28 sm:px-6">
         {/* Cabecera de la sección (el chrome global pone título/logos/sesión) */}

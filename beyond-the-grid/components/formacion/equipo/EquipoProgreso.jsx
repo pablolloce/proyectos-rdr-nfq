@@ -10,6 +10,8 @@ import { rgba, n2 } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
 import { archivoDeRecord } from "./mapeo";
 import { IconUsers, IconAlert, IconBack } from "./icons";
+import ArtBanner from "@/components/chrome/ArtBanner";
+import { ART } from "@/lib/art";
 
 /**
  * Vista "Progreso del equipo": tarjeta glass por persona con su avance por la
@@ -283,6 +285,7 @@ export default function EquipoProgreso({ team, teamError, backend }) {
 
   return (
     <main className="relative">
+      <ArtBanner src={ART.formacion} />
       <Fondo />
 
       <div className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-24 pt-28 sm:px-6">

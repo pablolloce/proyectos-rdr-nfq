@@ -33,6 +33,8 @@ import PreChecks from "./PreChecks";
 import Ejecucion from "./Ejecucion";
 import Mergeos from "./Mergeos";
 import CmdDrawer from "./CmdDrawer";
+import ArtBanner from "@/components/chrome/ArtBanner";
+import { ART } from "@/lib/art";
 
 /* ─────────────────────────────────────────────────────────────
    Contexto de la ruta: estado del pase (E), acciones contra el
@@ -702,6 +704,7 @@ export default function PasesRoute() {
   return (
     <PasesCtx.Provider value={ctx}>
       <main className="relative min-h-dvh w-full">
+      <ArtBanner src={ART.proyectos} />
         <AmbientBackground />
         <div className="mx-auto w-full max-w-[1600px] px-5 pb-24 pt-28 sm:px-6">
           {/* Cabecera de página */}

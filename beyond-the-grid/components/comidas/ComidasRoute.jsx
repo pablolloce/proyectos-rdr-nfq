@@ -13,6 +13,8 @@ import Resultados from "./Resultados";
 import Restaurantes from "./Restaurantes";
 import Historico from "./Historico";
 import { IconSemana, IconHistorial, IconAviso, IconVolver } from "./icons";
+import ArtBanner from "@/components/chrome/ArtBanner";
+import { ART } from "@/lib/art";
 
 const EQUIPO_URL = "/team-hub/equipo/equipo.json"; // absoluto: funciona bajo /comidas/ (basePath)
 
@@ -192,6 +194,7 @@ export default function ComidasRoute() {
 
   return (
     <main className="relative">
+      <ArtBanner src={ART.equipo} />
       <AmbientBackground />
 
       <div className="relative z-10 mx-auto w-full max-w-5xl px-5 pb-24 pt-28 sm:px-6">

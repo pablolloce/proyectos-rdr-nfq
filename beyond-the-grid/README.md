@@ -18,6 +18,13 @@ app/
   layout.jsx          Fuentes (Source Serif 4 / Lato) + <AppFrame> + Speculation Rules
   page.jsx            Ruta / -> <BentoHub/>
   formacion/page.jsx  Ruta /formacion -> <FormacionRoute/>
+  formacion/equipo/   Ruta /formacion/equipo -> progreso de formaciones del equipo
+  comidas/            Ruta /comidas -> votación del restaurante (comidasBackend)
+  vacaciones/         Ruta /vacaciones -> calendario anual de ausencias (vacacionesBackend)
+  retro/              Ruta /retro -> retrospectivas en vivo (retroBackend, polling 3s)
+  pases/              Ruta /pases -> ciclo completo del pase a producción (pasesBackend)
+  control/            Ruta /control -> control económico, solo coordinación (controlBackend)
+  que-es-rdr/         Ruta /que-es-rdr -> presentación editorial de introducción (sin backend)
   globals.css         Tailwind + tokens visuales compartidos (blobs, tilt, skeleton…)
   icon.svg            Favicon (isotipo RDR)
 components/
@@ -92,11 +99,16 @@ Configurado para **project page** `https://rdr-nfq.github.io/team-hub/`:
 
 - **Hub real**: las secciones y tarjetas viven en `components/hub/BentoHub.jsx`;
   las URLs externas en `public/links/links.json` (fuente única).
-- **Subpáginas** (`que-es-rdr.html`, `vacaciones.html`, `formacion/`, `pendientes/`…)
-  se sirven tal cual desde `public/` y se publican junto al export.
+- **Todas las páginas de la app son rutas Next** (comidas, vacaciones, retro,
+  pases, control, qué-es-RDR, formaciones del equipo). Cada una replica 1:1 el
+  contrato de su backend Apps Script (URL por clave `*Backend` de links.json;
+  POST `text/plain` sin preflight CORS). En `public/` solo quedan estáticos los
+  **cursos** de `formacion/` y las presentaciones de `pendientes/`.
+- **Arte generativo**: las franjas de los héroes salen de `lib/art.js`
+  (imágenes Higgsfield hotlinkeadas; `ArtBanner` las oculta si el CDN falla).
 - **Login Google**: `components/chrome/AuthGate.jsx` valida contra
   `public/equipo/equipo.json` y comparte sesión (`localStorage` `rdr_auth_email`)
-  con las subpáginas.
+  con las subpáginas estáticas que quedan.
 
 > ⚠️ **OAuth**: el `GOOGLE_CLIENT_ID` debe tener autorizados los *Orígenes de
 > JavaScript* en Google Cloud Console: `https://rdr-nfq.github.io` (producción)
