@@ -55,6 +55,7 @@ const LIGHT_EQ = {
   "#FFE761": "#8A6D00", // canary  -> ocre
   "#8BE1E9": "#0E7490", // aqua    -> cian oscuro
   "#1D7CF4": "#1456CC", // royal   -> azul intenso
+  "#B9D4EE": "#3E6E96", // hielo (deck qué-es-RDR) -> azul pizarra
   "#F7F8F8": "#070E46", // sand    -> tinta midnight
 };
 

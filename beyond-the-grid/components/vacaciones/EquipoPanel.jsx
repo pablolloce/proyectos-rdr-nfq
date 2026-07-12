@@ -91,6 +91,7 @@ function Leyenda({ paletaEquipos, equiposEnUso }) {
  */
 export default function EquipoPanel({ empleados, paletaEquipos, filtros, onToggle, onClear }) {
   const [abierto, setAbierto] = useState(false);
+  const mapAccent = useAccentMap();
   const hayFiltros = filtros.size > 0;
 
   const equiposEnUso = Array.from(
@@ -111,7 +112,8 @@ export default function EquipoPanel({ empleados, paletaEquipos, filtros, onToggl
         aria-controls="equipo-panel-body"
         className="flex w-full items-center gap-2.5 px-4 py-3.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene lg:pointer-events-none"
       >
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border" style={{ borderColor: rgba(ACCENT, 0.35), background: rgba(ACCENT, 0.12), color: ACCENT }}>
+        {/* Texto/icono con acento temado (legible en claro); tintes de fondo/borde con el hex original. */}
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border" style={{ borderColor: rgba(ACCENT, 0.35), background: rgba(ACCENT, 0.12), color: mapAccent(ACCENT) }}>
           <IconUsers size={17} />
         </span>
         <span className="min-w-0 flex-1">
@@ -130,7 +132,7 @@ export default function EquipoPanel({ empleados, paletaEquipos, filtros, onToggl
               type="button"
               onClick={onClear}
               className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.06em] transition hover:brightness-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-              style={{ borderColor: rgba(ACCENT, 0.4), background: rgba(ACCENT, 0.12), color: ACCENT }}
+              style={{ borderColor: rgba(ACCENT, 0.4), background: rgba(ACCENT, 0.12), color: mapAccent(ACCENT) }}
             >
               <IconFilterOff size={13} /> Quitar filtros
             </button>

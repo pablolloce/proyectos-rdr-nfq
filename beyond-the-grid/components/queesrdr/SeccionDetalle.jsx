@@ -202,6 +202,7 @@ const DICCIONARIO = [
 ];
 
 export default function SeccionDetalle() {
+  const tx = useTx(); // acentos data-driven como TEXTO legibles en claro; tintes/bordes con hex original
   return (
     <Section id="detalle">
       <ModuleDivider
@@ -218,10 +219,10 @@ export default function SeccionDetalle() {
         {FINS_BOXES.map((b) => (
           <div
             key={b.label}
-            className="rounded-2xl border p-5 backdrop-blur-sm"
-            style={b.hl ? { borderColor: rgba(FINS, 0.55), background: rgba(FINS, 0.09) } : { borderColor: "rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.045)" }}
+            className={`rounded-2xl border p-5 backdrop-blur-sm ${b.hl ? "" : "border-white/10 bg-white/[0.045]"}`}
+            style={b.hl ? { borderColor: rgba(FINS, 0.55), background: rgba(FINS, 0.09) } : undefined}
           >
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: FINS }}>{b.label}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-serene">{b.label}</p>
             <H3 className="mt-1">{b.title}</H3>
             <p className="mt-2 text-[13px] leading-relaxed text-sand/70">{b.desc}</p>
           </div>
@@ -239,7 +240,7 @@ export default function SeccionDetalle() {
       <Reveal className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {ROLES.map((r) => (
           <div key={r.code} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 backdrop-blur-sm">
-            <p className="text-[11px] font-bold uppercase tracking-[0.15em]" style={{ color: FINS }}>{r.code}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-serene">{r.code}</p>
             <p className="mt-1 text-sm font-bold text-sand">{r.t}</p>
             <p className="mt-1.5 text-[12px] leading-relaxed text-sand/65">{r.d}</p>
           </div>
@@ -252,7 +253,7 @@ export default function SeccionDetalle() {
       <Reveal className="mt-8 grid gap-3 lg:grid-cols-3">
         {/* Renta variable: el maestro, tarjeta destacada a doble altura */}
         <div className="flex flex-col rounded-2xl border p-5 backdrop-blur-sm lg:row-span-2" style={{ borderColor: rgba(ISSU, 0.6), background: rgba(ISSU, 0.09) }}>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: ISSU }}>⭐ Maestro en el banco</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-lime">⭐ Maestro en el banco</p>
           <H3 className="mt-1">Renta Variable</H3>
           <p className="mt-2 text-[14px] leading-relaxed text-sand/80">
             RDR es el <strong className="text-sand">repositorio maestro de Renta Variable</strong> del banco. Acciones, ETFs,
@@ -266,7 +267,7 @@ export default function SeccionDetalle() {
         </div>
         {ISSU_TIPOS.map((tp) => (
           <div key={tp.label} className={`rounded-2xl border border-white/10 bg-white/[0.045] p-4 backdrop-blur-sm ${tp.dim ? "opacity-80" : ""}`}>
-            <p className="text-[11px] font-bold uppercase tracking-[0.15em]" style={{ color: ISSU }}>{tp.label}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-lime">{tp.label}</p>
             <p className="mt-1 text-sm font-bold text-sand">{tp.t}</p>
             <p className="mt-1.5 text-[12px] leading-relaxed text-sand/65">{tp.d}</p>
             <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -302,7 +303,7 @@ export default function SeccionDetalle() {
           <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
             {RV_MODELOS.map((m) => (
               <div key={m.t} className="rounded-xl border border-white/10 bg-white/[0.045] px-4 py-3 backdrop-blur-sm">
-                <p className="text-[13px] font-bold" style={{ color: ISSU }}>{m.t}</p>
+                <p className="text-[13px] font-bold text-lime">{m.t}</p>
                 <p className="mt-0.5 text-[12px] leading-relaxed text-sand/65">{m.d}</p>
               </div>
             ))}
@@ -357,7 +358,7 @@ export default function SeccionDetalle() {
       <Reveal className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {LAGR_TIPOS.map((t) => (
           <div key={t.code} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 backdrop-blur-sm" style={{ borderLeft: `3px solid ${t.color}` }}>
-            <p className="font-display text-lg font-bold" style={{ color: t.color }}>{t.code}</p>
+            <p className="font-display text-lg font-bold" style={{ color: tx(t.color) }}>{t.code}</p>
             <p className="mt-0.5 text-[11px] text-sand/55">{t.full}</p>
             <p className="mt-2 text-[13px] leading-relaxed text-sand/75">{t.d}</p>
           </div>
@@ -394,7 +395,7 @@ export default function SeccionDetalle() {
         <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
           {CADENA.map((p, i) => (
             <div key={p.t} className="relative rounded-2xl border border-white/10 bg-white/[0.045] p-4 backdrop-blur-sm" style={{ borderTop: `3px solid ${p.color}` }}>
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: p.color }}>
+              <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: tx(p.color) }}>
                 <span className="mr-1.5 font-display tabular-nums text-sand/50">{i + 1}</span>{p.t}
               </p>
               <p className="mt-2 text-[12px] leading-relaxed text-sand/70">{p.d}</p>
@@ -444,14 +445,14 @@ export default function SeccionDetalle() {
       <Reveal className="mt-8 space-y-5">
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-5 backdrop-blur-sm" style={{ borderLeft: `4px solid ${PALETTE.lime}` }}>
-            <p className="font-display text-lg font-bold" style={{ color: PALETTE.lime }}>CONFIRMACIÓN</p>
+            <p className="font-display text-lg font-bold text-lime">CONFIRMACIÓN</p>
             <p className="mt-1.5 text-[14px] leading-relaxed text-sand/80">
               Comunicación <strong className="text-sand">bilateral</strong> BBVA ↔ contraparte que confirma los términos del trade.{" "}
               <em>Notification Type</em> vacío.
             </p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-5 backdrop-blur-sm" style={{ borderLeft: `4px solid ${PALETTE.canary}` }}>
-            <p className="font-display text-lg font-bold" style={{ color: PALETTE.canary }}>NOTIFICACIÓN</p>
+            <p className="font-display text-lg font-bold text-canary">NOTIFICACIÓN</p>
             <p className="mt-1.5 text-[14px] leading-relaxed text-sand/80">
               Aviso <strong className="text-sand">unilateral</strong> a un tercero (agente fiscal, depositario…). Requiere{" "}
               <em>Notification Type</em>.
@@ -465,14 +466,15 @@ export default function SeccionDetalle() {
           <p className="mt-2 max-w-prose text-[14px] leading-relaxed text-sand/80">
             Persona de la contraparte que recibe la confirmación. Cada medio referencia un{" "}
             <strong className="text-sand">contacto activo</strong> con su email, fax, idioma y departamento.{" "}
-            <span style={{ color: PALETTE.mandarin }}>Contacto inactivo → SCI bloqueada.</span>
+            <span className="text-mandarin">Contacto inactivo → SCI bloqueada.</span>
           </p>
         </div>
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: PALETTE.lime }}>Tipos de canal</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-lime">Tipos de canal</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {CANALES_SCI.map((c) => (
-              <span key={c.t} className="rounded-full border px-4 py-1.5 text-sm font-bold" style={{ color: c.color, borderColor: rgba(c.color === "#B9D4EE" ? "#B9D4EE" : c.color, 0.55), background: "rgba(255,255,255,0.06)" }}>
+              /* Texto temado; borde-tinte con hex original; fondo glass con la utilidad temada (antes white 6% hardcodeado). */
+              <span key={c.t} className="rounded-full border bg-white/[0.06] px-4 py-1.5 text-sm font-bold" style={{ color: tx(c.color), borderColor: rgba(c.color, 0.55) }}>
                 {c.t}
               </span>
             ))}
