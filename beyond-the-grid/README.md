@@ -104,6 +104,10 @@ Configurado para **project page** `https://rdr-nfq.github.io/team-hub/`:
   contrato de su backend Apps Script (URL por clave `*Backend` de links.json;
   POST `text/plain` sin preflight CORS). En `public/` solo quedan estáticos los
   **cursos** de `formacion/` y las presentaciones de `pendientes/`.
+- **Tema claro/oscuro**: toggle en el Header (persistente en
+  `localStorage("rdr_theme")`, sin FOUC). La clase `rdr-light` en `<html>`
+  conmuta variables CSS (`app/globals.css`) que alimentan la paleta Tailwind;
+  para estilos inline, `lib/theme.js` expone `useTheme`/`useAccent(Map)`.
 - **Arte generativo**: las franjas de los héroes salen de `lib/art.js`
   (imágenes Higgsfield hotlinkeadas; `ArtBanner` las oculta si el CDN falla).
 - **Login Google**: `components/chrome/AuthGate.jsx` valida contra

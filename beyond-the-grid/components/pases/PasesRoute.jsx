@@ -773,7 +773,7 @@ export default function PasesRoute() {
                     </EstadoCard>
                   )}
                   {activePanel === "COMPLETADO" && (
-                    {/* Superficie lime LITERAL: idéntica en ambos temas; texto Electric encima (regla 9). */}
+                    // Superficie lime LITERAL: idéntica en ambos temas; texto Electric encima (regla 9).
                     <section className="relative overflow-hidden rounded-2xl border border-[#88E783] bg-[#88E783] px-6 py-14 text-center text-[#001391]">
                       <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-electric/10"><IconCheck size={34} /></span>
                       <h2 className="mt-5 font-display text-3xl font-bold sm:text-5xl">Pase completado al 100 %</h2>
