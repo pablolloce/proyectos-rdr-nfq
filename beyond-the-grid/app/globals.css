@@ -45,6 +45,15 @@ html.rdr-light body {
   color: #f7f8f8;
 }
 
+/* Desplegables nativos: el popup de <option> no hereda el glass del select
+   (en oscuro salía fondo claro/transparente con texto claro → ilegible).
+   Regla global para TODOS los selects de la web, en ambos temas. */
+select option,
+select optgroup {
+  background-color: rgb(var(--c-midnight));
+  color: rgb(var(--c-sand));
+}
+
 /* Foco visible global y consistente para navegación por teclado (a11y). */
 :focus-visible {
   outline: 2px solid rgb(var(--c-serene));
