@@ -48,14 +48,18 @@ export default function AhoraPanel({ datos, hoy }) {
     [ausenciasPorDia, hoyStr]
   );
 
-  // Próximos 7 días naturales (hoy+1 … hoy+7); se omiten los días sin ausencias.
+  // Próximos 7 días LABORABLES (hoy+1 en adelante, saltando sábados y
+  // domingos); se omiten además los días sin ausencias.
   const proximos = useMemo(() => {
     const out = [];
-    for (let i = 1; i <= 7; i++) {
+    for (let i = 1, laborables = 0; laborables < 7 && i <= 11; i++) {
       const d = addDays(hoy, i);
+      const dow = d.getDay();
+      if (dow === 0 || dow === 6) continue; // fin de semana: fuera
+      laborables++;
       const k = dateKey(d);
       const aus = ausenciasPorDia[k];
-      if (aus && aus.length > 0) out.push({ dateStr: k, dia: d.getDate(), letra: DIA_LETRA[d.getDay()], ausencias: aus });
+      if (aus && aus.length > 0) out.push({ dateStr: k, dia: d.getDate(), letra: DIA_LETRA[dow], ausencias: aus });
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -116,7 +120,7 @@ export default function AhoraPanel({ datos, hoy }) {
 
           {/* Próximos 7 días */}
           <div className="md:border-l md:border-white/10 md:pl-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-sand/50">Próximos 7 días</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-sand/50">Próximos días laborables</p>
             {proximos.length > 0 ? (
               <ul className="mt-3 space-y-2.5">
                 {proximos.map((p) => (
