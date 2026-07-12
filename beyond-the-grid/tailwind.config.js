@@ -9,7 +9,10 @@ module.exports = {
         sans: ["var(--font-lato)", "system-ui", "sans-serif"],
       },
       colors: {
-        // Paleta oficial BBVA (subset presentaciones)
+        // Paleta oficial BBVA (subset presentaciones). Config de build (CJS):
+        // no puede importar lib/palette.js (ESM), que replica los acentos
+        // (serene/mandarin/lime/purple/canary) para usarlos como valor JS en
+        // componentes. Si un HEX cambia aquí, cambia también allí.
         midnight: "#070E46",
         electric: "#001391",
         serene: "#85C8FF",

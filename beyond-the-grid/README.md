@@ -1,6 +1,7 @@
 # Beyond the Grid
 
-Experiencia web inmersiva: **Next.js (App Router) + React Three Fiber + GSAP/ScrollTrigger + Framer Motion + Tailwind + Lenis**.
+Hub del equipo RDR (BBVA × NFQ): **Next.js (App Router, export estático) +
+React Three Fiber + Framer Motion + next-view-transitions + Tailwind**.
 
 ## Arranque
 
@@ -14,51 +15,67 @@ npm run dev   # http://localhost:3000
 
 ```
 app/
-  layout.jsx        Fuentes (Space Grotesk / Inter) + globals + <html>/<body>
-  page.jsx          Server component -> renderiza <Experience/>
-  globals.css       Tailwind + cursor:none + estilos Lenis
+  layout.jsx          Fuentes (Source Serif 4 / Lato) + <AppFrame> + Speculation Rules
+  page.jsx            Ruta / -> <BentoHub/>
+  formacion/page.jsx  Ruta /formacion -> <FormacionRoute/>
+  globals.css         Tailwind + tokens visuales compartidos (blobs, tilt, skeleton…)
+  icon.svg            Favicon (isotipo RDR)
 components/
-  Experience.jsx    Orquestador cliente: capas, cursor, loader, ratón->store
-  Scene.jsx         Canvas R3F (cámara, luces, Environment) — sin SSR
-  DistortedSphere.jsx  Esfera perlin (MeshDistortMaterial) reactiva en useFrame
-  LoadingScreen.jsx Loader brutalista + salida con timeline GSAP
-  CustomCursor.jsx  Cursor con spring (Framer Motion), crece en [data-hover]
-  Hero.jsx          Overlay 100vh con el título de marca "RDR KNOWLEDGE"
-  AuthGate.jsx      Puerta de acceso Google Sign-In (equipo/equipo.json)
-  HubSections.jsx   Contenido REAL del hub: 3 secciones + tarjetas
-  Card.jsx          Tarjeta (enlace interno / abrir externo / copiar / pills)
-  Footer.jsx        Pie + sesión + cerrar sesión
-  Toast.jsx         Avisos flotantes
+  chrome/     Chrome persistente (vive en AppFrame, en todas las rutas)
+    AppFrame.jsx        Orquesta LinksProvider + splash + AuthGate + Header + footer NFQ
+    AuthGate.jsx        Puerta de acceso Google Sign-In (equipo/equipo.json)
+    Header.jsx          Cabecera fija: título/subtítulo por ruta, sesión, logo BBVA
+    LoadingScreen.jsx   Splash de marca (1×sesión, sessionStorage)
+    Toast.jsx           Aviso flotante (usado por lib/links.js)
+  hub/
+    BentoHub.jsx        Contenido REAL del index: secciones -> columnas -> tarjetas
+  formacion/
+    FormacionRoute.jsx    Orquesta seed + localStorage + progreso remoto -> <ProgresoTorre/>
+    ProgresoTorre.jsx     Ruta formativa: niveles, tarjetas de curso, hero + progreso
+    ProgresoSkeleton.jsx  Esqueleto (misma estructura que ProgresoTorre) mientras carga
+    EstructuraTower.jsx   Canvas R3F: nube de partículas (shader) que sigue niveles/scroll
+  icons.jsx   Set de iconos inline compartido por hub/ y formacion/
 hooks/
-  useLenis.js          Smooth scroll + sync con ScrollTrigger/ticker GSAP
-  useGsapAnimations.js Coreografía de scroll + split de texto + puente a Three
+  useTilt.js       Tilt 3D + spotlight por puntero (variables CSS --rx/--ry/--mx/--my)
+  useLowPower.js   Detecta equipos de poca capacidad -> activa modo "lite" (html.rdr-lite)
 lib/
-  gsap.js           Registro de ScrollTrigger (solo cliente)
-  scrollStore.js    Estado mutable fuera de React (puente GSAP <-> Three)
+  formaciones.js   Catálogo de niveles/formaciones/tracks
+  links.js         LinksProvider: fuente única de URLs externas (public/links/links.json)
+  palette.js       Única fuente de los HEX de acento reutilizados en JS (hub + formaciones)
+  progreso.js       Progreso de formación: semilla (progreso.json) ∪ localStorage ∪ backend
+  ui.js            Helpers compartidos (rgba, n2)
 ```
 
 ## Cómo encaja el scroll con el 3D (lo importante)
 
-`scrollStore` es un objeto plano fuera de React.
+No hay una librería de scroll de por medio: `EstructuraTower` (dentro de
+`components/formacion/`) mide el DOM directamente.
 
-1. `useGsapAnimations` crea un `ScrollTrigger` que recorre toda la página y en
-   su `onUpdate` escribe `scrollStore.progress` (0..1).
-2. `Experience` escribe `scrollStore.mouseX/Y` en `mousemove`.
-3. `DistortedSphere` **lee** esos valores en su `useFrame` y aplica `lerp` a
-   rotación, escala, posición, color y distorsión.
+1. Cada `LevelSection` de `ProgresoTorre` marca su `<section data-level={n}>`.
+2. `EstructuraTower` escucha `scroll`/`resize` (con rAF) y calcula, a partir de
+   los `getBoundingClientRect()` de esos `[data-level]`, un **nivel continuo**
+   (p.ej. `2.4`) según qué sección cruza ~42% del alto de pantalla.
+3. En su `useFrame`, amortigua (`lerp`) ese nivel objetivo y con él mueve la
+   cámara/posición de la nube de puntos (desciende en espiral) y activa el
+   `uFocusY` del shader (la banda del nivel activo brilla e "hincha").
+4. El ratón se seguye aparte, con su propio `pointermove` local, y entra en el
+   shader como `uMouse` (parallax).
 
-Así mutamos el objeto a 60 fps **sin provocar re-renders de React** — clave para
-la fluidez. Lenis y GSAP comparten un único `requestAnimationFrame` (el ticker
-de GSAP), evitando saltos entre librerías.
+Así la estructura 3D reacciona al scroll real de la página **sin re-renders de
+React** (todo vive en refs/uniforms) y sin ninguna dependencia de animación
+externa.
 
 ## Convenciones útiles
 
-- `[data-hover]`  -> el cursor personalizado se agranda sobre ese elemento.
-- `[data-reveal]` -> su texto se revela palabra por palabra al entrar en viewport.
-- Material cristal/refracción: en `DistortedSphere.jsx`, sube `transmission`
-  y baja `metalness` (ya hay un comentario con los valores sugeridos).
-- ¿Sin red? El `<Environment preset="city" />` descarga un HDRI; quítalo o usa
-  un `.hdr` local si trabajas offline.
+- `[data-prerender]` -> Speculation Rules (registrado en `app/layout.jsx`)
+  prerenderiza la página al pasar el ratón por el enlace (solo Chromium).
+- `[data-level]` -> marca de sección que lee `EstructuraTower` para saber en
+  qué nivel de formación está el usuario (ver arriba).
+- `.rdr-tilt` / `.rdr-spot` (`hooks/useTilt.js`) -> tilt 3D + spotlight que
+  sigue al puntero en las tarjetas; se desactiva con `prefers-reduced-motion`
+  y en modo "lite".
+- `html.rdr-lite` (`hooks/useLowPower.js`) -> equipos de poca capacidad:
+  `globals.css` quita blur, blobs animados, tilt y spotlight.
 
 ## Despliegue en GitHub Pages
 
@@ -73,12 +90,13 @@ Configurado para **project page** `https://rdr-nfq.github.io/team-hub/`:
 
 ## Contenido migrado y autenticación
 
-- **Hub real**: las 3 secciones y tarjetas viven en `components/HubSections.jsx`;
+- **Hub real**: las secciones y tarjetas viven en `components/hub/BentoHub.jsx`;
   las URLs externas en `public/links/links.json` (fuente única).
 - **Subpáginas** (`que-es-rdr.html`, `vacaciones.html`, `formacion/`, `pendientes/`…)
   se sirven tal cual desde `public/` y se publican junto al export.
-- **Login Google**: `AuthGate.jsx` valida contra `public/equipo/equipo.json` y
-  comparte sesión (`localStorage` `rdr_auth_email`) con las subpáginas.
+- **Login Google**: `components/chrome/AuthGate.jsx` valida contra
+  `public/equipo/equipo.json` y comparte sesión (`localStorage` `rdr_auth_email`)
+  con las subpáginas.
 
 > ⚠️ **OAuth**: el `GOOGLE_CLIENT_ID` debe tener autorizados los *Orígenes de
 > JavaScript* en Google Cloud Console: `https://rdr-nfq.github.io` (producción)

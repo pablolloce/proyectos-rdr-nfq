@@ -1,12 +1,13 @@
 // Catálogo único del HUB Formativo RDR (fuente: rdr-formacion.html).
 // Niveles 00–06. 8 formaciones disponibles (con quiz), resto "próximamente".
 // Colores por track en su variante clara (legibles sobre Midnight).
+import { PALETTE } from "./palette";
 
 export const TRACKS = {
-  welcome: { nombre: "Welcome", color: "#FFE761" },
-  funcional: { nombre: "Funcional", color: "#85C8FF" },
-  tecnico: { nombre: "Técnico", color: "#88E783" },
-  cross: { nombre: "Cross", color: "#9694FF" },
+  welcome: { nombre: "Welcome", color: PALETTE.canary },
+  funcional: { nombre: "Funcional", color: PALETTE.serene },
+  tecnico: { nombre: "Técnico", color: PALETTE.lime },
+  cross: { nombre: "Cross", color: PALETTE.purple },
 };
 
 export const NIVELES = [

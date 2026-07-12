@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import Toast from "@/components/Toast";
+import Toast from "@/components/chrome/Toast";
 
 /**
  * Capa de enlaces del hub (porta la lógica de data-link-key del index.html).

@@ -5,9 +5,10 @@ import dynamic from "next/dynamic";
 import { motion, useReducedMotion } from "framer-motion";
 import { NIVELES, FORMACIONES, TRACKS, hrefDe, PROGRESO_EQUIPO } from "@/lib/formaciones";
 import { estadoCurso, resumen } from "@/lib/progreso";
-import { useTilt } from "@/lib/useTilt";
-import { rgba as hexA, n2 } from "@/lib/ui";
-import { IconLock, IconCheck, IconArrow, IconPlay, IconGrad } from "./icons";
+import { useTilt } from "@/hooks/useTilt";
+import { rgba, n2 } from "@/lib/ui";
+import { PALETTE } from "@/lib/palette";
+import { IconLock, IconCheck, IconArrow, IconPlay, IconGrad } from "../icons";
 
 const EstructuraTower = dynamic(() => import("./EstructuraTower"), { ssr: false });
 
@@ -30,7 +31,7 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
   const done = st === "completada";
   const reduce = useReducedMotion();
   const tilt = useTilt(reduce);
-  const spotColor = done ? "#88E783" : color;
+  const spotColor = done ? PALETTE.lime : color;
 
   // Toda la tarjeta es clicable (stretched-link) -> acceso rápido. Las acciones
   // secundarias (marcar/deshacer) van por encima (z-10). Tilt + spotlight + glow en hover.
@@ -39,8 +40,8 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
       ? "border-lime/25 bg-lime/[0.07] hover:border-lime/55 hover:bg-lime/[0.13]"
       : "border-white/12 bg-white/[0.06] hover:border-serene/55 hover:bg-white/[0.11]";
     return (
-      <div {...tilt} style={{ "--pc": hexA(spotColor, 0.85) }} className={`rdr-tilt group relative flex items-center gap-3 overflow-hidden rounded-2xl border p-3.5 backdrop-blur-md ${base}`}>
-        <span aria-hidden className="rdr-spot" style={{ background: `radial-gradient(150px circle at var(--mx,50%) var(--my,50%), ${hexA(spotColor, 0.22)}, transparent 70%)` }} />
+      <div {...tilt} style={{ "--pc": rgba(spotColor, 0.85) }} className={`rdr-tilt group relative flex items-center gap-3 overflow-hidden rounded-2xl border p-3.5 backdrop-blur-md ${base}`}>
+        <span aria-hidden className="rdr-spot" style={{ background: `radial-gradient(150px circle at var(--mx,50%) var(--my,50%), ${rgba(spotColor, 0.22)}, transparent 70%)` }} />
         {done ? (
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-lime/20 text-lime"><IconCheck size={16} /></span>
         ) : (
@@ -52,7 +53,7 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
             {f.titulo}
           </a>
           <span className="mt-0.5 flex items-center gap-2 text-[11px] text-sand/70">
-            <span className="inline-flex shrink-0 items-center rounded-full px-1.5 py-px text-[10px] font-bold uppercase tracking-wide" style={{ color: tr.color, backgroundColor: hexA(tr.color, 0.16) }}>{tr.nombre}</span>
+            <span className="inline-flex shrink-0 items-center rounded-full px-1.5 py-px text-[10px] font-bold uppercase tracking-wide" style={{ color: tr.color, backgroundColor: rgba(tr.color, 0.16) }}>{tr.nombre}</span>
             <span className="truncate tabular-nums">{done ? <span className="font-semibold uppercase tracking-wide text-lime/80">Completada · repasar</span> : f.duracion}</span>
           </span>
         </div>
@@ -76,7 +77,7 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
     <div aria-disabled="true" className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-3.5 text-sand/40">
       <IconLock size={16} className="shrink-0" />
       <span className="flex-1 truncate text-sm">{f.titulo}</span>
-      <span className="hidden shrink-0 items-center rounded-full px-1.5 py-px text-[10px] font-bold uppercase tracking-wide sm:inline-flex" style={{ color: hexA(tr.color, 0.75), backgroundColor: hexA(tr.color, 0.1) }}>{tr.nombre}</span>
+      <span className="hidden shrink-0 items-center rounded-full px-1.5 py-px text-[10px] font-bold uppercase tracking-wide sm:inline-flex" style={{ color: rgba(tr.color, 0.75), backgroundColor: rgba(tr.color, 0.1) }}>{tr.nombre}</span>
       <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">{st === "proximamente" ? "Próximamente" : "Bloqueado"}</span>
     </div>
   );
@@ -166,7 +167,7 @@ export default function ProgresoTorre({ niveles, completadas, current, onMarcar 
       ) : (
         <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
           <span className="absolute left-1/2 top-0 h-full w-24 -translate-x-1/2 bg-gradient-to-b from-serene/15 via-purple/10 to-transparent blur-2xl" />
-          <span className="rdr-blob left-[-10%] top-[20%] h-64 w-64" style={{ background: "#1D7CF4" }} />
+          <span className="rdr-blob left-[-10%] top-[20%] h-64 w-64" style={{ background: PALETTE.royal }} />
         </div>
       )}
 

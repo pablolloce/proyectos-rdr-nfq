@@ -1,7 +1,7 @@
 import "./globals.css";
 import { Source_Serif_4, Lato } from "next/font/google";
 import { ViewTransitions } from "next-view-transitions";
-import AppFrame from "@/components/AppFrame";
+import AppFrame from "@/components/chrome/AppFrame";
 
 // BBVA: Source Serif 4 para titulares, Lato para el resto.
 const serif = Source_Serif_4({

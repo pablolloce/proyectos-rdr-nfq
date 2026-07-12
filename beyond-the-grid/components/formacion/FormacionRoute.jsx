@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useAuth } from "./AuthGate";
+import { useAuth } from "../chrome/AuthGate";
 import { PROGRESO_URL, completadasDe, estadoNiveles, nivelActual, marcar, onProgreso, cargarRemoto, getRemotoCache } from "@/lib/progreso";
 import ProgresoTorre from "./ProgresoTorre";
 import ProgresoSkeleton from "./ProgresoSkeleton";

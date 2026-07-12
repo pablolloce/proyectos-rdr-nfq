@@ -3,23 +3,24 @@
 import { useEffect, useRef } from "react";
 import { Link } from "next-view-transitions";
 import { useReducedMotion } from "framer-motion";
-import { useTilt } from "@/lib/useTilt";
-import { useLowPower } from "@/lib/useLowPower";
+import { useTilt } from "@/hooks/useTilt";
+import { useLowPower } from "@/hooks/useLowPower";
 import { useLinks } from "@/lib/links";
-import { useAuth } from "./AuthGate";
+import { useAuth } from "../chrome/AuthGate";
 import { rgba } from "@/lib/ui";
+import { PALETTE } from "@/lib/palette";
 import {
   IconBook, IconLink, IconUtensils, IconCalendar, IconRefresh, IconClock,
   IconRocket, IconCode, IconFolder, IconShield, IconArrow, IconExternal,
   IconCopy, IconGrad, IconOrbit,
-} from "./icons";
+} from "../icons";
 
 // Estructura por TIPO. Cada sección = una columna. Acciones:
 // page (html), route (ruta Next), open (externo links.json), copy (portapapeles).
 // Tarjetas multi-acción: varias pills (Time Report NFQ+BBVA, Repositorio GitHub+Drive).
 const SECTIONS = [
   {
-    id: "form", n: "01", title: "Formación", color: "#85C8FF",
+    id: "form", n: "01", title: "Formación", color: PALETTE.serene,
     items: [
       { kind: "feature", label: "HUB Formativo", desc: "Ruta por niveles 00–06", icon: IconGrad, action: "route", target: "/formacion" },
       { label: "¿Qué es RDR?", desc: "Presentación de introducción", icon: IconBook, action: "page", target: "/team-hub/que-es-rdr.html" },
@@ -27,7 +28,7 @@ const SECTIONS = [
     ],
   },
   {
-    id: "equipo", n: "02", title: "Equipo", color: "#FFB56B",
+    id: "equipo", n: "02", title: "Equipo", color: PALETTE.mandarin,
     items: [
       { label: "Comidas", desc: "Restaurante de los jueves", icon: IconUtensils, action: "page", target: "/team-hub/comidas.html" },
       { label: "Vacaciones", desc: "Calendario y política", icon: IconCalendar, action: "page", target: "/team-hub/vacaciones.html" },
@@ -39,7 +40,7 @@ const SECTIONS = [
     ],
   },
   {
-    id: "proy", n: "03", title: "Proyectos", color: "#88E783",
+    id: "proy", n: "03", title: "Proyectos", color: PALETTE.lime,
     items: [
       { label: "Pases Calendados", desc: "Releases por entorno", icon: IconRocket, action: "page", target: "/team-hub/pases-calendados.html" },
       { label: "Planificación", desc: "Hoja de planificación", icon: IconCalendar, action: "open", target: "planificacionNFQ" },
@@ -52,7 +53,7 @@ const SECTIONS = [
 ];
 
 const COORD_SECTION = {
-  id: "coord", n: "04", title: "Coordinación", color: "#9694FF",
+  id: "coord", n: "04", title: "Coordinación", color: PALETTE.purple,
   items: [{ label: "Control RDR", desc: "Control económico", icon: IconShield, action: "page", target: "/team-hub/control.html" }],
 };
 
@@ -77,10 +78,10 @@ function AmbientBackground({ lite }) {
   }, [reduce, lite]);
   return (
     <div ref={ref} aria-hidden className="pointer-events-none fixed inset-[-3%] -z-10 overflow-hidden transition-transform duration-300 ease-out">
-      <span className="rdr-blob left-[-8%] top-[6%] h-80 w-80" style={{ background: "#1D7CF4" }} />
-      <span className="rdr-blob right-[4%] top-[-8%] h-72 w-72" style={{ background: "#85C8FF", animationDelay: "-3s" }} />
-      <span className="rdr-blob bottom-[-12%] right-[-4%] h-96 w-96" style={{ background: "#9694FF", animationDelay: "-7s" }} />
-      <span className="rdr-blob bottom-[4%] left-[16%] h-72 w-72" style={{ background: "#88E783", animationDelay: "-11s" }} />
+      <span className="rdr-blob left-[-8%] top-[6%] h-80 w-80" style={{ background: PALETTE.royal }} />
+      <span className="rdr-blob right-[4%] top-[-8%] h-72 w-72" style={{ background: PALETTE.serene, animationDelay: "-3s" }} />
+      <span className="rdr-blob bottom-[-12%] right-[-4%] h-96 w-96" style={{ background: PALETTE.purple, animationDelay: "-7s" }} />
+      <span className="rdr-blob bottom-[4%] left-[16%] h-72 w-72" style={{ background: PALETTE.lime, animationDelay: "-11s" }} />
     </div>
   );
 }
@@ -101,8 +102,10 @@ function ActionPill({ a, accent }) {
   return <button type="button" onClick={() => copyLink(a.target)} className={cls} style={style}>{inner}</button>;
 }
 
+// rounded-2xl: mismo radio de tarjeta que FeatureCard, TypeColumn y las
+// tarjetas de /formacion (CursoCard, Node) — una sola escala de esquinas en toda la app.
 const CARD =
-  "rdr-rise rdr-tilt group relative box-border flex w-full items-center gap-3.5 overflow-hidden rounded-xl border p-4 backdrop-blur-md lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight";
+  "rdr-rise rdr-tilt group relative box-border flex w-full items-center gap-3.5 overflow-hidden rounded-2xl border p-4 backdrop-blur-md lg:min-h-0 lg:flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene focus-visible:ring-offset-2 focus-visible:ring-offset-midnight";
 
 function CardInner({ item, accent }) {
   const { icon: Icon } = item;
@@ -134,7 +137,7 @@ function Card({ item, accent, delay }) {
   if (item.actions) {
     const { icon: Icon } = item;
     return (
-      <div {...tilt} className="rdr-rise rdr-tilt group relative box-border flex w-full flex-col justify-center gap-3 overflow-hidden rounded-xl border bg-white/[0.055] p-4 backdrop-blur-md lg:min-h-0 lg:flex-1" style={style}>
+      <div {...tilt} className="rdr-rise rdr-tilt group relative box-border flex w-full flex-col justify-center gap-3 overflow-hidden rounded-2xl border bg-white/[0.055] p-4 backdrop-blur-md lg:min-h-0 lg:flex-1" style={style}>
         <span aria-hidden className="rdr-spot" style={{ background: `radial-gradient(160px circle at var(--mx,50%) var(--my,50%), ${rgba(accent, 0.2)}, transparent 70%)` }} />
         <div className="relative flex items-center gap-3.5">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border" style={{ borderColor: rgba(accent, 0.3), background: rgba(accent, 0.12), color: accent }}>

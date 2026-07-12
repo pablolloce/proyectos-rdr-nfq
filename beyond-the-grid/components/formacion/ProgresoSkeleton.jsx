@@ -1,5 +1,7 @@
 "use client";
 
+import { PALETTE } from "@/lib/palette";
+
 /**
  * Skeleton de /formacion con la MISMA estructura que ProgresoTorre, para cubrir
  * la espera mientras carga la información de la cuenta (progreso.json + backend)
@@ -9,8 +11,8 @@ export default function ProgresoSkeleton() {
   return (
     <main className="relative" aria-busy="true">
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <span className="rdr-blob left-1/2 top-1/4 h-72 w-72 -translate-x-1/2" style={{ background: "#1D7CF4" }} />
-        <span className="rdr-blob bottom-[-8%] right-[-4%] h-72 w-72" style={{ background: "#9694FF", animationDelay: "-6s" }} />
+        <span className="rdr-blob left-1/2 top-1/4 h-72 w-72 -translate-x-1/2" style={{ background: PALETTE.royal }} />
+        <span className="rdr-blob bottom-[-8%] right-[-4%] h-72 w-72" style={{ background: PALETTE.purple, animationDelay: "-6s" }} />
       </div>
 
       <div className="relative z-10 mx-auto w-full max-w-2xl px-5 pb-32 pt-28 sm:px-6">
