@@ -85,7 +85,7 @@ export default function VotoPanel({
                 onClick={() => onEstado(id)}
                 className={`flex items-center justify-center gap-1.5 rounded-xl border px-2 py-2.5 text-[12.5px] font-bold leading-tight transition active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mandarin ${
                   on
-                    ? "border-mandarin bg-mandarin text-electric"
+                    ? "border-[#FFB56B] bg-[#FFB56B] text-[#001391]"
                     : "border-white/12 bg-midnight/60 text-sand hover:border-mandarin/50 hover:-translate-y-px"
                 }`}
               >
@@ -116,7 +116,7 @@ export default function VotoPanel({
         type="button"
         onClick={onEnviar}
         disabled={disabled || sending}
-        className="mt-1 flex w-full items-center justify-center gap-2 rounded-full border-0 bg-mandarin px-4 py-3 text-[15px] font-extrabold tracking-[0.02em] text-electric transition hover:-translate-y-px hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sand"
+        className="mt-1 flex w-full items-center justify-center gap-2 rounded-full border-0 bg-[#FFB56B] px-4 py-3 text-[15px] font-extrabold tracking-[0.02em] text-[#001391] transition hover:-translate-y-px hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sand"
         style={{ boxShadow: `0 10px 26px -12px ${rgba(ACCENT, 0.65)}` }}
       >
         <IconEnviar size={17} /> {sending ? "Enviando…" : "Enviar mi elección"}

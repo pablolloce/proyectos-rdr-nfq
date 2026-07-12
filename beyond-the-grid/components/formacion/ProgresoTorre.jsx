@@ -9,6 +9,7 @@ import { estadoCurso, resumen } from "@/lib/progreso";
 import { useTilt } from "@/hooks/useTilt";
 import { rgba, n2 } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
+import { useTheme, useAccentMap } from "@/lib/theme";
 import { IconLock, IconCheck, IconArrow, IconPlay, IconGrad } from "../icons";
 
 const EstructuraTower = dynamic(() => import("./EstructuraTower"), { ssr: false });
@@ -32,6 +33,8 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
   const done = st === "completada";
   const reduce = useReducedMotion();
   const tilt = useTilt(reduce);
+  const acc = useAccentMap(); // TRACKS como TEXTO -> tono AA por tema (el tinte de fondo mantiene el hex original)
+  const { theme } = useTheme();
   const spotColor = done ? PALETTE.lime : color;
 
   // Toda la tarjeta es clicable (stretched-link) -> acceso rápido. Las acciones
@@ -54,7 +57,7 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
             {f.titulo}
           </a>
           <span className="mt-0.5 flex items-center gap-2 text-[11px] text-sand/70">
-            <span className="inline-flex shrink-0 items-center rounded-full px-1.5 py-px text-[10px] font-bold uppercase tracking-wide" style={{ color: tr.color, backgroundColor: rgba(tr.color, 0.16) }}>{tr.nombre}</span>
+            <span className="inline-flex shrink-0 items-center rounded-full px-1.5 py-px text-[10px] font-bold uppercase tracking-wide" style={{ color: acc(tr.color), backgroundColor: rgba(tr.color, 0.16) }}>{tr.nombre}</span>
             <span className="truncate tabular-nums">{done ? <span className="font-semibold uppercase tracking-wide text-lime/80">Completada · repasar</span> : f.duracion}</span>
           </span>
         </div>
@@ -78,17 +81,20 @@ function CursoCard({ f, completadas, niveles, onMarcar }) {
     <div aria-disabled="true" className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-3.5 text-sand/40">
       <IconLock size={16} className="shrink-0" />
       <span className="flex-1 truncate text-sm">{f.titulo}</span>
-      <span className="hidden shrink-0 items-center rounded-full px-1.5 py-px text-[10px] font-bold uppercase tracking-wide sm:inline-flex" style={{ color: rgba(tr.color, 0.75), backgroundColor: rgba(tr.color, 0.1) }}>{tr.nombre}</span>
+      <span className="hidden shrink-0 items-center rounded-full px-1.5 py-px text-[10px] font-bold uppercase tracking-wide sm:inline-flex" style={{ color: rgba(acc(tr.color), theme === "light" ? 0.9 : 0.75), backgroundColor: rgba(tr.color, 0.1) }}>{tr.nombre}</span>
       <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider">{st === "proximamente" ? "Próximamente" : "Bloqueado"}</span>
     </div>
   );
 }
 
 function Node({ nv }) {
+  const { theme } = useTheme();
   const e = nv.estado;
+  // Halo del nodo "actual": serene brillante en oscuro, azul medio suave en claro.
+  const glow = theme === "light" ? "shadow-[0_0_24px_-4px_rgba(21,95,168,.45)]" : "shadow-[0_0_24px_-4px_rgba(133,200,255,.7)]";
   const cls =
     e === "completado" ? "border-lime/60 bg-lime/20 text-lime"
-      : e === "actual" ? "border-serene/70 bg-serene/15 text-serene shadow-[0_0_24px_-4px_rgba(133,200,255,.7)]"
+      : e === "actual" ? `border-serene/70 bg-serene/15 text-serene ${glow}`
         : "border-white/15 bg-midnight/80 text-sand/45";
   return (
     <div className={`relative z-10 grid h-14 w-14 place-items-center rounded-2xl border-2 font-display text-sm font-bold backdrop-blur ${cls}`}>
@@ -99,8 +105,14 @@ function Node({ nv }) {
 }
 
 function LevelSection({ lvl, nv, completadas, niveles, onMarcar, onActivate, reduce, isLast }) {
+  const { theme } = useTheme();
   const items = FORMACIONES.filter((f) => f.nivel === lvl.n);
   const dim = nv.estado === "bloqueado";
+  // Halo tras el texto para despegarlo de las partículas: Midnight en oscuro, Sand en claro.
+  const textShadow =
+    theme === "light"
+      ? "0 1px 12px rgba(247,248,248,0.92), 0 0 3px rgba(247,248,248,0.7)"
+      : "0 1px 12px rgba(7,14,70,0.92), 0 0 3px rgba(7,14,70,0.7)";
   return (
     <motion.section
       aria-labelledby={`niv-${lvl.n}`}
@@ -118,7 +130,7 @@ function LevelSection({ lvl, nv, completadas, niveles, onMarcar, onActivate, red
 
       <div className="row-span-2"><Node nv={nv} /></div>
 
-      <div className={dim ? "opacity-60" : ""} style={{ textShadow: "0 1px 12px rgba(7,14,70,0.92), 0 0 3px rgba(7,14,70,0.7)" }}>
+      <div className={dim ? "opacity-60" : ""} style={{ textShadow }}>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="font-display text-xs font-bold tabular-nums text-serene/70">N{n2(lvl.n)}</span>
           <h2 id={`niv-${lvl.n}`} className="font-display text-lg font-bold text-sand sm:text-xl">{lvl.titulo}</h2>

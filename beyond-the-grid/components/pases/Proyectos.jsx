@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { PALETTE } from "@/lib/palette";
 import { rgba } from "@/lib/ui";
+import { useAccentMap } from "@/lib/theme";
 import { usePases } from "./PasesRoute";
 import {
   CIBRDR_PREFIX,
@@ -157,7 +158,9 @@ function CompRow({ c, E }) {
 /* ── Contenedor de un proyecto ── */
 function ProjectCard({ p, idx, E }) {
   const { actions, proyectosLocked } = usePases();
-  const color = PROJECT_COLORS[idx % PROJECT_COLORS.length];
+  const mapAccent = useAccentMap();
+  const color = PROJECT_COLORS[idx % PROJECT_COLORS.length]; // superficie (dot, inset): literal, vale en ambos temas
+  const textColor = mapAccent(color); // como TEXTO se tema (en claro los acentos claros no contrastan)
   const [idT, setIdT] = useState(p.idTraspaso || "");
   useEffect(() => { setIdT(p.idTraspaso || ""); }, [p.idTraspaso]);
   const idErr = validarIdTraspasoValor(idT);
@@ -170,7 +173,7 @@ function ProjectCard({ p, idx, E }) {
           <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} aria-hidden />
           <h4 className="font-display text-lg font-bold text-sand">{p.nombre}</h4>
           {feats.map((f) => (
-            <span key={f} className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ color, backgroundColor: rgba(color, 0.14) }}>{f}</span>
+            <span key={f} className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ color: textColor, backgroundColor: rgba(color, 0.14) }}>{f}</span>
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-3 text-xs text-sand/70">

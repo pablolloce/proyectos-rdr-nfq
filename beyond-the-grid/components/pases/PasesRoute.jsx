@@ -11,6 +11,7 @@ import {
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useLinks } from "@/lib/links";
+import { useAccent } from "@/lib/theme";
 import { PALETTE } from "@/lib/palette";
 import { rgba } from "@/lib/ui";
 import {
@@ -105,7 +106,9 @@ function CalendarIcon({ fecha }) {
   const mes = MESES[parseInt(parts[1], 10) - 1] || "---";
   return (
     <div className="w-36 overflow-hidden rounded-xl border-2 border-serene/40 bg-white/[0.06] backdrop-blur" aria-hidden>
-      <div className="bg-electric px-2 py-1.5 text-xs font-bold uppercase tracking-[0.08em] text-sand">{mes}</div>
+      {/* Electric es fijo en ambos temas → el texto encima va en Sand LITERAL
+          (text-sand en claro se volvería tinta oscura sobre azul oscuro). */}
+      <div className="bg-electric px-2 py-1.5 text-xs font-bold uppercase tracking-[0.08em] text-[#F7F8F8]">{mes}</div>
       <div className="px-4 py-3 font-display text-6xl font-bold leading-none text-sand">{dia}</div>
     </div>
   );
@@ -114,6 +117,7 @@ function CalendarIcon({ fecha }) {
 export default function PasesRoute() {
   const links = useLinks();
   const reduce = useReducedMotion();
+  const accent = useAccent(ACCENT); // lime temado para estilos inline (texto/borde legible en claro)
 
   // URLs desde links.json (fuente única) — misma resolución que el legacy.
   const apiUrl = links?.getUrl ? links.getUrl("pasesBackend") : null;
@@ -711,7 +715,7 @@ export default function PasesRoute() {
             <div>
               <p className="mb-2 font-sans text-xs font-bold uppercase tracking-[0.3em] text-lime/80">Proyectos</p>
               <h2 className="flex items-center gap-3 font-display text-3xl font-bold tracking-tight text-sand sm:text-4xl">
-                <span className="grid h-11 w-11 place-items-center rounded-xl border" style={{ borderColor: rgba(ACCENT, 0.35), background: rgba(ACCENT, 0.12), color: ACCENT }}>
+                <span className="grid h-11 w-11 place-items-center rounded-xl border" style={{ borderColor: rgba(accent, 0.35), background: rgba(accent, 0.12), color: accent }}>
                   <IconRocket size={24} />
                 </span>
                 Pases Calendados
@@ -769,7 +773,8 @@ export default function PasesRoute() {
                     </EstadoCard>
                   )}
                   {activePanel === "COMPLETADO" && (
-                    <section className="relative overflow-hidden rounded-2xl border border-lime/40 bg-lime px-6 py-14 text-center text-electric">
+                    {/* Superficie lime LITERAL: idéntica en ambos temas; texto Electric encima (regla 9). */}
+                    <section className="relative overflow-hidden rounded-2xl border border-[#88E783] bg-[#88E783] px-6 py-14 text-center text-[#001391]">
                       <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-electric/10"><IconCheck size={34} /></span>
                       <h2 className="mt-5 font-display text-3xl font-bold sm:text-5xl">Pase completado al 100 %</h2>
                       <p className="mx-auto mt-3 max-w-xl text-base sm:text-lg">
@@ -867,7 +872,7 @@ function CabeceraControles({ ctx, onCambiarFecha }) {
                 title="Guardar cabecera"
                 aria-label="Guardar cabecera"
                 onClick={() => scheduleCabSave(cab)}
-                className="grid w-10 shrink-0 place-items-center rounded-lg bg-serene text-electric transition hover:brightness-95 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+                className="grid w-10 shrink-0 place-items-center rounded-lg bg-[#85C8FF] text-[#001391] transition hover:brightness-95 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
               >
                 <IconSave size={15} />
               </button>
@@ -941,7 +946,7 @@ function Stepper({ tabs, enabled, active, onSelect, fase }) {
                     done
                       ? "border-lime/50 bg-lime/20 text-lime"
                       : isActive
-                      ? "border-lime bg-lime text-electric"
+                      ? "border-[#88E783] bg-[#88E783] text-[#001391]" // superficie literal: en claro bg-lime se oscurecería bajo texto Electric
                       : "border-white/20 text-sand/60"
                   }`}
                   aria-hidden

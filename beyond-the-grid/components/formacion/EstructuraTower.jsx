@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useReducedMotion } from "framer-motion";
 import * as THREE from "three";
+import { useTheme } from "@/lib/theme";
 
 /**
  * Estructura 3D orgánica y densa con SHADERS (estilo realtime 3D, tipo yinger.dev):
@@ -23,6 +24,14 @@ const COLS = {
   actual: [0.6, 0.88, 1.0], // serene
   proximamente: [0.68, 0.64, 1.0], // periwinkle/púrpura
   bloqueado: [0.55, 0.66, 1.0], // azul claro (visible)
+};
+// Modo claro: sobre Sand el aditivo se lava, así que se pinta con NormalBlending
+// y tonos oscuros/saturados (mismos matices que LIGHT_EQ de lib/theme).
+const COLS_LIGHT = {
+  completado: [0.106, 0.478, 0.243], // verde oscuro #1B7A3E
+  actual: [0.082, 0.373, 0.659], // azul #155FA8
+  proximamente: [0.357, 0.294, 0.839], // violeta oscuro #5B4BD6
+  bloqueado: [0.48, 0.53, 0.71], // azul grisáceo #7B87B5
 };
 const levelCenterY = (L) => ((L + 0.5) / LV) * HEIGHT - HEIGHT / 2;
 
@@ -59,6 +68,7 @@ const VERT = `
 
 const FRAG = `
   precision mediump float;
+  uniform float uBoost, uGlowK, uAlpha;
   varying vec3 vColor;
   varying float vGlow;
   void main(){
@@ -66,12 +76,12 @@ const FRAG = `
     float r = length(c);
     if (r > 0.5) discard;
     float a = smoothstep(0.5, 0.04, r);
-    vec3 col = vColor * 1.5 + vGlow * 0.6;
-    gl_FragColor = vec4(col, a * (0.92 + vGlow * 0.3));
+    vec3 col = vColor * uBoost + vGlow * uGlowK;
+    gl_FragColor = vec4(col, a * (uAlpha + vGlow * 0.3));
   }
 `;
 
-function Cloud({ estados, reduce }) {
+function Cloud({ estados, reduce, theme }) {
   const pts = useRef();
   const mouse = useRef({ x: 0, y: 0 });
   const target = useRef(0); // nivel continuo objetivo (medido de las secciones [data-level])
@@ -142,34 +152,40 @@ function Cloud({ estados, reduce }) {
     return { geometry: g, levelOf };
   }, []);
 
-  // recolorear por estado de nivel
+  // recolorear por estado de nivel (paleta según tema)
   useEffect(() => {
+    const cols = theme === "light" ? COLS_LIGHT : COLS;
     const col = geometry.getAttribute("aColor");
     for (let i = 0; i < COUNT; i++) {
-      const c = COLS[estados?.[levelOf[i]]] || COLS.bloqueado;
+      const c = cols[estados?.[levelOf[i]]] || cols.bloqueado;
       col.setXYZ(i, c[0], c[1], c[2]);
     }
     col.needsUpdate = true;
-  }, [estados, geometry, levelOf]);
+  }, [estados, geometry, levelOf, theme]);
 
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: {
-          uTime: { value: 0 },
-          uFocusY: { value: 0 },
-          uFocusStr: { value: 0.3 },
-          uMouse: { value: new THREE.Vector2() },
-          uPixelRatio: { value: Math.min(1.75, typeof window !== "undefined" ? window.devicePixelRatio : 1) },
-        },
-        vertexShader: VERT,
-        fragmentShader: FRAG,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }),
-    []
-  );
+  // Material por tema: en oscuro aditivo + boost 1.5 (glow); en claro el aditivo
+  // se lava sobre Sand -> NormalBlending, color 1:1 y alpha algo mayor.
+  const material = useMemo(() => {
+    const light = theme === "light";
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uFocusY: { value: 0 },
+        uFocusStr: { value: 0.3 },
+        uMouse: { value: new THREE.Vector2() },
+        uPixelRatio: { value: Math.min(1.75, typeof window !== "undefined" ? window.devicePixelRatio : 1) },
+        uBoost: { value: light ? 1.0 : 1.5 },
+        uGlowK: { value: light ? 0.25 : 0.6 },
+        uAlpha: { value: light ? 1.0 : 0.92 },
+      },
+      vertexShader: VERT,
+      fragmentShader: FRAG,
+      transparent: true,
+      depthWrite: false,
+      blending: light ? THREE.NormalBlending : THREE.AdditiveBlending,
+    });
+  }, [theme]);
+  useEffect(() => () => material.dispose(), [material]);
 
   useFrame((_, dt) => {
     dt = Math.min(dt, 0.05); // clamp: evita saltos tras lag o cambio de pestaña
@@ -197,18 +213,21 @@ function Cloud({ estados, reduce }) {
 
 export default function EstructuraTower({ estados, activeLevel }) {
   const reduce = useReducedMotion();
+  const { theme } = useTheme();
   const [frameloop, setFrameloop] = useState("always");
   useEffect(() => {
     const v = () => setFrameloop(document.hidden ? "never" : "always");
     document.addEventListener("visibilitychange", v);
     return () => document.removeEventListener("visibilitychange", v);
   }, []);
+  const light = theme === "light";
+  const veil = light ? "rgba(247,248,248,.6)" : "rgba(7,14,70,.5)";
   return (
     <>
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0">
         <Canvas frameloop={frameloop} dpr={[1, 1.75]} camera={{ position: [0, 0, 9], fov: 55 }} gl={{ antialias: true, powerPreference: "high-performance" }}>
-          <color attach="background" args={["#070E46"]} />
-          <Cloud estados={estados} reduce={reduce} />
+          <color attach="background" args={[light ? "#F7F8F8" : "#070E46"]} />
+          <Cloud estados={estados} reduce={reduce} theme={theme} />
         </Canvas>
       </div>
       {/* Velo SOLO central (lados transparentes) para que el texto del centro se
@@ -217,8 +236,7 @@ export default function EstructuraTower({ estados, activeLevel }) {
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0"
         style={{
-          background:
-            "linear-gradient(90deg, transparent 0%, transparent 18%, rgba(7,14,70,.5) 35%, rgba(7,14,70,.5) 65%, transparent 82%, transparent 100%)",
+          background: `linear-gradient(90deg, transparent 0%, transparent 18%, ${veil} 35%, ${veil} 65%, transparent 82%, transparent 100%)`,
         }}
       />
     </>

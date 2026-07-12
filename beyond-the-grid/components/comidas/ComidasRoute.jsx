@@ -242,7 +242,7 @@ export default function ComidasRoute() {
                   }
                 }}
                 className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.06em] transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mandarin ${
-                  active ? "bg-mandarin text-electric" : "text-sand/70 hover:text-sand"
+                  active ? "bg-[#FFB56B] text-[#001391]" : "text-sand/70 hover:text-sand"
                 }`}
               >
                 <Icon size={14} /> {label}

@@ -2,10 +2,23 @@
 
 import { useEffect, useRef } from "react";
 import { PALETTE } from "@/lib/palette";
+import { useTheme } from "@/lib/theme";
 import { IconCheck, IconInfo } from "./icons";
 
 // Tarjeta glass estándar de la ruta (misma receta que el hub y /formacion).
 export const GLASS = "rounded-2xl border border-white/12 bg-white/[0.055] backdrop-blur-md";
+
+/**
+ * Superficie SÓLIDA elevada (modal, dropdown, toast): a diferencia del glass,
+ * necesita un fondo opaco por tema. Oscuro: panel navy con sombra profunda;
+ * claro: panel casi blanco con tinta Midnight y elevación suave.
+ */
+export function usePanel() {
+  const { theme } = useTheme();
+  return theme === "light"
+    ? "border border-white/15 bg-[#FDFDFE]/95 shadow-[0_24px_60px_-24px_rgba(7,14,70,0.35)] backdrop-blur-md"
+    : "border border-white/12 bg-[#0d1642]/95 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] backdrop-blur-md";
+}
 
 /** Fondo ambiental con blobs (mismo patrón que ProgresoSkeleton/BentoHub). */
 export function Blobs() {
@@ -34,6 +47,7 @@ export function Spinner({ className = "" }) {
  * (o el propio diálogo) al abrir. aria-modal + role dialog.
  */
 export function Modal({ open, onClose, labelledBy, maxW = "max-w-md", children }) {
+  const panel = usePanel();
   const ref = useRef(null);
   useEffect(() => {
     if (!open) return undefined;
@@ -65,7 +79,7 @@ export function Modal({ open, onClose, labelledBy, maxW = "max-w-md", children }
         aria-modal="true"
         aria-labelledby={labelledBy}
         tabIndex={-1}
-        className={`max-h-[85vh] w-full ${maxW} overflow-y-auto rounded-2xl border border-white/12 bg-[#0d1642]/95 p-6 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] backdrop-blur-md focus:outline-none`}
+        className={`max-h-[85vh] w-full ${maxW} overflow-y-auto rounded-2xl ${panel} p-6 focus:outline-none`}
       >
         {children}
       </div>
@@ -103,7 +117,7 @@ export function DialogHost({ dialog, onClose }) {
                 onClose();
                 if (dialog.onOk) dialog.onOk();
               }}
-              className="rounded-lg bg-mandarin px-5 py-2 text-sm font-bold text-electric shadow transition hover:brightness-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+              className="rounded-lg bg-[#FFB56B] px-5 py-2 text-sm font-bold text-[#001391] shadow transition hover:brightness-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
             >
               Aceptar
             </button>
@@ -120,10 +134,11 @@ export function DialogHost({ dialog, onClose }) {
  * toast = { msg, kind: "progress" | "success" } | null
  */
 export function RetroToast({ toast }) {
+  const panel = usePanel();
   return (
     <div role="status" aria-live="polite" className="pointer-events-none fixed bottom-16 right-4 z-[90]">
       {toast && (
-        <div className="flex items-center gap-3 rounded-xl border border-white/12 bg-midnight/90 px-5 py-3 shadow-xl backdrop-blur-md">
+        <div className={`flex items-center gap-3 rounded-xl ${panel} px-5 py-3`}>
           {toast.kind === "success" ? <IconCheck size={16} className="shrink-0 text-lime" /> : <Spinner />}
           <span className="text-sm font-medium text-sand">{toast.msg}</span>
         </div>

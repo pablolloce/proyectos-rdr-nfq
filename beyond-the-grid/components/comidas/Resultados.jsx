@@ -4,7 +4,9 @@ import { useMemo } from "react";
 import { computeWeek, capitaliza, fmtLargo } from "./logic";
 import { IconTaper, IconCasa } from "./icons";
 
-/* Tarjetas de acento sólido: texto SIEMPRE Electric Blue (regla dura nº9). */
+/* Tarjetas de acento sólido: texto SIEMPRE Electric Blue (regla dura nº9).
+   Superficies con hex LITERAL (no utilidades temadas): estos tiles BBVA se ven
+   idénticos en modo claro y oscuro. */
 function CardOpcion({ tag, bg, r, flex }) {
   if (!r) {
     return (
@@ -15,7 +17,7 @@ function CardOpcion({ tag, bg, r, flex }) {
     );
   }
   return (
-    <div className={`flex min-h-[118px] flex-col rounded-xl p-4 text-electric ${bg}`}>
+    <div className={`flex min-h-[118px] flex-col rounded-xl p-4 text-[#001391] ${bg}`}>
       <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] opacity-70">{tag}</span>
       <span className="mb-auto mt-2 font-display text-lg font-bold leading-tight">{r.nombre}</span>
       <span className="mt-2.5 flex items-baseline gap-1.5">
@@ -29,7 +31,7 @@ function CardOpcion({ tag, bg, r, flex }) {
 
 function CardSimple({ tag, bg, n, icon: Icon }) {
   return (
-    <div className={`flex min-h-[118px] flex-col rounded-xl p-4 text-electric ${bg}`}>
+    <div className={`flex min-h-[118px] flex-col rounded-xl p-4 text-[#001391] ${bg}`}>
       <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] opacity-70">{tag}</span>
       <span className="mb-auto mt-2"><Icon size={24} /></span>
       <span className="mt-2.5 flex items-baseline gap-1.5">
@@ -69,10 +71,10 @@ export default function Resultados({ semana, votos, equipo }) {
       {c && (
         <>
           <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
-            <CardOpcion tag="1ª opción · más votada" bg="bg-serene" r={c.r1} flex={c.flex} />
-            <CardOpcion tag="2ª opción" bg="bg-aqua" r={c.r2} flex={0} />
-            <CardSimple tag="Taper / Glovo" bg="bg-canary" n={c.taper} icon={IconTaper} />
-            <CardSimple tag="No estoy" bg="bg-sand" n={c.no} icon={IconCasa} />
+            <CardOpcion tag="1ª opción · más votada" bg="bg-[#85C8FF]" r={c.r1} flex={c.flex} />
+            <CardOpcion tag="2ª opción" bg="bg-[#8BE1E9]" r={c.r2} flex={0} />
+            <CardSimple tag="Taper / Glovo" bg="bg-[#FFE761]" n={c.taper} icon={IconTaper} />
+            <CardSimple tag="No estoy" bg="bg-[#F7F8F8] border border-[#001391]/15" n={c.no} icon={IconCasa} />
           </div>
 
           {/* Detalle: quién va a qué + quién falta */}

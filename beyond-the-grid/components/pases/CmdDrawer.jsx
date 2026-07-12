@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useTheme } from "@/lib/theme";
 import { usePases } from "./PasesRoute";
 import { resolverBloquesComandos } from "./comandos";
 import { BtnIcon } from "./ui";
@@ -41,9 +42,15 @@ function CopyBtn({ text }) {
 }
 
 function CmdRow({ txt, esLink }) {
+  const { theme } = useTheme();
+  // Oscuro: inset negro clásico de terminal. Claro: panel de código claro
+  // (tinte electric via bg-white temado) — bg-black/30 sería ilegible en claro.
+  // text-lime / text-serene son utilidades temadas: en claro pasan a verde/azul
+  // oscuros con contraste AA sobre el panel claro.
+  const codeBg = theme === "light" ? "bg-white/[0.08] border border-white/10" : "bg-black/30";
   return (
     <div className="flex items-center gap-2">
-      <code className={`min-w-0 flex-1 break-all rounded-md bg-black/30 px-2.5 py-1.5 font-mono text-[11.5px] leading-relaxed ${esLink ? "text-serene underline underline-offset-2" : "text-lime"}`}>
+      <code className={`min-w-0 flex-1 break-all rounded-md ${codeBg} px-2.5 py-1.5 font-mono text-[11.5px] leading-relaxed ${esLink ? "text-serene underline underline-offset-2" : "text-lime"}`}>
         {esLink ? <a href={txt} target="_blank" rel="noopener noreferrer" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene">{txt}</a> : txt}
       </code>
       <CopyBtn text={txt} />

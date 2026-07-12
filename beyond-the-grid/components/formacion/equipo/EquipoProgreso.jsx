@@ -8,6 +8,7 @@ import { TRACKS } from "@/lib/formaciones";
 import { resumen, estadoNiveles, nivelActual } from "@/lib/progreso";
 import { rgba, n2 } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
+import { useTheme, useAccentMap } from "@/lib/theme";
 import { archivoDeRecord } from "./mapeo";
 import { IconUsers, IconAlert, IconBack } from "./icons";
 import ArtBanner from "@/components/chrome/ArtBanner";
@@ -111,6 +112,9 @@ function StatusPill({ backend }) {
 }
 
 function Filtros({ filtro, onFiltro }) {
+  const { theme } = useTheme();
+  // Punto del filtro "Todo": blanco translúcido en oscuro, tinta en claro (sobre Sand un punto blanco desaparece).
+  const neutro = theme === "light" ? "rgba(7,14,70,.35)" : "rgba(255,255,255,.4)";
   return (
     <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por pista">
       {FILTROS.map((f) => {
@@ -127,7 +131,7 @@ function Filtros({ filtro, onFiltro }) {
                 : "border-white/12 bg-white/[0.05] text-sand/80 hover:border-serene/50 hover:text-sand"
             }`}
           >
-            <span aria-hidden className="h-2 w-2 rounded-full" style={{ backgroundColor: f.color || "rgba(255,255,255,.4)" }} />
+            <span aria-hidden className="h-2 w-2 rounded-full" style={{ backgroundColor: f.color || neutro }} />
             {f.label}
           </button>
         );

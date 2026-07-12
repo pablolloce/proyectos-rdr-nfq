@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { rgba } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
+import { useAccentMap } from "@/lib/theme";
 import { useTilt } from "@/hooks/useTilt";
 import { ACCENT } from "./constants";
 import { GLASS, Modal, Skel, Spinner } from "./ui";
@@ -16,7 +17,7 @@ const INPUT =
   "w-full rounded-lg border border-white/15 bg-white/[0.06] px-3 py-2 text-sm text-sand placeholder:text-sand/40 transition focus:border-mandarin/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene";
 const LABEL = "mb-1 block text-xs font-bold uppercase tracking-wider text-sand/60";
 const BTN_PRIMARY =
-  "inline-flex items-center justify-center gap-2 rounded-lg bg-mandarin px-4 py-2 text-sm font-bold text-electric shadow transition hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene";
+  "inline-flex items-center justify-center gap-2 rounded-lg bg-[#FFB56B] px-4 py-2 text-sm font-bold text-[#001391] shadow transition hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene";
 const BTN_GHOST =
   "inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/[0.06] px-3 py-2 text-sm font-medium text-sand/80 transition hover:border-white/30 hover:bg-white/[0.1] hover:text-sand active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene";
 
