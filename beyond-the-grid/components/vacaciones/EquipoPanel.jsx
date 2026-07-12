@@ -89,7 +89,7 @@ function Leyenda({ paletaEquipos, equiposEnUso }) {
  * + leyenda de festivos/equipos. En móvil es plegable para no empujar el
  * calendario fuera de la vista; en desktop va siempre abierto y sticky.
  */
-export default function EquipoPanel({ empleados, paletaEquipos, filtros, onToggle, onClear }) {
+export default function EquipoPanel({ empleados, paletaEquipos, filtros, onToggle, onClear, ausentesHoy = 0 }) {
   const [abierto, setAbierto] = useState(false);
   const mapAccent = useAccentMap();
   const hayFiltros = filtros.size > 0;
@@ -119,8 +119,20 @@ export default function EquipoPanel({ empleados, paletaEquipos, filtros, onToggl
         <span className="min-w-0 flex-1">
           <span className="block font-display text-base font-bold leading-tight text-sand">Equipo</span>
           <span className="block text-[11px] text-sand/60">
-            {hayFiltros ? `${filtros.size} seleccionada${filtros.size === 1 ? "" : "s"} — toca para filtrar` : "Toca un nombre para filtrar"}
+            {filtros.size === 1
+              ? "Modo persona: el calendario marca sus días"
+              : hayFiltros
+                ? `${filtros.size} seleccionadas — toca para filtrar`
+                : "Toca un nombre para filtrar"}
           </span>
+        </span>
+        {/* Contador de ausentes de HOY (fecha real del cliente). */}
+        <span
+          className="shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold tabular-nums"
+          style={{ borderColor: rgba(ACCENT, 0.35), background: rgba(ACCENT, 0.12), color: mapAccent(ACCENT) }}
+          aria-label={`${ausentesHoy} ${ausentesHoy === 1 ? "ausente" : "ausentes"} hoy`}
+        >
+          {ausentesHoy} hoy
         </span>
         <IconChevron size={18} className={`shrink-0 text-sand/50 transition-transform lg:hidden ${abierto ? "rotate-180" : ""}`} />
       </button>

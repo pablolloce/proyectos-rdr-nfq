@@ -1,22 +1,30 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useLinks } from "@/lib/links";
 import { useTilt } from "@/hooks/useTilt";
 import { rgba } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
 import { useTheme, useAccentMap } from "@/lib/theme";
-import { normalizarColores } from "./constants";
+import { normalizarColores, dateKey } from "./constants";
 import EquipoPanel from "./EquipoPanel";
 import Calendario from "./Calendario";
 import DaySheet from "./DaySheet";
-import { IconExternal, IconAlert, IconArrowLeft, IconRefresh, IconInfo, IconSun } from "./icons";
+import AhoraPanel from "./AhoraPanel";
+import PersonasView from "./PersonasView";
+import { IconExternal, IconAlert, IconArrowLeft, IconRefresh, IconInfo, IconSun, IconCalendar, IconUsers } from "./icons";
 import ArtBanner from "@/components/chrome/ArtBanner";
 import { ART } from "@/lib/art";
 
 // Acento de la ruta: mandarin (sección "Equipo" del hub, donde vive Vacaciones).
 const ACCENT = PALETTE.mandarin;
+
+// Conmutador de vista (mismo patrón segmented que las tabs de /comidas).
+const VISTAS = [
+  { id: "calendario", label: "Calendario", icon: IconCalendar },
+  { id: "personas", label: "Personas", icon: IconUsers },
+];
 
 function AmbientBackground() {
   return (
@@ -40,6 +48,10 @@ function VacacionesSkeleton() {
       <p className="mb-6 font-sans text-xs font-bold uppercase tracking-[0.3em] text-serene/80" role="status" aria-live="polite">
         Cargando calendario…
       </p>
+      {/* Resumen "Ahora" */}
+      <div className="mb-6 h-40 rounded-2xl rdr-skel" />
+      {/* Conmutador de vista */}
+      <div className="mb-6 h-11 w-64 max-w-full rounded-full rdr-skel" />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
         <div className="h-72 rounded-2xl rdr-skel" />
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
@@ -120,6 +132,7 @@ function SolicitarCard({ formUrl }) {
 export default function VacacionesRoute() {
   const { getUrl, error: linksError } = useLinks();
   const { theme } = useTheme();
+  const reduce = useReducedMotion();
   // La autenticación la pone el chrome (AuthGate en AppFrame): esta vista es
   // de solo lectura y no necesita email ni rol.
   const apiUrl = getUrl("vacacionesBackend");
@@ -130,6 +143,10 @@ export default function VacacionesRoute() {
   const [reloadKey, setReloadKey] = useState(0);
   const [filtros, setFiltros] = useState(() => new Set());
   const [sheet, setSheet] = useState(null); // { dateStr, ausencias }
+  const [vista, setVista] = useState("calendario"); // "calendario" | "personas"
+  // Fecha real del cliente, congelada al montar (evita rarezas si la sesión
+  // cruza medianoche a mitad de interacción).
+  const [hoy] = useState(() => new Date());
 
   // Carga de datos (idéntica al legacy: GET simple, sin headers -> sin preflight).
   useEffect(() => {
@@ -194,6 +211,14 @@ export default function VacacionesRoute() {
       ? new Date(datos.generatedAt).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })
       : null;
 
+  // Ausentes HOY (fecha real del cliente) para el contador del EquipoPanel.
+  // Solo tiene sentido si el año publicado es el año en curso.
+  const ausentesHoy = useMemo(() => {
+    if (!datos) return 0;
+    if ((datos.year || hoy.getFullYear()) !== hoy.getFullYear()) return 0;
+    return (datos.ausenciasPorDia?.[dateKey(hoy)] || []).length;
+  }, [datos, hoy]);
+
   return (
     <main className="relative min-h-dvh w-full">
       <ArtBanner src={ART.equipo} />
@@ -209,26 +234,94 @@ export default function VacacionesRoute() {
         ) : (
           <>
             <Hero actualizado={actualizado} />
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
-              {/* Columna izquierda: solicitar + equipo/filtros + nota (sticky en desktop) */}
-              <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-                <SolicitarCard formUrl={formUrl} />
-                <EquipoPanel
-                  empleados={datosVis.empleados}
-                  paletaEquipos={datosVis.paletaEquipos}
-                  filtros={filtros}
-                  onToggle={toggleFiltro}
-                  onClear={limpiarFiltros}
-                />
-                <p className="flex items-start gap-2 px-1 text-xs leading-relaxed text-sand/55">
-                  <IconInfo size={14} className="mt-0.5 shrink-0" />
-                  Las aprobaciones las gestionan los responsables desde el panel interno (les llega un enlace en el correo de aviso).
-                </p>
-              </div>
 
-              {/* Calendario anual */}
-              <Calendario datos={datosVis} filtros={filtros} totalActivos={totalActivos} onOpenDay={abrirDia} />
+            {/* Resumen "Ahora": hoy + próximos 7 días (fecha real del cliente). */}
+            <AhoraPanel datos={datosVis} hoy={hoy} />
+
+            {/* Conmutador de vista (segmented, como las tabs de /comidas). */}
+            <div role="tablist" aria-label="Vistas de vacaciones" className="mb-6 inline-flex gap-1 rounded-full border border-white/12 bg-white/[0.055] p-1 backdrop-blur-md">
+              {VISTAS.map(({ id, label, icon: Icon }) => {
+                const active = vista === id;
+                return (
+                  <button
+                    key={id}
+                    role="tab"
+                    id={`vac-tab-${id}`}
+                    aria-selected={active}
+                    aria-controls={`vac-panel-${id}`}
+                    onClick={() => setVista(id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+                        const next = VISTAS[(VISTAS.findIndex((v) => v.id === vista) + 1) % VISTAS.length].id;
+                        setVista(next);
+                        document.getElementById(`vac-tab-${next}`)?.focus();
+                      }
+                    }}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.06em] transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mandarin ${
+                      active ? "bg-[#FFB56B] text-[#001391]" : "text-sand/70 hover:text-sand"
+                    }`}
+                  >
+                    <Icon size={14} /> {label}
+                  </button>
+                );
+              })}
             </div>
+
+            <AnimatePresence mode="wait" initial={false}>
+              {vista === "calendario" ? (
+                <motion.div
+                  key="calendario"
+                  role="tabpanel"
+                  id="vac-panel-calendario"
+                  aria-labelledby="vac-tab-calendario"
+                  initial={{ opacity: 0, y: reduce ? 0 : 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: reduce ? 0 : -8 }}
+                  transition={{ duration: reduce ? 0 : 0.2 }}
+                >
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+                    {/* Columna izquierda: solicitar + equipo/filtros + nota (sticky en desktop) */}
+                    <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+                      <SolicitarCard formUrl={formUrl} />
+                      <EquipoPanel
+                        empleados={datosVis.empleados}
+                        paletaEquipos={datosVis.paletaEquipos}
+                        filtros={filtros}
+                        onToggle={toggleFiltro}
+                        onClear={limpiarFiltros}
+                        ausentesHoy={ausentesHoy}
+                      />
+                      <p className="flex items-start gap-2 px-1 text-xs leading-relaxed text-sand/55">
+                        <IconInfo size={14} className="mt-0.5 shrink-0" />
+                        Las aprobaciones las gestionan los responsables desde el panel interno (les llega un enlace en el correo de aviso).
+                      </p>
+                    </div>
+
+                    {/* Calendario anual */}
+                    <Calendario datos={datosVis} filtros={filtros} totalActivos={totalActivos} onOpenDay={abrirDia} />
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="personas"
+                  role="tabpanel"
+                  id="vac-panel-personas"
+                  aria-labelledby="vac-tab-personas"
+                  initial={{ opacity: 0, y: reduce ? 0 : 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: reduce ? 0 : -8 }}
+                  transition={{ duration: reduce ? 0 : 0.2 }}
+                >
+                  {/* En la vista Personas el panel de filtros no aplica; el
+                      buscador propio de la lista hace ese papel. */}
+                  <div className="mx-auto max-w-3xl space-y-4">
+                    <SolicitarCard formUrl={formUrl} />
+                    <PersonasView datos={datosVis} hoy={hoy} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <DaySheet sheet={sheet} empleadosMap={datosVis.empleadosMap || {}} onClose={cerrarDia} />
           </>
         )}
@@ -248,7 +341,8 @@ function Hero({ actualizado }) {
         Vacaciones del equipo
       </h1>
       <p className="mt-2 max-w-xl text-pretty text-sm text-sand/65">
-        Calendario anual de ausencias (vista de solo lectura). Toca un día con puntos para ver quién falta y por qué.
+        Ausencias del equipo en solo lectura: quién falta hoy, calendario anual con nº de ausentes por día
+        y ficha por persona. Toca un día con número para ver el detalle.
       </p>
       {actualizado && (
         <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.1em] text-sand/45">

@@ -10,6 +10,11 @@ export const DIAS_SEMANA = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"];
 
 const NOMBRES_DIA = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
+export const MESES_CORTO = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+export const DIAS_CORTO = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+// Letra de día para listas compactas (L M X J V S D).
+export const DIA_LETRA = ["D", "L", "M", "X", "J", "V", "S"];
+
 // Diccionario de motivos (mismos códigos y textos que el legacy). Los colores
 // de fondo son acentos claros -> texto Electric Blue (regla nº9); la baja (BA)
 // es roja con texto blanco, como en el original.
@@ -26,9 +31,6 @@ export const motivoDe = (codigo) =>
 // Umbral de alerta de personal disponible (idéntico al legacy: < 10).
 export const UMBRAL_ALERTA = 10;
 
-// Máximo de puntos visibles por día antes del "+N" (idéntico al legacy).
-export const MAX_DOTS = 8;
-
 /** "2026-07-12" -> "Domingo 12 de julio" (portado del legacy). */
 export function formatearFechaLegible(dateStr) {
   const p = dateStr.split("-");
@@ -39,6 +41,146 @@ export function formatearFechaLegible(dateStr) {
 /** Date -> "YYYY-MM-DD" local (mismo formato de clave que usa el backend). */
 export const dateKey = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+/** "YYYY-MM-DD" -> Date LOCAL (evita el shift UTC de new Date(string)). */
+export function parseKey(dateStr) {
+  const p = dateStr.split("-");
+  return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+}
+
+export const addDays = (d, n) => {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+};
+
+const esFindeDate = (d) => d.getDay() === 0 || d.getDay() === 6;
+
+/** ¿Día laborable? (ni fin de semana ni festivo de ningún calendario). */
+export const esLaborable = (dateStr, festivos) =>
+  !esFindeDate(parseKey(dateStr)) && !(festivos && festivos[dateStr]);
+
+/** "2026-08-03","2026-08-14" -> "3–14 ago" / "28 jul – 3 ago" / "14 ago". */
+export function formatRango(inicio, fin) {
+  const a = parseKey(inicio);
+  const b = parseKey(fin);
+  if (inicio === fin) return `${a.getDate()} ${MESES_CORTO[a.getMonth()]}`;
+  if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear())
+    return `${a.getDate()}–${b.getDate()} ${MESES_CORTO[a.getMonth()]}`;
+  return `${a.getDate()} ${MESES_CORTO[a.getMonth()]} – ${b.getDate()} ${MESES_CORTO[b.getMonth()]}`;
+}
+
+/** "2026-08-17" -> "lun 17 ago" (para "Vuelve el …"). */
+export function formatFechaCorta(dateStr) {
+  const d = parseKey(dateStr);
+  return `${DIAS_CORTO[d.getDay()]} ${d.getDate()} ${MESES_CORTO[d.getMonth()]}`;
+}
+
+/**
+ * ¿El hueco ESTRICTO entre dos fechas (a < b) es completamente no laborable?
+ * (true también si son consecutivas: hueco vacío). Se usa para agrupar rangos
+ * de ausencia saltando fines de semana/festivos.
+ */
+function huecoNoLaborable(a, b, festivos) {
+  let d = addDays(parseKey(a), 1);
+  const end = parseKey(b);
+  if (d > end) return false;
+  let guard = 0;
+  while (d < end && guard++ < 60) {
+    if (esLaborable(dateKey(d), festivos)) return false;
+    d = addDays(d, 1);
+  }
+  return guard < 60;
+}
+
+/**
+ * Agrupa las ausencias de UNA persona en rangos [{inicio, fin, motivo, dias}].
+ * `fechas`: [{dateStr, motivo}] ORDENADO ascendente y sin duplicados. Solo se
+ * unen días con el mismo motivo cuyo hueco completo sea no laborable.
+ * `dias` cuenta los días LABORABLES del rango realmente registrados.
+ */
+export function rangosDePersona(fechas, festivos) {
+  const rangos = [];
+  let cur = null;
+  for (const f of fechas) {
+    const lab = esLaborable(f.dateStr, festivos) ? 1 : 0;
+    if (cur && cur.motivo === f.motivo && huecoNoLaborable(cur.fin, f.dateStr, festivos)) {
+      cur.fin = f.dateStr;
+      cur.dias += lab;
+    } else {
+      cur = { inicio: f.dateStr, fin: f.dateStr, motivo: f.motivo, dias: lab };
+      rangos.push(cur);
+    }
+  }
+  return rangos;
+}
+
+/**
+ * Primer día laborable, posterior a hoy, en el que la persona YA no está
+ * ausente ("Vuelve el …"). `fechasSet`: Set de sus claves de ausencia.
+ */
+export function fechaVuelta(hoyStr, fechasSet, festivos) {
+  let d = addDays(parseKey(hoyStr), 1);
+  for (let i = 0; i < 400; i++) {
+    const k = dateKey(d);
+    if (!fechasSet.has(k) && esLaborable(k, festivos)) return k;
+    d = addDays(d, 1);
+  }
+  return null;
+}
+
+/* ── Mapa de calor del calendario (acento mandarin de la ruta) ──
+   Tramos: 1 tinte suave · 2-3 medio · 4+ sólido con texto AA
+   (Electric sobre mandarin claro en oscuro; blanco sobre #C05621 en claro). */
+export function heatStyle(n, theme) {
+  const L = theme === "light";
+  if (n >= 4)
+    return {
+      solid: true,
+      cell: { background: L ? "#C05621" : "#FFB56B", borderColor: L ? "#C05621" : "#FFB56B" },
+      num: { color: L ? "#FFFFFF" : "#001391" },
+    };
+  if (n >= 2)
+    return {
+      cell: { background: L ? "rgba(192,86,33,0.24)" : "rgba(255,181,107,0.30)", borderColor: L ? "rgba(192,86,33,0.5)" : "rgba(255,181,107,0.55)" },
+      num: { color: L ? "#8A3E17" : "#FFDDB8" },
+    };
+  return {
+    cell: { background: L ? "rgba(192,86,33,0.11)" : "rgba(255,181,107,0.14)", borderColor: L ? "rgba(192,86,33,0.32)" : "rgba(255,181,107,0.32)" },
+    num: { color: L ? "#A0491B" : "#FFB56B" },
+  };
+}
+
+/** Tinta legible (Midnight/blanco) sobre un color sólido #hex o rgb(r,g,b). */
+export function textOn(c) {
+  if (typeof c !== "string") return "#FFFFFF";
+  let r, g, b;
+  const hex = c.trim().match(/^#([0-9a-f]{6})$/i);
+  const fn = c.trim().match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (hex) {
+    r = parseInt(hex[1].slice(0, 2), 16); g = parseInt(hex[1].slice(2, 4), 16); b = parseInt(hex[1].slice(4, 6), 16);
+  } else if (fn) {
+    r = +fn[1]; g = +fn[2]; b = +fn[3];
+  } else return "#FFFFFF";
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.55 ? "#070E46" : "#FFFFFF";
+}
+
+/* ── Chips de motivo en modo "tinte" (fondo suave + texto temado AA), para el
+   resumen "Ahora" y la vista Personas. Los chips sólidos del tooltip/DaySheet
+   siguen usando MOTIVOS tal cual. ── */
+const MOTIVO_TEXT_DARK = { VA: "#88E783", FO: "#85C8FF", ES: "#9694FF", BA: "#FF9A9A" };
+const MOTIVO_TEXT_LIGHT = { VA: "#1B7A3E", FO: "#155FA8", ES: "#5B4BD6", BA: "#C53030" };
+const MOTIVO_TINT_DARK = { VA: "rgba(136,231,131,0.14)", FO: "rgba(133,200,255,0.14)", ES: "rgba(150,148,255,0.16)", BA: "rgba(197,48,48,0.24)" };
+const MOTIVO_TINT_LIGHT = { VA: "rgba(27,122,62,0.10)", FO: "rgba(21,95,168,0.10)", ES: "rgba(91,75,214,0.10)", BA: "rgba(197,48,48,0.10)" };
+
+export function motivoChipStyle(codigo, theme) {
+  const L = theme === "light";
+  return {
+    background: (L ? MOTIVO_TINT_LIGHT : MOTIVO_TINT_DARK)[codigo] || (L ? "rgba(7,14,70,0.08)" : "rgba(247,248,248,0.1)"),
+    color: (L ? MOTIVO_TEXT_LIGHT : MOTIVO_TEXT_DARK)[codigo] || (L ? "#070E46" : "#F7F8F8"),
+  };
+}
 
 /**
  * Aclara colores demasiado oscuros para que sean visibles sobre Midnight

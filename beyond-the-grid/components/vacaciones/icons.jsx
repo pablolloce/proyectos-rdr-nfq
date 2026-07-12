@@ -28,3 +28,6 @@ export const IconInfo = (p) => (<S {...p}><circle cx="12" cy="12" r="9" /><path 
 export const IconSun = (p) => (<S {...p}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></S>);
 export const IconArrowLeft = (p) => (<S {...p}><path d="M19 12H5M12 19l-7-7 7-7" /></S>);
 export const IconRefresh = (p) => (<S {...p}><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" /><path d="M3 21v-5h5" /></S>);
+export const IconSearch = (p) => (<S {...p}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></S>);
+export const IconCalendar = (p) => (<S {...p}><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></S>);
+export const IconCheck = (p) => (<S {...p}><path d="M20 6 9 17l-5-5" /></S>);

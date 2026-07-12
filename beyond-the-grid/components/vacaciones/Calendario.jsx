@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { rgba } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
 import { useTheme, useAccentMap } from "@/lib/theme";
 import {
-  MESES, DIAS_SEMANA, MAX_DOTS, UMBRAL_ALERTA,
+  MESES, DIAS_SEMANA, UMBRAL_ALERTA,
   festivoStyle, festivoNumColor, alertColor, FESTIVO_LABEL,
-  dateKey, motivoDe,
+  dateKey, motivoDe, heatStyle, textOn,
 } from "./constants";
 
 const ACCENT = PALETTE.mandarin;
@@ -70,10 +70,21 @@ function DayTooltip({ tip }) {
   );
 }
 
-function DayCell({ dia, dateStr, esHoy, esFinde, festivo, alerta, ausencias, empleadosMap, canHover, onOpenDay, onTip }) {
+/**
+ * Celda de día. Sin puntitos: el nº de ausentes va centrado sobre un fondo
+ * de calor mandarin por tramos (1 / 2-3 / 4+). Festivos, hoy y fin de semana
+ * conservan su tratamiento y el número convive (como chip sobre festivo/hoy).
+ * En "modo persona" (exactamente 1 filtro) sus días se pintan sólidos con el
+ * color de su equipo y el resto de días con gente se atenúan en gris.
+ */
+function DayCell({
+  dia, mesNombre, dateStr, esHoy, esFinde, festivo, alerta,
+  count, ausenciasClick, personaMode, personaNombre, personaAusente, personaColor,
+  empleadosMap, canHover, onOpenDay, onTip,
+}) {
   const { theme } = useTheme();
   const light = theme === "light";
-  const conGente = ausencias.length > 0;
+  const clicable = ausenciasClick.length > 0;
 
   let cls = "relative flex min-h-[52px] flex-col rounded-md border p-1 transition sm:min-h-[48px]";
   const style = {};
@@ -81,9 +92,6 @@ function DayCell({ dia, dateStr, esHoy, esFinde, festivo, alerta, ausencias, emp
   if (festivo && festivoStyle(festivo, theme)) {
     Object.assign(style, festivoStyle(festivo, theme));
   } else if (esHoy) {
-    // border-serene/80 es utilidad temada (claro -> #155FA8). El relleno
-    // electric al 50% del legacy se rebaja en claro (sería demasiado denso
-    // para la tinta Midnight del número y de los +N).
     cls += " border-serene/80";
     style.background = light ? "rgba(0,19,145,0.08)" : "rgba(0,19,145,0.5)";
     sombras.push(`inset 0 0 0 1px ${light ? "rgba(21,95,168,0.6)" : "rgba(133,200,255,0.6)"}`);
@@ -92,58 +100,92 @@ function DayCell({ dia, dateStr, esHoy, esFinde, festivo, alerta, ausencias, emp
   } else {
     cls += " border-white/10 bg-white/[0.03]";
   }
-  // Alerta de personal: anillo rojo interior (compatible con el foco global,
-  // que usa outline). Equivale al ::before rojo del legacy.
+
+  // Mapa de calor (solo fuera del modo persona). Sobre festivo/hoy no se pisa
+  // el fondo: el nº va en chip con los colores del tramo.
+  const heat = !personaMode && count > 0 ? heatStyle(count, theme) : null;
+  const heatFills = heat && !festivo && !esHoy;
+  if (heatFills) {
+    style.background = heat.cell.background;
+    style.borderColor = heat.cell.borderColor;
+  }
+
+  // Modo persona: día de la persona -> sólido con el color de su equipo.
+  let personaTinta = null;
+  if (personaMode && personaAusente) {
+    personaTinta = textOn(personaColor);
+    style.background = personaColor;
+    style.backgroundImage = "none";
+    style.borderColor = personaColor;
+  }
+
+  // Alerta de personal: anillo rojo interior (compatible con el foco global).
   if (alerta) sombras.push(`inset 0 0 0 2px ${alertColor(theme)}`);
   if (sombras.length) style.boxShadow = sombras.join(", ");
-  if (conGente) cls += " cursor-pointer hover:-translate-y-px hover:border-serene/60";
+  if (clicable) cls += " cursor-pointer hover:-translate-y-px hover:border-serene/60";
 
-  const numColor = esHoy ? undefined : festivo ? festivoNumColor(festivo, theme) : undefined;
+  // Color del nº de día pequeño según fondo.
+  let numDia;
+  if (personaTinta) numDia = personaTinta;
+  else if (heatFills && heat.solid) numDia = heat.num.color;
+  else if (!esHoy && festivo) numDia = festivoNumColor(festivo, theme);
 
   const inner = (
     <>
       {esHoy ? (
-        <span className="mb-1 grid h-[22px] w-[22px] place-items-center rounded-full bg-serene text-xs font-bold text-midnight">{dia}</span>
+        <span className="grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full bg-serene text-xs font-bold text-midnight">{dia}</span>
       ) : (
-        <span className="mb-1 pl-0.5 text-xs font-bold text-sand/60" style={numColor ? { color: numColor } : undefined}>{dia}</span>
+        <span className="shrink-0 pl-0.5 text-xs font-bold text-sand/60" style={numDia ? { color: numDia, opacity: personaTinta || heat?.solid ? 0.85 : undefined } : undefined}>
+          {dia}
+        </span>
       )}
-      {conGente && (
-        <span className="mt-auto flex flex-wrap items-center justify-center gap-[3px]">
-          {ausencias.slice(0, MAX_DOTS).map((a, i) => (
+      {/* Contenido central */}
+      {personaMode ? (
+        !personaAusente && count > 0 ? (
+          <span aria-hidden className="flex flex-1 items-center justify-center pb-0.5 text-sm font-bold tabular-nums text-sand/35">
+            {count}
+          </span>
+        ) : null
+      ) : count > 0 ? (
+        <span aria-hidden className="flex flex-1 items-center justify-center pb-0.5">
+          {heatFills ? (
+            <span className="text-[15px] font-bold leading-none tabular-nums" style={heat.num}>{count}</span>
+          ) : (
             <span
-              key={`${a.nombre}-${i}`}
-              className="h-[7px] w-[7px] rounded-full ring-1 ring-white/30 sm:h-[7px] sm:w-[7px]"
-              style={{ backgroundColor: empleadosMap[a.nombre]?.color || (light ? "#C05621" : PALETTE.mandarin) }}
-            />
-          ))}
-          {ausencias.length > MAX_DOTS && (
-            <span className="flex h-[12px] items-center rounded bg-white/20 px-1 text-[9px] font-bold text-sand">
-              +{ausencias.length - MAX_DOTS}
+              className="rounded-md border px-1.5 py-0.5 text-[11px] font-bold leading-none tabular-nums"
+              style={{ background: heat.cell.background, borderColor: heat.cell.borderColor, color: heat.num.color }}
+            >
+              {count}
             </span>
           )}
         </span>
-      )}
+      ) : null}
     </>
   );
 
   const partes = [];
   if (festivo) partes.push(FESTIVO_LABEL[festivo]);
+  if (esHoy) partes.push("hoy");
   if (alerta) partes.push("alerta de personal");
-  const ariaLabel = `Día ${dia}: ${ausencias.length} ausencia${ausencias.length === 1 ? "" : "s"}${partes.length ? " · " + partes.join(" · ") : ""}`;
+  const base = `${dia} de ${mesNombre.toLowerCase()}`;
+  const ariaLabel =
+    personaMode && personaAusente
+      ? `${base}: ${personaNombre} ausente${partes.length ? " · " + partes.join(" · ") : ""}`
+      : `${base}: ${count} ausente${count === 1 ? "" : "s"}${partes.length ? " · " + partes.join(" · ") : ""}`;
 
   // Con ausencias: la celda es un botón (tap/Enter abre el detalle; hover con
   // puntero fino muestra tooltip, como tippy en el legacy).
-  if (conGente) {
+  if (clicable) {
     return (
       <button
         type="button"
         className={`${cls} text-left`}
         style={style}
         aria-label={ariaLabel}
-        onClick={() => { onTip(null); onOpenDay(dateStr, ausencias); }}
+        onClick={() => { onTip(null); onOpenDay(dateStr, ausenciasClick); }}
         onMouseEnter={canHover ? (e) => {
           const r = e.currentTarget.getBoundingClientRect();
-          onTip({ x: r.left + r.width / 2, y: r.top, ausencias, empleadosMap });
+          onTip({ x: r.left + r.width / 2, y: r.top, ausencias: ausenciasClick, empleadosMap });
         } : undefined}
         onMouseLeave={canHover ? () => onTip(null) : undefined}
       >
@@ -151,10 +193,10 @@ function DayCell({ dia, dateStr, esHoy, esFinde, festivo, alerta, ausencias, emp
       </button>
     );
   }
-  return <div className={cls} style={style}>{inner}</div>;
+  return <div className={cls} style={style} aria-label={ariaLabel}>{inner}</div>;
 }
 
-function MonthCard({ mes, anio, hoyStr, festivos, ausenciasPorDia, filtros, totalActivos, empleadosMap, canHover, onOpenDay, onTip, delay }) {
+function MonthCard({ mes, anio, hoyStr, festivos, ausenciasPorDia, filtros, personaNombre, personaColor, totalActivos, empleadosMap, canHover, onOpenDay, onTip, delay }) {
   const { theme } = useTheme();
   const mapAccent = useAccentMap();
   const primerDia = new Date(anio, mes, 1);
@@ -162,6 +204,7 @@ function MonthCard({ mes, anio, hoyStr, festivos, ausenciasPorDia, filtros, tota
   let offset = primerDia.getDay() - 1;
   if (offset === -1) offset = 6;
 
+  const personaMode = !!personaNombre;
   const celdas = [];
   let contieneHoy = false;
 
@@ -176,7 +219,8 @@ function MonthCard({ mes, anio, hoyStr, festivos, ausenciasPorDia, filtros, tota
     const festivo = festivos[dateStr];
 
     const ausencias = Array.from(ausenciasPorDia[dateStr] || []);
-    const ausenciasMostrar = filtros.size > 0 ? ausencias.filter((a) => filtros.has(a.nombre)) : ausencias;
+    const ausenciasFiltradas = filtros.size > 0 ? ausencias.filter((a) => filtros.has(a.nombre)) : ausencias;
+    const personaAusente = personaMode && ausenciasFiltradas.length > 0;
 
     // La alerta usa TODAS las ausencias (no las filtradas), como el legacy.
     const disponibles = totalActivos - ausencias.length;
@@ -186,12 +230,22 @@ function MonthCard({ mes, anio, hoyStr, festivos, ausenciasPorDia, filtros, tota
       <DayCell
         key={dateStr}
         dia={dia}
+        mesNombre={MESES[mes]}
         dateStr={dateStr}
         esHoy={esHoy}
         esFinde={esFinde}
         festivo={festivo}
         alerta={alerta}
-        ausencias={ausenciasMostrar}
+        // Nº mostrado: en modo persona, el total del día (atenuado); con
+        // multi-filtro, solo las personas filtradas; sin filtros, el total.
+        count={personaMode ? ausencias.length : ausenciasFiltradas.length}
+        // Detalle al click/hover: en modo persona interesa el día completo
+        // (contexto de quién más falta); con multi-filtro, lo filtrado.
+        ausenciasClick={personaMode ? ausencias : ausenciasFiltradas}
+        personaMode={personaMode}
+        personaNombre={personaNombre}
+        personaAusente={personaAusente}
+        personaColor={personaColor}
         empleadosMap={empleadosMap}
         canHover={canHover}
         onOpenDay={onOpenDay}
@@ -230,9 +284,10 @@ function MonthCard({ mes, anio, hoyStr, festivos, ausenciasPorDia, filtros, tota
 }
 
 /**
- * Calendario anual (12 meses). Misma lógica que el legacy: semana empieza en
- * lunes, festivos ES/MX/AMBOS, hoy resaltado, puntos por ausencia (máx. 8 + N),
- * alerta si quedan <10 disponibles en día laborable, filtros por persona.
+ * Calendario anual (12 meses). Semana empieza en lunes, festivos ES/MX/AMBOS,
+ * hoy resaltado, alerta si quedan <10 disponibles en día laborable. El nº de
+ * ausentes va centrado sobre un fondo de calor; con exactamente 1 persona
+ * filtrada se activa el "modo persona" (sus días sólidos con su color).
  */
 export default function Calendario({ datos, filtros, totalActivos, onOpenDay }) {
   const canHover = useCanHover();
@@ -250,6 +305,14 @@ export default function Calendario({ datos, filtros, totalActivos, onOpenDay }) 
   const anio = datos.year || new Date().getFullYear();
   const hoyStr = dateKey(new Date());
 
+  // Modo persona: exactamente UNA persona filtrada en el EquipoPanel.
+  const { personaNombre, personaColor } = useMemo(() => {
+    if (filtros.size !== 1) return { personaNombre: null, personaColor: null };
+    const nombre = Array.from(filtros)[0];
+    const emp = (datos.empleadosMap || {})[nombre];
+    return { personaNombre: nombre, personaColor: emp?.color || PALETTE.mandarin };
+  }, [filtros, datos.empleadosMap]);
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3" role="presentation">
       {Array.from({ length: 12 }, (_, mes) => (
@@ -261,6 +324,8 @@ export default function Calendario({ datos, filtros, totalActivos, onOpenDay }) 
           festivos={datos.festivos || {}}
           ausenciasPorDia={datos.ausenciasPorDia || {}}
           filtros={filtros}
+          personaNombre={personaNombre}
+          personaColor={personaColor}
           totalActivos={totalActivos}
           empleadosMap={datos.empleadosMap || {}}
           canHover={canHover}
