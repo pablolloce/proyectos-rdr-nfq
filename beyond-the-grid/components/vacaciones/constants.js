@@ -203,30 +203,11 @@ export function visColor(c) {
   return c;
 }
 
-/**
- * Espejo de visColor para MODO CLARO: oscurece colores demasiado claros para
- * que sean visibles sobre Sand (mismos umbral y mezcla, invertidos). Electric
- * y Midnight ya contrastan sobre claro, se dejan tal cual.
- */
-export function visColorLight(c) {
-  if (typeof c !== "string") return c;
-  const s = c.trim().toLowerCase();
-  if (s === "#001391" || s === "#070e46" || s.includes("electric") || s.includes("midnight")) return c;
-  const m = s.match(/^#([0-9a-f]{6})$/);
-  if (!m) return c;
-  const r = parseInt(s.slice(1, 3), 16);
-  const g = parseInt(s.slice(3, 5), 16);
-  const b = parseInt(s.slice(5, 7), 16);
-  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  if (lum > 0.6) {
-    const mix = (x) => Math.round(x * 0.55);
-    return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
-  }
-  return c;
-}
-
-/** Normalización de visibilidad por tema: aclara en oscuro, oscurece en claro. */
-export const visColorTema = (c, theme) => (theme === "light" ? visColorLight(c) : visColor(c));
+/** Normalización de visibilidad por tema. En OSCURO se aclaran los colores
+ * demasiado oscuros (legacy). En CLARO el color de equipo se respeta TAL CUAL
+ * (es identidad: debe ser el mismo en ambos temas); la visibilidad de puntos
+ * y rellenos la garantiza el aro/borde del componente, no el matiz. */
+export const visColorTema = (c, theme) => (theme === "light" ? c : visColor(c));
 
 /**
  * Aplica visColorTema a empleados, empleadosMap y paletaEquipos. A diferencia

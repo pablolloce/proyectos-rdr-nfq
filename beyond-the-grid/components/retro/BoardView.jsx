@@ -114,7 +114,7 @@ function Tarjeta({ t, color, fase, onVotar }) {
   return (
     <article
       className="rounded-xl border border-white/10 bg-white/[0.05] p-3 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
-      style={{ borderLeft: `3px solid ${rgba(acc(color), 0.85)}` }}
+      style={{ borderLeft: `3px solid ${rgba(color, 0.85)}` }}
     >
       {dest && (
         <p className="mb-2">
@@ -152,7 +152,7 @@ function Columna({ titulo, desc, color, children, vacia, addLabel, onAdd, delay 
     <section
       aria-label={titulo}
       className={`rdr-rise flex min-h-[180px] flex-col overflow-hidden ${GLASS} transition hover:border-white/25`}
-      style={{ boxShadow: `inset 0 2px 0 ${rgba(acc(color), 0.75)}`, animationDelay: `${delay}ms` }}
+      style={{ boxShadow: `inset 0 2px 0 ${rgba(color, 0.75)}`, animationDelay: `${delay}ms` }}
     >
       <div className="border-b border-white/10 p-3.5">
         <h3 className="font-display text-base font-bold" style={{ color: acc(color) }}>{titulo}</h3>
@@ -305,7 +305,7 @@ export default function BoardView({ gasGet, gasPost, sessionId, nombre, role, on
   const otros = [...new Set(usuarios)].filter((u) => u !== nombre);
 
   const termometro = (
-    <section aria-label="Termómetro de confianza" className={`rdr-rise flex flex-col overflow-hidden ${GLASS}`} style={{ boxShadow: `inset 0 2px 0 ${rgba(acc(PALETTE.royal), 0.75)}` }}>
+    <section aria-label="Termómetro de confianza" className={`rdr-rise flex flex-col overflow-hidden ${GLASS}`} style={{ boxShadow: `inset 0 2px 0 ${rgba(PALETTE.royal, 0.75)}` }}>
       <div className="border-b border-white/10 p-4">
         <h3 className="flex items-center gap-2 font-display text-base font-bold text-sand">
           <IconThermo size={17} className="text-serene" /> Termómetro
@@ -426,7 +426,7 @@ export default function BoardView({ gasGet, gasPost, sessionId, nombre, role, on
                   <article
                     key={m.id || i}
                     className="rounded-xl border border-white/10 bg-white/[0.05] p-3 transition hover:-translate-y-0.5 hover:bg-white/[0.08]"
-                    style={{ borderLeft: `3px solid ${rgba(acc(MEJORAS_COLOR), 0.85)}` }}
+                    style={{ borderLeft: `3px solid ${rgba(MEJORAS_COLOR, 0.85)}` }}
                   >
                     <p className="whitespace-pre-line text-sm leading-relaxed text-sand/90">{m.texto}</p>
                   </article>

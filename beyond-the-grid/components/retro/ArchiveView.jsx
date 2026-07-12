@@ -12,7 +12,7 @@ function TarjetaArchivo({ t, color }) {
   const acc = useAccentMap();
   const { txt, dest } = parseReconocimiento(t);
   return (
-    <article className="rounded-xl border border-white/10 bg-white/[0.05] p-3" style={{ borderLeft: `3px solid ${rgba(acc(color), 0.85)}` }}>
+    <article className="rounded-xl border border-white/10 bg-white/[0.05] p-3" style={{ borderLeft: `3px solid ${rgba(color, 0.85)}` }}>
       {dest && (
         <p className="mb-2">
           <span className="inline-flex items-center gap-1 rounded border border-serene/40 bg-serene/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-serene">
@@ -61,7 +61,7 @@ export default function ArchiveView({ data, onVolver }) {
       </header>
 
       {/* Termómetro */}
-      <section aria-label="Termómetro de confianza" className={`rdr-rise mb-6 ${GLASS} p-6`} style={{ boxShadow: `inset 0 2px 0 ${rgba(acc(PALETTE.royal), 0.75)}`, animationDelay: "40ms" }}>
+      <section aria-label="Termómetro de confianza" className={`rdr-rise mb-6 ${GLASS} p-6`} style={{ boxShadow: `inset 0 2px 0 ${rgba(PALETTE.royal, 0.75)}`, animationDelay: "40ms" }}>
         <h3 className="font-display text-xl font-bold text-sand">Termómetro de confianza</h3>
         <p className="mb-4 mt-0.5 text-sm text-sand/55">{total} voto{total !== 1 ? "s" : ""} anónimos</p>
         <div className="space-y-2">
@@ -89,7 +89,7 @@ export default function ArchiveView({ data, onVolver }) {
         {CATEGORIAS.map((cat, i) => {
           const items = tarjetas.filter((t) => t.categoria === cat.id);
           return (
-            <div key={cat.id} className={`rdr-rise ${GLASS} p-4`} style={{ boxShadow: `inset 0 2px 0 ${rgba(acc(cat.color), 0.75)}`, animationDelay: `${80 + i * 50}ms` }}>
+            <div key={cat.id} className={`rdr-rise ${GLASS} p-4`} style={{ boxShadow: `inset 0 2px 0 ${rgba(cat.color, 0.75)}`, animationDelay: `${80 + i * 50}ms` }}>
               <h3 className="mb-3 font-display text-lg font-bold" style={{ color: acc(cat.color) }}>{cat.titulo}</h3>
               <div className="space-y-3">
                 {items.length ? (
@@ -105,11 +105,11 @@ export default function ArchiveView({ data, onVolver }) {
 
       {/* Mejoras */}
       {(data.mejoras || []).length > 0 && (
-        <section aria-label="Acciones de mejora" className={`rdr-rise mb-6 ${GLASS} p-6`} style={{ boxShadow: `inset 0 2px 0 ${rgba(acc(MEJORAS_COLOR), 0.75)}`, animationDelay: "230ms" }}>
+        <section aria-label="Acciones de mejora" className={`rdr-rise mb-6 ${GLASS} p-6`} style={{ boxShadow: `inset 0 2px 0 ${rgba(MEJORAS_COLOR, 0.75)}`, animationDelay: "230ms" }}>
           <h3 className="mb-4 font-display text-xl font-bold text-lime">Acciones de mejora 📈</h3>
           <div className="space-y-3">
             {data.mejoras.map((m, i) => (
-              <article key={m.id || i} className="rounded-xl border border-white/10 bg-lime/[0.06] p-3" style={{ borderLeft: `3px solid ${rgba(acc(MEJORAS_COLOR), 0.85)}` }}>
+              <article key={m.id || i} className="rounded-xl border border-white/10 bg-lime/[0.06] p-3" style={{ borderLeft: `3px solid ${rgba(MEJORAS_COLOR, 0.85)}` }}>
                 <p className="whitespace-pre-line text-sm leading-relaxed text-sand/90">{m.texto}</p>
               </article>
             ))}
