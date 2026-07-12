@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { rgba } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
-import { FESTIVO_STYLE, FESTIVO_LABEL } from "./constants";
+import { useTheme, useAccentMap } from "@/lib/theme";
+import { festivoStyle, alertColor, FESTIVO_LABEL } from "./constants";
 import { IconUsers, IconFilterOff, IconChevron } from "./icons";
 
 const ACCENT = PALETTE.mandarin;
@@ -54,6 +55,7 @@ function EmpCard({ emp, seleccionado, hayFiltros, onToggle }) {
 }
 
 function Leyenda({ paletaEquipos, equiposEnUso }) {
+  const { theme } = useTheme();
   return (
     <div className="border-t border-white/10 px-4 py-4 text-xs text-sand/70">
       {equiposEnUso.length > 0 && (
@@ -70,12 +72,12 @@ function Leyenda({ paletaEquipos, equiposEnUso }) {
       <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-sand/50">Leyenda</p>
       {["ES", "MX", "AMBOS"].map((k) => (
         <div key={k} className="mb-1.5 flex items-center gap-2.5">
-          <span className="h-3.5 w-3.5 shrink-0 rounded border" style={FESTIVO_STYLE[k]} aria-hidden />
+          <span className="h-3.5 w-3.5 shrink-0 rounded border" style={festivoStyle(k, theme)} aria-hidden />
           {FESTIVO_LABEL[k]}
         </div>
       ))}
       <div className="flex items-center gap-2.5">
-        <span className="h-3.5 w-3.5 shrink-0 rounded border-2 border-[#FF7A7A]" aria-hidden />
+        <span className="h-3.5 w-3.5 shrink-0 rounded border-2" style={{ borderColor: alertColor(theme) }} aria-hidden />
         Alerta: &lt;10 disponibles
       </div>
     </div>

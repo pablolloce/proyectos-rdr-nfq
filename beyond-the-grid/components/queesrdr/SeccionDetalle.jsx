@@ -65,6 +65,7 @@ function Connector() {
 }
 
 function ArbolContrapartida() {
+  const tx = useTx();
   const locales = [
     { name: "Citibank España", ops: [{ name: "Casa Matriz (Matrix)", note: "1 por cada Global", star: true }, { name: "Renta Fija" }] },
     { name: "Citibank México", ops: [{ name: "Derivados" }, { name: "FX" }] },
@@ -88,7 +89,8 @@ function ArbolContrapartida() {
                   className="rounded-lg border px-3 py-1.5 text-center"
                   style={{ borderColor: rgba(PALETTE.canary, op.star ? 0.9 : 0.4), background: op.star ? rgba(PALETTE.canary, 0.1) : "transparent" }}
                 >
-                  <p className="text-[12px] font-semibold" style={{ color: op.star ? PALETTE.canary : "rgba(247,248,248,0.85)" }}>{op.star ? "★ " : ""}{op.name}</p>
+                  {/* Sin sand hardcodeado (rgba 247,248,248): text-sand/85 se tema solo; la estrella, canary temado. */}
+                  <p className={`text-[12px] font-semibold ${op.star ? "" : "text-sand/85"}`} style={op.star ? { color: tx(PALETTE.canary) } : undefined}>{op.star ? "★ " : ""}{op.name}</p>
                   {op.note && <p className="text-[11px] text-sand/55">{op.note}</p>}
                 </div>
               ))}
@@ -97,7 +99,7 @@ function ArbolContrapartida() {
         ))}
       </div>
       <p className="mt-4 text-center text-xs leading-relaxed text-sand/60">
-        <strong style={{ color: PALETTE.canary }}>OPERATIVO</strong> — principales datos de la contrapartida · de cada Local cuelgan N
+        <strong className="text-canary">OPERATIVO</strong> — principales datos de la contrapartida · de cada Local cuelgan N
         operativas, y por cada Global hay 1 operativa especial «Casa Matriz».
       </p>
     </div>
