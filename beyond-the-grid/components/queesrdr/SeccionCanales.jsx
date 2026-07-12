@@ -27,7 +27,8 @@ function DiagramaOnline() {
     >
       {/* RDR */}
       <div className="flex flex-col gap-3">
-        <div className="rounded-xl bg-electric px-4 py-3 text-center font-display text-lg font-bold text-sand shadow-[0_4px_20px_rgba(0,19,145,0.45)]">
+        {/* Superficie Electric sólida → texto Sand LITERAL (text-sand en claro es tinta midnight, ilegible sobre azul). */}
+        <div className="rounded-xl bg-electric px-4 py-3 text-center font-display text-lg font-bold text-[#F7F8F8] shadow-[0_4px_20px_rgba(0,19,145,0.45)]">
           RDR
         </div>
         <EdgeCard accent={C} title="Publicación">Puntual o masiva hacia sistemas conectados</EdgeCard>
@@ -36,7 +37,8 @@ function DiagramaOnline() {
 
       {/* ESB */}
       <div className="flex flex-col gap-3">
-        <div className="rounded-xl px-4 py-3 text-center font-display text-lg font-bold text-midnight" style={{ background: PALETTE.serene }}>
+        {/* Superficie Serene sólida (hex literal, igual en ambos temas) → texto Electric literal (regla BBVA: texto sobre acentos). */}
+        <div className="rounded-xl px-4 py-3 text-center font-display text-lg font-bold text-[#001391]" style={{ background: PALETTE.serene }}>
           ESB — Bus de información
         </div>
         <div className="grid grid-cols-1 gap-x-4 gap-y-1.5 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-[12px] font-bold sm:grid-cols-2">

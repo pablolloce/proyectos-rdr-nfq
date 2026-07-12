@@ -113,7 +113,7 @@ function DayCell({ dia, dateStr, esHoy, esFinde, festivo, alerta, ausencias, emp
             <span
               key={`${a.nombre}-${i}`}
               className="h-[7px] w-[7px] rounded-full ring-1 ring-white/30 sm:h-[7px] sm:w-[7px]"
-              style={{ backgroundColor: empleadosMap[a.nombre]?.color || PALETTE.mandarin }}
+              style={{ backgroundColor: empleadosMap[a.nombre]?.color || (light ? "#C05621" : PALETTE.mandarin) }}
             />
           ))}
           {ausencias.length > MAX_DOTS && (
@@ -155,6 +155,8 @@ function DayCell({ dia, dateStr, esHoy, esFinde, festivo, alerta, ausencias, emp
 }
 
 function MonthCard({ mes, anio, hoyStr, festivos, ausenciasPorDia, filtros, totalActivos, empleadosMap, canHover, onOpenDay, onTip, delay }) {
+  const { theme } = useTheme();
+  const mapAccent = useAccentMap();
   const primerDia = new Date(anio, mes, 1);
   const ultDia = new Date(anio, mes + 1, 0);
   let offset = primerDia.getDay() - 1;

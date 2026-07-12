@@ -29,6 +29,7 @@ const SOPORTE = [
 ];
 
 export default function SeccionEntidades() {
+  const mapAccent = useAccentMap(); // código y cifra de cada entidad legibles en claro; tintes con hex original
   return (
     <Section id="entidades">
       <ModuleDivider
@@ -48,12 +49,12 @@ export default function SeccionEntidades() {
             className="flex flex-col rounded-2xl border p-5 backdrop-blur-sm"
             style={{ borderColor: rgba(e.color, 0.4), background: rgba(e.color, 0.08) }}
           >
-            <p className="font-sans text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: e.color }}>
+            <p className="font-sans text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: mapAccent(e.color) }}>
               {e.code}
             </p>
             <h3 className="mt-1 font-display text-xl font-bold leading-tight text-sand">{e.nombre}</h3>
             <p className="mt-2 flex-1 text-[13px] leading-relaxed text-sand/70">{e.desc}</p>
-            <p className="mt-4 font-display text-3xl font-bold leading-none" style={{ color: e.color }}>
+            <p className="mt-4 font-display text-3xl font-bold leading-none" style={{ color: mapAccent(e.color) }}>
               {e.stat}
               <span className="ml-2 align-middle font-sans text-xs font-normal text-sand/60">{e.statLabel}</span>
             </p>
@@ -71,7 +72,7 @@ export default function SeccionEntidades() {
         {SOPORTE.map((e) => (
           <div key={e.code} className="rounded-xl border border-white/10 bg-white/[0.045] px-4 py-3 backdrop-blur-sm">
             <p className="text-sm text-sand">
-              <strong className="font-bold" style={{ color: C }}>{e.code}</strong> · {e.nombre}
+              <strong className="font-bold text-lime">{e.code}</strong> · {e.nombre}
             </p>
             <p className="mt-0.5 text-xs text-sand/60">{e.desc}</p>
           </div>
