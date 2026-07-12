@@ -19,10 +19,10 @@ export default function ArtBanner({ src, className = "" }) {
         loading="lazy"
         decoding="async"
         onError={(e) => e.currentTarget.parentElement?.remove()}
-        className="h-full w-full object-cover opacity-40"
+        className="h-full w-full object-cover opacity-[0.22]"
         style={{
-          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.85) 30%, transparent)",
-          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.85) 30%, transparent)",
+          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.8) 15%, transparent 85%)",
+          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.8) 15%, transparent 85%)",
         }}
       />
     </div>

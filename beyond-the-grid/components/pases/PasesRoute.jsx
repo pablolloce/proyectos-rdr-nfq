@@ -9,7 +9,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { Link } from "next-view-transitions";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useLinks } from "@/lib/links";
 import { PALETTE } from "@/lib/palette";
@@ -710,12 +709,7 @@ export default function PasesRoute() {
           {/* Cabecera de página */}
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <Link
-                href="/"
-                className="mb-2 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.15em] text-sand/60 transition hover:text-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-              >
-                <IconArrowLeft size={13} /> Hub · Proyectos
-              </Link>
+              <p className="mb-2 font-sans text-xs font-bold uppercase tracking-[0.3em] text-lime/80">Proyectos</p>
               <h2 className="flex items-center gap-3 font-display text-3xl font-bold tracking-tight text-sand sm:text-4xl">
                 <span className="grid h-11 w-11 place-items-center rounded-xl border" style={{ borderColor: rgba(ACCENT, 0.35), background: rgba(ACCENT, 0.12), color: ACCENT }}>
                   <IconRocket size={24} />

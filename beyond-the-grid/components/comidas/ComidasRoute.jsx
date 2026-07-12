@@ -200,15 +200,7 @@ export default function ComidasRoute() {
       <div className="relative z-10 mx-auto w-full max-w-5xl px-5 pb-24 pt-28 sm:px-6">
         {/* Hero */}
         <header className="mb-8">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="font-sans text-xs font-bold uppercase tracking-[0.4em] text-mandarin/90">Equipo · 02</p>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.05] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-sand/70 backdrop-blur transition hover:border-mandarin/50 hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mandarin"
-            >
-              <IconVolver size={12} /> Hub
-            </Link>
-          </div>
+          <p className="font-sans text-xs font-bold uppercase tracking-[0.4em] text-mandarin/90">Equipo · 02</p>
           <h1 className="mt-3 font-display text-4xl font-bold leading-none tracking-tight text-sand sm:text-5xl">
             Comidas de los jueves
           </h1>

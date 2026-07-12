@@ -29,8 +29,11 @@ export default function Header() {
   const subtitle = match ? match[1] : "Hub de documentación · BBVA × NFQ";
 
   return (
-    <header className="pointer-events-none fixed inset-x-0 top-0 z-40 mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 pt-5 sm:px-6 sm:pt-6">
-      <div className="pointer-events-auto flex min-w-0 items-center gap-3">
+    // Barra sólida con blur: el contenido pasa POR DEBAJO al hacer scroll,
+    // nunca se superpone con el título/sesión.
+    <header className="fixed inset-x-0 top-0 z-40 border-b border-white/[0.06] bg-midnight">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
+      <div className="flex min-w-0 items-center gap-3">
         {backHref && (
           <Link
             href={backHref}
@@ -53,7 +56,7 @@ export default function Header() {
         </div>
       </div>
 
-      <div className="pointer-events-auto flex shrink-0 items-center gap-3 sm:gap-4">
+      <div className="flex shrink-0 items-center gap-3 sm:gap-4">
         {email && <span className="hidden text-xs text-sand/70 lg:inline">{email}</span>}
         <button
           type="button"
@@ -64,6 +67,7 @@ export default function Header() {
         </button>
         {/* Logo oficial BBVA (blanco sobre Midnight) — regla dura nº4 CLAUDE.md. */}
         <img src="/team-hub/logos/bbva-white.png?v=2" alt="BBVA" className="h-6 w-auto md:h-7" />
+      </div>
       </div>
     </header>
   );

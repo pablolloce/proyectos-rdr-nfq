@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "next-view-transitions";
 import { useReducedMotion } from "framer-motion";
 import { useLinks } from "@/lib/links";
 import { useTilt } from "@/hooks/useTilt";
@@ -229,12 +228,6 @@ export default function VacacionesRoute() {
 function Hero({ actualizado }) {
   return (
     <header className="mb-8">
-      <Link
-        href="/"
-        className="mb-4 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.08em] text-sand/60 transition hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-      >
-        <IconArrowLeft size={14} /> Hub
-      </Link>
       <p className="font-sans text-xs font-bold uppercase tracking-[0.4em]" style={{ color: ACCENT }}>
         Equipo · RDR
       </p>

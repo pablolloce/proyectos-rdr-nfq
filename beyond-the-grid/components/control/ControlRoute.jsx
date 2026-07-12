@@ -234,13 +234,7 @@ export default function ControlRoute() {
       <div className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-24 pt-28 sm:px-6">
         {/* Cabecera de la sección (el chrome global pone título/logos/sesión) */}
         <header className={`mb-6 ${reduce ? "" : "rdr-rise"}`}>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.15em] text-sand/60 transition hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-          >
-            <IconBack size={14} /> Hub
-          </Link>
-          <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="font-sans text-xs font-bold uppercase tracking-[0.3em] text-purple">Coordinación</p>
               <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-sand sm:text-4xl">Control RDR</h1>

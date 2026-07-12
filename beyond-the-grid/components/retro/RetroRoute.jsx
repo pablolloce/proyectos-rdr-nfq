@@ -151,13 +151,6 @@ export default function RetroRoute() {
         {view !== "archive" && (
           <header className="rdr-rise mb-8">
             <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/"
-                aria-label="Volver al hub"
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-sand/80 backdrop-blur transition hover:border-mandarin/50 hover:text-sand active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-              >
-                <IconArrowL size={14} /> Hub
-              </Link>
               <p className="font-sans text-xs font-bold uppercase tracking-[0.35em] text-mandarin">
                 Equipo · Retrospectivas
               </p>
