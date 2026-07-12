@@ -12,11 +12,21 @@ import { useAuth } from "./AuthGate";
 export default function Header() {
   const { email, logout } = useAuth();
   const pathname = usePathname();
-  const isFormacion = (pathname || "").startsWith("/formacion");
-  const backHref = isFormacion ? "/" : null;
-  const subtitle = isFormacion
-    ? "Ruta formativa · niveles 00–06"
-    : "Hub de documentación · BBVA × NFQ";
+  // Subtítulo por sección (la coincidencia más específica primero).
+  const SUBTITLES = [
+    ["/formacion/equipo", "Formaciones del equipo"],
+    ["/formacion", "Ruta formativa · niveles 00–06"],
+    ["/comidas", "Comidas del equipo"],
+    ["/vacaciones", "Vacaciones del equipo"],
+    ["/retro", "Retrospectivas del equipo"],
+    ["/control", "Control económico · Coordinación"],
+    ["/pases", "Pases calendados · Releases"],
+    ["/que-es-rdr", "¿Qué es RDR? · Introducción"],
+  ];
+  const p = pathname || "/";
+  const match = SUBTITLES.find(([base]) => p.startsWith(base));
+  const backHref = match ? "/" : null;
+  const subtitle = match ? match[1] : "Hub de documentación · BBVA × NFQ";
 
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-40 mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 pt-5 sm:px-6 sm:pt-6">

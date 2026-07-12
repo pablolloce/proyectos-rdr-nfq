@@ -53,7 +53,8 @@ export const FORMACIONES = [
 ];
 
 export const FORMACION_BASE = "/team-hub/formacion/";
-export const PROGRESO_EQUIPO = FORMACION_BASE + "equipo-formaciones.html";
+// Ruta Next (sin basePath: <Link> lo añade). Antes: equipo-formaciones.html.
+export const PROGRESO_EQUIPO = "/formacion/equipo";
 
 export const isDisponible = (f) => f.estado === "disponible";
 export const hrefDe = (f) => (isDisponible(f) ? FORMACION_BASE + f.archivo : null);

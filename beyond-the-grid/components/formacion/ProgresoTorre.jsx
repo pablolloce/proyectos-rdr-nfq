@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { Link } from "next-view-transitions";
 import { motion, useReducedMotion } from "framer-motion";
 import { NIVELES, FORMACIONES, TRACKS, hrefDe, PROGRESO_EQUIPO } from "@/lib/formaciones";
 import { estadoCurso, resumen } from "@/lib/progreso";
@@ -187,10 +188,10 @@ export default function ProgresoTorre({ niveles, completadas, current, onMarcar 
             </div>
           </div>
           {/* Progreso del equipo (arriba) */}
-          <a href={PROGRESO_EQUIPO} data-prerender className="group mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-serene/30 bg-serene/10 px-4 py-2 text-xs font-bold text-serene backdrop-blur-md transition hover:border-serene/60 hover:bg-serene/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene">
+          <Link href={PROGRESO_EQUIPO} className="group mx-auto mt-5 inline-flex items-center gap-2 rounded-full border border-serene/30 bg-serene/10 px-4 py-2 text-xs font-bold text-serene backdrop-blur-md transition hover:border-serene/60 hover:bg-serene/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene">
             <IconGrad size={15} /> Progreso del equipo
             <IconArrow size={14} className="transition-transform group-hover:translate-x-1" />
-          </a>
+          </Link>
           {!reduce && (
             <div className={`pointer-events-none mt-8 flex justify-center text-serene/60 transition-opacity duration-500 ${scrolled ? "opacity-0" : "opacity-100"}`} aria-hidden>
               <span className="animate-bounce"><IconArrow size={22} style={{ transform: "rotate(90deg)" }} /></span>

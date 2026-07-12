@@ -1,0 +1,993 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { Link } from "next-view-transitions";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useLinks } from "@/lib/links";
+import { PALETTE } from "@/lib/palette";
+import { rgba } from "@/lib/ui";
+import {
+  cacheSet,
+  cacheGet,
+  dashHash,
+  llamarBackend,
+  beaconEditarComponente,
+  limpiarMulti,
+  MESES,
+  isT,
+} from "./backend";
+import { computeValidador } from "./validador";
+import { ACCENT, BTN, CARD_CLS, Field, SELECT_CLS, INPUT_CLS } from "./ui";
+import { IconRocket, IconSave, IconMoon, IconCheck, IconLock, IconRefresh, IconArrowLeft } from "./icons";
+import Proyectos from "./Proyectos";
+import Secuencia from "./Secuencia";
+import PreChecks from "./PreChecks";
+import Ejecucion from "./Ejecucion";
+import Mergeos from "./Mergeos";
+import CmdDrawer from "./CmdDrawer";
+
+/* ─────────────────────────────────────────────────────────────
+   Contexto de la ruta: estado del pase (E), acciones contra el
+   backend Apps Script y utilidades de UI (toasts, drawer).
+   ───────────────────────────────────────────────────────────── */
+const PasesCtx = createContext(null);
+export const usePases = () => useContext(PasesCtx);
+
+// Fase → panel por defecto + pestañas habilitadas (portado de refrescarUI).
+const ALL_TABS = ["PROYECTOS", "SECUENCIA", "PRE", "ORDEN", "POST"];
+const FASE_CFG = {
+  PENDIENTE: { panel: "PENDIENTE", tabs: [] },
+  FASE_1_ENCUESTA: { panel: "ENCUESTA", tabs: ["PROYECTOS"] },
+  FASE_0_DESCANSO: { panel: "DESCANSO", tabs: ["PROYECTOS"] },
+  FASE_2_3_PREPARACION: { panel: "PROYECTOS", tabs: ["PROYECTOS", "SECUENCIA"] },
+  FASE_4_CERRADO: { panel: "PRE", tabs: ["PROYECTOS", "SECUENCIA", "PRE"] },
+  FASE_6_IMPLANTACION: { panel: "ORDEN", tabs: ["PROYECTOS", "SECUENCIA", "PRE", "ORDEN"] },
+  FASE_7_POST: { panel: "POST", tabs: ALL_TABS },
+  COMPLETADO: { panel: "COMPLETADO", tabs: ALL_TABS },
+};
+
+const TABS = [
+  { id: "PROYECTOS", n: 1, t: "Preparación", s: "Proyectos y componentes" },
+  { id: "SECUENCIA", n: 2, t: "Orden del pase", s: "Secuencia" },
+  { id: "PRE", n: 3, t: "Pre-implant.", s: "Checks previos" },
+  { id: "ORDEN", n: 4, t: "Implantación", s: "Ejecución" },
+  { id: "POST", n: 5, t: "Post-implant.", s: "Mergeos" },
+];
+
+const clone = (o) => JSON.parse(JSON.stringify(o));
+
+function AmbientBackground() {
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-[-3%] -z-10 overflow-hidden">
+      <span className="rdr-blob left-[-8%] top-[4%] h-80 w-80" style={{ background: PALETTE.lime }} />
+      <span className="rdr-blob right-[2%] top-[-10%] h-72 w-72" style={{ background: PALETTE.serene, animationDelay: "-4s" }} />
+      <span className="rdr-blob bottom-[-14%] left-[22%] h-96 w-96" style={{ background: PALETTE.royal, animationDelay: "-8s" }} />
+    </div>
+  );
+}
+
+/* Indicador de red: verde conectado, canario sincronizando, mandarina error. */
+function NetDot({ inflight, error }) {
+  const state = inflight > 0 ? "sync" : error ? "err" : "ok";
+  const label = state === "sync" ? "Sincronizando…" : state === "err" ? "Error de red" : "Conectado";
+  const color = state === "sync" ? "bg-canary" : state === "err" ? "bg-mandarin" : "bg-lime";
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-3 py-1.5 text-xs text-sand/70 backdrop-blur" role="status">
+      <span className={`h-2 w-2 rounded-full ${color} ${state === "sync" ? "animate-pulse" : ""}`} aria-hidden />
+      {label}
+    </span>
+  );
+}
+
+/* ── Tarjetas de estado (fases sin pestañas) ── */
+function EstadoCard({ icon, title, children }) {
+  return (
+    <section className={`${CARD_CLS} flex flex-col items-center gap-5 px-6 py-14 text-center`}>
+      {icon}
+      <h2 className="font-display text-2xl font-bold text-sand sm:text-3xl">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function CalendarIcon({ fecha }) {
+  const parts = (fecha || "").split("/");
+  const dia = parts[0] || "--";
+  const mes = MESES[parseInt(parts[1], 10) - 1] || "---";
+  return (
+    <div className="w-36 overflow-hidden rounded-xl border-2 border-serene/40 bg-white/[0.06] backdrop-blur" aria-hidden>
+      <div className="bg-electric px-2 py-1.5 text-xs font-bold uppercase tracking-[0.08em] text-sand">{mes}</div>
+      <div className="px-4 py-3 font-display text-6xl font-bold leading-none text-sand">{dia}</div>
+    </div>
+  );
+}
+
+export default function PasesRoute() {
+  const links = useLinks();
+  const reduce = useReducedMotion();
+
+  // URLs desde links.json (fuente única) — misma resolución que el legacy.
+  const apiUrl = links?.getUrl ? links.getUrl("pasesBackend") : null;
+  const jiraTpl = links?.getUrl ? links.getUrl("jiraBrowse") : null;
+  const enoaTpl = links?.getUrl ? links.getUrl("despliegueENOA") : null;
+  const apiUrlRef = useRef(null);
+  apiUrlRef.current = apiUrl;
+
+  // ── Estado central ──
+  const [E, setE] = useState(null);
+  const ERef = useRef(null);
+  const [boot, setBoot] = useState("loading"); // loading | ready | error
+  const [bootMsg, setBootMsg] = useState("Inicializando…");
+  const [inflight, setInflight] = useState(0);
+  const [netErr, setNetErr] = useState(false);
+  const [activePanel, setActivePanel] = useState("PROYECTOS");
+  const [tempOrden, setTempOrden] = useState([]);
+  const [cab, setCab] = useState({ crq: "", liderar: "", aprender: "", instTecnica: false });
+  const [drawerElemento, setDrawerElemento] = useState(null);
+  const [validadorFlash, setValidadorFlash] = useState(0);
+
+  const hashRef = useRef("");
+  const abortRef = useRef(null);
+  const cabTimer = useRef();
+  const preTimer = useRef();
+  const ordenTimer = useRef();
+  const idTraspasoTimers = useRef(new Map());
+  const draftsRef = useRef(new Map()); // fila → draft pendiente de autosave (beacon)
+
+  // ── Toasts (con dedup, como el legacy) ──
+  const [toasts, setToasts] = useState([]);
+  const toastsRef = useRef([]);
+  const toastSeq = useRef(0);
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => {
+      const next = prev.filter((t) => t.id !== id);
+      toastsRef.current = next;
+      return next;
+    });
+  }, []);
+  const showToast = useCallback(
+    (msg, type = "success", duration = 2500) => {
+      const key = type + "|" + msg;
+      const dup = toastsRef.current.find((t) => t.key === key);
+      if (dup) return dup.id;
+      const id = ++toastSeq.current;
+      setToasts((prev) => {
+        const next = [...prev, { id, key, msg, type }];
+        toastsRef.current = next;
+        return next;
+      });
+      if (type !== "loading") setTimeout(() => removeToast(id), duration);
+      return id;
+    },
+    [removeToast]
+  );
+
+  // ── Aplicar estado con optimismo (mantiene ERef síncrono para cache/rollback) ──
+  const applyE = useCallback((fn) => {
+    const next = clone(ERef.current);
+    fn(next);
+    ERef.current = next;
+    setE(next);
+    return next;
+  }, []);
+  const setEstado = useCallback((data) => {
+    ERef.current = data;
+    setE(data);
+  }, []);
+
+  // ── Motor de peticiones (contador de red + errores) ──
+  const call = useCallback(async (action, payload = {}, opts = {}) => {
+    setInflight((n) => n + 1);
+    try {
+      const d = await llamarBackend(apiUrlRef.current, action, payload, opts);
+      setNetErr(false);
+      return d;
+    } catch (err) {
+      if (err.name !== "AbortError") setNetErr(true);
+      throw err;
+    } finally {
+      setInflight((n) => Math.max(0, n - 1));
+    }
+  }, []);
+
+  // ── Carga SWR (idéntica estrategia que el legacy) ──
+  const revalidar = useCallback(
+    async (fecha) => {
+      try {
+        const data = await call("obtenerDatosDashboard", { fecha }, { signal: abortRef.current?.signal });
+        if (data && data.error) return;
+        const h = dashHash(data);
+        cacheSet(fecha, data);
+        if (h !== hashRef.current) {
+          hashRef.current = h;
+          setEstado(data);
+        }
+      } catch {}
+    },
+    [call, setEstado]
+  );
+
+  const cargarCompleto = useCallback(
+    async (fecha, force) => {
+      if (abortRef.current) try { abortRef.current.abort(); } catch {}
+      abortRef.current = new AbortController();
+
+      const cached = !force && cacheGet(fecha);
+      if (cached) {
+        setEstado(cached);
+        setBoot("ready");
+        hashRef.current = dashHash(cached);
+        revalidar(fecha).catch(() => {});
+        return;
+      }
+
+      setBoot("loading");
+      setBootMsg("Conectando con Google Apps Script…");
+      try {
+        const data = await call("obtenerDatosDashboard", { fecha }, { signal: abortRef.current.signal });
+        if (data && data.error) throw new Error(data.error);
+        setEstado(data);
+        cacheSet(fecha, data);
+        hashRef.current = dashHash(data);
+        setBoot("ready");
+      } catch (err) {
+        if (err.name === "AbortError") return;
+        setBoot("error");
+        setBootMsg(err.message || "Error desconocido");
+      }
+    },
+    [call, revalidar, setEstado]
+  );
+
+  // Arranque cuando la URL del backend está resuelta desde links.json.
+  useEffect(() => {
+    if (apiUrl) cargarCompleto(null);
+    else if (links && links.error) {
+      setBoot("error");
+      setBootMsg("No se pudo cargar links.json (URL del backend de pases).");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiUrl, links?.error]);
+
+  // Revalidar al volver a la pestaña.
+  useEffect(() => {
+    const h = () => {
+      if (document.visibilityState === "visible" && ERef.current?.fechaSeleccionada) {
+        revalidar(ERef.current.fechaSeleccionada).catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", h);
+    return () => document.removeEventListener("visibilitychange", h);
+  }, [revalidar]);
+
+  // Autosaves pendientes al cerrar la pestaña → sendBeacon (fire-and-forget).
+  useEffect(() => {
+    const h = () => {
+      draftsRef.current.forEach((d, fila) => {
+        beaconEditarComponente(apiUrlRef.current, {
+          fila,
+          nom: d.nom || "", tipo: d.tipo || "", subida: d.subida || "", resp: d.resp || "",
+          cod: d.cod || "", us: d.us || "", com: d.com || "", releaseCheck: !!d.release,
+        });
+      });
+    };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
+  }, []);
+
+  // Sincroniza cabecera editable desde el servidor.
+  useEffect(() => {
+    if (!E) return;
+    setCab({ crq: E.crq || "", liderar: E.liderar || "", aprender: E.aprender || "", instTecnica: !!E.instTecnica });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [E?.crq, E?.liderar, E?.aprender, E?.instTecnica, E?.fechaSeleccionada]);
+
+  // Reconcilia tempOrden con el backend (primer render / cambio estructural).
+  useEffect(() => {
+    if (!E) return;
+    const backendOrden = (E.ordenPase || []).map((o) => ({ elemento: o.elemento, som: o.som || "" }));
+    setTempOrden((prev) => {
+      const same = prev.length === backendOrden.length && prev.every((t, i) => t.elemento === backendOrden[i].elemento);
+      return prev.length === 0 || !same ? backendOrden : prev;
+    });
+  }, [E]);
+
+  // Snap del panel activo al cambiar de fase (o de fecha).
+  const fase = E?.faseActual;
+  useEffect(() => {
+    if (!fase) return;
+    setActivePanel((FASE_CFG[fase] || { panel: "PROYECTOS" }).panel);
+  }, [fase, E?.fechaSeleccionada]);
+
+  /* ───────────── Acciones estructurales (esperan al backend) ───────────── */
+  const procesarNuevoEstado = useCallback(
+    (data, msg, t) => {
+      setEstado(data);
+      cacheSet(data?.fechaSeleccionada, data);
+      hashRef.current = dashHash(data);
+      if (t) removeToast(t);
+      if (msg) showToast(msg, "success", 1500);
+    },
+    [removeToast, setEstado, showToast]
+  );
+
+  const estructural = useCallback(
+    async (action, payload, { loadingMsg, okMsg }) => {
+      const t = showToast(loadingMsg, "loading", 0);
+      try {
+        const data = await call(action, payload);
+        procesarNuevoEstado(data, okMsg, t);
+      } catch (e) {
+        removeToast(t);
+        showToast(e.message, "error");
+      }
+    },
+    [call, procesarNuevoEstado, removeToast, showToast]
+  );
+
+  const comenzarPase = () =>
+    estructural("iniciarPase", { fila: ERef.current.fila, fechaStr: ERef.current.fechaSeleccionada }, { loadingMsg: "Abriendo pase…", okMsg: "Pase iniciado" });
+  const responderEncuesta = (r) =>
+    estructural("responderEncuesta", { respuesta: r, fila: ERef.current.fila, fechaStr: ERef.current.fechaSeleccionada }, { loadingMsg: "Registrando…", okMsg: "Encuesta guardada" });
+  const cancelarSubida = () => {
+    if (!confirm("¿Cancelar todo el pase?")) return;
+    estructural("cancelarSubida", { fila: ERef.current.fila, fechaStr: ERef.current.fechaSeleccionada }, { loadingMsg: "Cancelando…", okMsg: "Pase cancelado" });
+  };
+  const activarEmergencia = () =>
+    estructural("activarEmergencia", { fila: ERef.current.fila, fechaStr: ERef.current.fechaSeleccionada }, { loadingMsg: "Reabriendo…", okMsg: "Pase reabierto" });
+  const avanzar = () => {
+    if (!confirm("¿Confirmar esta validación y notificar al equipo por correo?")) return;
+    estructural(
+      "avanzarFase",
+      { fila: ERef.current.fila, fechaStr: ERef.current.fechaSeleccionada, faseActual: ERef.current.faseActual },
+      { loadingMsg: "Procesando…", okMsg: "Fase completada" }
+    );
+  };
+  const addProyecto = ({ nombre, feature, respBBVA }) => {
+    if (!nombre) return showToast("El nombre del proyecto es obligatorio", "error");
+    return estructural(
+      "guardarNuevoProyecto",
+      { fechaStr: ERef.current.fechaSeleccionada, nombre, feature: limpiarMulti(feature), respBBVA },
+      { loadingMsg: "Creando proyecto…", okMsg: "Proyecto creado" }
+    );
+  };
+  const delProyecto = (nombre) => {
+    const proy = (ERef.current.proyectos || []).find((p) => p.nombre === nombre);
+    const nComps = proy ? (proy.componentes || []).length : 0;
+    const msg =
+      nComps > 0
+        ? `¿Eliminar el proyecto "${nombre}" y sus ${nComps} componente(s)? Esta acción no se puede deshacer.`
+        : `¿Eliminar el proyecto "${nombre}"? Esta acción no se puede deshacer.`;
+    if (!confirm(msg)) return;
+    estructural("eliminarProyecto", { fechaStr: ERef.current.fechaSeleccionada, nombre }, { loadingMsg: "Eliminando proyecto…", okMsg: "Proyecto eliminado" });
+  };
+  const addCompVacio = (nomProy, cantidad) =>
+    estructural(
+      "agregarComponentesVacios",
+      { proy: nomProy, cantidadStr: cantidad, fechaStr: ERef.current.fechaSeleccionada },
+      { loadingMsg: `Añadiendo ${cantidad} fila(s)…`, okMsg: "Filas añadidas" }
+    );
+  const delComp = (fila) => {
+    if (!confirm("¿Eliminar este componente del proyecto?")) return;
+    estructural("eliminarComponente", { fila, fechaStr: ERef.current.fechaSeleccionada }, { loadingMsg: "Eliminando…", okMsg: "Componente eliminado" });
+  };
+
+  /* ───────────── Acciones optimistas ───────────── */
+  const saveComp = useCallback(
+    async (fila, draft) => {
+      const payload = {
+        fila,
+        nom: draft.nom, tipo: draft.tipo, subida: draft.subida, resp: draft.resp,
+        cod: draft.cod, us: limpiarMulti(draft.us), release: draft.release, com: draft.com,
+        releaseCheck: draft.release,
+      };
+      let prevComp = null;
+      (ERef.current.proyectos || []).forEach((p) =>
+        (p.componentes || []).forEach((c) => {
+          if (c.fila === fila) prevComp = { ...c };
+        })
+      );
+      applyE((d) =>
+        d.proyectos.forEach((p) =>
+          p.componentes.forEach((c) => {
+            if (c.fila === fila) {
+              c.nombre = payload.nom; c.tipo = payload.tipo; c.subida = payload.subida; c.resp = payload.resp;
+              c.codigo = payload.cod; c.us = payload.us; c.release = payload.release; c.comentarios = payload.com;
+            }
+          })
+        )
+      );
+      try {
+        await call("editarComponente", payload);
+        cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+        return true;
+      } catch (e) {
+        if (prevComp)
+          applyE((d) =>
+            d.proyectos.forEach((p) => p.componentes.forEach((c) => { if (c.fila === fila) Object.assign(c, prevComp); }))
+          );
+        showToast("No se pudo guardar · " + e.message, "error");
+        return false;
+      }
+    },
+    [applyE, call, showToast]
+  );
+
+  const updOkProy = useCallback(
+    async (nombre, isChecked) => {
+      const prev = ERef.current.proyectos.map((p) => ({ nombre: p.nombre, ok: p.ok }));
+      applyE((d) => d.proyectos.forEach((p) => { if (p.nombre === nombre) p.ok = isChecked; }));
+      try {
+        await call("actualizarOKProyecto", { fechaStr: ERef.current.fechaSeleccionada, nombre, val: isChecked });
+        cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+      } catch (e) {
+        applyE((d) => prev.forEach((o) => d.proyectos.forEach((p) => { if (p.nombre === o.nombre) p.ok = o.ok; })));
+        showToast("No se pudo guardar OK · " + e.message, "error");
+      }
+    },
+    [applyE, call, showToast]
+  );
+
+  const saveIdTraspaso = useCallback(
+    async (nombre, valor) => {
+      let prevVal;
+      applyE((d) =>
+        d.proyectos.forEach((p) => {
+          if (p.nombre === nombre) { prevVal = p.idTraspaso; p.idTraspaso = valor.trim(); }
+        })
+      );
+      try {
+        await call("actualizarIdTraspaso", { fechaStr: ERef.current.fechaSeleccionada, nombre, idTraspaso: valor.trim() });
+        cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+      } catch (e) {
+        applyE((d) => d.proyectos.forEach((p) => { if (p.nombre === nombre) p.idTraspaso = prevVal || ""; }));
+        showToast("No se pudo guardar ID Traspaso · " + e.message, "error");
+      }
+    },
+    [applyE, call, showToast]
+  );
+
+  // Debounce 500 ms por proyecto (solo envía si el formato YYYY- es válido).
+  const programarSaveIdTraspaso = useCallback(
+    (nombre, valor) => {
+      const timers = idTraspasoTimers.current;
+      if (timers.has(nombre)) clearTimeout(timers.get(nombre));
+      timers.set(
+        nombre,
+        setTimeout(() => {
+          timers.delete(nombre);
+          const t = (valor || "").trim();
+          if (t && !/^\d{4}-/.test(t)) return; // inválido: no se envía (el usuario sigue editando)
+          saveIdTraspaso(nombre, valor);
+        }, 500)
+      );
+    },
+    [saveIdTraspaso]
+  );
+
+  const updCorreoAns = useCallback(
+    async (nombre, isChecked) => {
+      let prevVal;
+      applyE((d) => d.proyectos.forEach((p) => { if (p.nombre === nombre) { prevVal = p.correoAns; p.correoAns = isChecked; } }));
+      try {
+        await call("actualizarCorreoAns", { fechaStr: ERef.current.fechaSeleccionada, nombre, val: isChecked });
+        cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+      } catch (e) {
+        applyE((d) => d.proyectos.forEach((p) => { if (p.nombre === nombre) p.correoAns = prevVal; }));
+        showToast("No se pudo guardar correo ANS · " + e.message, "error");
+      }
+    },
+    [applyE, call, showToast]
+  );
+
+  const chkOrden = useCallback(
+    async (fila, val) => {
+      const prev = ERef.current.ordenPase.find((o) => o.fila === fila)?.implantado;
+      applyE((d) => d.ordenPase.forEach((o) => { if (o.fila === fila) o.implantado = val; }));
+      try {
+        await call("actualizarCheckOrden", { fila, val });
+        cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+      } catch (e) {
+        applyE((d) => d.ordenPase.forEach((o) => { if (o.fila === fila) o.implantado = prev; }));
+        showToast("Error al actualizar · " + e.message, "error");
+      }
+    },
+    [applyE, call, showToast]
+  );
+
+  const updSomEjecucion = useCallback(
+    async (fila, val) => {
+      applyE((d) => d.ordenPase.forEach((o) => { if (o.fila === fila) o.som = val; }));
+      try {
+        await call("actualizarSomOrden", { fila, val });
+        cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+      } catch (e) {
+        showToast("Error · " + e.message, "error");
+      }
+    },
+    [applyE, call, showToast]
+  );
+
+  const chkMerge = useCallback(
+    async (fila, val) => {
+      let prev;
+      applyE((d) => d.proyectos.forEach((p) => p.componentes.forEach((c) => { if (c.fila === fila) { prev = c.mergeado; c.mergeado = val; } })));
+      try {
+        await call("actualizarMergeComponente", { fila, val });
+        cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+      } catch (e) {
+        applyE((d) => d.proyectos.forEach((p) => p.componentes.forEach((c) => { if (c.fila === fila) c.mergeado = prev; })));
+        showToast("Error al guardar merge · " + e.message, "error");
+      }
+    },
+    [applyE, call, showToast]
+  );
+
+  // Checks pre generales (debounce 400 ms, envía los 4 a la vez — como el legacy).
+  const setCheckPre = useCallback(
+    (id, patch) => {
+      const next = applyE((d) => {
+        const cp = (d.checksPre = d.checksPre || {});
+        const cur = (cp[id] = { aplica: "APLICA", ok: false, ...(cp[id] || {}) });
+        Object.assign(cur, patch);
+        if (cur.aplica !== "APLICA") cur.ok = false; // NA → check apagado
+      });
+      clearTimeout(preTimer.current);
+      preTimer.current = setTimeout(async () => {
+        const cp = ERef.current.checksPre || {};
+        const get = (k) => ({ aplica: cp[k]?.aplica ?? "APLICA", ok: !!cp[k]?.ok });
+        const checks = { dpPro: get("dpPro"), jiraOk: get("jiraOk"), remOk: get("remOk"), docPruebas: get("docPruebas") };
+        try {
+          await call("actualizarChecksPre", { fila: ERef.current.fila, checks });
+          cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+        } catch (e) {
+          showToast("Error al guardar · " + e.message, "error");
+        }
+      }, 400);
+      return next;
+    },
+    [applyE, call, showToast]
+  );
+
+  // Cabecera (CRQ / liderar / aprender / inst. técnica) — debounce 500 ms.
+  const scheduleCabSave = useCallback(
+    (next) => {
+      clearTimeout(cabTimer.current);
+      cabTimer.current = setTimeout(async () => {
+        applyE((d) => { d.crq = next.crq; d.liderar = next.liderar; d.aprender = next.aprender; d.instTecnica = next.instTecnica; });
+        try {
+          await call("guardarCabecera", {
+            fila: ERef.current.fila,
+            crq: next.crq, lider: next.liderar, aprende: next.aprender, instTecnica: next.instTecnica,
+          });
+          cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+        } catch (e) {
+          showToast("Error al guardar · " + e.message, "error");
+        }
+      }, 500);
+    },
+    [applyE, call, showToast]
+  );
+
+  // ── Orden del pase: manipulación local + autosave 700 ms ──
+  const guardarOrdenLocal = useCallback(
+    (next) => {
+      setTempOrden(next);
+      applyE((d) => {
+        d.ordenPase = next.map((el, i) => ({ fila: i + 1, orden: i + 1, elemento: el.elemento, implantado: false, som: el.som }));
+      });
+      clearTimeout(ordenTimer.current);
+      ordenTimer.current = setTimeout(async () => {
+        try {
+          await call("actualizarOrdenCompleto", { fechaStr: ERef.current.fechaSeleccionada, elementos: next });
+          cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+        } catch (e) {
+          showToast("Error al guardar secuencia · " + e.message, "error");
+        }
+      }, 700);
+    },
+    [applyE, call, showToast]
+  );
+
+  const ordenOps = useMemo(
+    () => ({
+      addPaso: (str) => guardarOrdenLocal([...tempOrden, { elemento: str, som: "" }]),
+      removePaso: (idx) => guardarOrdenLocal(tempOrden.filter((_, i) => i !== idx)),
+      movePaso: (idx, delta) => {
+        const dst = idx + delta;
+        if (dst < 0 || dst >= tempOrden.length) return;
+        const next = [...tempOrden];
+        [next[idx], next[dst]] = [next[dst], next[idx]];
+        guardarOrdenLocal(next);
+      },
+      updSom: (idx, val) => {
+        const next = tempOrden.map((o, i) => (i === idx ? { ...o, som: val } : o));
+        guardarOrdenLocal(next);
+      },
+    }),
+    [guardarOrdenLocal, tempOrden]
+  );
+
+  // ── Validador + avances de fase ──
+  const validador = useMemo(() => (E ? computeValidador(E, cab, tempOrden) : null), [E, cab, tempOrden]);
+
+  const validarYAvanzarPrep = () => {
+    if (!validador?.todoCorrecto) {
+      setValidadorFlash((n) => n + 1);
+      return showToast("Revisa el validador", "error", 3500);
+    }
+    avanzar();
+  };
+  const validarYAvanzarPre = () => {
+    const cp = ERef.current.checksPre || {};
+    for (const id of ["dpPro", "jiraOk", "remOk", "docPruebas"]) {
+      const aplica = (cp[id]?.aplica ?? "APLICA") === "APLICA";
+      if (aplica && !cp[id]?.ok) return showToast("Completa los checks generales que aplican", "error", 4000);
+    }
+    const sinAns = (ERef.current.proyectos || []).filter((p) => !p.correoAns).map((p) => p.nombre);
+    if (sinAns.length > 0) return showToast("Falta marcar correo ANS enviado en: " + sinAns.join(", "), "error", 5000);
+    avanzar();
+  };
+  const validarYCompletarImplantacion = () => {
+    const falta = ERef.current.ordenPase.some((o) => !isT(o.implantado));
+    if (falta) return showToast("Faltan pasos por marcar como implantados", "error", 4000);
+    avanzar();
+  };
+  const validarYFinalizarPase = () => {
+    let faltan = false;
+    ERef.current.proyectos.forEach((p) =>
+      p.componentes.forEach((c) => {
+        if ((c.codigo || "").toUpperCase().includes("DP-KYTL") && !isT(c.mergeado)) faltan = true;
+      })
+    );
+    if (faltan) return showToast("Faltan ramas DP-KYTL por mergear", "error", 4000);
+    avanzar();
+  };
+
+  const bombaNuclear = async () => {
+    if (!confirm("¿Borrar TODOS los datos del Excel? Esta acción no se puede deshacer.")) return;
+    setBoot("loading");
+    setBootMsg("Vaciando el Excel…");
+    try {
+      await call("debugTotal", {});
+      try { sessionStorage.clear(); } catch {}
+      cargarCompleto(null, true);
+    } catch (e) {
+      setBoot("ready");
+      showToast("Error de borrado · " + e.message, "error");
+    }
+  };
+
+  // ── Registro de drafts (para el beacon de beforeunload) ──
+  const registerDraft = useCallback((fila, draft) => { draftsRef.current.set(fila, draft); }, []);
+  const unregisterDraft = useCallback((fila) => { draftsRef.current.delete(fila); }, []);
+
+  /* ───────────── Render ───────────── */
+  const cfg = FASE_CFG[fase] || { panel: "PROYECTOS", tabs: [] };
+  const enabledTabs = new Set(cfg.tabs);
+  const isCompletado = fase === "COMPLETADO";
+  const proyectosLocked = fase !== "FASE_2_3_PREPARACION"; // bloque proyectos editable solo en preparación
+
+  const ctx = {
+    E, fase, isCompletado, proyectosLocked,
+    cab, setCab, scheduleCabSave,
+    tempOrden, ordenOps,
+    validador, validadorFlash,
+    tpls: { jira: jiraTpl, enoa: enoaTpl },
+    showToast, removeToast,
+    setActivePanel,
+    abrirComandos: setDrawerElemento,
+    registerDraft, unregisterDraft,
+    actions: {
+      comenzarPase, responderEncuesta, cancelarSubida, activarEmergencia,
+      addProyecto, delProyecto, addCompVacio, delComp, saveComp,
+      updOkProy, programarSaveIdTraspaso, updCorreoAns, setCheckPre,
+      chkOrden, updSomEjecucion, chkMerge,
+      validarYAvanzarPrep, validarYAvanzarPre, validarYCompletarImplantacion, validarYFinalizarPase,
+    },
+  };
+
+  const panelAnim = reduce
+    ? {}
+    : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -6 }, transition: { duration: 0.2 } };
+
+  return (
+    <PasesCtx.Provider value={ctx}>
+      <main className="relative min-h-dvh w-full">
+        <AmbientBackground />
+        <div className="mx-auto w-full max-w-[1600px] px-5 pb-24 pt-28 sm:px-6">
+          {/* Cabecera de página */}
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <Link
+                href="/"
+                className="mb-2 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.15em] text-sand/60 transition hover:text-lime focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+              >
+                <IconArrowLeft size={13} /> Hub · Proyectos
+              </Link>
+              <h2 className="flex items-center gap-3 font-display text-3xl font-bold tracking-tight text-sand sm:text-4xl">
+                <span className="grid h-11 w-11 place-items-center rounded-xl border" style={{ borderColor: rgba(ACCENT, 0.35), background: rgba(ACCENT, 0.12), color: ACCENT }}>
+                  <IconRocket size={24} />
+                </span>
+                Pases Calendados
+              </h2>
+              <p className="mt-1.5 text-sm text-sand/65">Releases por entorno · ciclo completo del pase a producción</p>
+            </div>
+            <NetDot inflight={inflight} error={netErr} />
+          </div>
+
+          {boot === "loading" && <BootSkeleton msg={bootMsg} />}
+
+          {boot === "error" && (
+            <section className={`${CARD_CLS} border-mandarin/40 p-8 text-center`} role="alert">
+              <p className="font-display text-xl font-bold text-mandarin">No se pudo cargar el pase</p>
+              <p className="mx-auto mt-2 max-w-lg text-sm text-sand/70">{bootMsg}</p>
+              <button type="button" className={`${BTN.accent} mt-6`} onClick={() => cargarCompleto(null, true)}>
+                <IconRefresh size={16} /> Reintentar
+              </button>
+            </section>
+          )}
+
+          {boot === "ready" && E && (
+            <>
+              <CabeceraControles ctx={ctx} onCambiarFecha={(f) => cargarCompleto(f)} />
+
+              {/* Timeline de fases */}
+              <Stepper tabs={TABS} enabled={enabledTabs} active={activePanel} onSelect={setActivePanel} fase={fase} />
+
+              <AnimatePresence mode="wait">
+                <motion.div key={activePanel} {...panelAnim}>
+                  {activePanel === "PENDIENTE" && (
+                    <EstadoCard icon={<CalendarIcon fecha={E.fechaSeleccionada} />} title="Pase calendado no iniciado">
+                      <button type="button" className={BTN.success} onClick={comenzarPase}>Comenzar pase</button>
+                    </EstadoCard>
+                  )}
+                  {activePanel === "ENCUESTA" && (
+                    <EstadoCard
+                      icon={<span className="grid h-16 w-16 place-items-center rounded-2xl border border-serene/40 bg-serene/10 text-serene"><IconRocket size={32} /></span>}
+                      title="¿Tenemos subida en este pase?"
+                    >
+                      <p className="max-w-md text-sm text-sand/65">Confirma si vuestros proyectos se incluyen en el pase calendado.</p>
+                      <div className="flex flex-wrap justify-center gap-3">
+                        <button type="button" className={BTN.success} onClick={() => responderEncuesta("SI")}>Sí, adelante</button>
+                        <button type="button" className={BTN.danger} onClick={() => responderEncuesta("NO")}>No hay subida</button>
+                      </div>
+                    </EstadoCard>
+                  )}
+                  {activePanel === "DESCANSO" && (
+                    <EstadoCard
+                      icon={<span className="grid h-16 w-16 place-items-center rounded-2xl border border-purple/40 bg-purple/10 text-purple"><IconMoon size={32} /></span>}
+                      title="Semana de descanso"
+                    >
+                      <p className="max-w-md text-sm text-sand/65">No hay subida este pase. Si surge una urgencia puedes reactivarlo:</p>
+                      <button type="button" className={BTN.warn} onClick={activarEmergencia}>Reactivar pase de emergencia</button>
+                    </EstadoCard>
+                  )}
+                  {activePanel === "COMPLETADO" && (
+                    <section className="relative overflow-hidden rounded-2xl border border-lime/40 bg-lime px-6 py-14 text-center text-electric">
+                      <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-electric/10"><IconCheck size={34} /></span>
+                      <h2 className="mt-5 font-display text-3xl font-bold sm:text-5xl">Pase completado al 100 %</h2>
+                      <p className="mx-auto mt-3 max-w-xl text-base sm:text-lg">
+                        Todos los proyectos están operativos en producción y las ramas mergeadas correctamente.
+                      </p>
+                      <div className="mx-auto mt-6 inline-block max-w-xl rounded-lg border-l-4 border-electric bg-electric/[0.08] p-4 text-left">
+                        <p className="flex items-center gap-2 font-bold"><IconLock size={16} /> Pase en modo solo lectura</p>
+                        <p className="mt-1.5 text-[13px]">El registro se ha bloqueado. Puedes navegar por las pestañas para revisar el historial.</p>
+                      </div>
+                    </section>
+                  )}
+                  {activePanel === "PROYECTOS" && <Proyectos />}
+                  {activePanel === "SECUENCIA" && <Secuencia />}
+                  {activePanel === "PRE" && <PreChecks />}
+                  {activePanel === "ORDEN" && <Ejecucion />}
+                  {activePanel === "POST" && <Mergeos />}
+                </motion.div>
+              </AnimatePresence>
+            </>
+          )}
+
+          {/* Footer utilitario (el co-branding NFQ lo pone AppFrame) */}
+          {boot === "ready" && (
+            <footer className="mt-14 flex items-center justify-between border-t border-white/10 pt-4 text-[11px] text-sand/40">
+              <span>Pases Calendados RDR · BBVA × NFQ</span>
+              <button
+                type="button"
+                onClick={bombaNuclear}
+                title="DEBUG: vaciar el Excel"
+                className="rounded-md border border-white/15 px-2.5 py-1 opacity-50 transition hover:opacity-100 hover:text-mandarin focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+              >
+                DEBUG · Reset
+              </button>
+            </footer>
+          )}
+        </div>
+
+        {/* Toasts */}
+        <div className="pointer-events-none fixed bottom-5 right-5 z-[95] flex max-w-[360px] flex-col gap-2" aria-live="polite">
+          {toasts.map((t) => (
+            <div
+              key={t.id}
+              className={`pointer-events-auto flex items-center gap-2 rounded-lg border-l-[3px] bg-midnight/95 px-4 py-3 text-[13px] font-bold text-sand shadow-lg backdrop-blur ${
+                t.type === "error" ? "border-mandarin" : t.type === "loading" ? "border-serene" : "border-lime"
+              }`}
+            >
+              {t.type === "loading" && (
+                <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-sand/25 border-t-sand" aria-hidden />
+              )}
+              <span>{t.msg}</span>
+            </div>
+          ))}
+        </div>
+
+        <CmdDrawer elemento={drawerElemento} onClose={() => setDrawerElemento(null)} />
+      </main>
+    </PasesCtx.Provider>
+  );
+}
+
+/* ── Cabecera del pase: fecha + CRQ + liderar/aprender + instalación técnica ── */
+function CabeceraControles({ ctx, onCambiarFecha }) {
+  const { E, cab, setCab, scheduleCabSave, isCompletado } = ctx;
+  const lockCls = isCompletado ? "pointer-events-none opacity-55 grayscale-[40%] select-none" : "";
+
+  const upd = (patch, save = true) => {
+    const next = { ...cab, ...patch };
+    setCab(next);
+    if (save) scheduleCabSave(next);
+  };
+
+  return (
+    <section className={`${CARD_CLS} mb-5 p-4 sm:p-5`} aria-label="Cabecera del pase">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <Field label="Fecha del pase">
+          <select className={SELECT_CLS} value={E.fechaSeleccionada || ""} onChange={(e) => onCambiarFecha(e.target.value)}>
+            {(E.fechasDisponibles || []).map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+        </Field>
+        <div className={lockCls} style={{ display: "contents" }}>
+          <Field label="CRQ general" className={lockCls}>
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                className={INPUT_CLS}
+                placeholder="CRQ000…"
+                autoComplete="off"
+                value={cab.crq}
+                onChange={(e) => upd({ crq: e.target.value }, false)}
+              />
+              <button
+                type="button"
+                title="Guardar cabecera"
+                aria-label="Guardar cabecera"
+                onClick={() => scheduleCabSave(cab)}
+                className="grid w-10 shrink-0 place-items-center rounded-lg bg-serene text-electric transition hover:brightness-95 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+              >
+                <IconSave size={15} />
+              </button>
+            </div>
+          </Field>
+          <Field label="Liderar" className={lockCls}>
+            <select className={SELECT_CLS} value={cab.liderar} onChange={(e) => upd({ liderar: e.target.value })}>
+              <option value="">Elegir…</option>
+              {(E.equipo || []).map((x) => <option key={x} value={x}>{x}</option>)}
+            </select>
+          </Field>
+          <Field label="Aprender" className={lockCls}>
+            <select className={SELECT_CLS} value={cab.aprender} onChange={(e) => upd({ aprender: e.target.value })}>
+              <option value="">Elegir…</option>
+              {(E.equipo || []).map((x) => <option key={x} value={x}>{x}</option>)}
+            </select>
+          </Field>
+          <div className={`flex flex-col gap-1 ${lockCls}`}>
+            <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-sand/60">Validación fase 2</span>
+            <label className="flex flex-1 cursor-pointer items-center gap-2 rounded-lg border border-mandarin/30 bg-mandarin/10 px-3 py-2">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-[#FFB56B]"
+                checked={cab.instTecnica}
+                onChange={(e) => upd({ instTecnica: e.target.checked })}
+              />
+              <span className="text-xs font-bold text-sand">Instalación técnica</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── Stepper / timeline de fases (pestañas) ── */
+function Stepper({ tabs, enabled, active, onSelect, fase }) {
+  // Índice de la fase "actual" para la jerarquía visual del timeline.
+  const currentIdx =
+    fase === "FASE_2_3_PREPARACION" ? 0
+      : fase === "FASE_4_CERRADO" ? 2
+      : fase === "FASE_6_IMPLANTACION" ? 3
+      : fase === "FASE_7_POST" ? 4
+      : fase === "COMPLETADO" ? 5
+      : -1;
+
+  return (
+    <nav aria-label="Fases del pase" className="mb-6 overflow-x-auto pb-1">
+      <ol className="flex min-w-max items-stretch gap-2">
+        {tabs.map((tab, i) => {
+          const on = enabled.has(tab.id);
+          const isActive = active === tab.id;
+          const done = currentIdx > i;
+          return (
+            <li key={tab.id} className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={!on}
+                aria-current={isActive ? "step" : undefined}
+                onClick={() => onSelect(tab.id)}
+                className={`group flex items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene ${
+                  isActive
+                    ? "border-lime/60 bg-lime/10"
+                    : on
+                    ? "border-white/12 bg-white/[0.04] hover:border-lime/40 hover:bg-white/[0.08]"
+                    : "cursor-not-allowed border-white/[0.06] bg-transparent opacity-35"
+                }`}
+              >
+                <span
+                  className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-bold tabular-nums ${
+                    done
+                      ? "border-lime/50 bg-lime/20 text-lime"
+                      : isActive
+                      ? "border-lime bg-lime text-electric"
+                      : "border-white/20 text-sand/60"
+                  }`}
+                  aria-hidden
+                >
+                  {done ? <IconCheck size={13} /> : tab.n}
+                </span>
+                <span className="min-w-0">
+                  <span className={`block text-[13px] font-bold leading-tight ${isActive ? "text-lime" : "text-sand/85"}`}>{tab.t}</span>
+                  <span className="block text-[10px] leading-tight text-sand/50">{tab.s}</span>
+                </span>
+              </button>
+              {i < tabs.length - 1 && <span aria-hidden className={`h-px w-4 shrink-0 sm:w-6 ${done ? "bg-lime/50" : "bg-white/15"}`} />}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+/* ── Skeleton de carga (SWR frío) ── */
+function BootSkeleton({ msg }) {
+  return (
+    <div aria-busy="true" aria-label={msg}>
+      <div className={`${CARD_CLS} mb-5 p-5`}>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="rdr-skel h-14 rounded-lg" />
+          ))}
+        </div>
+      </div>
+      <div className="mb-6 flex gap-2 overflow-hidden">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="rdr-skel h-14 w-44 shrink-0 rounded-xl" />
+        ))}
+      </div>
+      <div className={`${CARD_CLS} p-5`}>
+        <div className="rdr-skel mb-4 h-8 w-1/3 rounded-lg" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rdr-skel mb-2.5 h-12 rounded-lg" />
+        ))}
+      </div>
+      <p className="mt-6 text-center text-sm text-sand/60">{msg}</p>
+    </div>
+  );
+}

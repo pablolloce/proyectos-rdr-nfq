@@ -23,16 +23,16 @@ const SECTIONS = [
     id: "form", n: "01", title: "Formación", color: PALETTE.serene,
     items: [
       { kind: "feature", label: "HUB Formativo", desc: "Ruta por niveles 00–06", icon: IconGrad, action: "route", target: "/formacion" },
-      { label: "¿Qué es RDR?", desc: "Presentación de introducción", icon: IconBook, action: "page", target: "/team-hub/que-es-rdr.html" },
+      { label: "¿Qué es RDR?", desc: "Presentación de introducción", icon: IconBook, action: "route", target: "/que-es-rdr" },
       { label: "Portal BBVA CIB", desc: "Portal corporativo del equipo", icon: IconLink, action: "copy", target: "portalBBVACIB" },
     ],
   },
   {
     id: "equipo", n: "02", title: "Equipo", color: PALETTE.mandarin,
     items: [
-      { label: "Comidas", desc: "Restaurante de los jueves", icon: IconUtensils, action: "page", target: "/team-hub/comidas.html" },
-      { label: "Vacaciones", desc: "Calendario y política", icon: IconCalendar, action: "page", target: "/team-hub/vacaciones.html" },
-      { label: "Retrospectiva", desc: "Retros y mejoras", icon: IconRefresh, action: "page", target: "/team-hub/retro.html" },
+      { label: "Comidas", desc: "Restaurante de los jueves", icon: IconUtensils, action: "route", target: "/comidas" },
+      { label: "Vacaciones", desc: "Calendario y política", icon: IconCalendar, action: "route", target: "/vacaciones" },
+      { label: "Retrospectiva", desc: "Retros y mejoras", icon: IconRefresh, action: "route", target: "/retro" },
       { label: "Time Report", desc: "Imputación de horas", icon: IconClock, actions: [
         { label: "NFQ", action: "open", target: "timeReportNFQ" },
         { label: "BBVA", action: "copy", target: "timeReportBBVA" },
@@ -42,7 +42,7 @@ const SECTIONS = [
   {
     id: "proy", n: "03", title: "Proyectos", color: PALETTE.lime,
     items: [
-      { label: "Pases Calendados", desc: "Releases por entorno", icon: IconRocket, action: "page", target: "/team-hub/pases-calendados.html" },
+      { label: "Pases Calendados", desc: "Releases por entorno", icon: IconRocket, action: "route", target: "/pases" },
       { label: "Planificación", desc: "Hoja de planificación", icon: IconCalendar, action: "open", target: "planificacionNFQ" },
       { label: "Repositorio", desc: "Código y documentación", icon: IconFolder, actions: [
         { label: "GitHub", action: "copy", target: "githubBBVA", icon: IconCode },
@@ -54,7 +54,7 @@ const SECTIONS = [
 
 const COORD_SECTION = {
   id: "coord", n: "04", title: "Coordinación", color: PALETTE.purple,
-  items: [{ label: "Control RDR", desc: "Control económico", icon: IconShield, action: "page", target: "/team-hub/control.html" }],
+  items: [{ label: "Control RDR", desc: "Control económico", icon: IconShield, action: "route", target: "/control" }],
 };
 
 const HintIcon = (action) => (action === "copy" ? IconCopy : action === "open" ? IconExternal : IconArrow);
