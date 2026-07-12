@@ -43,8 +43,8 @@ function DiagramaOnline() {
         </div>
         <div className="grid grid-cols-1 gap-x-4 gap-y-1.5 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-[12px] font-bold sm:grid-cols-2">
           <span className="text-serene">← Publicación (RDR → Sistemas)</span>
-          <span style={{ color: PALETTE.lime }}>→ ACK / NACK (Sistemas → RDR)</span>
-          <span style={{ color: PALETTE.mandarin }}>→ Petición (Sistemas → RDR)</span>
+          <span className="text-lime">→ ACK / NACK (Sistemas → RDR)</span>
+          <span className="text-mandarin">→ Petición (Sistemas → RDR)</span>
           <span className="text-serene">← Respuesta (RDR → Sistemas)</span>
         </div>
         <p className="px-1 text-center text-[12px] leading-relaxed text-sand/60">

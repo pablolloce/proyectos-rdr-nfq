@@ -7,9 +7,20 @@
 
 import { PALETTE } from "@/lib/palette";
 import { rgba } from "@/lib/ui";
+import { useTheme, useAccentMap } from "@/lib/theme";
 import { Reveal, Section, ModuleDivider, BlockHeader, Glass, EdgeCard, KeyIdea, Pill, H3 } from "./ui";
 
 const C = PALETTE.purple;
+// Azul hielo del deck (no es token BBVA y no está en el LIGHT_EQ de lib/theme):
+// como TEXTO en claro se sustituye por un azul acero con contraste AA sobre Sand.
+const ICE = "#B9D4EE";
+const ICE_LIGHT = "#3E6E96";
+/** mapAccent extendido con el azul hielo local. Solo para acentos usados como TEXTO. */
+function useTx() {
+  const { theme } = useTheme();
+  const mapAccent = useAccentMap();
+  return (hex) => (theme === "light" && hex === ICE ? ICE_LIGHT : mapAccent(hex));
+}
 // Acentos por entidad (coherentes con las tarjetas del módulo 02).
 const FINS = PALETTE.serene;
 const ISSU = PALETTE.lime;
@@ -39,10 +50,11 @@ const ROLES = [
 
 /** Nodo del árbol Global → Local → Operativo. */
 function OrgNode({ level, name, note, color, star }) {
+  const tx = useTx(); // nombre en acento legible en claro; borde/fondo-tinte con hex original
   return (
     <div className="w-full rounded-xl border px-3 py-2 text-center backdrop-blur-sm" style={{ borderColor: rgba(color, 0.45), borderTopWidth: 3, borderTopColor: color, background: rgba(color, 0.08) }}>
       {level && <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sand/55">{level}</p>}
-      <p className="text-[13px] font-bold" style={{ color }}>{star ? "★ " : ""}{name}</p>
+      <p className="text-[13px] font-bold" style={{ color: tx(color) }}>{star ? "★ " : ""}{name}</p>
       {note && <p className="text-[11px] leading-snug text-sand/60">{note}</p>}
     </div>
   );

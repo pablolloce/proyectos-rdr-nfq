@@ -5,6 +5,7 @@
 
 import { PALETTE } from "@/lib/palette";
 import { rgba } from "@/lib/ui";
+import { useAccentMap } from "@/lib/theme";
 import { Reveal, Section, ModuleDivider, BlockHeader, Glass } from "./ui";
 
 const C = PALETTE.aqua;
@@ -60,6 +61,7 @@ const FLUJO = [
 ];
 
 function FlujoMurexCalypso() {
+  const mapAccent = useAccentMap(); // títulos de paso legibles en claro; tintes/superficies con hex original
   return (
     <ol
       className="grid gap-2.5 lg:grid-cols-5"
@@ -72,10 +74,11 @@ function FlujoMurexCalypso() {
             style={p.core ? { borderColor: rgba(p.accent, 0.6), background: rgba(p.accent, 0.08), boxShadow: `0 0 26px -8px ${rgba(p.accent, 0.5)}` } : undefined}
           >
             <p className="flex items-center gap-2">
-              <span className="grid h-6 w-6 place-items-center rounded-full text-[11px] font-bold text-midnight" style={{ background: p.accent }}>
+              {/* Chip: superficie de acento sólida (hex original) → texto Electric literal (regla BBVA texto-sobre-acentos; text-midnight en claro sería Sand, invisible). */}
+              <span className="grid h-6 w-6 place-items-center rounded-full text-[11px] font-bold text-[#001391]" style={{ background: p.accent }}>
                 {i + 1}
               </span>
-              <span className="font-display text-base font-bold tracking-wide" style={{ color: p.accent }}>{p.t}</span>
+              <span className="font-display text-base font-bold tracking-wide" style={{ color: mapAccent(p.accent) }}>{p.t}</span>
             </p>
             <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-sand/55">{p.sub}</p>
             <p className="mt-1.5 text-[12px] leading-relaxed text-sand/70">{p.d}</p>
@@ -94,6 +97,7 @@ function FlujoMurexCalypso() {
 }
 
 export default function SeccionEcosistema() {
+  const mapAccent = useAccentMap(); // leyenda/dirección como TEXTO legible en claro; puntos-swatch con hex original
   return (
     <Section id="ecosistema">
       <ModuleDivider
@@ -108,7 +112,7 @@ export default function SeccionEcosistema() {
 
       <Reveal className="mt-6 flex flex-wrap gap-x-5 gap-y-1.5">
         {Object.values(DIR).map((d) => (
-          <span key={d.legend} className="flex items-center gap-2 text-xs" style={{ color: d.color }}>
+          <span key={d.legend} className="flex items-center gap-2 text-xs" style={{ color: mapAccent(d.color) }}>
             <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: d.color }} />
             {d.legend}
           </span>
@@ -122,7 +126,7 @@ export default function SeccionEcosistema() {
             <div key={s.n} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 backdrop-blur-sm" style={{ borderTop: `3px solid ${dir.color}` }}>
               <div className="flex items-baseline justify-between gap-2">
                 <p className="font-display text-base font-bold text-sand">{s.n}</p>
-                <p className="shrink-0 text-[11px] font-bold uppercase tracking-wide" style={{ color: dir.color }}>{dir.label}</p>
+                <p className="shrink-0 text-[11px] font-bold uppercase tracking-wide" style={{ color: mapAccent(dir.color) }}>{dir.label}</p>
               </div>
               <p className="mt-1.5 text-[12px] leading-relaxed text-sand/65">{s.d}</p>
             </div>

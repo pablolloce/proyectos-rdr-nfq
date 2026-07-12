@@ -203,9 +203,11 @@ function MonthCard({ mes, anio, hoyStr, festivos, ausenciasPorDia, filtros, tota
   return (
     <section
       aria-label={`${MESES[mes]} ${anio}`}
-      className={`rdr-rise rounded-2xl border p-4 backdrop-blur-md transition hover:-translate-y-1 hover:shadow-[0_24px_48px_-20px_rgba(0,0,0,0.6)] ${
-        contieneHoy ? "bg-white/[0.07]" : "border-white/12 bg-white/[0.055]"
-      }`}
+      className={`rdr-rise rounded-2xl border p-4 backdrop-blur-md transition hover:-translate-y-1 ${
+        theme === "light"
+          ? "hover:shadow-[0_24px_48px_-20px_rgba(7,14,70,0.25)]"
+          : "hover:shadow-[0_24px_48px_-20px_rgba(0,0,0,0.6)]"
+      } ${contieneHoy ? "bg-white/[0.07]" : "border-white/12 bg-white/[0.055]"}`}
       style={{
         animationDelay: `${delay}ms`,
         ...(contieneHoy ? { borderColor: rgba(ACCENT, 0.65), boxShadow: `0 0 24px -8px ${rgba(ACCENT, 0.35)}` } : null),
@@ -214,7 +216,7 @@ function MonthCard({ mes, anio, hoyStr, festivos, ausenciasPorDia, filtros, tota
       <h3 className="mb-3 flex items-baseline justify-between font-display text-lg font-bold text-sand">
         {MESES[mes]}
         {contieneHoy && (
-          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]" style={{ background: rgba(ACCENT, 0.15), color: ACCENT }}>
+          <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em]" style={{ background: rgba(ACCENT, 0.15), color: mapAccent(ACCENT) }}>
             Mes actual
           </span>
         )}
