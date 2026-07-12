@@ -17,16 +17,21 @@
   --c-purple: 150 148 255;
   --c-mandarin: 255 181 107;
 }
+/* Modo claro = combinación "A · Sand" del manual BBVA (01-color.md):
+   fondo Sand, TEXTO PRINCIPAL Electric Blue, neutros de la escala de grises
+   oficial (Gray 5 #46536D para glass/bordes/secundarios) y sin texto en
+   acentos claros sobre Sand (Serene como texto pasa a Electric). Los acentos
+   de estado (lime/mandarin/canary…) conservan su matiz en tono legible. */
 html.rdr-light {
   --c-midnight: 247 248 248; /* bg-midnight pasa a Sand */
-  --c-sand: 7 14 70; /* text-sand pasa a tinta Midnight */
-  --c-white: 0 19 145; /* glass/bordes: tinte Electric sobre claro */
-  --c-serene: 21 95 168; /* #155FA8 */
+  --c-sand: 0 19 145; /* text-sand pasa a Electric (texto principal del manual) */
+  --c-white: 70 83 109; /* glass/bordes: Gray 5 del manual (neutro, sin lavanda) */
+  --c-serene: 0 19 145; /* texto Serene sobre Sand prohibido -> Electric */
   --c-lime: 27 122 62; /* #1B7A3E */
-  --c-canary: 138 109 0; /* #8A6D00 */
+  --c-canary: 180 83 9; /* #B45309 ámbar limpio */
   --c-aqua: 14 116 144; /* #0E7490 */
   --c-purple: 91 75 214; /* #5B4BD6 */
-  --c-mandarin: 192 86 33; /* #C05621 */
+  --c-mandarin: 194 65 12; /* #C2410C naranja limpio */
 }
 
 /* BBVA: fondo Midnight (nunca negro puro) / Sand en claro. */

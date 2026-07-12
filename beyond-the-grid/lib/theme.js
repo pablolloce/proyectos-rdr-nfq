@@ -47,15 +47,18 @@ export function ThemeProvider({ children }) {
    (Serene, Lime, Canary…) no contrastan como TEXTO sobre Sand; estos tonos
    mantienen el matiz con contraste AA. Como SUPERFICIE sólida (botones,
    tiles) se sigue usando el hex original literal — funciona en ambos temas. */
+/* Manual BBVA (01-color.md): sobre Sand el texto va en Electric/Midnight —
+   los azules claros pasan a Electric; los acentos de ESTADO conservan matiz
+   en un tono legible y limpio. */
 const LIGHT_EQ = {
-  "#85C8FF": "#155FA8", // serene  -> azul medio
-  "#FFB56B": "#C05621", // mandarin-> naranja oscuro
+  "#85C8FF": "#001391", // serene  -> Electric (texto principal del manual)
+  "#FFB56B": "#C2410C", // mandarin-> naranja limpio
   "#88E783": "#1B7A3E", // lime    -> verde oscuro
   "#9694FF": "#5B4BD6", // purple  -> violeta oscuro
-  "#FFE761": "#8A6D00", // canary  -> ocre
+  "#FFE761": "#B45309", // canary  -> ámbar limpio
   "#8BE1E9": "#0E7490", // aqua    -> cian oscuro
-  "#1D7CF4": "#1456CC", // royal   -> azul intenso
-  "#B9D4EE": "#3E6E96", // hielo (deck qué-es-RDR) -> azul pizarra
+  "#1D7CF4": "#001391", // royal   -> Electric
+  "#B9D4EE": "#001391", // hielo (deck qué-es-RDR) -> Electric
   "#F7F8F8": "#070E46", // sand    -> tinta midnight
 };
 
