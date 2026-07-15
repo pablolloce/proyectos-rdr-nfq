@@ -26,7 +26,6 @@ export const TABS = [
   { id: "online", label: "Online" },
   { id: "publish", label: "Publish" },
   { id: "inv", label: "Inventario" },
-  { id: "map", label: "Mapa" },
 ];
 
 /* cxCls() del original (ALTA/MEDIA/BAJA). El HTML original no definía CSS para

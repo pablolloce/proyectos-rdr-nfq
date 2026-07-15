@@ -7,7 +7,7 @@ import { PALETTE } from "@/lib/palette";
 import { useAccentMap } from "@/lib/theme";
 import { C, DATA_URL, cxColor, filterChains, filterOnline, filterPublish, filterInv } from "./lib";
 import Sidebar from "./Sidebar";
-import { ChainDetail, OnlineDetail, PublishDetail, InventoryDetail, MapView } from "./Details";
+import { ChainDetail, OnlineDetail, PublishDetail, InventoryDetail } from "./Details";
 
 /* Process Explorer RDR — versión Next del antiguo HTML estático
    public/recursos/procesos-rdr-explorer.html. Misma información y lógica
@@ -102,7 +102,7 @@ export default function ProcessExplorer() {
 
   /* Lista normalizada de la pestaña activa (misma info por fila que el original). */
   const items = useMemo(() => {
-    if (!data || tab === "map") return [];
+    if (!data) return [];
     if (tab === "batch")
       return filterChains(data.chains, data.chainsMeta, q).map((n) => {
         const m = (data.chainsMeta || {})[n] || {};
@@ -134,7 +134,7 @@ export default function ProcessExplorer() {
 
   const onTab = useCallback((t) => {
     setTab(t);
-    setMobileDetail(t === "map"); // el mapa vive en el panel de detalle
+    setMobileDetail(false);
   }, []);
 
   const onSelect = useCallback((id) => {
@@ -142,20 +142,17 @@ export default function ProcessExplorer() {
     setMobileDetail(true);
   }, [tab]);
 
-  const selectedId = tab === "map" ? null : sel[tab];
+  const selectedId = sel[tab];
 
   /* Panel de detalle según pestaña + selección. */
   let detail = null;
   let detailKey = `${tab}:${selectedId}`;
-  if (data) {
-    if (tab === "map") detail = <MapView html={data.mdMap || ""} />;
-    else if (selectedId != null) {
-      if (tab === "batch" && data.chains[selectedId])
-        detail = <ChainDetail name={selectedId} steps={data.chains[selectedId]} meta={(data.chainsMeta || {})[selectedId]} />;
-      else if (tab === "online" && data.online[selectedId]) detail = <OnlineDetail ev={data.online[selectedId]} />;
-      else if (tab === "publish" && data.publishing[selectedId]) detail = <PublishDetail p={data.publishing[selectedId]} />;
-      else if (tab === "inv" && data.inventory[selectedId]) detail = <InventoryDetail p={data.inventory[selectedId]} />;
-    }
+  if (data && selectedId != null) {
+    if (tab === "batch" && data.chains[selectedId])
+      detail = <ChainDetail name={selectedId} steps={data.chains[selectedId]} meta={(data.chainsMeta || {})[selectedId]} />;
+    else if (tab === "online" && data.online[selectedId]) detail = <OnlineDetail ev={data.online[selectedId]} />;
+    else if (tab === "publish" && data.publishing[selectedId]) detail = <PublishDetail p={data.publishing[selectedId]} />;
+    else if (tab === "inv" && data.inventory[selectedId]) detail = <InventoryDetail p={data.inventory[selectedId]} />;
   }
 
   const stats = data?.stats;
@@ -176,12 +173,22 @@ export default function ProcessExplorer() {
             <h1 className="font-display text-4xl font-bold leading-none tracking-tight text-sand sm:text-5xl">
               Process Explorer
             </h1>
-            <Link
-              href="/recursos"
-              className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-4 py-2 text-xs font-bold uppercase tracking-wide text-sand/80 transition hover:bg-white/[0.1] hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-            >
-              <IconArrowLeft /> Recursos
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* La antigua pestaña "Mapa" vive ahora en /recursos/mapa. */}
+              <Link
+                href="/recursos/mapa"
+                className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-wide transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+                style={{ backgroundColor: PALETTE.purple, borderColor: PALETTE.purple, color: "#070E46" }}
+              >
+                Mapa interactivo <span aria-hidden>→</span>
+              </Link>
+              <Link
+                href="/recursos"
+                className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-4 py-2 text-xs font-bold uppercase tracking-wide text-sand/80 transition hover:bg-white/[0.1] hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+              >
+                <IconArrowLeft /> Recursos
+              </Link>
+            </div>
           </div>
           <p className="mt-3 max-w-2xl text-pretty text-sm text-sand/65">
             Cadenas batch de Control-M, listeners online, publishers e inventario de procesos RDR, con el flujo de
@@ -215,7 +222,6 @@ export default function ProcessExplorer() {
                 items={items}
                 selectedId={selectedId}
                 onSelect={onSelect}
-                isMap={tab === "map"}
               />
             </div>
 

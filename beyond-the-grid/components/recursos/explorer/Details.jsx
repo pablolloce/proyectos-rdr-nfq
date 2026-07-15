@@ -203,24 +203,5 @@ export function InventoryDetail({ p }) {
   );
 }
 
-/* ── Mapa: HTML pre-renderizado (mdMap) con estilos del design system ───── */
-export function MapView({ html }) {
-  return (
-    <div
-      className="text-xs leading-relaxed text-sand/80
-        [&_h1]:font-display [&_h1]:text-lg [&_h1]:font-bold [&_h1]:text-sand [&_h1]:mb-2
-        [&_h2]:font-display [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-sand [&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:border-b [&_h2]:border-white/12 [&_h2]:pb-1.5
-        [&_p]:my-3 [&_p]:text-sand/40
-        [&_strong]:text-sand [&_strong]:font-bold
-        [&_del]:opacity-40
-        [&_table]:w-full [&_table]:border-collapse [&_table]:mb-3 [&_table]:text-[11px]
-        [&_th]:text-left [&_th]:px-2 [&_th]:py-1.5 [&_th]:font-bold [&_th]:text-sand/60 [&_th]:bg-white/[0.06] [&_th]:border [&_th]:border-white/12 [&_th]:whitespace-nowrap
-        [&_td]:px-2 [&_td]:py-1 [&_td]:border [&_td]:border-white/12 [&_td]:align-top
-        [&_td:first-child]:text-center [&_td:first-child]:w-8
-        [&_td:last-child]:text-center"
-      // Contenido estático generado en build de los datos (D.mdMap del original),
-      // no entrada de usuario.
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
-  );
-}
+// La antigua vista "Mapa" (mdMap pre-renderizado) fue sustituida por el mapa
+// interactivo de /recursos/mapa (components/recursos/mapa/).

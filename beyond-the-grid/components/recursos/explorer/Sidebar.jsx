@@ -22,7 +22,7 @@ function Tabs({ tab, onTab }) {
   // Pestaña activa: superficie aqua literal con tinta midnight fija — como
   // superficie sólida funciona igual en ambos temas (convención del repo).
   return (
-    <div role="tablist" aria-label="Tipo de proceso" className="grid grid-cols-5 overflow-hidden rounded-xl border border-white/12 bg-white/[0.04]">
+    <div role="tablist" aria-label="Tipo de proceso" className="grid grid-cols-4 overflow-hidden rounded-xl border border-white/12 bg-white/[0.04]">
       {TABS.map((t, i) => {
         const on = tab === t.id;
         return (
@@ -82,7 +82,7 @@ function ItemRow({ it, selected, onSelect }) {
   );
 }
 
-export default function Sidebar({ tab, onTab, query, onQuery, items, selectedId, onSelect, isMap }) {
+export default function Sidebar({ tab, onTab, query, onQuery, items, selectedId, onSelect }) {
   return (
     <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/12 bg-white/[0.055] backdrop-blur-md">
       <div className="flex flex-col gap-2.5 border-b border-white/12 p-3">
@@ -94,27 +94,20 @@ export default function Sidebar({ tab, onTab, query, onQuery, items, selectedId,
           <input
             type="search"
             value={query}
-            disabled={isMap}
             onChange={(e) => onQuery(e.target.value)}
-            placeholder={isMap ? "El mapa no se filtra" : "Buscar proceso, evento, JAR, workflow…"}
+            placeholder="Buscar proceso, evento, JAR, workflow…"
             autoComplete="off"
-            className="w-full rounded-xl border border-white/12 bg-white/[0.04] py-2 pl-9 pr-3 text-xs text-sand placeholder:text-sand/40 focus:border-serene/60 focus:outline-none focus:ring-2 focus:ring-serene/25 disabled:opacity-50"
+            className="w-full rounded-xl border border-white/12 bg-white/[0.04] py-2 pl-9 pr-3 text-xs text-sand placeholder:text-sand/40 focus:border-serene/60 focus:outline-none focus:ring-2 focus:ring-serene/25"
           />
         </label>
         <Tabs tab={tab} onTab={onTab} />
-        {!isMap && (
-          <p aria-live="polite" className="px-0.5 text-[10.5px] tabular-nums text-sand/50">
-            {items.length} {items.length === 1 ? "resultado" : "resultados"}
-          </p>
-        )}
+        <p aria-live="polite" className="px-0.5 text-[10.5px] tabular-nums text-sand/50">
+          {items.length} {items.length === 1 ? "resultado" : "resultados"}
+        </p>
       </div>
 
       <div id="rdr-explorer-list" role="tabpanel" aria-labelledby={`rdr-tab-${tab}`} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        {isMap ? (
-          <p className="px-4 py-6 text-center text-xs text-sand/55">
-            El mapa de procesos se muestra completo en el panel de detalle.
-          </p>
-        ) : items.length === 0 ? (
+        {items.length === 0 ? (
           <p className="px-4 py-8 text-center text-xs text-sand/55">Sin resultados para esta búsqueda.</p>
         ) : (
           <ul className="divide-y divide-white/[0.05]">

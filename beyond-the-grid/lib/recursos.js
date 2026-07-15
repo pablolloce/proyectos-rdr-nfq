@@ -14,7 +14,17 @@ export const RECURSOS = [
     href: "/recursos/procesos",
     color: PALETTE.aqua,
     etiqueta: "Herramienta interactiva",
-    tags: ["Batch", "Online", "Publish", "Inventario", "Mapa"],
+    tags: ["Batch", "Online", "Publish", "Inventario"],
+  },
+  {
+    slug: "mapa-procesos",
+    titulo: "Mapa de flujos",
+    desc: "Viaja por el flujo de ejecución de cada proceso: pasos, workflows, eventos y colas conectados entre sí.",
+    tipo: "route",
+    href: "/recursos/mapa",
+    color: PALETTE.purple,
+    etiqueta: "Mapa interactivo",
+    tags: ["Flujos", "Batch", "Online", "Eventos"],
   },
   // ── Próximos recursos: añadir aquí ──
 ];

@@ -1,0 +1,88 @@
+/* Theming de React Flow (@xyflow/react) al design system del sitio — SOLO
+   dentro de .rdr-flowmap para no tocar estilos globales. Modo claro vía
+   html.rdr-light, igual que el resto de la app. */
+
+/* Handles: puntos de anclaje invisibles (la geometría la dan los edges). */
+.rdr-flowmap .react-flow__handle {
+  width: 4px;
+  height: 4px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+/* Nodos: sin caja por defecto (la pinta MapNode); focus visible del repo. */
+.rdr-flowmap .react-flow__node {
+  cursor: pointer;
+  font-family: inherit;
+}
+.rdr-flowmap .react-flow__node:focus-visible {
+  outline: 2px solid #85c8ff;
+  outline-offset: 3px;
+  border-radius: 14px;
+}
+
+/* Controles: glass midnight / sand. */
+.rdr-flowmap .react-flow__controls {
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(247, 248, 248, 0.14);
+  background: rgba(7, 14, 70, 0.72);
+  backdrop-filter: blur(8px);
+  box-shadow: none;
+}
+.rdr-flowmap .react-flow__controls-button {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border-bottom: 1px solid rgba(247, 248, 248, 0.1);
+}
+.rdr-flowmap .react-flow__controls-button:last-child {
+  border-bottom: 0;
+}
+.rdr-flowmap .react-flow__controls-button svg {
+  fill: #f7f8f8;
+}
+.rdr-flowmap .react-flow__controls-button:hover {
+  background: rgba(247, 248, 248, 0.09);
+}
+.rdr-flowmap .react-flow__controls-button:focus-visible {
+  outline: 2px solid #85c8ff;
+  outline-offset: -2px;
+}
+html.rdr-light .rdr-flowmap .react-flow__controls {
+  border-color: rgba(0, 19, 145, 0.18);
+  background: rgba(247, 248, 248, 0.88);
+}
+html.rdr-light .rdr-flowmap .react-flow__controls-button {
+  border-bottom-color: rgba(0, 19, 145, 0.12);
+}
+html.rdr-light .rdr-flowmap .react-flow__controls-button svg {
+  fill: #001391;
+}
+html.rdr-light .rdr-flowmap .react-flow__controls-button:hover {
+  background: rgba(0, 19, 145, 0.06);
+}
+
+/* MiniMap: marco glass; los colores de fondo/máscara van por props. */
+.rdr-flowmap .react-flow__minimap {
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(247, 248, 248, 0.14);
+}
+html.rdr-light .rdr-flowmap .react-flow__minimap {
+  border-color: rgba(0, 19, 145, 0.18);
+}
+
+/* Atribución: discreta pero legible en ambos temas. */
+.rdr-flowmap .react-flow__attribution {
+  background: transparent;
+}
+.rdr-flowmap .react-flow__attribution a {
+  color: rgba(247, 248, 248, 0.35);
+}
+html.rdr-light .rdr-flowmap .react-flow__attribution a {
+  color: rgba(7, 14, 70, 0.4);
+}
