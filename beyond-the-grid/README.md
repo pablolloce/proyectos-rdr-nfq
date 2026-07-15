@@ -25,6 +25,8 @@ app/
   pases/              Ruta /pases -> ciclo completo del pase a producción (pasesBackend)
   control/            Ruta /control -> control económico, solo coordinación (controlBackend)
   que-es-rdr/         Ruta /que-es-rdr -> presentación editorial de introducción (sin backend)
+  recursos/           Ruta /recursos -> biblioteca de recursos RDR (catálogo en lib/recursos.js;
+                      los HTML autocontenidos viven en public/recursos/)
   globals.css         Tailwind + tokens visuales compartidos (blobs, tilt, skeleton…)
   icon.svg            Favicon (isotipo RDR)
 components/

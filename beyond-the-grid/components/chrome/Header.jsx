@@ -23,6 +23,7 @@ export default function Header() {
     ["/retro", "Retrospectivas del equipo"],
     ["/control", "Control económico · Coordinación"],
     ["/pases", "Pases calendados · Releases"],
+    ["/recursos", "Recursos · Biblioteca RDR"],
     ["/que-es-rdr", "¿Qué es RDR? · Introducción"],
   ];
   const p = pathname || "/";

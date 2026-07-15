@@ -44,6 +44,7 @@ const SECTIONS = [
     id: "proy", n: "03", title: "Proyectos", color: PALETTE.lime,
     items: [
       { label: "Pases Calendados", desc: "Releases por entorno", icon: IconRocket, action: "route", target: "/pases" },
+      { label: "Recursos", desc: "Biblioteca de referencia RDR", icon: IconBook, action: "route", target: "/recursos" },
       { label: "Planificación", desc: "Hoja de planificación", icon: IconCalendar, action: "open", target: "planificacionNFQ" },
       { label: "Repositorio", desc: "Código y documentación", icon: IconFolder, actions: [
         { label: "GitHub", action: "copy", target: "githubBBVA", icon: IconCode },

@@ -14,4 +14,6 @@ export const ART = {
   formacion: `${CDN}/hf_20260712_091403_b20919bb-905f-4b82-8af3-e8972de6db30.png`,
   // Barras de cristal analíticas + púrpura — Control RDR.
   coordinacion: `${CDN}/hf_20260712_091405_cd1ca353-8627-4443-aaa6-dddf95440eb4.png`,
+  // Planos tipo biblioteca + flujos de datos en aqua — Recursos.
+  recursos: `${CDN}/hf_20260715_080444_f5e62e8a-7b41-4817-b830-19fe658283c0.png`,
 };
