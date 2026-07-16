@@ -26,5 +26,15 @@ export const RECURSOS = [
     etiqueta: "Mapa interactivo",
     tags: ["Flujos", "Batch", "Online", "Eventos"],
   },
+  {
+    slug: "properties",
+    titulo: "Properties GSProcess",
+    desc: "Los 510 ficheros .properties de GSProcess tal y como están escritos: búsqueda rápida por proceso, contenido, workflows o JARs.",
+    tipo: "route",
+    href: "/recursos/properties",
+    color: PALETTE.canary,
+    etiqueta: "Catálogo consultable",
+    tags: ["Búsqueda", ".properties", "GSProcess", "510 ficheros"],
+  },
   // ── Próximos recursos: añadir aquí ──
 ];
