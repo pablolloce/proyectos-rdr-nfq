@@ -4,7 +4,7 @@ import { rgba } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
 import { TABS } from "./lib";
 import { CATEGORIAS } from "./categorias";
-import { useAcc, CatPill } from "./ui";
+import { useAcc, CatPill, optionDomId } from "./ui";
 
 /* Sidebar del Process Explorer: buscador + tabs segmentadas + chips de
    categoría funcional + lista de resultados. Los items llegan ya filtrados y
@@ -101,17 +101,19 @@ function CategoryChips({ counts, selCats, onToggle, onClear }) {
   );
 }
 
-function ItemRow({ it, selected, onSelect }) {
+function ItemRow({ it, tab, selected, active, onSelect }) {
   const acc = useAcc();
   return (
-    <li>
+    <li role="option" aria-selected={selected}>
       <button
         type="button"
+        id={optionDomId(tab, it.id)}
+        data-rdr-item={String(it.id)}
         aria-current={selected ? "true" : undefined}
         onClick={() => onSelect(it.id)}
         className={`grid w-full grid-cols-[34px,1fr,auto] items-center gap-x-2.5 border-l-2 px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-serene ${
-          selected ? "bg-white/[0.09]" : "border-transparent hover:bg-white/[0.06]"
-        }`}
+          selected ? "bg-white/[0.09]" : active ? "bg-white/[0.05]" : "border-transparent hover:bg-white/[0.06]"
+        } ${active && !selected ? "ring-1 ring-inset ring-serene/50" : ""}`}
         style={selected ? { borderLeftColor: acc(ACCENT) } : undefined}
       >
         <span
@@ -145,7 +147,7 @@ function ItemRow({ it, selected, onSelect }) {
   );
 }
 
-export default function Sidebar({ tab, onTab, query, onQuery, items, selectedId, onSelect, catCounts, selCats, onToggleCat, onClearCats }) {
+export default function Sidebar({ tab, onTab, query, onQuery, items, selectedId, activeId, onSelect, searchRef, catCounts, selCats, onToggleCat, onClearCats }) {
   return (
     <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/12 bg-white/[0.055] backdrop-blur-md">
       <div className="flex flex-col gap-2.5 border-b border-white/12 p-3">
@@ -155,7 +157,13 @@ export default function Sidebar({ tab, onTab, query, onQuery, items, selectedId,
             <IconSearch />
           </span>
           <input
+            ref={searchRef}
             type="search"
+            role="combobox"
+            aria-expanded={items.length > 0}
+            aria-controls="rdr-explorer-list"
+            aria-autocomplete="list"
+            aria-activedescendant={activeId != null ? optionDomId(tab, activeId) : undefined}
             value={query}
             onChange={(e) => onQuery(e.target.value)}
             placeholder="Buscar proceso, evento, JAR, workflow…"
@@ -174,9 +182,9 @@ export default function Sidebar({ tab, onTab, query, onQuery, items, selectedId,
         {items.length === 0 ? (
           <p className="px-4 py-8 text-center text-xs text-sand/55">Sin resultados para esta búsqueda.</p>
         ) : (
-          <ul className="divide-y divide-white/[0.05]">
+          <ul role="listbox" aria-label="Resultados" className="divide-y divide-white/[0.05]">
             {items.map((it) => (
-              <ItemRow key={it.id} it={it} selected={selectedId === it.id} onSelect={onSelect} />
+              <ItemRow key={it.id} it={it} tab={tab} selected={selectedId === it.id} active={activeId === it.id} onSelect={onSelect} />
             ))}
           </ul>
         )}

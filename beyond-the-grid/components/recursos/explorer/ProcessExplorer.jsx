@@ -1,14 +1,18 @@
 "use client";
 
-import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "next-view-transitions";
 import { motion, useReducedMotion } from "framer-motion";
 import { PALETTE } from "@/lib/palette";
 import { useAccentMap } from "@/lib/theme";
-import { C, DATA_URL, cxColor, filterChains, filterOnline, filterPublish, filterInv } from "./lib";
+import {
+  C, DATA_URL, cxColor, filterChains, filterOnline, filterPublish, filterInv,
+  TAB_IDS, buildHash, parseHash, processKey, resolveKey, buildRefIndex, relatedProcesses,
+} from "./lib";
 import { buildCatIndex, catsMatchQuery } from "./categorias";
+import { ExplorerActions } from "./ui";
 import Sidebar from "./Sidebar";
-import { ChainDetail, OnlineDetail, PublishDetail, InventoryDetail } from "./Details";
+import { ChainDetail, OnlineDetail, PublishDetail, InventoryDetail, RelatedProcesses } from "./Details";
 
 /* Process Explorer RDR — versión Next del antiguo HTML estático
    public/recursos/procesos-rdr-explorer.html. Misma información y lógica
@@ -24,6 +28,31 @@ const IconArrowLeft = (p) => (
     <path d="M19 12H5M11 18l-6-6 6-6" />
   </svg>
 );
+
+const IconArrowRight = (p) => (
+  <svg width={p.size || 14} height={p.size || 14} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
+
+const IconLink = (p) => (
+  <svg width={p.size || 13} height={p.size || 13} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5" />
+    <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5" />
+  </svg>
+);
+
+const IconCheck = (p) => (
+  <svg width={p.size || 13} height={p.size || 13} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+);
+
+/* Escapa el valor para un selector de atributo CSS. */
+const cssAttr = (v) => String(v).replace(/["\\]/g, "\\$&");
 
 function StatPill({ n, label }) {
   const acc = useAccentMap();
@@ -90,6 +119,11 @@ export default function ProcessExplorer() {
   const [sel, setSel] = useState(EMPTY_SEL); // selección independiente por pestaña
   const [selCats, setSelCats] = useState([]); // filtro por categorías (OR)
   const [mobileDetail, setMobileDetail] = useState(false); // <lg: lista ↔ detalle apilados
+  const [activeId, setActiveId] = useState(null); // resaltado de teclado en la lista
+  const [copied, setCopied] = useState(false); // feedback del botón "Copiar enlace"
+
+  const searchRef = useRef(null);
+  const hashReadyRef = useRef(false); // no escribir el hash hasta restaurar el inicial
 
   useEffect(() => {
     let vivo = true;
@@ -106,6 +140,10 @@ export default function ProcessExplorer() {
      el fetch (no en cada render): { batch: {cadena: ids}, online/publish/inv:
      ids[] por índice }. */
   const catIndex = useMemo(() => (data ? buildCatIndex(data) : null), [data]);
+
+  /* Índices de referencias cruzadas (workflow→procesos, cola JMS→procesos),
+     precalculados una vez tras el fetch para "Procesos relacionados". */
+  const refIndex = useMemo(() => (data ? buildRefIndex(data) : null), [data]);
 
   /* Lista normalizada de la pestaña activa tras la BÚSQUEDA (misma info por
      fila que el original + cats). La búsqueda también casa con el nombre de
@@ -180,17 +218,200 @@ export default function ProcessExplorer() {
   }, []);
   const onClearCats = useCallback(() => setSelCats([]), []);
 
+  const selectedId = sel[tab];
+
+  /* Índice del proceso seleccionado dentro de la LISTA FILTRADA vigente
+     (para Anterior/Siguiente y para acotar los extremos). */
+  const curIdx = useMemo(() => items.findIndex((it) => it.id === selectedId), [items, selectedId]);
+
+  /* Escribe el hash con history.pushState SOLO ante una navegación explícita
+     del usuario (cambio de pestaña, selección, prev/next, relacionados). La
+     restauración desde el hash NO llama aquí → sin bucles. Compara antes de
+     empujar para no duplicar entradas de historial. */
+  const pushHash = useCallback((navTab, navId) => {
+    if (!data || !hashReadyRef.current || typeof window === "undefined") return;
+    const key = navId != null ? processKey(navTab, data, navId) : null;
+    const desired = buildHash(navTab, key);
+    if ((window.location.hash || "") !== desired) window.history.pushState(null, "", desired);
+  }, [data]);
+
   const onTab = useCallback((t) => {
     setTab(t);
     setMobileDetail(false);
-  }, []);
+    setActiveId(null);
+    pushHash(t, sel[t]);
+  }, [pushHash, sel]);
 
   const onSelect = useCallback((id) => {
     setSel((s) => ({ ...s, [tab]: id }));
+    setActiveId(id);
     setMobileDetail(true);
-  }, [tab]);
+    pushHash(tab, id);
+  }, [tab, pushHash]);
 
-  const selectedId = sel[tab];
+  /* Anterior/Siguiente por la lista filtrada (botones ← → y Alt+↑/↓). */
+  const goRelative = useCallback((delta) => {
+    if (curIdx < 0) return;
+    const ni = curIdx + delta;
+    if (ni < 0 || ni >= items.length) return;
+    const nid = items[ni].id;
+    setSel((s) => ({ ...s, [tab]: nid }));
+    setActiveId(nid);
+    setMobileDetail(true);
+    pushHash(tab, nid);
+  }, [curIdx, items, tab, pushHash]);
+
+  /* Navega a un proceso concreto de cualquier pestaña (relacionados). */
+  const onNavigate = useCallback((navTab, key) => {
+    if (!data) return;
+    const id = resolveKey(navTab, data, key);
+    if (id == null) return;
+    setTab(navTab);
+    setSel((s) => ({ ...s, [navTab]: id }));
+    setActiveId(id);
+    setMobileDetail(true);
+    setSelCats([]);
+    pushHash(navTab, id);
+  }, [data, pushHash]);
+
+  /* Referencia cruzada clicable → rellena el buscador global. Si la pestaña
+     activa no tiene resultados para ese término, salta a la primera que sí. */
+  const onTerm = useCallback((term) => {
+    const t = String(term || "").trim();
+    setQuery(t);
+    setSelCats([]);
+    if (data && t) {
+      const lower = t.toLowerCase();
+      const hasResults = (tb) =>
+        tb === "batch" ? filterChains(data.chains, data.chainsMeta, lower).length > 0
+        : tb === "online" ? filterOnline(data.online, lower).length > 0
+        : tb === "publish" ? filterPublish(data.publishing, lower).length > 0
+        : filterInv(data.inventory, lower).length > 0;
+      if (!hasResults(tab)) {
+        const alt = TAB_IDS.find(hasResults);
+        if (alt) { setTab(alt); setMobileDetail(false); setActiveId(null); pushHash(alt, sel[alt]); }
+      }
+    }
+    if (searchRef.current) { searchRef.current.focus(); }
+  }, [data, tab, sel, pushHash]);
+
+  /* Copia el enlace canónico (con el hash del proceso) al portapapeles. */
+  const copyLink = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    const key = selectedId != null ? processKey(tab, data, selectedId) : null;
+    const href = `${window.location.origin}${window.location.pathname}${window.location.search}${buildHash(tab, key)}`;
+    try {
+      await navigator.clipboard.writeText(href);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* clipboard no disponible: sin feedback, no rompemos la navegación */
+    }
+  }, [tab, data, selectedId]);
+
+  const actions = useMemo(() => ({ onTerm, onNavigate }), [onTerm, onNavigate]);
+
+  const related = useMemo(
+    () => (data && refIndex && selectedId != null ? relatedProcesses(data, refIndex, tab, selectedId, 8) : null),
+    [data, refIndex, tab, selectedId]
+  );
+
+  /* Lleva a la vista una fila de la lista por su id (block: "nearest"). */
+  const scrollItemIntoView = useCallback((id) => {
+    if (id == null || typeof document === "undefined") return;
+    const list = document.getElementById("rdr-explorer-list");
+    const el = list && list.querySelector(`[data-rdr-item="${cssAttr(id)}"]`);
+    if (el) el.scrollIntoView({ block: "nearest" });
+  }, []);
+
+  /* Restaura pestaña + proceso desde el hash al montar y en cada hashchange
+     (Atrás/Adelante del navegador). No escribe el hash → sin bucles. */
+  useEffect(() => {
+    if (!data) return;
+    const apply = () => {
+      const p = parseHash(window.location.hash);
+      if (p) {
+        setTab(p.tab);
+        if (p.key) {
+          const id = resolveKey(p.tab, data, p.key);
+          setSel((s) => ({ ...s, [p.tab]: id }));
+          if (id != null) { setActiveId(id); setMobileDetail(true); }
+          else setMobileDetail(false);
+        } else {
+          setSel((s) => ({ ...s, [p.tab]: null }));
+          setActiveId(null);
+          setMobileDetail(false);
+        }
+      } else {
+        // Hash vacío (p. ej. Atrás hasta el inicio): deselecciona.
+        setSel(EMPTY_SEL);
+        setActiveId(null);
+        setMobileDetail(false);
+      }
+      hashReadyRef.current = true;
+    };
+    apply();
+    window.addEventListener("hashchange", apply);
+    return () => window.removeEventListener("hashchange", apply);
+  }, [data]);
+
+  /* Al cambiar de proceso o pestaña, lleva el seleccionado a la vista (tras
+     el commit, con rAF para que la fila exista en el DOM). */
+  useEffect(() => {
+    if (selectedId == null || typeof window === "undefined") return;
+    const raf = window.requestAnimationFrame(() => scrollItemIntoView(selectedId));
+    return () => window.cancelAnimationFrame(raf);
+  }, [selectedId, tab, scrollItemIntoView]);
+
+  /* Mantiene el resaltado de teclado dentro de la lista filtrada vigente. */
+  useEffect(() => {
+    if (activeId != null && !items.some((it) => it.id === activeId)) setActiveId(null);
+  }, [items, activeId]);
+
+  /* Atajos globales: "/" enfoca el buscador; Alt+↑/↓ recorren prev/siguiente. */
+  useEffect(() => {
+    const onKey = (e) => {
+      const t = e.target;
+      const typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+      if (e.key === "/" && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        if (searchRef.current) { searchRef.current.focus(); searchRef.current.select(); }
+        return;
+      }
+      if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+        if (selectedId == null) return;
+        e.preventDefault();
+        goRelative(e.key === "ArrowDown" ? 1 : -1);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedId, goRelative]);
+
+  /* Teclado dentro del buscador o la lista: ↑/↓ mueven el resaltado, Enter
+     abre el resaltado (desde el buscador), Escape limpia el buscador. */
+  const onListKeyDown = useCallback((e) => {
+    if (e.altKey) return; // Alt+↑/↓ lo gestiona el atajo global
+    const t = e.target;
+    const inSearch = t === searchRef.current;
+    const inList = !!(t.closest && t.closest("#rdr-explorer-list"));
+    if (!inSearch && !inList) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!items.length) return;
+      const cur = activeId != null ? items.findIndex((it) => it.id === activeId) : -1;
+      let ni;
+      if (cur === -1) ni = e.key === "ArrowDown" ? 0 : items.length - 1;
+      else ni = Math.max(0, Math.min(items.length - 1, cur + (e.key === "ArrowDown" ? 1 : -1)));
+      const nid = items[ni].id;
+      setActiveId(nid);
+      if (typeof window !== "undefined") window.requestAnimationFrame(() => scrollItemIntoView(nid));
+    } else if (e.key === "Enter") {
+      if (inSearch && activeId != null) { e.preventDefault(); onSelect(activeId); }
+    } else if (e.key === "Escape") {
+      if (inSearch) { e.preventDefault(); setQuery(""); setActiveId(null); }
+    }
+  }, [items, activeId, onSelect, scrollItemIntoView]);
 
   /* Panel de detalle según pestaña + selección (con TODAS sus categorías). */
   let detail = null;
@@ -270,6 +491,7 @@ export default function ProcessExplorer() {
           <div className="grid items-start gap-4 lg:grid-cols-[minmax(300px,360px),1fr]">
             {/* Sidebar: en <lg se oculta cuando el detalle está abierto. */}
             <div
+              onKeyDown={onListKeyDown}
               className={`${mobileDetail ? "hidden lg:block" : ""} lg:sticky lg:top-24 lg:h-[calc(100dvh-8rem)] [&>div]:max-h-[70dvh] lg:[&>div]:h-full lg:[&>div]:max-h-none`}
             >
               <Sidebar
@@ -279,7 +501,9 @@ export default function ProcessExplorer() {
                 onQuery={setQuery}
                 items={items}
                 selectedId={selectedId}
+                activeId={activeId}
                 onSelect={onSelect}
+                searchRef={searchRef}
                 catCounts={catCounts}
                 selCats={selCats}
                 onToggleCat={onToggleCat}
@@ -292,22 +516,64 @@ export default function ProcessExplorer() {
               aria-label="Detalle del proceso"
               className={`${mobileDetail ? "" : "hidden lg:block"} min-w-0 rounded-2xl border border-white/12 bg-white/[0.055] p-5 backdrop-blur-md sm:p-6`}
             >
-              <button
-                type="button"
-                onClick={() => setMobileDetail(false)}
-                className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.05] px-3 py-1.5 text-[11px] font-bold text-sand/75 transition hover:bg-white/[0.1] hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene lg:hidden"
-              >
-                <IconArrowLeft size={12} /> Volver a la lista
-              </button>
-              {detail ? (
-                <motion.div
-                  key={detailKey}
-                  initial={reduce ? false : { opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              <div className="mb-4 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMobileDetail(false)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.05] px-3 py-1.5 text-[11px] font-bold text-sand/75 transition hover:bg-white/[0.1] hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene lg:hidden"
                 >
-                  {detail}
-                </motion.div>
+                  <IconArrowLeft size={12} /> Volver a la lista
+                </button>
+                {detail && (
+                  <div className="ml-auto flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => goRelative(-1)}
+                      disabled={curIdx <= 0}
+                      aria-disabled={curIdx <= 0}
+                      aria-label="Proceso anterior de la lista (Alt+Flecha arriba)"
+                      title="Anterior (Alt+↑)"
+                      className="inline-flex items-center justify-center rounded-full border border-white/12 bg-white/[0.05] p-2 text-sand/75 transition hover:bg-white/[0.1] hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-white/[0.05]"
+                    >
+                      <IconArrowLeft size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => goRelative(1)}
+                      disabled={curIdx < 0 || curIdx >= items.length - 1}
+                      aria-disabled={curIdx < 0 || curIdx >= items.length - 1}
+                      aria-label="Proceso siguiente de la lista (Alt+Flecha abajo)"
+                      title="Siguiente (Alt+↓)"
+                      className="inline-flex items-center justify-center rounded-full border border-white/12 bg-white/[0.05] p-2 text-sand/75 transition hover:bg-white/[0.1] hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-white/[0.05]"
+                    >
+                      <IconArrowRight size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={copyLink}
+                      aria-label="Copiar enlace a este proceso"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.05] px-3 py-2 text-[11px] font-bold text-sand/75 transition hover:bg-white/[0.1] hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+                    >
+                      {copied ? <IconCheck /> : <IconLink />}
+                      <span aria-live="polite">{copied ? "Copiado" : "Copiar enlace"}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+              {detail ? (
+                <ExplorerActions.Provider value={actions}>
+                  <motion.div
+                    key={detailKey}
+                    initial={reduce ? false : { opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    {detail}
+                    {related && related.list.length > 0 && (
+                      <RelatedProcesses related={related} onNavigate={onNavigate} />
+                    )}
+                  </motion.div>
+                </ExplorerActions.Provider>
               ) : (
                 <div className="grid min-h-[300px] place-items-center text-center">
                   <div>

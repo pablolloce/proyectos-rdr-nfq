@@ -1,8 +1,57 @@
 "use client";
 
 import { rgba } from "@/lib/ui";
-import { C, cxColor, stepColor, deriveQueues } from "./lib";
+import { C, cxColor, stepColor, deriveQueues, TABS } from "./lib";
 import { useAcc, TypePill, CatPill, CxText, CodePanel, InfoRow, WfFlow, ChainChips, TagList, Step, DetailHeader } from "./ui";
+
+const TAB_LABEL = Object.fromEntries(TABS.map((t) => [t.id, t.label]));
+
+/* ── Procesos relacionados: comparten workflow o cola JMS con el actual ─────
+   `related` = { list: [{ tab, id, key, name, via, token }], extra } lo calcula
+   ProcessExplorer con los índices de lib.js. Cada fila navega al proceso
+   (entra en el historial de la URL vía onNavigate). */
+export function RelatedProcesses({ related, onNavigate }) {
+  const acc = useAcc();
+  if (!related || !related.list.length) return null;
+  return (
+    <section aria-label="Procesos relacionados" className="mt-8 border-t border-white/12 pt-5">
+      <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-sand/55">
+        Procesos relacionados
+      </h3>
+      <ul className="space-y-1.5">
+        {related.list.map((r) => (
+          <li key={`${r.tab}:${r.id}`}>
+            <button
+              type="button"
+              onClick={() => onNavigate(r.tab, r.key)}
+              aria-label={`Ir al proceso ${r.name}`}
+              className="group grid w-full grid-cols-[auto,1fr,auto] items-center gap-x-2.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-left transition hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+            >
+              <span
+                className="shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
+                style={{ color: acc(C.aqua), backgroundColor: rgba(C.aqua, 0.12), border: `1px solid ${rgba(C.aqua, 0.25)}` }}
+              >
+                {TAB_LABEL[r.tab] || r.tab}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-[12px] font-semibold text-sand">{r.name}</span>
+                {r.token && (
+                  <span className="block truncate text-[10px] text-sand/50">
+                    {r.via.includes("workflow") ? "workflow" : "cola"}: {r.token}
+                  </span>
+                )}
+              </span>
+              <span aria-hidden className="shrink-0 text-sand/40 transition group-hover:translate-x-0.5">→</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {related.extra > 0 && (
+        <p className="mt-2 px-1 text-[10.5px] tabular-nums text-sand/45">+{related.extra} más</p>
+      )}
+    </section>
+  );
+}
 
 /* Las 4 vistas de detalle del Process Explorer, portadas de showChain(),
    showOnline(), showPub() y showInv() del HTML original. Cada vista recibe
@@ -46,11 +95,11 @@ export function ChainDetail({ name, steps, meta, cats }) {
             >
               {conDatos && (
                 <CodePanel className="mt-2">
-                  {s.EVENTO_GS && <InfoRow k="Evento" hex={C.serene}>{s.EVENTO_GS}</InfoRow>}
-                  {s.WORKFLOW_GS && <InfoRow k="Workflow" hex={C.purple}>{s.WORKFLOW_GS}</InfoRow>}
-                  {s.JAVAS && <InfoRow k="JARs" hex={C.lime}>{s.JAVAS}</InfoRow>}
-                  {s.SCRIPTS && <InfoRow k="Scripts" hex={C.canary}>{s.SCRIPTS}</InfoRow>}
-                  {s.COLA_JMS && <InfoRow k="Cola JMS" hex={C.mandarin}>{s.COLA_JMS}</InfoRow>}
+                  {s.EVENTO_GS && <InfoRow k="Evento" hex={C.serene} term>{s.EVENTO_GS}</InfoRow>}
+                  {s.WORKFLOW_GS && <InfoRow k="Workflow" hex={C.purple} term>{s.WORKFLOW_GS}</InfoRow>}
+                  {s.JAVAS && <InfoRow k="JARs" hex={C.lime} term>{s.JAVAS}</InfoRow>}
+                  {s.SCRIPTS && <InfoRow k="Scripts" hex={C.canary} term>{s.SCRIPTS}</InfoRow>}
+                  {s.COLA_JMS && <InfoRow k="Cola JMS" hex={C.mandarin} term>{s.COLA_JMS}</InfoRow>}
                   {s.CLASE_EVENTO && <InfoRow k="Clase evento" hex={C.serene}>{s.CLASE_EVENTO}</InfoRow>}
                   <WfFlow s={s.CONTENIDO_WF} />
                   <ChainChips s={s.SUB_WORKFLOWS} />
@@ -180,10 +229,10 @@ export function InventoryDetail({ p, cats }) {
       </DetailHeader>
 
       <CodePanel>
-        {p.CADENAS_CONTROLM && <InfoRow k="Cadenas">{p.CADENAS_CONTROLM}</InfoRow>}
-        {p.EVENTOS_JMS && <InfoRow k="Eventos JMS" hex={C.serene}>{p.EVENTOS_JMS}</InfoRow>}
+        {p.CADENAS_CONTROLM && <InfoRow k="Cadenas" term>{p.CADENAS_CONTROLM}</InfoRow>}
+        {p.EVENTOS_JMS && <InfoRow k="Eventos JMS" hex={C.serene} term>{p.EVENTOS_JMS}</InfoRow>}
         {p.CRITERIO_COMPLEJIDAD && <InfoRow k="Criterio">{p.CRITERIO_COMPLEJIDAD}</InfoRow>}
-        {p.JAVAS_PRINCIPALES && <InfoRow k="JARs" hex={C.lime}>{p.JAVAS_PRINCIPALES}</InfoRow>}
+        {p.JAVAS_PRINCIPALES && <InfoRow k="JARs" hex={C.lime} term>{p.JAVAS_PRINCIPALES}</InfoRow>}
       </CodePanel>
 
       {(p.TECNOLOGIAS || p.ENTIDADES || p.SISTEMAS_CONECTADOS) && (

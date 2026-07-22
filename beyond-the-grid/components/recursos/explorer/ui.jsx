@@ -1,10 +1,21 @@
 "use client";
 
-import { useCallback } from "react";
+import { createContext, useCallback, useContext, Fragment } from "react";
 import { rgba } from "@/lib/ui";
 import { useAccentMap, useTheme } from "@/lib/theme";
 import { RED, RED_LIGHT, C, cxColor, splitWf, wfTagStyle } from "./lib";
 import { CATEGORIA_MAP } from "./categorias";
+
+/* Acciones de navegación que el panel de detalle expone a sus primitivas
+   (referencias cruzadas clicables). Provisto desde ProcessExplorer:
+   - onTerm(term): rellena el buscador global con `term`.
+   - onNavigate(tab, key): navega a un proceso concreto (entra en el historial).
+   Fuera del provider, ambos son no-op → las etiquetas se renderizan como texto. */
+export const ExplorerActions = createContext(null);
+export const useExplorerActions = () => useContext(ExplorerActions);
+
+/* id DOM estable de una fila de la lista (para aria-activedescendant). */
+export const optionDomId = (tab, id) => `rdr-opt-${tab}-${encodeURIComponent(String(id))}`;
 
 /* Primitivas visuales compartidas del Process Explorer.
    Convención del repo: hex ORIGINAL para tintes (fondos/bordes rgba) y
@@ -20,18 +31,34 @@ export function useAcc() {
   );
 }
 
-/* Etiqueta pequeña (wt-* del original). strong = con borde; dim = atenuada. */
-export function Tag({ hex, strong, dim, className = "", children }) {
+/* Etiqueta pequeña (wt-* del original). strong = con borde; dim = atenuada.
+   Si se pasa `term` y hay acciones disponibles, la etiqueta es clicable y
+   rellena el buscador global con ese término. */
+export function Tag({ hex, strong, dim, className = "", term, children }) {
   const acc = useAcc();
+  const actions = useExplorerActions();
+  const style = {
+    color: acc(hex),
+    backgroundColor: rgba(hex, strong ? 0.14 : 0.09),
+    border: `1px solid ${rgba(hex, strong ? 0.3 : 0)}`,
+  };
+  const base = `inline-block max-w-full truncate rounded-md px-1.5 py-0.5 text-[10px] font-semibold leading-4 ${dim ? "opacity-75" : ""} ${className}`;
+  if (term && actions?.onTerm) {
+    return (
+      <button
+        type="button"
+        onClick={() => actions.onTerm(term)}
+        title={`Buscar "${term}"`}
+        aria-label={`Buscar ${term}`}
+        className={`${base} cursor-pointer text-left transition hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene`}
+        style={style}
+      >
+        {children}
+      </button>
+    );
+  }
   return (
-    <span
-      className={`inline-block max-w-full truncate rounded-md px-1.5 py-0.5 text-[10px] font-semibold leading-4 ${dim ? "opacity-75" : ""} ${className}`}
-      style={{
-        color: acc(hex),
-        backgroundColor: rgba(hex, strong ? 0.14 : 0.09),
-        border: `1px solid ${rgba(hex, strong ? 0.3 : 0)}`,
-      }}
-    >
+    <span className={base} style={style}>
       {children}
     </span>
   );
@@ -87,14 +114,38 @@ export function CodePanel({ className = "", children }) {
   return <div className={`rounded-xl border ${bg} px-3.5 py-3 ${className}`}>{children}</div>;
 }
 
-/* Fila clave→valor dentro de un CodePanel (rw/k/v del original). */
-export function InfoRow({ k, hex, children }) {
+/* Fila clave→valor dentro de un CodePanel (rw/k/v del original). Con `term`
+   (y un valor de texto), cada elemento separado por comas se vuelve clicable
+   y rellena el buscador global (JARs, scripts, workflows, colas, eventos…). */
+export function InfoRow({ k, hex, term, children }) {
   const acc = useAcc();
+  const actions = useExplorerActions();
+  const clickable = term && actions?.onTerm && typeof children === "string";
   return (
     <div className="grid grid-cols-[86px,1fr] items-baseline gap-x-2 gap-y-1 py-0.5 text-[12px]">
       <span className="whitespace-nowrap font-bold text-sand/55">{k}</span>
       <span className="min-w-0 break-words font-mono text-[11.5px]" style={hex ? { color: acc(hex) } : undefined}>
-        {children}
+        {clickable
+          ? children.split(",").map((raw, i) => {
+              const t = raw.trim();
+              if (!t) return null;
+              return (
+                <Fragment key={i}>
+                  {i > 0 && <span className="text-sand/40">, </span>}
+                  <button
+                    type="button"
+                    onClick={() => actions.onTerm(t)}
+                    title={`Buscar "${t}"`}
+                    aria-label={`Buscar ${t}`}
+                    className="cursor-pointer rounded underline decoration-dotted underline-offset-2 transition hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+                    style={hex ? { color: acc(hex) } : undefined}
+                  >
+                    {t}
+                  </button>
+                </Fragment>
+              );
+            })
+          : children}
       </span>
     </div>
   );
@@ -126,7 +177,7 @@ export function ChainChips({ s, sep = "→" }) {
       {parts.map((w, i) => (
         <span key={i} className="flex min-w-0 items-center gap-1.5">
           {i > 0 && <span aria-hidden className="text-[9px] text-sand/40">{sep}</span>}
-          <Tag hex={C.purple} className="max-w-[190px]" strong>
+          <Tag hex={C.purple} className="max-w-[190px]" strong term={String(w).trim()}>
             {String(w).trim()}
           </Tag>
         </span>
@@ -142,7 +193,7 @@ export function TagList({ s, hex }) {
   return (
     <div className="mt-2 flex flex-wrap gap-1">
       {items.map((t, i) => (
-        <Tag key={i} hex={hex}>{t}</Tag>
+        <Tag key={i} hex={hex} term={t}>{t}</Tag>
       ))}
     </div>
   );
