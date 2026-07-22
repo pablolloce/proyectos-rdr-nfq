@@ -175,6 +175,14 @@
       "emailBBVA": "victor.molina.ruiz.contractor@bbva.com",
       "track": "tecnico",
       "coordinador": false
+    },
+    {
+      "id": "T071810",
+      "nombre": "Carlos Lozano",
+      "email": "carlos.lozano@nter.es",
+      "emailBBVA": "carlos.lozano.lorenzo.contractor@bbva.com",
+      "track": "tecnico",
+      "coordinador": false
     }
   ]
 }
