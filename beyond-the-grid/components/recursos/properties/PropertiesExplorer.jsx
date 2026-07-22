@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { Link } from "next-view-transitions";
 import { motion, useReducedMotion } from "framer-motion";
 import { PALETTE } from "@/lib/palette";
 import { useAccentMap } from "@/lib/theme";
@@ -135,10 +136,17 @@ export default function PropertiesExplorer() {
           <p className="font-sans text-xs font-bold uppercase tracking-[0.4em]" style={{ color: acc(ACCENT) }}>
             Recursos · Biblioteca
           </p>
-          {/* El "← Recursos" ad-hoc lo sustituyen las migas del header. */}
-          <h1 className="mt-2 font-display text-4xl font-bold leading-none tracking-tight text-sand sm:text-5xl">
-            Properties GSProcess
-          </h1>
+          <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+            <h1 className="font-display text-4xl font-bold leading-none tracking-tight text-sand sm:text-5xl">
+              Properties GSProcess
+            </h1>
+            <Link
+              href="/recursos"
+              className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-4 py-2 text-xs font-bold uppercase tracking-wide text-sand/80 transition hover:bg-white/[0.1] hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+            >
+              <IconArrowLeft /> Recursos
+            </Link>
+          </div>
           <p className="mt-3 max-w-2xl text-pretty text-sm text-sand/65">
             Los ficheros .properties de GSProcess tal y como están escritos, con sus comentarios. Busca por nombre de
             proceso, workflow, JAR… o directamente dentro del contenido.

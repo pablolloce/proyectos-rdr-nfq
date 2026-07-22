@@ -29,15 +29,8 @@ export default function AppFrame({ children }) {
         <LoadingScreen />
         <AuthGate>
           <div className="relative min-h-dvh w-full">
-            {/* Skip-link para teclado: oculto hasta recibir foco (a11y). */}
-            <a
-              href="#contenido"
-              className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-full bg-serene px-4 py-2 font-sans text-xs font-bold uppercase tracking-wider text-midnight shadow-lg transition-transform focus:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sand"
-            >
-              Saltar al contenido
-            </a>
             <Header />
-            <div id="contenido">{children}</div>
+            {children}
             {/* Co-branding NFQ (regla nº5 CLAUDE.md: presente y menor que BBVA). */}
             <footer className="pointer-events-none fixed bottom-3 left-5 z-30 flex items-center gap-2">
               <span className="text-[10px] uppercase tracking-[0.25em] text-sand/60">Hecho por</span>
