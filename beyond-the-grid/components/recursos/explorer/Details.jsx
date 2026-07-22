@@ -2,18 +2,24 @@
 
 import { rgba } from "@/lib/ui";
 import { C, cxColor, stepColor, deriveQueues } from "./lib";
-import { useAcc, TypePill, CxText, CodePanel, InfoRow, WfFlow, ChainChips, TagList, Step, DetailHeader } from "./ui";
+import { useAcc, TypePill, CatPill, CxText, CodePanel, InfoRow, WfFlow, ChainChips, TagList, Step, DetailHeader } from "./ui";
 
 /* Las 4 vistas de detalle del Process Explorer, portadas de showChain(),
-   showOnline(), showPub() y showInv() del HTML original. */
+   showOnline(), showPub() y showInv() del HTML original. Cada vista recibe
+   además `cats` (ids de categoría funcional precalculados en
+   ProcessExplorer) y muestra TODAS sus etiquetas en la cabecera. */
+
+const CatPills = ({ cats }) =>
+  (cats || []).map((id) => <CatPill key={id} id={id} />);
 
 /* ── Batch: cadena Control-M con su flujo de pasos ─────────────────────── */
-export function ChainDetail({ name, steps, meta }) {
+export function ChainDetail({ name, steps, meta, cats }) {
   const m = meta || {};
   return (
     <article>
       <DetailHeader title={name} natural={m.natural} desc={m.desc}>
         <TypePill hex={C.serene}>Batch</TypePill>
+        <CatPills cats={cats} />
         <span className="tabular-nums">{steps.length} pasos</span>
         {m.cx && (
           <>
@@ -59,7 +65,7 @@ export function ChainDetail({ name, steps, meta }) {
 }
 
 /* ── Online: listener JMS → workflow → sub-workflows ───────────────────── */
-export function OnlineDetail({ ev }) {
+export function OnlineDetail({ ev, cats }) {
   const acc = useAcc();
   const subs = ev.SUB_WORKFLOWS ? ev.SUB_WORKFLOWS.split(" > ") : [];
   const total = 1 + (ev.WORKFLOW_GS ? 1 : 0) + subs.length;
@@ -68,6 +74,7 @@ export function OnlineDetail({ ev }) {
     <article>
       <DetailHeader title={ev.NOMBRE} natural={ev.NOMBRE_NATURAL} desc={ev.DESC}>
         <TypePill hex={C.canary}>Online</TypePill>
+        <CatPills cats={cats} />
         {ev.COLA_ESCUCHA && <TypePill hex={C.purple}>{ev.COLA_ESCUCHA}</TypePill>}
         {ev.CLASE_EVENTO && <span className="font-mono">{ev.CLASE_EVENTO}</span>}
         {ev.CX && (
@@ -102,7 +109,7 @@ export function OnlineDetail({ ev }) {
 }
 
 /* ── Publish: callers → workflow → colas de destino derivadas ──────────── */
-export function PublishDetail({ p }) {
+export function PublishDetail({ p, cats }) {
   const acc = useAcc();
   const queues = deriveQueues(p);
   const tieneCallers = p.CALLERS && p.CALLERS.length > 0;
@@ -110,6 +117,7 @@ export function PublishDetail({ p }) {
     <article>
       <DetailHeader title={p.WORKFLOW}>
         <TypePill hex={C.lime}>Publicación</TypePill>
+        <CatPills cats={cats} />
         <span className="break-all font-mono">{(p.GROUP || "").split("/").slice(-2).join("/")}</span>
       </DetailHeader>
       <ol className="list-none">
@@ -143,7 +151,7 @@ export function PublishDetail({ p }) {
 }
 
 /* ── Inventario: ficha del proceso ─────────────────────────────────────── */
-export function InventoryDetail({ p }) {
+export function InventoryDetail({ p, cats }) {
   const acc = useAcc();
   const est = p.ESTADO || "ACTIVO";
   const estHex = est === "ACTIVO" ? C.lime : C.red;
@@ -151,6 +159,7 @@ export function InventoryDetail({ p }) {
     <article>
       <DetailHeader title={p.NOMBRE_NATURAL || ""} desc={p.DESCRIPCION}>
         <TypePill hex={p.TIPO === "ONLINE" ? C.canary : C.serene}>{p.TIPO || ""}</TypePill>
+        <CatPills cats={cats} />
         <span
           className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide"
           style={{ color: acc(estHex), backgroundColor: rgba(estHex, 0.12), border: `1px solid ${rgba(estHex, 0.25)}` }}

@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { rgba } from "@/lib/ui";
 import { useAccentMap, useTheme } from "@/lib/theme";
 import { RED, RED_LIGHT, C, cxColor, splitWf, wfTagStyle } from "./lib";
+import { CATEGORIA_MAP } from "./categorias";
 
 /* Primitivas visuales compartidas del Process Explorer.
    Convención del repo: hex ORIGINAL para tintes (fondos/bordes rgba) y
@@ -32,6 +33,24 @@ export function Tag({ hex, strong, dim, className = "", children }) {
       }}
     >
       {children}
+    </span>
+  );
+}
+
+/* Píldora de CATEGORÍA funcional (taxonomía de ./categorias.js). Mismo
+   patrón de color que Tag/TypePill: tinte rgba con el hex original (idéntico
+   en ambos temas) y texto vía useAcc (legible en claro y oscuro). */
+export function CatPill({ id, className = "" }) {
+  const acc = useAcc();
+  const c = CATEGORIA_MAP[id];
+  if (!c) return null;
+  return (
+    <span
+      title={c.desc}
+      className={`inline-block max-w-full truncate whitespace-nowrap rounded-full px-2 py-0.5 text-[9.5px] font-bold leading-4 tracking-wide ${className}`}
+      style={{ color: acc(c.color), backgroundColor: rgba(c.color, 0.12), border: `1px solid ${rgba(c.color, 0.28)}` }}
+    >
+      {c.nombre}
     </span>
   );
 }

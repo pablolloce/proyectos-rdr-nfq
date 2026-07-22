@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { PALETTE } from "@/lib/palette";
 import { useAccentMap } from "@/lib/theme";
 import { C, DATA_URL, cxColor, filterChains, filterOnline, filterPublish, filterInv } from "./lib";
+import { buildCatIndex, catsMatchQuery } from "./categorias";
 import Sidebar from "./Sidebar";
 import { ChainDetail, OnlineDetail, PublishDetail, InventoryDetail } from "./Details";
 
@@ -87,6 +88,7 @@ export default function ProcessExplorer() {
   const [query, setQuery] = useState("");
   const q = useDeferredValue(query).trim().toLowerCase();
   const [sel, setSel] = useState(EMPTY_SEL); // selección independiente por pestaña
+  const [selCats, setSelCats] = useState([]); // filtro por categorías (OR)
   const [mobileDetail, setMobileDetail] = useState(false); // <lg: lista ↔ detalle apilados
 
   useEffect(() => {
@@ -100,37 +102,83 @@ export default function ProcessExplorer() {
     return () => { vivo = false; };
   }, [intento]);
 
-  /* Lista normalizada de la pestaña activa (misma info por fila que el original). */
-  const items = useMemo(() => {
-    if (!data) return [];
-    if (tab === "batch")
-      return filterChains(data.chains, data.chainsMeta, q).map((n) => {
-        const m = (data.chainsMeta || {})[n] || {};
-        return {
-          id: n, badge: data.chains[n].length, badgeHex: C.serene,
-          name: m.natural || n, sub: n, right: m.cx || "", rightHex: m.cx ? cxColor(m.cx) : null,
-        };
-      });
-    if (tab === "online")
-      return filterOnline(data.online, q).map(([e, i]) => ({
-        id: i, badge: "IN", badgeHex: C.canary,
-        name: e.NOMBRE_NATURAL || e.NOMBRE,
-        sub: e.COLA_ESCUCHA ? `🔊 ${e.COLA_ESCUCHA}` : e.NOMBRE,
-        right: e.WORKFLOW_GS || "",
+  /* Clasificación por categorías funcionales, precalculada UNA sola vez tras
+     el fetch (no en cada render): { batch: {cadena: ids}, online/publish/inv:
+     ids[] por índice }. */
+  const catIndex = useMemo(() => (data ? buildCatIndex(data) : null), [data]);
+
+  /* Lista normalizada de la pestaña activa tras la BÚSQUEDA (misma info por
+     fila que el original + cats). La búsqueda también casa con el nombre de
+     la categoría (escribir "alertas" encuentra los de esa categoría). */
+  const searched = useMemo(() => {
+    if (!data || !catIndex) return [];
+    if (tab === "batch") {
+      const ok = new Set(filterChains(data.chains, data.chainsMeta, q));
+      return Object.keys(data.chains)
+        .filter((n) => ok.has(n) || catsMatchQuery(catIndex.batch[n], q))
+        .map((n) => {
+          const m = (data.chainsMeta || {})[n] || {};
+          return {
+            id: n, badge: data.chains[n].length, badgeHex: C.serene, cats: catIndex.batch[n],
+            name: m.natural || n, sub: n, right: m.cx || "", rightHex: m.cx ? cxColor(m.cx) : null,
+          };
+        });
+    }
+    if (tab === "online") {
+      const ok = new Set(filterOnline(data.online, q).map(([, i]) => i));
+      return data.online
+        .map((e, i) => [e, i])
+        .filter(([, i]) => ok.has(i) || catsMatchQuery(catIndex.online[i], q))
+        .map(([e, i]) => ({
+          id: i, badge: "IN", badgeHex: C.canary, cats: catIndex.online[i],
+          name: e.NOMBRE_NATURAL || e.NOMBRE,
+          sub: e.COLA_ESCUCHA ? `🔊 ${e.COLA_ESCUCHA}` : e.NOMBRE,
+          right: e.WORKFLOW_GS || "",
+        }));
+    }
+    if (tab === "publish") {
+      const ok = new Set(filterPublish(data.publishing, q).map(([, i]) => i));
+      return data.publishing
+        .map((p, i) => [p, i])
+        .filter(([, i]) => ok.has(i) || catsMatchQuery(catIndex.publish[i], q))
+        .map(([p, i]) => ({
+          id: i, badge: p.COUNT, badgeHex: C.lime, cats: catIndex.publish[i],
+          name: p.WORKFLOW, sub: (p.QUEUES || []).slice(0, 2).join(", "),
+          right: p.CALLERS && p.CALLERS.length ? p.CALLERS[0] : "",
+        }));
+    }
+    const ok = new Set(filterInv(data.inventory, q).map(([, i]) => i));
+    return data.inventory
+      .map((p, i) => [p, i])
+      .filter(([, i]) => ok.has(i) || catsMatchQuery(catIndex.inv[i], q))
+      .map(([p, i]) => ({
+        id: i, badge: (p.ID || "").replace("P-", ""), badgeHex: p.TIPO === "ONLINE" ? C.canary : C.serene,
+        cats: catIndex.inv[i],
+        name: p.NOMBRE_NATURAL || "",
+        sub: `${p.TIPO || ""}${p.EJECUCIONES_ANUAL && p.EJECUCIONES_ANUAL !== "0" ? ` · ${p.EJECUCIONES_ANUAL} ej/a` : ""}`,
+        right: p.COMPLEJIDAD || "", rightHex: p.COMPLEJIDAD ? cxColor(p.COMPLEJIDAD) : null,
       }));
-    if (tab === "publish")
-      return filterPublish(data.publishing, q).map(([p, i]) => ({
-        id: i, badge: p.COUNT, badgeHex: C.lime,
-        name: p.WORKFLOW, sub: (p.QUEUES || []).slice(0, 2).join(", "),
-        right: p.CALLERS && p.CALLERS.length ? p.CALLERS[0] : "",
-      }));
-    return filterInv(data.inventory, q).map(([p, i]) => ({
-      id: i, badge: (p.ID || "").replace("P-", ""), badgeHex: p.TIPO === "ONLINE" ? C.canary : C.serene,
-      name: p.NOMBRE_NATURAL || "",
-      sub: `${p.TIPO || ""}${p.EJECUCIONES_ANUAL && p.EJECUCIONES_ANUAL !== "0" ? ` · ${p.EJECUCIONES_ANUAL} ej/a` : ""}`,
-      right: p.COMPLEJIDAD || "", rightHex: p.COMPLEJIDAD ? cxColor(p.COMPLEJIDAD) : null,
-    }));
-  }, [data, tab, q]);
+  }, [data, catIndex, tab, q]);
+
+  /* Contador por categoría para la pestaña activa + búsqueda vigente
+     (ANTES de aplicar el filtro de categorías, para que los chips no
+     "desaparezcan" al seleccionar uno). */
+  const catCounts = useMemo(() => {
+    const c = {};
+    searched.forEach((it) => (it.cats || []).forEach((id) => { c[id] = (c[id] || 0) + 1; }));
+    return c;
+  }, [searched]);
+
+  /* Filtro de categorías: OR entre las seleccionadas. */
+  const items = useMemo(
+    () => (selCats.length ? searched.filter((it) => (it.cats || []).some((id) => selCats.includes(id))) : searched),
+    [searched, selCats]
+  );
+
+  const onToggleCat = useCallback((id) => {
+    setSelCats((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  }, []);
+  const onClearCats = useCallback(() => setSelCats([]), []);
 
   const onTab = useCallback((t) => {
     setTab(t);
@@ -144,15 +192,25 @@ export default function ProcessExplorer() {
 
   const selectedId = sel[tab];
 
-  /* Panel de detalle según pestaña + selección. */
+  /* Panel de detalle según pestaña + selección (con TODAS sus categorías). */
   let detail = null;
   let detailKey = `${tab}:${selectedId}`;
-  if (data && selectedId != null) {
+  if (data && catIndex && selectedId != null) {
     if (tab === "batch" && data.chains[selectedId])
-      detail = <ChainDetail name={selectedId} steps={data.chains[selectedId]} meta={(data.chainsMeta || {})[selectedId]} />;
-    else if (tab === "online" && data.online[selectedId]) detail = <OnlineDetail ev={data.online[selectedId]} />;
-    else if (tab === "publish" && data.publishing[selectedId]) detail = <PublishDetail p={data.publishing[selectedId]} />;
-    else if (tab === "inv" && data.inventory[selectedId]) detail = <InventoryDetail p={data.inventory[selectedId]} />;
+      detail = (
+        <ChainDetail
+          name={selectedId}
+          steps={data.chains[selectedId]}
+          meta={(data.chainsMeta || {})[selectedId]}
+          cats={catIndex.batch[selectedId]}
+        />
+      );
+    else if (tab === "online" && data.online[selectedId])
+      detail = <OnlineDetail ev={data.online[selectedId]} cats={catIndex.online[selectedId]} />;
+    else if (tab === "publish" && data.publishing[selectedId])
+      detail = <PublishDetail p={data.publishing[selectedId]} cats={catIndex.publish[selectedId]} />;
+    else if (tab === "inv" && data.inventory[selectedId])
+      detail = <InventoryDetail p={data.inventory[selectedId]} cats={catIndex.inv[selectedId]} />;
   }
 
   const stats = data?.stats;
@@ -222,6 +280,10 @@ export default function ProcessExplorer() {
                 items={items}
                 selectedId={selectedId}
                 onSelect={onSelect}
+                catCounts={catCounts}
+                selCats={selCats}
+                onToggleCat={onToggleCat}
+                onClearCats={onClearCats}
               />
             </div>
 

@@ -3,11 +3,13 @@
 import { rgba } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
 import { TABS } from "./lib";
-import { useAcc } from "./ui";
+import { CATEGORIAS } from "./categorias";
+import { useAcc, CatPill } from "./ui";
 
-/* Sidebar del Process Explorer: buscador + tabs segmentadas + lista de
-   resultados. Los items llegan ya filtrados y normalizados desde
-   ProcessExplorer ({ id, badge, badgeHex, name, sub, right, rightHex }). */
+/* Sidebar del Process Explorer: buscador + tabs segmentadas + chips de
+   categoría funcional + lista de resultados. Los items llegan ya filtrados y
+   normalizados desde ProcessExplorer ({ id, badge, badgeHex, name, sub,
+   right, rightHex, cats }). */
 
 const ACCENT = PALETTE.aqua;
 
@@ -47,6 +49,58 @@ function Tabs({ tab, onTab }) {
   );
 }
 
+/* Fila de chips de categoría (encima de la lista, debajo de las tabs).
+   Multi-selección OR; contador calculado para la pestaña activa + búsqueda
+   vigente. Chip activo = superficie SÓLIDA del color de la categoría con
+   tinta Electric #001391 literal (como superficie sólida el hex original
+   funciona igual en ambos temas — convención del repo); chip inactivo =
+   tinte rgba + texto vía useAcc. En móvil la fila scrollea en horizontal. */
+function CategoryChips({ counts, selCats, onToggle, onClear }) {
+  const acc = useAcc();
+  return (
+    <div
+      role="group"
+      aria-label="Filtrar por categoría funcional"
+      className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-0.5"
+    >
+      {selCats.length > 0 && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="shrink-0 whitespace-nowrap rounded-full border border-white/12 bg-white/[0.05] px-2.5 py-1 text-[10px] font-bold text-sand/70 transition hover:bg-white/[0.1] hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+        >
+          ✕ Limpiar
+        </button>
+      )}
+      {CATEGORIAS.map((c) => {
+        const n = counts[c.id] || 0;
+        const on = selCats.includes(c.id);
+        const muted = !on && n === 0;
+        return (
+          <button
+            key={c.id}
+            type="button"
+            aria-pressed={on}
+            disabled={muted}
+            onClick={() => onToggle(c.id)}
+            title={c.desc}
+            className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene ${
+              muted ? "cursor-default opacity-35" : "hover:brightness-110"
+            }`}
+            style={
+              on
+                ? { backgroundColor: c.color, borderColor: c.color, color: "#001391" }
+                : { borderColor: rgba(c.color, 0.35), backgroundColor: rgba(c.color, 0.08), color: acc(c.color) }
+            }
+          >
+            {c.nombre} <span className="tabular-nums opacity-80">{n}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function ItemRow({ it, selected, onSelect }) {
   const acc = useAcc();
   return (
@@ -70,6 +124,15 @@ function ItemRow({ it, selected, onSelect }) {
         <span className="min-w-0">
           <span className="block truncate text-[12px] font-semibold text-sand">{it.name}</span>
           {it.sub && <span className="block truncate text-[10.5px] text-sand/55">{it.sub}</span>}
+          {/* En la lista basta la categoría principal; "+N" si tiene más. */}
+          {it.cats && it.cats.length > 0 && (
+            <span className="mt-1 flex items-center gap-1">
+              <CatPill id={it.cats[0]} />
+              {it.cats.length > 1 && (
+                <span className="shrink-0 text-[9px] font-bold tabular-nums text-sand/45">+{it.cats.length - 1}</span>
+              )}
+            </span>
+          )}
         </span>
         <span
           className="max-w-[110px] truncate text-[10px] font-bold text-sand/50"
@@ -82,7 +145,7 @@ function ItemRow({ it, selected, onSelect }) {
   );
 }
 
-export default function Sidebar({ tab, onTab, query, onQuery, items, selectedId, onSelect }) {
+export default function Sidebar({ tab, onTab, query, onQuery, items, selectedId, onSelect, catCounts, selCats, onToggleCat, onClearCats }) {
   return (
     <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/12 bg-white/[0.055] backdrop-blur-md">
       <div className="flex flex-col gap-2.5 border-b border-white/12 p-3">
@@ -101,6 +164,7 @@ export default function Sidebar({ tab, onTab, query, onQuery, items, selectedId,
           />
         </label>
         <Tabs tab={tab} onTab={onTab} />
+        <CategoryChips counts={catCounts || {}} selCats={selCats || []} onToggle={onToggleCat} onClear={onClearCats} />
         <p aria-live="polite" className="px-0.5 text-[10.5px] tabular-nums text-sand/50">
           {items.length} {items.length === 1 ? "resultado" : "resultados"}
         </p>
