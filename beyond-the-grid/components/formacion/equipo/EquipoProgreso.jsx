@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Link } from "next-view-transitions";
 import { useReducedMotion } from "framer-motion";
 import { useTilt } from "@/hooks/useTilt";
 import { TRACKS } from "@/lib/formaciones";
@@ -10,7 +9,7 @@ import { rgba, n2 } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
 import { useTheme, useAccentMap } from "@/lib/theme";
 import { archivoDeRecord } from "./mapeo";
-import { IconUsers, IconAlert, IconBack } from "./icons";
+import { IconUsers, IconAlert } from "./icons";
 import ArtBanner from "@/components/chrome/ArtBanner";
 import { ART } from "@/lib/art";
 
@@ -296,14 +295,9 @@ export default function EquipoProgreso({ team, teamError, backend }) {
       <div className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-24 pt-28 sm:px-6">
         {/* ── Hero ─────────────────────────────────────────────────── */}
         <header className="mb-10">
-          <Link
-            href="/formacion"
-            className="group inline-flex items-center gap-2 rounded-full border border-serene/30 bg-serene/10 px-4 py-2 text-xs font-bold text-serene backdrop-blur-md transition hover:border-serene/60 hover:bg-serene/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-          >
-            <IconBack size={14} className="transition-transform group-hover:-translate-x-0.5" />
-            Ruta formativa
-          </Link>
-          <p className="mt-6 font-sans text-xs font-bold uppercase tracking-[0.4em] text-serene/80">BBVA × NFQ · CIB</p>
+          {/* El pill "← Ruta formativa" lo sustituyen las migas del header
+              ("Formación → Progreso del equipo", con Formación clicable). */}
+          <p className="font-sans text-xs font-bold uppercase tracking-[0.4em] text-serene/80">BBVA × NFQ · CIB</p>
           <h1 className="mt-3 font-display text-4xl font-bold leading-none tracking-tight text-sand sm:text-5xl">
             Progreso del equipo
           </h1>

@@ -10,54 +10,12 @@ import { useAuth } from "../chrome/AuthGate";
 import { rgba } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
 import { useAccentMap } from "@/lib/theme";
-import {
-  IconBook, IconLink, IconUtensils, IconCalendar, IconRefresh, IconClock,
-  IconRocket, IconCode, IconFolder, IconShield, IconArrow, IconExternal,
-  IconCopy, IconGrad, IconOrbit,
-} from "../icons";
+import { hubSections } from "@/lib/nav";
+import { IconArrow, IconExternal, IconCopy, IconGrad, IconOrbit } from "../icons";
 
-// Estructura por TIPO. Cada sección = una columna. Acciones:
-// page (html), route (ruta Next), open (externo links.json), copy (portapapeles).
-// Tarjetas multi-acción: varias pills (Time Report NFQ+BBVA, Repositorio GitHub+Drive).
-const SECTIONS = [
-  {
-    id: "form", n: "01", title: "Formación", color: PALETTE.serene,
-    items: [
-      { kind: "feature", label: "HUB Formativo", desc: "Ruta por niveles 00–06", icon: IconGrad, action: "route", target: "/formacion" },
-      { label: "¿Qué es RDR?", desc: "Presentación de introducción", icon: IconBook, action: "route", target: "/que-es-rdr" },
-      { label: "Portal BBVA CIB", desc: "Portal corporativo del equipo", icon: IconLink, action: "copy", target: "portalBBVACIB" },
-    ],
-  },
-  {
-    id: "equipo", n: "02", title: "Equipo", color: PALETTE.mandarin,
-    items: [
-      { label: "Comidas", desc: "Restaurante de los jueves", icon: IconUtensils, action: "route", target: "/comidas" },
-      { label: "Vacaciones", desc: "Calendario y política", icon: IconCalendar, action: "route", target: "/vacaciones" },
-      { label: "Retrospectiva", desc: "Retros y mejoras", icon: IconRefresh, action: "route", target: "/retro" },
-      { label: "Time Report", desc: "Imputación de horas", icon: IconClock, actions: [
-        { label: "NFQ", action: "open", target: "timeReportNFQ" },
-        { label: "BBVA", action: "copy", target: "timeReportBBVA" },
-      ] },
-    ],
-  },
-  {
-    id: "proy", n: "03", title: "Proyectos", color: PALETTE.lime,
-    items: [
-      { label: "Pases Calendados", desc: "Releases por entorno", icon: IconRocket, action: "route", target: "/pases" },
-      { label: "Recursos", desc: "Biblioteca de referencia RDR", icon: IconBook, action: "route", target: "/recursos" },
-      { label: "Planificación", desc: "Hoja de planificación", icon: IconCalendar, action: "open", target: "planificacionNFQ" },
-      { label: "Repositorio", desc: "Código y documentación", icon: IconFolder, actions: [
-        { label: "GitHub", action: "copy", target: "githubBBVA", icon: IconCode },
-        { label: "Drive", action: "copy", target: "driveBBVA", icon: IconFolder },
-      ] },
-    ],
-  },
-];
-
-const COORD_SECTION = {
-  id: "coord", n: "04", title: "Coordinación", color: PALETTE.purple,
-  items: [{ label: "Control RDR", desc: "Control económico", icon: IconShield, action: "route", target: "/control" }],
-};
+// El MODELO de secciones (columnas, colores, acciones route/page/open/copy)
+// vive en lib/nav.js — fuente única compartida con el Header, la paleta de
+// comandos y la 404. Aquí solo queda la presentación bento.
 
 const HintIcon = (action) => (action === "copy" ? IconCopy : action === "open" ? IconExternal : IconArrow);
 
@@ -219,7 +177,7 @@ function TypeColumn({ sec, delay }) {
 export default function BentoHub() {
   const { isCoordinador } = useAuth();
   const lite = useLowPower();
-  const sections = isCoordinador ? [...SECTIONS, COORD_SECTION] : SECTIONS;
+  const sections = hubSections(isCoordinador);
   const gridCols = sections.length >= 4 ? "lg:grid-cols-4" : "lg:grid-cols-3";
 
   return (

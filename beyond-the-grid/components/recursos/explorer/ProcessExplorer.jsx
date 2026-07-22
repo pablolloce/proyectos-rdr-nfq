@@ -231,22 +231,15 @@ export default function ProcessExplorer() {
             <h1 className="font-display text-4xl font-bold leading-none tracking-tight text-sand sm:text-5xl">
               Process Explorer
             </h1>
-            <div className="flex flex-wrap items-center gap-2">
-              {/* La antigua pestaña "Mapa" vive ahora en /recursos/mapa. */}
-              <Link
-                href="/recursos/mapa"
-                className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-wide transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-                style={{ backgroundColor: PALETTE.purple, borderColor: PALETTE.purple, color: "#070E46" }}
-              >
-                Mapa interactivo <span aria-hidden>→</span>
-              </Link>
-              <Link
-                href="/recursos"
-                className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-4 py-2 text-xs font-bold uppercase tracking-wide text-sand/80 transition hover:bg-white/[0.1] hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-              >
-                <IconArrowLeft /> Recursos
-              </Link>
-            </div>
+            {/* Volver a Recursos: lo cubren las migas del header ("Recursos →").
+                Se conserva SOLO el cross-link al mapa (destino hermano útil). */}
+            <Link
+              href="/recursos/mapa"
+              className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-wide transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+              style={{ backgroundColor: PALETTE.purple, borderColor: PALETTE.purple, color: "#070E46" }}
+            >
+              Mapa interactivo <span aria-hidden>→</span>
+            </Link>
           </div>
           <p className="mt-3 max-w-2xl text-pretty text-sm text-sand/65">
             Cadenas batch de Control-M, listeners online, publishers e inventario de procesos RDR, con el flujo de
