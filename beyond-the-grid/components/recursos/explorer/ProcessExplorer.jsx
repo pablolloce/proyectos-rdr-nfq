@@ -436,6 +436,15 @@ export default function ProcessExplorer() {
 
   const stats = data?.stats;
 
+  /* Totales por tipo para el control segmentado del Sidebar (derivados de
+     data.stats; cálculo trivial, no memoizado). */
+  const tabCounts = {
+    batch: stats?.chains_count ?? 0,
+    online: stats?.online_count ?? 0,
+    publish: stats?.publishing_count ?? 0,
+    inv: stats?.inventory_count ?? 0,
+  };
+
   return (
     <main className="relative min-h-dvh w-full">
       <div aria-hidden className="pointer-events-none fixed inset-[-3%] -z-10 overflow-hidden">
@@ -497,6 +506,7 @@ export default function ProcessExplorer() {
               <Sidebar
                 tab={tab}
                 onTab={onTab}
+                tabCounts={tabCounts}
                 query={query}
                 onQuery={setQuery}
                 items={items}
