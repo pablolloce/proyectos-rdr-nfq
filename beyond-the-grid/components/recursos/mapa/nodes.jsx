@@ -19,7 +19,6 @@ const KIND_LABEL = {
   evento: "Evento",
   cola: "Cola JMS",
   listener: "Listener",
-  publisher: "Publisher",
   jars: "JARs",
   scripts: "Scripts",
 };

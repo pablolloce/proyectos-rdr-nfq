@@ -2,20 +2,23 @@
 // de conexiones ("viajar") y construcción de grafos {nodes, edges} para React
 // Flow con un layout determinista por columnas (sin dagre).
 //
-// Un "proceso" se identifica como { kind: 'chain'|'online'|'publish', id }:
+// Un "proceso" se identifica como { kind: 'chain'|'online', id }:
 //   - chain   → nombre de la cadena en data.chains (excepto SIN_CADENA)
 //   - online  → índice en data.online (los listeners; en data.chains viven
 //               duplicados dentro de la pseudo-cadena SIN_CADENA)
-//   - publish → índice en data.publishing
+// La publicación NO es un proceso viajable: es una acción del proceso. Lo
+// único que se dibuja de ella es su resultado — la(s) cola(s) destino en las
+// que acaba publicando la cadena (nodos "Publica en" al final del flujo).
 //
 // Conexiones entre procesos (campos cruzados):
 //   1. Workflows compartidos: data.wfPublish[WORKFLOW_GS] = pasos (NOMBRE) que
 //      lo invocan → se resuelven a cadenas (índice NOMBRE→cadena) o a
 //      listeners (NOMBRE→índice online cuando el paso vive en SIN_CADENA).
-//   2. Cadena → publisher: data.publishing[i].CALLERS contiene nombres de
-//      cadena (215/215 resuelven) → nodo publisher al final del flujo.
-//   3. Publisher → colas derivadas (deriveQueues del explorer) → listeners
-//      cuyo COLA_ESCUCHA coincide (con {env} como comodín de segmento).
+//   2. Cadena → colas de publicación: data.publishing[i].CALLERS contiene
+//      nombres de cadena (215/215 resuelven) → deriveQueues(publisher) da las
+//      colas destino, que cierran el flujo.
+//   3. Cola destino → listeners cuyo COLA_ESCUCHA coincide (con {env} como
+//      comodín de segmento) → se puede seguir viajando.
 //   4. Cola JMS de un listener → otros listeners que escuchan la misma cola.
 import { C, stepColor, splitWf, deriveQueues } from "../explorer/lib";
 
@@ -27,23 +30,18 @@ const COL = 300;
 const ROW = 104;
 const FAN_Y = 150;
 const MAX_FAN = 6; // sub-workflows visibles por paso antes del nodo "+n más"
-const MAX_CALLERS = 8;
 
 export const procKey = (p) => `${p.kind}:${p.id}`;
 export const sameProc = (a, b) => !!a && !!b && a.kind === b.kind && String(a.id) === String(b.id);
 
 /* Color de acento por familia de proceso (chips del rastro, selector). */
-export const PROC_HEX = { chain: C.serene, online: C.canary, publish: C.lime };
-export const PROC_LABEL = { chain: "Batch", online: "Online", publish: "Publisher" };
+export const PROC_HEX = { chain: C.serene, online: C.canary };
+export const PROC_LABEL = { chain: "Batch", online: "Online" };
 
 export function procLabel(data, p) {
   if (p.kind === "chain") return (data.chainsMeta || {})[p.id]?.natural || p.id;
-  if (p.kind === "online") {
-    const e = data.online[p.id];
-    return e ? e.NOMBRE_NATURAL || e.NOMBRE : `#${p.id}`;
-  }
-  const pub = data.publishing[p.id];
-  return pub ? pub.NOMBRE_NATURAL || pub.WORKFLOW : `#${p.id}`;
+  const e = data.online[p.id];
+  return e ? e.NOMBRE_NATURAL || e.NOMBRE : `#${p.id}`;
 }
 
 /* ── Índices de cruce (se construyen una vez por dataset) ──────────────── */
@@ -317,23 +315,32 @@ function chainGraph(data, idx, name) {
     fanForStep({ nodes, edges, data, idx, current, ownerId: id, x, s });
   });
 
-  // Publishers que declaran esta cadena como caller → destino de viaje.
+  // La publicación es una acción del proceso, no un nodo viajable: lo que
+  // importa es EN QUÉ COLA acaba publicando. Se derivan las colas destino de
+  // los publishers de esta cadena y se dibujan como cierre del flujo.
   const pubs = idx.publishersByCaller.get(name) || [];
-  pubs.forEach((pi, j) => {
+  const seenQ = new Set();
+  let qy = 0;
+  pubs.forEach((pi) => {
     const p = data.publishing[pi];
-    const pid = `pub${j}`;
-    nodes.push(
-      node(pid, (steps.length + 1) * COL, j * ROW, {
-        kind: "publisher",
-        hex: C.lime,
-        title: p.WORKFLOW,
-        badge: "Publisher",
-        sub: splitCsv(p.SISTEMAS_CONECTADOS).slice(0, 3).join(", "),
-        follow: [{ kind: "publish", id: pi, label: procLabel(data, { kind: "publish", id: pi }), via: name }],
-        payload: { pub: p },
-      })
-    );
-    edges.push(edge(prev, pid, "travel"));
+    deriveQueues(p).forEach((q) => {
+      if (!q.queue || q.queue === "(sin cola identificada)" || seenQ.has(q.queue)) return;
+      seenQ.add(q.queue);
+      const qid = `pubq${seenQ.size}`;
+      nodes.push(
+        node(qid, (steps.length + 1) * COL, qy * ROW, {
+          kind: "cola",
+          hex: C.mandarin,
+          title: q.queue,
+          badge: "Publica en",
+          sub: `${q.entity} → ${q.system}`,
+          follow: queueListeners(data, idx, q.queue, current),
+          payload: { cola: q.queue, colaInfo: q, pub: p },
+        })
+      );
+      edges.push(edge(prev, qid, "travel"));
+      qy += 1;
+    });
   });
 
   return { nodes, edges };
@@ -457,79 +464,7 @@ function onlineGraph(data, idx, i) {
   return { nodes, edges };
 }
 
-/* ── Grafo de un publisher ─────────────────────────────────────────────── */
-function publishGraph(data, idx, i) {
-  const p = data.publishing[i] || {};
-  const current = { kind: "publish", id: i };
-  const nodes = [];
-  const edges = [];
-
-  const callers = p.CALLERS || [];
-  const shown = callers.slice(0, MAX_CALLERS);
-  const centered = (j, len) => (j - (len - 1) / 2) * (ROW + 8);
-  const extra = callers.length > shown.length ? 1 : 0;
-
-  shown.forEach((c, j) => {
-    const cid = `c${j}`;
-    const isChain = !!(data.chains || {})[c] && c !== SIN_CADENA;
-    nodes.push(
-      node(cid, 0, centered(j, shown.length + extra), {
-        kind: "inicio",
-        hex: C.serene,
-        title: c,
-        badge: "Cadena caller",
-        sub: (data.chainsMeta || {})[c]?.natural || "",
-        follow: isChain ? [{ kind: "chain", id: c, label: procLabel(data, { kind: "chain", id: c }), via: p.WORKFLOW }] : [],
-        payload: { cadena: c },
-      })
-    );
-    edges.push(edge(cid, "pub", "seq"));
-  });
-  if (extra) {
-    nodes.push(
-      node("cmas", 0, centered(shown.length, shown.length + extra), {
-        kind: "inicio",
-        hex: C.serene,
-        dim: true,
-        title: `+${callers.length - shown.length} callers más`,
-        payload: { lista: callers.slice(MAX_CALLERS) },
-      })
-    );
-    edges.push(edge("cmas", "pub", "seq"));
-  }
-
-  nodes.push(
-    node("pub", COL, 0, {
-      kind: "publisher",
-      hex: C.lime,
-      title: p.WORKFLOW,
-      badge: "Publisher",
-      sub: (p.GROUP || "").split("/").slice(-2).join("/"),
-      payload: { pub: p },
-    })
-  );
-
-  const queues = deriveQueues(p);
-  queues.forEach((q, j) => {
-    const qid = `q${j}`;
-    nodes.push(
-      node(qid, 2 * COL, centered(j, queues.length), {
-        kind: "cola",
-        hex: C.mandarin,
-        title: q.queue,
-        badge: "Cola destino",
-        sub: `${q.entity} → ${q.system}`,
-        follow: queueListeners(data, idx, q.queue, current),
-        payload: { cola: q.queue, colaInfo: q, pub: p },
-      })
-    );
-    edges.push(edge("pub", qid, "seq"));
-  });
-
-  return { nodes, edges };
-}
-
-/* ── Deep links (#chain/…, #online/…, #publish/…, #proc/P-xxx) ─────────────
+/* ── Deep links (#chain/…, #online/…, #proc/P-xxx; #publish/… legado) ──────
    El export es estático (GitHub Pages): la identidad del proceso viaja en el
    hash. El formato #proc/P-xxx enlaza desde el Process Explorer un proceso
    del INVENTARIO: se resuelve a su primera cadena real (batch) o a su primer
@@ -538,12 +473,8 @@ function publishGraph(data, idx, i) {
 export function buildMapHash(data, p) {
   if (!p) return "#";
   if (p.kind === "chain") return `#chain/${encodeURIComponent(p.id)}`;
-  if (p.kind === "online") {
-    const e = data.online[p.id];
-    return e && e.NOMBRE ? `#online/${encodeURIComponent(e.NOMBRE)}` : "#";
-  }
-  const pub = data.publishing[p.id];
-  return pub && pub.WORKFLOW ? `#publish/${encodeURIComponent(pub.WORKFLOW)}` : "#";
+  const e = data.online[p.id];
+  return e && e.NOMBRE ? `#online/${encodeURIComponent(e.NOMBRE)}` : "#";
 }
 
 const decodeSafe = (s) => {
@@ -565,8 +496,13 @@ export function parseMapHash(data, idx, hash) {
     return oi != null ? { kind: "online", id: oi } : null;
   }
   if (kind === "publish") {
-    const pi = (data.publishing || []).findIndex((p) => p.WORKFLOW === key);
-    return pi >= 0 ? { kind: "publish", id: pi } : null;
+    // Legado: los publishers ya no son viajables — se abre la cadena caller,
+    // cuyo flujo termina en la(s) cola(s) en las que publica.
+    const pub = (data.publishing || []).find((p) => p.WORKFLOW === key);
+    for (const c of (pub && pub.CALLERS) || []) {
+      if ((data.chains || {})[c] && c !== SIN_CADENA) return { kind: "chain", id: c };
+    }
+    return null;
   }
   if (kind === "proc") {
     // P-xxx del inventario → primera cadena real, o primer listener online.
@@ -588,6 +524,5 @@ export function parseMapHash(data, idx, hash) {
 export function buildGraph(data, idx, proc) {
   if (!data || !proc) return { nodes: [], edges: [] };
   if (proc.kind === "chain") return chainGraph(data, idx, proc.id);
-  if (proc.kind === "online") return onlineGraph(data, idx, proc.id);
-  return publishGraph(data, idx, proc.id);
+  return onlineGraph(data, idx, proc.id);
 }

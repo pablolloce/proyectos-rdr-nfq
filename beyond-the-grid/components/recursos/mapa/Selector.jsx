@@ -2,20 +2,21 @@
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { rgba } from "@/lib/ui";
-import { C, filterChains, filterOnline, filterPublish } from "../explorer/lib";
+import { C, filterChains, filterOnline } from "../explorer/lib";
 import { useAcc } from "../explorer/ui";
 import { PROC_HEX } from "./graph";
 
 /* Selector de proceso del Mapa de flujos: overlay con buscador multi-campo
    (mismos filtros que el Process Explorer, importados de explorer/lib) sobre
-   las tres familias viajables: cadenas batch, listeners online y publishers.
+   las dos familias viajables: cadenas batch y listeners online. La
+   publicación no es un proceso: cada cadena termina en su(s) cola(s) de
+   publicación dentro del propio flujo.
    En <lg ocupa la pantalla (sheet); en lg+ es un diálogo sobre el canvas. */
 
 const FAMILIES = [
   { id: "all", label: "Todas" },
   { id: "chain", label: "Batch", hex: PROC_HEX.chain },
   { id: "online", label: "Online", hex: PROC_HEX.online },
-  { id: "publish", label: "Publishers", hex: PROC_HEX.publish },
 ];
 
 const MAX_SHOWN = 90;
@@ -40,7 +41,7 @@ export default function Selector({ data, onPick, onClose }) {
 
   /* Resultados por familia con los MISMOS filtros multi-campo del explorer. */
   const results = useMemo(() => {
-    if (!data) return { chain: [], online: [], publish: [] };
+    if (!data) return { chain: [], online: [] };
     const chain = filterChains(data.chains, data.chainsMeta, q)
       .filter((n) => n !== "SIN_CADENA")
       .map((n) => {
@@ -51,17 +52,11 @@ export default function Selector({ data, onPick, onClose }) {
       kind: "online", id: i, label: e.NOMBRE_NATURAL || e.NOMBRE,
       sub: e.COLA_ESCUCHA || e.CLASE_EVENTO || e.NOMBRE, badge: "IN",
     }));
-    const publish = filterPublish(data.publishing, q).map(([p, i]) => ({
-      kind: "publish", id: i, label: p.WORKFLOW,
-      sub: (p.CALLERS || []).slice(0, 2).join(", "), badge: p.COUNT,
-    }));
-    return { chain, online, publish };
+    return { chain, online };
   }, [data, q]);
 
   const list = useMemo(() => {
-    const all = family === "all"
-      ? [...results.chain, ...results.online, ...results.publish]
-      : results[family];
+    const all = family === "all" ? [...results.chain, ...results.online] : results[family];
     return all;
   }, [results, family]);
 
@@ -112,9 +107,7 @@ export default function Selector({ data, onPick, onClose }) {
           <div role="radiogroup" aria-label="Familia de proceso" className="flex flex-wrap gap-1.5">
             {FAMILIES.map((f) => {
               const on = family === f.id;
-              const n = f.id === "all"
-                ? results.chain.length + results.online.length + results.publish.length
-                : results[f.id].length;
+              const n = f.id === "all" ? results.chain.length + results.online.length : results[f.id].length;
               return (
                 <button
                   key={f.id}
@@ -159,7 +152,7 @@ export default function Selector({ data, onPick, onClose }) {
                       {it.sub && <span className="block truncate font-mono text-[10.5px] text-sand/55">{it.sub}</span>}
                     </span>
                     <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: acc(PROC_HEX[it.kind]) }}>
-                      {it.kind === "chain" ? "Batch" : it.kind === "online" ? "Online" : "Publish"}
+                      {it.kind === "chain" ? "Batch" : "Online"}
                     </span>
                   </button>
                 </li>

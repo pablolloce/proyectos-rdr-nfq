@@ -109,6 +109,7 @@ function Body({ node, data }) {
             <InfoRow k="Cola" hex={C.mandarin}>{p.cola}</InfoRow>
             {p.colaInfo && <InfoRow k="Entidad">{p.colaInfo.entity}</InfoRow>}
             {p.colaInfo && <InfoRow k="Sistema">{p.colaInfo.system}</InfoRow>}
+            {p.pub?.NOMBRE_NATURAL && <InfoRow k="Publica">{p.pub.NOMBRE_NATURAL}</InfoRow>}
           </CodePanel>
           {d.follow?.length > 0 && (
             <p className="mt-3 text-[11px] text-sand/65">
@@ -133,45 +134,6 @@ function Body({ node, data }) {
           {p.ev && <StepInfo s={p.ev} />}
         </>
       );
-
-    case "publisher": {
-      const pub = p.pub || {};
-      return (
-        <>
-          {pub.DESCRIPCION && <p className="mt-3 text-pretty text-xs leading-relaxed text-sand/70">{pub.DESCRIPCION}</p>}
-          <CodePanel className="mt-3">
-            {pub.GROUP && <InfoRow k="Grupo">{pub.GROUP}</InfoRow>}
-            {pub.EJECUCIONES_ANUAL && pub.EJECUCIONES_ANUAL !== "0" && (
-              <InfoRow k="Ejecuciones"><span className="tabular-nums">{pub.EJECUCIONES_ANUAL}/año</span></InfoRow>
-            )}
-            {pub.EVENTOS_JMS && <InfoRow k="Eventos JMS" hex={C.serene}>{pub.EVENTOS_JMS}</InfoRow>}
-          </CodePanel>
-          {pub.COMPLEJIDAD && (
-            <p className="mt-3 text-[11px] text-sand/60">
-              Complejidad <CxText cx={pub.COMPLEJIDAD} />
-            </p>
-          )}
-          {(pub.CALLERS || []).length > 0 && (
-            <div className="mt-3">
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-sand/50">Callers</p>
-              <ChainChips s={pub.CALLERS} sep="·" />
-            </div>
-          )}
-          {pub.ENTIDADES && (
-            <div className="mt-3">
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-sand/50">Entidades</p>
-              <TagList s={pub.ENTIDADES} hex={C.purple} />
-            </div>
-          )}
-          {pub.SISTEMAS_CONECTADOS && (
-            <div className="mt-3">
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-sand/50">Sistemas conectados</p>
-              <TagList s={pub.SISTEMAS_CONECTADOS} hex={C.serene} />
-            </div>
-          )}
-        </>
-      );
-    }
 
     case "inicio":
       return (

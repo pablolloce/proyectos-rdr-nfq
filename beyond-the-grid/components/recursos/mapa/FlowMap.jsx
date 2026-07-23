@@ -17,10 +17,11 @@ import Selector from "./Selector";
 import DetailPanel from "./DetailPanel";
 
 /* Mapa interactivo de flujos de ejecución RDR. Sustituye a la antigua pestaña
-   "Mapa" del Process Explorer: se elige un proceso (cadena batch, listener
-   online o publisher), se dibuja su flujo como grafo (React Flow) y desde los
-   nodos conectados con OTROS procesos se puede "viajar" manteniendo el rastro
-   en migas de pan. Acento de la página: purple #9694FF. */
+   "Mapa" del Process Explorer: se elige un proceso (cadena batch o listener
+   online), se dibuja su flujo como grafo (React Flow) y desde los nodos
+   conectados con OTROS procesos se puede "viajar" manteniendo el rastro en
+   migas de pan. La publicación no es un proceso: cada cadena termina en la(s)
+   cola(s) destino en las que publica. Acento de la página: purple #9694FF. */
 
 const ACCENT = PALETTE.purple;
 
@@ -247,7 +248,6 @@ export default function FlowMap() {
             <div className="mt-4 flex flex-wrap gap-2">
               <StatPill n={stats.chains_count} label="cadenas" />
               <StatPill n={stats.online_count} label="listeners" />
-              <StatPill n={stats.publishing_count} label="publishers" />
               <StatPill n={stats.workflows_count} label="workflows" />
               <StatPill n={stats.eventos_count} label="eventos" />
             </div>
