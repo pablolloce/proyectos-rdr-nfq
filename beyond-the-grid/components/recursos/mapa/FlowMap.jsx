@@ -11,7 +11,7 @@ import { rgba } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
 import { useTheme, useAccentMap } from "@/lib/theme";
 import { DATA_URL, C } from "../explorer/lib";
-import { buildIndexes, buildGraph, procKey, procLabel, PROC_HEX, PROC_LABEL } from "./graph";
+import { buildIndexes, buildGraph, procKey, procLabel, PROC_HEX, PROC_LABEL, buildMapHash, parseMapHash } from "./graph";
 import { nodeTypes } from "./nodes";
 import Selector from "./Selector";
 import DetailPanel from "./DetailPanel";
@@ -126,6 +126,36 @@ export default function FlowMap() {
   const idx = useMemo(() => (data ? buildIndexes(data) : null), [data]);
   const current = trail[trail.length - 1] || null;
 
+  /* Deep links: restaura el proceso del hash al cargar (y en Atrás/Adelante).
+     Acepta #chain/…, #online/…, #publish/… y #proc/P-xxx (enlaces "Ver en el
+     mapa" del Process Explorer). El rastro se reinicia en esa parada. */
+  useEffect(() => {
+    if (!data || !idx) return;
+    const apply = () => {
+      const p = parseMapHash(data, idx, window.location.hash);
+      if (!p) return;
+      setTrail((tr) => {
+        const cur = tr[tr.length - 1];
+        if (cur && cur.kind === p.kind && String(cur.id) === String(p.id)) return tr;
+        return [{ ...p, label: procLabel(data, p) }];
+      });
+      setSelectorOpen(false);
+      setSelNode(null);
+    };
+    apply();
+    window.addEventListener("hashchange", apply);
+    return () => window.removeEventListener("hashchange", apply);
+  }, [data, idx]);
+
+  /* Mantiene el hash sincronizado con la parada actual (replaceState: viajar
+     por el mapa no debe inflar el historial). */
+  useEffect(() => {
+    if (!data || typeof window === "undefined") return;
+    const desired = current ? buildMapHash(data, current) : null;
+    if (desired && desired !== "#" && (window.location.hash || "") !== desired)
+      window.history.replaceState(null, "", desired);
+  }, [data, current]);
+
   /* Viajar: añade parada al rastro y cierra paneles. */
   const follow = useCallback(
     (t) => {
@@ -229,8 +259,18 @@ export default function FlowMap() {
         ) : (
           <>
             {data && trail.length > 0 && (
-              <div className="mb-3">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <Trail trail={trail} onGoto={goto} onNew={() => setSelectorOpen(true)} />
+                {current && (
+                  /* El explorador entiende este mismo hash (#chain/… etc.) y
+                     lo traduce al proceso del inventario dueño del flujo. */
+                  <a
+                    href={`/team-hub/recursos/procesos/${buildMapHash(data, current)}`}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.05] px-3 py-1.5 text-[11px] font-bold text-sand/75 transition hover:bg-white/[0.1] hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+                  >
+                    Ficha en el explorador <span aria-hidden>→</span>
+                  </a>
+                )}
               </div>
             )}
 

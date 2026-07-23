@@ -3,8 +3,7 @@
 import { createContext, useCallback, useContext, Fragment } from "react";
 import { rgba } from "@/lib/ui";
 import { useAccentMap, useTheme } from "@/lib/theme";
-import { RED, RED_LIGHT, C, cxColor, splitWf, wfTagStyle } from "./lib";
-import { CATEGORIA_MAP } from "./categorias";
+import { RED, RED_LIGHT, C, cxColor, splitWf, wfTagStyle, CAT_SHORT } from "./lib";
 
 /* Acciones de navegación que el panel de detalle expone a sus primitivas
    (referencias cruzadas clicables). Provisto desde ProcessExplorer:
@@ -64,20 +63,21 @@ export function Tag({ hex, strong, dim, className = "", term, children }) {
   );
 }
 
-/* Píldora de CATEGORÍA funcional (taxonomía de ./categorias.js). Mismo
-   patrón de color que Tag/TypePill: tinte rgba con el hex original (idéntico
-   en ambos temas) y texto vía useAcc (legible en claro y oscuro). */
-export function CatPill({ id, className = "" }) {
+/* Píldora de CATEGORÍA oficial (una de las 8 de clasificacion-rdr.json).
+   Recibe el objeto categoría completo. Mismo patrón de color que Tag/TypePill:
+   tinte rgba con el hex original (idéntico en ambos temas) y texto vía useAcc
+   (legible en claro y oscuro). `full` muestra el nombre largo con emoji. */
+export function CatPill({ cat, full, className = "" }) {
   const acc = useAcc();
-  const c = CATEGORIA_MAP[id];
-  if (!c) return null;
+  if (!cat) return null;
+  const label = full ? `${cat.emoji} ${cat.nombre}` : CAT_SHORT[cat.key] || cat.nombre;
   return (
     <span
-      title={c.desc}
+      title={cat.desc}
       className={`inline-block max-w-full truncate whitespace-nowrap rounded-full px-2 py-0.5 text-[9.5px] font-bold leading-4 tracking-wide ${className}`}
-      style={{ color: acc(c.color), backgroundColor: rgba(c.color, 0.12), border: `1px solid ${rgba(c.color, 0.28)}` }}
+      style={{ color: acc(cat.color), backgroundColor: rgba(cat.color, 0.12), border: `1px solid ${rgba(cat.color, 0.28)}` }}
     >
-      {c.nombre}
+      {label}
     </span>
   );
 }

@@ -529,6 +529,61 @@ function publishGraph(data, idx, i) {
   return { nodes, edges };
 }
 
+/* ── Deep links (#chain/…, #online/…, #publish/…, #proc/P-xxx) ─────────────
+   El export es estático (GitHub Pages): la identidad del proceso viaja en el
+   hash. El formato #proc/P-xxx enlaza desde el Process Explorer un proceso
+   del INVENTARIO: se resuelve a su primera cadena real (batch) o a su primer
+   listener (online) usando data.inventory. */
+
+export function buildMapHash(data, p) {
+  if (!p) return "#";
+  if (p.kind === "chain") return `#chain/${encodeURIComponent(p.id)}`;
+  if (p.kind === "online") {
+    const e = data.online[p.id];
+    return e && e.NOMBRE ? `#online/${encodeURIComponent(e.NOMBRE)}` : "#";
+  }
+  const pub = data.publishing[p.id];
+  return pub && pub.WORKFLOW ? `#publish/${encodeURIComponent(pub.WORKFLOW)}` : "#";
+}
+
+const decodeSafe = (s) => {
+  try { return decodeURIComponent(s); } catch { return s; }
+};
+
+export function parseMapHash(data, idx, hash) {
+  const raw = (hash || "").replace(/^#/, "");
+  if (!raw) return null;
+  const i = raw.indexOf("/");
+  if (i === -1) return null;
+  const kind = raw.slice(0, i);
+  const key = decodeSafe(raw.slice(i + 1));
+  if (!key) return null;
+  if (kind === "chain")
+    return (data.chains || {})[key] && key !== SIN_CADENA ? { kind: "chain", id: key } : null;
+  if (kind === "online") {
+    const oi = idx.onlineByName.get(key);
+    return oi != null ? { kind: "online", id: oi } : null;
+  }
+  if (kind === "publish") {
+    const pi = (data.publishing || []).findIndex((p) => p.WORKFLOW === key);
+    return pi >= 0 ? { kind: "publish", id: pi } : null;
+  }
+  if (kind === "proc") {
+    // P-xxx del inventario → primera cadena real, o primer listener online.
+    const inv = (data.inventory || []).find((p) => p.ID === key);
+    if (!inv) return null;
+    for (const c of (inv.CADENAS_CONTROLM || "").split(",").map((s) => s.trim())) {
+      if (c && (data.chains || {})[c] && c !== SIN_CADENA) return { kind: "chain", id: c };
+    }
+    for (const e of (inv.EVENTOS_JMS || "").split(",").map((s) => s.trim())) {
+      const oi = e && idx.onlineByName.get(e);
+      if (oi != null) return { kind: "online", id: oi };
+    }
+    return null;
+  }
+  return null;
+}
+
 /* ── Punto de entrada ──────────────────────────────────────────────────── */
 export function buildGraph(data, idx, proc) {
   if (!data || !proc) return { nodes: [], edges: [] };

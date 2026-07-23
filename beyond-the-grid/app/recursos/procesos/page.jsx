@@ -3,7 +3,7 @@ import ProcessExplorer from "@/components/recursos/explorer/ProcessExplorer";
 export const metadata = {
   title: "Process Explorer · Recursos RDR",
   description:
-    "Cadenas batch, listeners online, publishers e inventario de procesos RDR con su flujo de ejecución paso a paso.",
+    "Los 91 procesos del inventario RDR clasificados por la taxonomía oficial, con sus cadenas Control-M, listeners online y publicación.",
 };
 
 // Ruta fina: toda la lógica vive en components/recursos/explorer/.

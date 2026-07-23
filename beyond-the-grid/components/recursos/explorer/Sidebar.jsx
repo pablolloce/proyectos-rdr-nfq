@@ -4,15 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { rgba } from "@/lib/ui";
 import { PALETTE } from "@/lib/palette";
-import { TABS } from "./lib";
-import { CATEGORIAS } from "./categorias";
+import { EJES, CAJON_ID, CAT_SHORT } from "./lib";
 import { useAcc, CatPill, optionDomId } from "./ui";
 
-/* Sidebar del Process Explorer: buscador + control segmentado de tipo (con
-   totales) + filtro de categoría por desplegable (popover) con chips activos
-   removibles + lista de resultados. Los items llegan ya filtrados y
-   normalizados desde ProcessExplorer ({ id, badge, badgeHex, name, sub,
-   right, rightHex, cats }). */
+/* Sidebar del Process Explorer reestructurado: buscador + eje Batch/Online
+   (con totales) + filtro por las 8 categorías oficiales (desplegable con
+   chips removibles) + lista de los 91 procesos del inventario + acceso al
+   cajón desastre. Los items llegan ya filtrados y normalizados desde
+   ProcessExplorer ({ id, badge, name, sub, right, rightHex, cat }). */
 
 const ACCENT = PALETTE.aqua;
 
@@ -44,16 +43,15 @@ const IconCheck = (p) => (
   </svg>
 );
 
-/* Control segmentado de TIPO. Cada opción muestra su etiqueta completa y el
-   nº total de procesos de ese tipo (tabular-nums) en dos líneas. Pestaña
-   activa: superficie aqua literal con tinta midnight fija — como superficie
-   sólida funciona igual en ambos temas (convención del repo). En móvil se
-   parte en 2×2 para que cada opción sea táctil; en ≥sm queda en una fila. */
-function Tabs({ tab, onTab, counts }) {
+/* Control segmentado de EJE (Todos / Batch / Online) con el nº de procesos
+   de cada uno. Opción activa: superficie aqua literal con tinta midnight fija
+   — como superficie sólida funciona igual en ambos temas (convención del
+   repo). */
+function EjeTabs({ eje, onEje, counts }) {
   return (
-    <div role="tablist" aria-label="Tipo de proceso" className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-      {TABS.map((t) => {
-        const on = tab === t.id;
+    <div role="tablist" aria-label="Tipo de proceso" className="grid grid-cols-3 gap-1.5">
+      {EJES.map((t) => {
+        const on = eje === t.id;
         const n = counts ? counts[t.id] : undefined;
         return (
           <button
@@ -63,7 +61,7 @@ function Tabs({ tab, onTab, counts }) {
             aria-selected={on}
             aria-controls="rdr-explorer-list"
             type="button"
-            onClick={() => onTab(t.id)}
+            onClick={() => onEje(t.id)}
             className={`flex min-h-[54px] flex-col items-center justify-center gap-0.5 rounded-xl border px-2 py-2 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-serene ${
               on
                 ? "border-transparent"
@@ -82,14 +80,12 @@ function Tabs({ tab, onTab, counts }) {
   );
 }
 
-/* Filtro de CATEGORÍA como desplegable (popover casero: estado + click-fuera +
-   Escape). El botón resume la selección; el panel lista las 15 categorías con
-   punto de color, nombre y contador, multi-selección (OR) con estado check y
-   enlace "Limpiar". Las categorías sin resultados en el contexto actual quedan
-   atenuadas/deshabilitadas. Las seleccionadas se muestran además como chips
-   removibles (superficie SÓLIDA del color con tinta Electric #001391 literal —
-   como superficie sólida el hex original funciona igual en ambos temas). */
-function CategoryFilter({ counts, selCats, onToggle, onClear }) {
+/* Filtro por CATEGORÍA OFICIAL como desplegable (popover casero: estado +
+   click-fuera + Escape). Las categorías del eje activo aparecen primero; las
+   del otro eje quedan atenuadas si no tienen resultados. Multi-selección (OR)
+   con chips removibles (superficie SÓLIDA del color con tinta Electric
+   #001391 literal — igual en ambos temas). */
+function CategoryFilter({ categorias, counts, selCats, onToggle, onClear }) {
   const acc = useAcc();
   const reduce = useReducedMotion();
   const [open, setOpen] = useState(false);
@@ -117,7 +113,7 @@ function CategoryFilter({ counts, selCats, onToggle, onClear }) {
   }, [open]);
 
   const n = selCats.length;
-  const selected = CATEGORIAS.filter((c) => selCats.includes(c.id));
+  const selected = categorias.filter((c) => selCats.includes(c.key));
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -150,14 +146,13 @@ function CategoryFilter({ counts, selCats, onToggle, onClear }) {
           {open && (
             <motion.div
               role="menu"
-              aria-label="Filtrar por categoría funcional"
+              aria-label="Filtrar por categoría oficial"
               initial={reduce ? false : { opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={reduce ? { opacity: 0 } : { opacity: 0, y: -4 }}
               transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
               /* Panel sólido Midnight literal (superficie sólida → igual en
-                 ambos temas). Ocupa el ancho de la cabecera → no desborda en
-                 móvil (390px); scroll propio si hace falta. */
+                 ambos temas). Scroll propio si hace falta. */
               className="absolute left-0 right-0 top-full z-30 mt-1.5 max-h-[52vh] overflow-y-auto overscroll-contain rounded-xl border border-white/15 p-1.5 shadow-2xl backdrop-blur-md"
               style={{ backgroundColor: "#070E46" }}
             >
@@ -175,25 +170,30 @@ function CategoryFilter({ counts, selCats, onToggle, onClear }) {
                   </button>
                 </div>
               )}
-              {CATEGORIAS.map((c) => {
-                const cn = counts[c.id] || 0;
-                const on = selCats.includes(c.id);
+              {categorias.map((c) => {
+                const cn = counts[c.key] || 0;
+                const on = selCats.includes(c.key);
                 const muted = !on && cn === 0;
                 return (
                   <button
-                    key={c.id}
+                    key={c.key}
                     type="button"
                     role="menuitemcheckbox"
                     aria-checked={on}
                     disabled={muted}
-                    onClick={() => onToggle(c.id)}
+                    onClick={() => onToggle(c.key)}
                     title={c.desc}
                     className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-serene ${
                       muted ? "cursor-default opacity-40" : "hover:bg-white/[0.07]"
                     }`}
                   >
                     <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
-                    <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-sand">{c.nombre}</span>
+                    <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-sand">
+                      {c.emoji} {c.nombre}
+                    </span>
+                    <span className="shrink-0 rounded bg-white/[0.07] px-1 text-[9px] font-bold uppercase text-sand/45">
+                      {c.eje === "ONLINE" ? "On" : "Batch"}
+                    </span>
                     <span className="shrink-0 text-[11px] font-bold tabular-nums text-sand/45">{cn}</span>
                     <span
                       aria-hidden
@@ -214,14 +214,14 @@ function CategoryFilter({ counts, selCats, onToggle, onClear }) {
         <div className="flex flex-wrap gap-1.5" aria-label="Categorías seleccionadas">
           {selected.map((c) => (
             <span
-              key={c.id}
+              key={c.key}
               className="inline-flex items-center gap-1 rounded-full py-1 pl-2.5 pr-1 text-[10.5px] font-bold"
               style={{ backgroundColor: c.color, color: "#001391" }}
             >
-              <span className="max-w-[130px] truncate">{c.nombre}</span>
+              <span className="max-w-[130px] truncate">{CAT_SHORT[c.key] || c.nombre}</span>
               <button
                 type="button"
-                onClick={() => onToggle(c.id)}
+                onClick={() => onToggle(c.key)}
                 aria-label={`Quitar filtro ${c.nombre}`}
                 className="grid h-4 w-4 place-items-center rounded-full leading-none transition hover:bg-black/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001391]"
                 style={{ color: "#001391" }}
@@ -236,13 +236,14 @@ function CategoryFilter({ counts, selCats, onToggle, onClear }) {
   );
 }
 
-function ItemRow({ it, tab, selected, active, onSelect }) {
+function ItemRow({ it, selected, active, onSelect }) {
   const acc = useAcc();
+  const badgeHex = it.badgeHex || ACCENT;
   return (
     <li role="option" aria-selected={selected}>
       <button
         type="button"
-        id={optionDomId(tab, it.id)}
+        id={optionDomId("proc", it.id)}
         data-rdr-item={String(it.id)}
         aria-current={selected ? "true" : undefined}
         onClick={() => onSelect(it.id)}
@@ -254,20 +255,16 @@ function ItemRow({ it, tab, selected, active, onSelect }) {
         <span
           aria-hidden
           className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border text-[10px] font-bold tabular-nums"
-          style={{ borderColor: rgba(it.badgeHex, 0.5), color: acc(it.badgeHex), backgroundColor: rgba(it.badgeHex, 0.07) }}
+          style={{ borderColor: rgba(badgeHex, 0.5), color: acc(badgeHex), backgroundColor: rgba(badgeHex, 0.07) }}
         >
           {it.badge}
         </span>
         <span className="min-w-0">
           <span className="block truncate text-[12px] font-semibold text-sand">{it.name}</span>
           {it.sub && <span className="block truncate text-[10.5px] text-sand/55">{it.sub}</span>}
-          {/* En la lista basta la categoría principal; "+N" si tiene más. */}
-          {it.cats && it.cats.length > 0 && (
+          {it.cat && (
             <span className="mt-1 flex items-center gap-1">
-              <CatPill id={it.cats[0]} />
-              {it.cats.length > 1 && (
-                <span className="shrink-0 text-[9px] font-bold tabular-nums text-sand/45">+{it.cats.length - 1}</span>
-              )}
+              <CatPill cat={it.cat} />
             </span>
           )}
         </span>
@@ -282,12 +279,15 @@ function ItemRow({ it, tab, selected, active, onSelect }) {
   );
 }
 
-export default function Sidebar({ tab, onTab, tabCounts, query, onQuery, items, selectedId, activeId, onSelect, searchRef, catCounts, selCats, onToggleCat, onClearCats }) {
+export default function Sidebar({
+  eje, onEje, ejeCounts, categorias, query, onQuery, items, cajonVisible, cajonCount,
+  selectedId, activeId, onSelect, searchRef, catCounts, selCats, onToggleCat, onClearCats,
+}) {
   return (
     <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-white/12 bg-white/[0.055] backdrop-blur-md">
       <div className="flex flex-col gap-3 border-b border-white/12 p-3">
         <label className="relative block">
-          <span className="sr-only">Buscar proceso, evento, JAR o workflow</span>
+          <span className="sr-only">Buscar proceso, cadena, evento, JAR o workflow</span>
           <span aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sand/40">
             <IconSearch />
           </span>
@@ -298,29 +298,64 @@ export default function Sidebar({ tab, onTab, tabCounts, query, onQuery, items, 
             aria-expanded={items.length > 0}
             aria-controls="rdr-explorer-list"
             aria-autocomplete="list"
-            aria-activedescendant={activeId != null ? optionDomId(tab, activeId) : undefined}
+            aria-activedescendant={activeId != null ? optionDomId("proc", activeId) : undefined}
             value={query}
             onChange={(e) => onQuery(e.target.value)}
-            placeholder="Buscar proceso, evento, JAR, workflow…"
+            placeholder="Buscar proceso, cadena, JAR, workflow…"
             autoComplete="off"
             className="w-full rounded-xl border border-white/12 bg-white/[0.04] py-2.5 pl-9 pr-3 text-xs text-sand placeholder:text-sand/40 focus:border-serene/60 focus:outline-none focus:ring-2 focus:ring-serene/25"
           />
         </label>
-        <Tabs tab={tab} onTab={onTab} counts={tabCounts} />
-        <CategoryFilter counts={catCounts || {}} selCats={selCats || []} onToggle={onToggleCat} onClear={onClearCats} />
+        <EjeTabs eje={eje} onEje={onEje} counts={ejeCounts} />
+        <CategoryFilter
+          categorias={categorias}
+          counts={catCounts || {}}
+          selCats={selCats || []}
+          onToggle={onToggleCat}
+          onClear={onClearCats}
+        />
         <p aria-live="polite" className="px-0.5 text-[10.5px] tabular-nums text-sand/50">
-          {items.length} {items.length === 1 ? "resultado" : "resultados"}
+          {items.length} {items.length === 1 ? "proceso" : "procesos"}
         </p>
       </div>
 
-      <div id="rdr-explorer-list" role="tabpanel" aria-labelledby={`rdr-tab-${tab}`} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        {items.length === 0 ? (
+      <div id="rdr-explorer-list" role="tabpanel" aria-labelledby={`rdr-tab-${eje}`} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        {items.length === 0 && !cajonVisible ? (
           <p className="px-4 py-8 text-center text-xs text-sand/55">Sin resultados para esta búsqueda.</p>
         ) : (
-          <ul role="listbox" aria-label="Resultados" className="divide-y divide-white/[0.05]">
+          <ul role="listbox" aria-label="Procesos" className="divide-y divide-white/[0.05]">
             {items.map((it) => (
-              <ItemRow key={it.id} it={it} tab={tab} selected={selectedId === it.id} active={activeId === it.id} onSelect={onSelect} />
+              <ItemRow key={it.id} it={it} selected={selectedId === it.id} active={activeId === it.id} onSelect={onSelect} />
             ))}
+            {cajonVisible && (
+              <li role="option" aria-selected={selectedId === CAJON_ID}>
+                <button
+                  type="button"
+                  id={optionDomId("proc", CAJON_ID)}
+                  data-rdr-item={CAJON_ID}
+                  aria-current={selectedId === CAJON_ID ? "true" : undefined}
+                  onClick={() => onSelect(CAJON_ID)}
+                  className={`grid w-full grid-cols-[34px,1fr,auto] items-center gap-x-2.5 border-l-2 px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-serene ${
+                    selectedId === CAJON_ID
+                      ? "border-[#FB7185] bg-white/[0.09]"
+                      : activeId === CAJON_ID
+                        ? "border-transparent bg-white/[0.05] ring-1 ring-inset ring-serene/50"
+                        : "border-transparent hover:bg-white/[0.06]"
+                  }`}
+                >
+                  <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#FB7185]/50 bg-[#FB7185]/[0.07] text-[13px]">
+                    🗃️
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[12px] font-semibold text-sand">Cajón desastre</span>
+                    <span className="block truncate text-[10.5px] text-sand/55">
+                      Eventos y colas sin proceso asignado
+                    </span>
+                  </span>
+                  <span className="text-[10px] font-bold tabular-nums text-sand/50">{cajonCount}</span>
+                </button>
+              </li>
+            )}
           </ul>
         )}
       </div>
