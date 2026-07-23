@@ -8,19 +8,15 @@
 //               duplicados dentro de la pseudo-cadena SIN_CADENA)
 // La publicación NO es un proceso viajable: es una acción del proceso. Lo
 // único que se dibuja de ella es su resultado — la(s) cola(s) destino en las
-// que acaba publicando la cadena (nodos "Publica en" al final del flujo).
+// La publicación no se dibuja en el mapa (es una acción del proceso, y su
+// resultado "Publica en <cola>" vive en la ficha del Process Explorer).
 //
 // Conexiones entre procesos (campos cruzados):
 //   1. Workflows compartidos: data.wfPublish[WORKFLOW_GS] = pasos (NOMBRE) que
 //      lo invocan → se resuelven a cadenas (índice NOMBRE→cadena) o a
 //      listeners (NOMBRE→índice online cuando el paso vive en SIN_CADENA).
-//   2. Cadena → colas de publicación: data.publishing[i].CALLERS contiene
-//      nombres de cadena (215/215 resuelven) → deriveQueues(publisher) da las
-//      colas destino, que cierran el flujo.
-//   3. Cola destino → listeners cuyo COLA_ESCUCHA coincide (con {env} como
-//      comodín de segmento) → se puede seguir viajando.
-//   4. Cola JMS de un listener → otros listeners que escuchan la misma cola.
-import { C, stepColor, splitWf, deriveQueues } from "../explorer/lib";
+//   2. Cola JMS de un listener → otros listeners que escuchan la misma cola.
+import { C, stepColor, splitWf } from "../explorer/lib";
 
 export const SIN_CADENA = "SIN_CADENA";
 
@@ -68,16 +64,7 @@ export function buildIndexes(data) {
       onlineByQueue.set(e.COLA_ESCUCHA, arr);
     }
   });
-  // Cadena → publishers que la listan como caller.
-  const publishersByCaller = new Map();
-  (data.publishing || []).forEach((p, i) =>
-    (p.CALLERS || []).forEach((c) => {
-      const arr = publishersByCaller.get(c) || [];
-      arr.push(i);
-      publishersByCaller.set(c, arr);
-    })
-  );
-  return { stepToChains, onlineByName, onlineByQueue, publishersByCaller };
+  return { stepToChains, onlineByName, onlineByQueue };
 }
 
 /* ── Resolución de destinos de viaje ───────────────────────────────────── */
@@ -315,34 +302,8 @@ function chainGraph(data, idx, name) {
     fanForStep({ nodes, edges, data, idx, current, ownerId: id, x, s });
   });
 
-  // La publicación es una acción del proceso, no un nodo viajable: lo que
-  // importa es EN QUÉ COLA acaba publicando. Se derivan las colas destino de
-  // los publishers de esta cadena y se dibujan como cierre del flujo.
-  const pubs = idx.publishersByCaller.get(name) || [];
-  const seenQ = new Set();
-  let qy = 0;
-  pubs.forEach((pi) => {
-    const p = data.publishing[pi];
-    deriveQueues(p).forEach((q) => {
-      if (!q.queue || q.queue === "(sin cola identificada)" || seenQ.has(q.queue)) return;
-      seenQ.add(q.queue);
-      const qid = `pubq${seenQ.size}`;
-      nodes.push(
-        node(qid, (steps.length + 1) * COL, qy * ROW, {
-          kind: "cola",
-          hex: C.mandarin,
-          title: q.queue,
-          badge: "Publica en",
-          sub: `${q.entity} → ${q.system}`,
-          follow: queueListeners(data, idx, q.queue, current),
-          payload: { cola: q.queue, colaInfo: q, pub: p },
-        })
-      );
-      edges.push(edge(prev, qid, "travel"));
-      qy += 1;
-    });
-  });
-
+  // La publicación NO se dibuja en el mapa: es una acción del proceso, y su
+  // resultado ("Publica en <cola>") vive en la ficha del Process Explorer.
   return { nodes, edges };
 }
 

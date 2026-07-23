@@ -119,6 +119,37 @@ export function PublishSteps({ p }) {
   );
 }
 
+/* Colas destino de una publicación, destacadas: "Publica en <cola>". Es la
+   información que más interesa de la publicación de un proceso. */
+export function PublicaEn({ queues }) {
+  const acc = useAcc();
+  if (!queues || !queues.length) return null;
+  return (
+    <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-3.5">
+      <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-sand/55">Publica en</p>
+      <ul className="space-y-2">
+        {queues.map((q, i) => (
+          <li key={i} className="flex items-start gap-2.5">
+            <span
+              aria-hidden
+              className="mt-0.5 shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide"
+              style={{ color: acc(C.lime), backgroundColor: rgba(C.lime, 0.12), border: `1px solid ${rgba(C.lime, 0.25)}` }}
+            >
+              Cola
+            </span>
+            <span className="min-w-0">
+              <span className="block break-all font-mono text-[12px] font-bold" style={{ color: acc(C.mandarin) }}>
+                {q.queue}
+              </span>
+              <span className="block text-[10.5px] text-sand/55">{q.entity} → {q.system}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 const IconChevron = (p) => (
   <svg width={p.size || 13} height={p.size || 13} viewBox="0 0 24 24" fill="none" stroke="currentColor"
     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -333,24 +364,32 @@ export function ProcesoDetail({ p, cat, data, dataIndex, clasifIndex, openSub, o
         <Section
           title="Publicación"
           count={publishRows.length}
-          hint="La publicación (PUBLISH/INITIALLOAD) es una acción de este proceso — más información del mismo, no una clasificación aparte."
+          hint="La publicación (PUBLISH/INITIALLOAD) es una acción de este proceso: acaba publicando su resultado en la(s) cola(s) destino."
         >
           <ul className="space-y-1.5">
-            {publishRows.map((pub) => (
-              <Fold
-                key={pub.WORKFLOW}
-                id={`p:${pub.WORKFLOW}`}
-                open={open === `p:${pub.WORKFLOW}`}
-                onToggle={toggle}
-                hex={C.lime}
-                badge="Publish"
-                title={pub.WORKFLOW}
-                sub={(pub.GROUP || "").split("/").slice(-2).join("/")}
-                right={pub.COUNT && pub.COUNT !== "0" ? `${pub.COUNT} ej.` : ""}
-              >
-                <PublishSteps p={pub} />
-              </Fold>
-            ))}
+            {publishRows.map((pub) => {
+              const queues = deriveQueues(pub).filter(
+                (q) => q.queue && q.queue !== "(sin cola identificada)"
+              );
+              return (
+                <Fold
+                  key={pub.WORKFLOW}
+                  id={`p:${pub.WORKFLOW}`}
+                  open={open === `p:${pub.WORKFLOW}`}
+                  onToggle={toggle}
+                  hex={C.lime}
+                  badge="Publish"
+                  title={pub.WORKFLOW}
+                  sub={queues.length
+                    ? `Publica en ${queues.map((q) => q.queue).join(", ")}`
+                    : (pub.GROUP || "").split("/").slice(-2).join("/")}
+                  right={pub.COUNT && pub.COUNT !== "0" ? `${pub.COUNT} ej.` : ""}
+                >
+                  {queues.length > 0 && <PublicaEn queues={queues} />}
+                  <PublishSteps p={pub} />
+                </Fold>
+              );
+            })}
           </ul>
         </Section>
       )}
