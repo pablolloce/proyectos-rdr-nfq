@@ -23,6 +23,10 @@
  *    en bloque y reescribimos en un único setValues.
  *  - editarComponentesBatch: nuevo endpoint para guardar N componentes en
  *    una sola petición.
+ *  - actualizarProbadoComponente: check "Probado" por componente (columna 10,
+ *    antes el campo muerto "listoImplantar"). Bloquea el cierre de la
+ *    preparación hasta que todos los componentes estén probados (validación
+ *    en cliente, como el resto del validador de preparación).
  *  - actualizarOKProyecto: si el cliente nos manda la fila, no rastreamos
  *    la hoja entera.
  *
@@ -196,6 +200,9 @@ function doPost(e) {
       case "actualizarMergeComponente":
         resultado = actualizarMergeComponente(ctx, payload.fila, payload.val);
         break;
+      case "actualizarProbadoComponente":
+        resultado = actualizarProbadoComponente(ctx, payload.fila, payload.val);
+        break;
       case "actualizarOrdenCompleto":
         resultado = actualizarOrdenCompleto(ctx, payload.fechaStr, payload.elementos);
         invalidarDashboard(payload.fechaStr);
@@ -366,6 +373,9 @@ function obtenerDatosDashboard(ctx, fechaRequerida) {
         nombre: c[1], tipo: c[2], subida: c[3], resp: c[4],
         codigo: c[5], us: c[6], release: c[7],
         mergeado: c[8] || false,
+        // Columna 10 (índice 9): "Probado". Antes era el campo muerto
+        // "listoImplantar"; se reutiliza como check de pruebas del componente.
+        probado: c[9] || false,
         comentarios: c[10] || ""
       });
     }
@@ -461,12 +471,13 @@ function agregarComponentesVacios(ctx, proy, cantidadStr, fechaStr) {
   // Asegurar que la hoja tiene la columna 12 ("Fecha del Pase") como cabecera.
   // Si no la tiene, la añadimos (migración suave; idempotente).
   asegurarColumnaFechaComponentes(sheet);
+  asegurarColumnaProbado(sheet);
 
   // Convertimos fecha string a Date para meterla en la columna 12.
   const d = fechaStr ? parsearFechaEs(fechaStr) : "";
   const rows = [];
   for (let i = 0; i < cantidad; i++) {
-    // Cols: nombreProy, nombre, tipo, subida, resp, codigo, us, release, mergeado, listoImplantar, comentarios, fechaPase
+    // Cols: nombreProy, nombre, tipo, subida, resp, codigo, us, release, mergeado, probado, comentarios, fechaPase
     rows.push([proy, "", "", "", "", "", "", false, false, false, "", d]);
   }
   sheet.getRange(sheet.getLastRow() + 1, 1, cantidad, 12).setValues(rows);
@@ -690,6 +701,22 @@ function eliminarProyecto(ctx, fechaStr, nombre) {
 function actualizarMergeComponente(ctx, fila, val) {
   ctx.sheet(CONSTANTES.HOJA_COMPONENTES).getRange(fila, 9).setValue(val);
   return "OK";
+}
+
+/* Check "Probado" de un componente (columna 10, antes "listoImplantar"). */
+function actualizarProbadoComponente(ctx, fila, val) {
+  const sheet = ctx.sheet(CONSTANTES.HOJA_COMPONENTES);
+  asegurarColumnaProbado(sheet);
+  sheet.getRange(fila, 10).setValue(!!val);
+  return "OK";
+}
+
+/* Migración suave: renombra la cabecera de la columna 10 a "Probado".
+   La columna ya existe (antes contenía el campo muerto "listoImplantar");
+   solo actualizamos el nombre para que la hoja sea autoexplicativa. Idempotente. */
+function asegurarColumnaProbado(sheet) {
+  const header = sheet.getRange(1, 10).getValue();
+  if (String(header).trim() !== "Probado") sheet.getRange(1, 10).setValue("Probado");
 }
 
 /* Reescritura completa del orden, optimizada:

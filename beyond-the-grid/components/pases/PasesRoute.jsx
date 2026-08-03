@@ -536,6 +536,22 @@ export default function PasesRoute() {
     [applyE, call, showToast]
   );
 
+  // Check "Probado" por componente (optimista, como chkMerge / updOkProy).
+  const chkProbado = useCallback(
+    async (fila, val) => {
+      let prev;
+      applyE((d) => d.proyectos.forEach((p) => p.componentes.forEach((c) => { if (c.fila === fila) { prev = c.probado; c.probado = val; } })));
+      try {
+        await call("actualizarProbadoComponente", { fila, val });
+        cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+      } catch (e) {
+        applyE((d) => d.proyectos.forEach((p) => p.componentes.forEach((c) => { if (c.fila === fila) c.probado = prev; })));
+        showToast("Error al guardar 'Probado' · " + e.message, "error");
+      }
+    },
+    [applyE, call, showToast]
+  );
+
   // Checks pre generales (debounce 400 ms, envía los 4 a la vez — como el legacy).
   const setCheckPre = useCallback(
     (id, patch) => {
@@ -695,7 +711,7 @@ export default function PasesRoute() {
       comenzarPase, responderEncuesta, cancelarSubida, activarEmergencia,
       addProyecto, delProyecto, addCompVacio, delComp, saveComp,
       updOkProy, programarSaveIdTraspaso, updCorreoAns, setCheckPre,
-      chkOrden, updSomEjecucion, chkMerge,
+      chkOrden, updSomEjecucion, chkMerge, chkProbado,
       validarYAvanzarPrep, validarYAvanzarPre, validarYCompletarImplantacion, validarYFinalizarPase,
     },
   };

@@ -16,6 +16,20 @@ export function computeValidador(E, cab, tempOrden) {
   const pOk = proyOk && !proyectos.some((p) => !isT(p.ok));
   const relOk = compOk && !proyectos.some((p) => p.componentes.some((c) => !isT(c.release)));
 
+  // ─── Todos los componentes marcados como "Probado" ───
+  let compTotal = 0;
+  let compProbados = 0;
+  proyectos.forEach((p) =>
+    (p.componentes || []).forEach((c) => {
+      compTotal++;
+      if (isT(c.probado)) compProbados++;
+    })
+  );
+  const probOk = compOk && compProbados === compTotal;
+  const probMsg = probOk
+    ? "Todos los componentes marcados como Probado"
+    : `Faltan componentes por probar (${compProbados}/${compTotal})`;
+
   // ─── ID Traspaso: todos los proyectos deben tener uno válido ───
   const proysSinIdT = proyectos
     .filter((p) => {
@@ -111,9 +125,11 @@ export function computeValidador(E, cab, tempOrden) {
         : "Falta ID de Traspaso en: " + proysSinIdT.join(", ")
     );
   if (compOk) it(relOk, "Todas las historias de usuario tienen el 'tech-kytl' informado");
+  if (compOk) it(probOk, probMsg);
   it(ruleRdrOk, rdrRuleMsg);
   it(seqOk, msgSeq);
 
-  const todoCorrecto = crqOk && instOk && proyOk && compOk && pOk && relOk && idTraspasoOk && ruleRdrOk && seqOk;
+  const todoCorrecto =
+    crqOk && instOk && proyOk && compOk && pOk && relOk && probOk && idTraspasoOk && ruleRdrOk && seqOk;
   return { items, todoCorrecto };
 }

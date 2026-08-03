@@ -115,7 +115,7 @@ export function dashHash(d) {
         p.fila,
         p.nombre,
         p.ok,
-        (p.componentes || []).map((c) => [c.fila, c.nombre, c.tipo, c.subida, c.resp, c.codigo, c.us, c.release, c.mergeado, c.comentarios]),
+        (p.componentes || []).map((c) => [c.fila, c.nombre, c.tipo, c.subida, c.resp, c.codigo, c.us, c.release, c.mergeado, c.probado, c.comentarios]),
       ]),
       o: (d.ordenPase || []).map((o) => [o.fila, o.orden, o.elemento, o.implantado, o.som]),
     });

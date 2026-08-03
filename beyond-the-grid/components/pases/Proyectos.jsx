@@ -85,7 +85,7 @@ function CompRow({ c, E }) {
 
   const cell = "min-w-0";
   return (
-    <div className="grid grid-cols-2 items-start gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-2.5 lg:grid-cols-[1.4fr_0.9fr_0.9fr_1fr_1.2fr_0.8fr_60px_1.2fr_72px] lg:rounded-none lg:border-0 lg:border-t lg:bg-transparent lg:p-0 lg:py-2">
+    <div className="grid grid-cols-2 items-start gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-2.5 lg:grid-cols-[1.4fr_0.9fr_0.9fr_1fr_1.2fr_0.8fr_60px_64px_1.2fr_72px] lg:rounded-none lg:border-0 lg:border-t lg:bg-transparent lg:p-0 lg:py-2">
       <div className={`${cell} col-span-2 lg:col-span-1`}>
         <span className={`${LABEL_CLS} lg:hidden`}>Componente</span>
         <AutoTextarea className={INPUT_CLS} placeholder="Nombre…" value={d.nom} onChange={(e) => upd({ nom: e.target.value })} />
@@ -138,6 +138,17 @@ function CompRow({ c, E }) {
       <div className="flex items-center gap-2 lg:justify-center lg:pt-2">
         <span className={`${LABEL_CLS} lg:hidden`}>tech-kytl</span>
         <input type="checkbox" className="h-4 w-4 accent-[#88E783]" checked={d.release} onChange={(e) => upd({ release: e.target.checked })} />
+      </div>
+      {/* Probado: acción optimista inmediata (no pasa por el draft/autosave). */}
+      <div className="flex items-center gap-2 lg:justify-center lg:pt-2">
+        <span className={`${LABEL_CLS} lg:hidden`}>Probado</span>
+        <input
+          type="checkbox"
+          className="h-4 w-4 accent-[#88E783]"
+          aria-label="Componente probado"
+          checked={isT(c.probado)}
+          onChange={(e) => actions.chkProbado(c.fila, e.target.checked)}
+        />
       </div>
       <div className={`${cell} col-span-2 lg:col-span-1`}>
         <span className={`${LABEL_CLS} lg:hidden`}>Comentarios</span>
@@ -203,10 +214,10 @@ function ProjectCard({ p, idx, E }) {
 
       {/* Tabla de componentes (cabecera solo desktop) */}
       <div className="overflow-x-auto">
-        <div className="min-w-0 lg:min-w-[980px]">
-          <div className="hidden grid-cols-[1.4fr_0.9fr_0.9fr_1fr_1.2fr_0.8fr_60px_1.2fr_72px] gap-2 pb-1.5 lg:grid">
-            {["Componente", "Tipo", "Subida", "Cód.", "Historias usuario", "Resp.", "tech-kytl", "Comentarios", ""].map((h, i) => (
-              <span key={i} className={`${LABEL_CLS} ${h === "tech-kytl" ? "text-center" : ""}`}>{h}</span>
+        <div className="min-w-0 lg:min-w-[1044px]">
+          <div className="hidden grid-cols-[1.4fr_0.9fr_0.9fr_1fr_1.2fr_0.8fr_60px_64px_1.2fr_72px] gap-2 pb-1.5 lg:grid">
+            {["Componente", "Tipo", "Subida", "Cód.", "Historias usuario", "Resp.", "tech-kytl", "Probado", "Comentarios", ""].map((h, i) => (
+              <span key={i} className={`${LABEL_CLS} ${h === "tech-kytl" || h === "Probado" ? "text-center" : ""}`}>{h}</span>
             ))}
           </div>
           <div className="space-y-2 lg:space-y-0 lg:divide-y lg:divide-white/[0.06]">
