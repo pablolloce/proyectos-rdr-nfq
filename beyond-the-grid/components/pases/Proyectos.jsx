@@ -24,9 +24,10 @@ const PROJECT_COLORS = [PALETTE.serene, PALETTE.lime, PALETTE.canary, PALETTE.ma
 
 const AUTOSAVE_MS = 1200;
 
-/* ── Banner de estado del pase (activo / cerrado) ── */
+/* ── Banner de estado del pase (activo / cerrado / edición puntual) ── */
 function StatusBanner() {
-  const { fase, isCompletado, actions } = usePases();
+  const { fase, isCompletado, edicion, setEdicion, actions } = usePases();
+  const [comentario, setComentario] = useState("");
   if (isCompletado) return null;
   if (fase === "FASE_2_3_PREPARACION")
     return (
@@ -35,13 +36,63 @@ function StatusBanner() {
         <button type="button" className={BTN.danger} onClick={actions.cancelarSubida}>Cancelar pase</button>
       </div>
     );
-  if (fase && (fase.includes("CERRADO") || fase.includes("IMPLANTACION") || fase.includes("POST")))
+  if (fase && (fase.includes("CERRADO") || fase.includes("IMPLANTACION") || fase.includes("POST"))) {
+    // Modo edición puntual: el pase sigue en su fase, pero proyectos y
+    // secuencia se desbloquean; al terminar se notifica al equipo por correo.
+    if (edicion)
+      return (
+        <div className="mb-4 space-y-3 rounded-xl border border-canary/50 bg-canary/10 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="text-sm font-bold text-canary">✏️ Modo edición · el pase sigue cerrado, recuerda notificar los cambios</span>
+            <button
+              type="button"
+              className={`${BTN.ghost} !px-3 !py-1.5 !text-xs`}
+              onClick={() => {
+                if (confirm("¿Salir de la edición SIN notificar al equipo? Si has cambiado algo, es mejor enviar el correo.")) setEdicion(false);
+              }}
+            >
+              Salir sin notificar
+            </button>
+          </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="min-w-[240px] flex-1">
+              <span className={`${LABEL_CLS} mb-1 block`}>¿Qué se ha modificado? (irá en el correo al equipo)</span>
+              <AutoTextarea
+                className={INPUT_CLS}
+                placeholder="Ej: añadido el componente X al paquete DP-KYTL-…"
+                value={comentario}
+                onChange={(e) => setComentario(e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className={BTN.success}
+              disabled={!comentario.trim()}
+              style={!comentario.trim() ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+              onClick={() => {
+                actions.notificarModificacion(comentario.trim());
+                setComentario("");
+              }}
+            >
+              Terminar edición · Notificar al equipo
+            </button>
+          </div>
+        </div>
+      );
     return (
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-mandarin/40 bg-mandarin/10 px-4 py-3">
         <span className="text-sm font-bold text-mandarin">Pase cerrado para edición</span>
-        <button type="button" className={BTN.warn} onClick={actions.activarEmergencia}>Editar emergencia</button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className={`${BTN.warn} !px-3 !py-2 !text-xs`} onClick={() => setEdicion(true)}>
+            ✏️ Editar pase (con aviso al equipo)
+          </button>
+          <button type="button" className={`${BTN.ghost} !px-3 !py-2 !text-xs`} onClick={actions.activarEmergencia}>
+            Reabrir emergencia
+          </button>
+        </div>
       </div>
     );
+  }
   return null;
 }
 
@@ -306,12 +357,29 @@ function ValidadorBox() {
 }
 
 export default function Proyectos() {
-  const { E, fase, isCompletado, proyectosLocked, validador, actions } = usePases();
+  const { E, fase, isCompletado, proyectosLocked, validador, actions, clip } = usePases();
   const lockCls = proyectosLocked ? "pointer-events-none select-none opacity-60 grayscale-[30%]" : "";
+  const hayProyectos = (E.proyectos || []).length > 0;
 
   return (
     <div className="space-y-4">
       <StatusBanner />
+
+      {/* Portapapeles de preparación: copia proyectos+componentes+orden de
+          este pase y pégalos en cualquier otro (localStorage compartido). */}
+      <div className="flex flex-wrap items-center gap-2 text-[11px] text-sand/50">
+        {hayProyectos && (
+          <button type="button" className={`${BTN.ghost} !px-3 !py-1.5 !text-xs`} onClick={actions.copiarPreparacion}>
+            📋 Copiar preparación
+          </button>
+        )}
+        {clip && !proyectosLocked && (
+          <button type="button" className={`${BTN.ghost} !px-3 !py-1.5 !text-xs`} onClick={actions.pegarPreparacion}>
+            📥 Pegar preparación del pase {clip.fecha} ({(clip.proyectos || []).length} proyectos)
+          </button>
+        )}
+      </div>
+
       <div className={`space-y-4 ${lockCls}`} aria-disabled={proyectosLocked || undefined}>
         {(E.proyectos || []).length === 0 && <Empty>Aún no hay proyectos en este pase.</Empty>}
         {(E.proyectos || []).map((p, idx) => <ProjectCard key={p.nombre} p={p} idx={idx} E={E} />)}

@@ -77,8 +77,9 @@ function OrdenItem({ el, idx, total, editable, ordenOps }) {
 }
 
 export default function Secuencia() {
-  const { E, fase, isCompletado, tempOrden, ordenOps, setActivePanel } = usePases();
-  const editable = fase === "FASE_2_3_PREPARACION" && !isCompletado;
+  const { E, fase, isCompletado, edicion, tempOrden, ordenOps, setActivePanel } = usePases();
+  // Editable en preparación o en el modo edición puntual (pase ya cerrado).
+  const editable = (fase === "FASE_2_3_PREPARACION" || edicion) && !isCompletado;
   const [manual, setManual] = useState("");
 
   // Cada Cod. una vez, etiquetado por su Tipo de Subida (como pintarSelectorCods).

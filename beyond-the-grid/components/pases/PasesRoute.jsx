@@ -171,6 +171,9 @@ export default function PasesRoute() {
   const [cab, setCab] = useState({ crq: "", liderar: "", aprender: "", instTecnica: false });
   const [drawerElemento, setDrawerElemento] = useState(null);
   const [validadorFlash, setValidadorFlash] = useState(0);
+  const [edicion, setEdicion] = useState(false); // edición puntual con el pase ya cerrado
+  const [resumenModal, setResumenModal] = useState(false); // revisión final al cerrar preparación
+  const [clip, setClip] = useState(null); // portapapeles de preparación (localStorage)
 
   const hashRef = useRef("");
   const abortRef = useRef(null);
@@ -365,7 +368,18 @@ export default function PasesRoute() {
   useEffect(() => {
     if (!fase) return;
     setActivePanel((FASE_CFG[fase] || { panel: "PROYECTOS" }).panel);
+    setEdicion(false); // el modo edición no sobrevive a cambios de fase/fecha
+    setResumenModal(false);
   }, [fase, E?.fechaSeleccionada]);
+
+  // Portapapeles de preparación (compartido entre pases vía localStorage).
+  const CLIP_KEY = "rdr_pases_clipboard_v1";
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CLIP_KEY);
+      if (raw) setClip(JSON.parse(raw));
+    } catch {}
+  }, []);
 
   /* ───────────── Acciones estructurales (esperan al backend) ───────────── */
   const procesarNuevoEstado = useCallback(
@@ -724,6 +738,66 @@ export default function PasesRoute() {
     [guardarOrdenLocal, tempOrden]
   );
 
+  // ── Copiar / pegar la preparación entre pases ──
+  const copiarPreparacion = useCallback(() => {
+    const d = ERef.current;
+    if (!d) return;
+    const datos = {
+      ts: Date.now(),
+      fecha: d.fechaSeleccionada,
+      proyectos: (d.proyectos || []).map((p) => ({
+        nombre: p.nombre,
+        feature: p.feature || "",
+        respBBVA: p.cliente || "",
+        componentes: (p.componentes || []).map((c) => ({
+          nom: c.nombre || "", tipo: c.tipo || "", subida: c.subida || "", resp: c.resp || "",
+          cod: c.codigo || "", us: c.us || "", release: isT(c.release), com: c.comentarios || "",
+        })),
+      })),
+      orden: (d.ordenPase || []).map((o) => ({ elemento: o.elemento, som: o.som || "" })),
+    };
+    try {
+      localStorage.setItem(CLIP_KEY, JSON.stringify(datos));
+      setClip(datos);
+      showToast(`Preparación copiada (${datos.proyectos.length} proyectos) · pégala en cualquier pase`, "success", 3200);
+    } catch (e) {
+      showToast("No se pudo copiar · " + e.message, "error");
+    }
+  }, [showToast]);
+
+  const pegarPreparacion = useCallback(() => {
+    if (!clip) return;
+    const n = (clip.proyectos || []).length;
+    if (!n) return showToast("El portapapeles de preparación está vacío", "error");
+    if (!confirm(`¿Pegar aquí la preparación copiada del pase ${clip.fecha} (${n} proyectos con sus componentes)? Se añadirán a los ya existentes.`)) return;
+    estructural(
+      "importarPreparacion",
+      { fechaStr: ERef.current.fechaSeleccionada, proyectos: clip.proyectos, orden: clip.orden || [] },
+      { loadingMsg: "Pegando preparación…", okMsg: "Preparación pegada" }
+    );
+  }, [clip, estructural, showToast]);
+
+  // ── Notificación de modificación (modo edición con el pase cerrado) ──
+  const notificarModificacion = useCallback(
+    async (comentario) => {
+      const t = showToast("Notificando al equipo…", "loading", 0);
+      try {
+        await call("notificarModificacion", {
+          fila: ERef.current.fila,
+          fechaStr: ERef.current.fechaSeleccionada,
+          comentario,
+        });
+        removeToast(t);
+        setEdicion(false);
+        showToast("Correo enviado · pase modificado", "success", 2500);
+      } catch (e) {
+        removeToast(t);
+        showToast("No se pudo notificar · " + e.message, "error");
+      }
+    },
+    [call, removeToast, showToast]
+  );
+
   // ── Validador + avances de fase ──
   const validador = useMemo(() => (E ? computeValidador(E, cab, tempOrden) : null), [E, cab, tempOrden]);
 
@@ -732,7 +806,18 @@ export default function PasesRoute() {
       setValidadorFlash((n) => n + 1);
       return showToast("Revisa el validador", "error", 3500);
     }
-    avanzar();
+    // Revisión final: el Resumen del pase en pop-up antes de cerrar de verdad.
+    setResumenModal(true);
+  };
+
+  // Confirmación del pop-up de Resumen → cierra la preparación sin más confirm.
+  const confirmarCierrePrep = () => {
+    setResumenModal(false);
+    estructural(
+      "avanzarFase",
+      { fila: ERef.current.fila, fechaStr: ERef.current.fechaSeleccionada, faseActual: ERef.current.faseActual },
+      { loadingMsg: "Cerrando preparación…", okMsg: "Preparación cerrada" }
+    );
   };
   const validarYAvanzarPre = () => {
     const cp = ERef.current.checksPre || {};
@@ -782,10 +867,14 @@ export default function PasesRoute() {
   const cfg = FASE_CFG[fase] || { panel: "PROYECTOS", tabs: [] };
   const enabledTabs = new Set(cfg.tabs);
   const isCompletado = fase === "COMPLETADO";
-  const proyectosLocked = fase !== "FASE_2_3_PREPARACION"; // bloque proyectos editable solo en preparación
+  // Proyectos editable en preparación, o en modo edición puntual (pase cerrado,
+  // nunca COMPLETADO); al salir de la edición se notifica al equipo por correo.
+  const edicionActiva = edicion && !isCompletado;
+  const proyectosLocked = fase !== "FASE_2_3_PREPARACION" && !edicionActiva;
 
   const ctx = {
     E, fase, isCompletado, proyectosLocked, isAdmin,
+    edicion: edicionActiva, setEdicion, clip,
     cab, setCab, scheduleCabSave,
     tempOrden, ordenOps,
     validador, validadorFlash,
@@ -799,6 +888,7 @@ export default function PasesRoute() {
       addProyecto, delProyecto, addCompVacio, delComp, saveComp,
       updOkProy, programarSaveIdTraspaso, updCorreoAns, setCheckPre,
       chkOrden, updSomEjecucion, chkMerge, chkProbado,
+      copiarPreparacion, pegarPreparacion, notificarModificacion,
       validarYAvanzarPrep, validarYAvanzarPre, validarYCompletarImplantacion, validarYFinalizarPase,
     },
   };
@@ -939,6 +1029,54 @@ export default function PasesRoute() {
         </div>
 
         <CmdDrawer elemento={drawerElemento} onClose={() => setDrawerElemento(null)} />
+
+        {/* Pop-up de revisión final: el Resumen del pase antes de cerrar la
+            preparación y avanzar a pre-implantación. */}
+        <AnimatePresence>
+          {resumenModal && (
+            <div className="fixed inset-0 z-[97] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Revisión final del pase">
+              <motion.button
+                type="button"
+                aria-label="Cancelar cierre"
+                onClick={() => setResumenModal(false)}
+                className="absolute inset-0 h-full w-full cursor-default bg-midnight/70 backdrop-blur-sm"
+                {...(reduce ? {} : { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } })}
+              />
+              <motion.div
+                className="relative flex max-h-[88dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-midnight shadow-2xl"
+                {...(reduce ? {} : { initial: { opacity: 0, y: 16, scale: 0.98 }, animate: { opacity: 1, y: 0, scale: 1 }, exit: { opacity: 0, y: 10, scale: 0.98 }, transition: { duration: 0.22, ease: [0.22, 1, 0.36, 1] } })}
+              >
+                <header className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-lime/80">Revisión final</p>
+                    <h3 className="mt-1 font-display text-lg font-bold text-sand">
+                      Comprueba el resumen antes de cerrar la preparación
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Cerrar (sin avanzar)"
+                    onClick={() => setResumenModal(false)}
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-sand/70 transition hover:bg-white/10 hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+                  >
+                    ✕
+                  </button>
+                </header>
+                <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                  <Resumen />
+                </div>
+                <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 px-5 py-4">
+                  <button type="button" className={BTN.ghost} onClick={() => setResumenModal(false)}>
+                    Volver a revisar
+                  </button>
+                  <button type="button" className={BTN.success} onClick={confirmarCierrePrep}>
+                    Todo correcto · Cerrar preparación y notificar
+                  </button>
+                </footer>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </main>
     </PasesCtx.Provider>
   );
