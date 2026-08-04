@@ -317,7 +317,17 @@ function pendientes_(s) {
     sinCodigo: s.componentes.filter(sinCodigo_),
     sinHistoria: s.componentes.filter(c => !c.us || !String(c.us).trim()),
     sinTechKytl: s.componentes.filter(c => !c.techKytl),
-    sinMergear: s.componentes.filter(c => String(c.codigo || "").toUpperCase().indexOf("DP-KYTL") !== -1 && !c.mergeado),
+    // Solo cuentan los componentes DP que forman parte de una unidad de mergeo
+    // (Workstation, ObjetosGS, javas, estáticos, dependientes). DataX, API,
+    // aperiódicos, directorios y cadenas NO se mergean (regla de la web).
+    sinMergear: s.componentes.filter(c => {
+      if (String(c.codigo || "").toUpperCase().indexOf("DP-KYTL") === -1 || c.mergeado) return false;
+      const sub = String(c.subida || "").toLowerCase();
+      const tipo = String(c.tipo || "").toLowerCase();
+      if (tipo === "cadena" || tipo.indexOf("director") === 0) return false;
+      if (sub === "nova" || sub === "datax" || sub.indexOf("aperiodic") === 0 || sub.indexOf("aperiódic") === 0) return false;
+      return true;
+    }),
     wsSinPaquete: s.componentes.filter(c => String(c.subida || "").toLowerCase().indexOf("workstation") !== -1 && sinCodigo_(c)),
     crqLleno: s.crq && String(s.crq).trim() !== "" && String(s.crq).trim() !== "CRQ…",
     checksFalta: (function () {

@@ -25,6 +25,7 @@ import {
   isT,
 } from "./backend";
 import { computeValidador } from "./validador";
+import { computeMergeUnits } from "./mergeos";
 import { rolDe } from "./roles";
 import { useAuth } from "@/components/chrome/AuthGate";
 import { ACCENT, BTN, CARD_CLS, Field, SELECT_CLS, INPUT_CLS } from "./ui";
@@ -595,6 +596,36 @@ export default function PasesRoute() {
     [applyE, call, showToast]
   );
 
+  // Mergeo por UNIDAD (Workstation, ObjetosGS, Estáticos…): marca de golpe el
+  // check de todas las filas de componente que respalda la unidad.
+  const chkMergeUnidad = useCallback(
+    async (filas, val) => {
+      const set = new Set(filas);
+      const prev = new Map();
+      applyE((d) =>
+        d.proyectos.forEach((p) =>
+          p.componentes.forEach((c) => {
+            if (set.has(c.fila)) { prev.set(c.fila, c.mergeado); c.mergeado = val; }
+          })
+        )
+      );
+      try {
+        for (const fila of filas) await call("actualizarMergeComponente", { fila, val });
+        cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+      } catch (e) {
+        applyE((d) =>
+          d.proyectos.forEach((p) =>
+            p.componentes.forEach((c) => {
+              if (prev.has(c.fila)) c.mergeado = prev.get(c.fila);
+            })
+          )
+        );
+        showToast("Error al guardar merge · " + e.message, "error");
+      }
+    },
+    [applyE, call, showToast]
+  );
+
   // Modo debug (solo admins): los correos del backend y de los avisos van al
   // buzón de pruebas en vez de al equipo. Persistido en el Apps Script.
   const setModoDebug = useCallback(
@@ -786,13 +817,11 @@ export default function PasesRoute() {
     avanzar();
   };
   const validarYFinalizarPase = () => {
-    let faltan = false;
-    ERef.current.proyectos.forEach((p) =>
-      p.componentes.forEach((c) => {
-        if ((c.codigo || "").toUpperCase().includes("DP-KYTL") && !isT(c.mergeado)) faltan = true;
-      })
-    );
-    if (faltan) return showToast("Faltan ramas DP-KYTL por mergear", "error", 4000);
+    // Validación por UNIDADES de mergeo (Workstation, ObjetosGS, javas…):
+    // lo excluido (DataX, API, aperiódicos, directorios, cadenas) no bloquea.
+    const pendientes = computeMergeUnits(ERef.current).filter((u) => !u.mergeado);
+    if (pendientes.length)
+      return showToast("Faltan mergeos: " + pendientes.map((u) => u.label.replace(/^Mergear( ·)? /, "")).join(", "), "error", 5000);
     avanzar();
   };
 
@@ -838,7 +867,7 @@ export default function PasesRoute() {
       comenzarPase, responderEncuesta, cancelarSubida, activarEmergencia,
       addProyecto, delProyecto, addCompVacio, delComp, saveComp,
       updOkProy, programarSaveIdTraspaso, updCorreoAns, setCheckPre,
-      chkOrden, updSomEjecucion, chkMerge, chkProbado,
+      chkOrden, updSomEjecucion, chkMerge, chkMergeUnidad, chkProbado,
       notificarModificacion,
       validarYAvanzarPrep, validarYAvanzarPre, validarYCompletarImplantacion, validarYFinalizarPase,
     },
