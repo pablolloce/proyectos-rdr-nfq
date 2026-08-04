@@ -1,13 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Reorder, useDragControls } from "framer-motion";
 import { usePases } from "./PasesRoute";
 import { etiquetaPasoPorCod } from "./comandos";
 import { BTN, BtnIcon, CARD_CLS, INPUT_CLS, SELECT_CLS, Empty, PanelTitle } from "./ui";
-import { IconUp, IconDown, IconTrash, IconPlus } from "./icons";
+import { IconUp, IconDown, IconTrash, IconPlus, IconGrip } from "./icons";
 
 /* Vista 2 · Orden del pase (secuencia). El builder solo aparece en
-   FASE_2_3_PREPARACION; después la lista queda de solo lectura. */
+   FASE_2_3_PREPARACION; después la lista queda de solo lectura.
+   Reordenación: arrastrando desde el asa (Reorder de framer-motion) o con
+   las flechas ↑/↓ (accesible por teclado). */
 
 const QUICK = [
   "PARADA DEL SISTEMA",
@@ -24,6 +27,54 @@ const isSys = (el) => {
   const u = el.toUpperCase();
   return u.includes("PARADA") || u.includes("ARRANQUE") || u.includes("REINICIO");
 };
+
+/* Fila de la secuencia, arrastrable desde el asa (dragListener={false} evita
+   que un drag accidental empiece desde el input SOM o los botones). */
+function OrdenItem({ el, idx, total, editable, ordenOps }) {
+  const controls = useDragControls();
+  return (
+    <Reorder.Item
+      value={el}
+      dragListener={false}
+      dragControls={controls}
+      whileDrag={{ scale: 1.02, boxShadow: "0 10px 28px rgba(0,0,0,0.4)" }}
+      className="relative flex flex-wrap items-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 sm:flex-nowrap [&[data-dragging=true]]:z-30"
+    >
+      {editable && (
+        <span
+          onPointerDown={(e) => { e.preventDefault(); controls.start(e); }}
+          title="Arrastra para reordenar"
+          aria-hidden
+          className="grid h-8 w-5 shrink-0 cursor-grab touch-none select-none place-items-center text-sand/35 transition-colors hover:text-sand/80 active:cursor-grabbing"
+        >
+          <IconGrip size={16} />
+        </span>
+      )}
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-lime/40 bg-lime/10 text-xs font-bold tabular-nums text-lime" aria-hidden>
+        {idx + 1}
+      </span>
+      <span className="min-w-0 flex-1 break-words text-[13px] font-semibold text-sand">{el.elemento}</span>
+      {isSys(el.elemento) && (
+        <input
+          type="text"
+          className={`${INPUT_CLS} !w-32 !py-1.5`}
+          placeholder="SOM-…"
+          aria-label={`SOM de ${el.elemento}`}
+          value={el.som || ""}
+          disabled={!editable}
+          onChange={(e) => ordenOps.updSom(idx, e.target.value)}
+        />
+      )}
+      {editable && (
+        <span className="flex shrink-0 gap-0.5">
+          <BtnIcon title="Subir" onClick={() => ordenOps.movePaso(idx, -1)} disabled={idx === 0}><IconUp size={15} /></BtnIcon>
+          <BtnIcon title="Bajar" onClick={() => ordenOps.movePaso(idx, 1)} disabled={idx === total - 1}><IconDown size={15} /></BtnIcon>
+          <BtnIcon title="Eliminar" danger onClick={() => ordenOps.removePaso(idx)}><IconTrash size={15} /></BtnIcon>
+        </span>
+      )}
+    </Reorder.Item>
+  );
+}
 
 export default function Secuencia() {
   const { E, fase, isCompletado, tempOrden, ordenOps, setActivePanel } = usePases();
@@ -94,34 +145,18 @@ export default function Secuencia() {
       {tempOrden.length === 0 ? (
         <Empty>El orden del pase está vacío.</Empty>
       ) : (
-        <ol className="space-y-2">
+        <Reorder.Group as="ol" axis="y" values={tempOrden} onReorder={ordenOps.reorder} className="space-y-2">
           {tempOrden.map((el, idx) => (
-            <li key={idx} className="flex flex-wrap items-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 sm:flex-nowrap">
-              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-lime/40 bg-lime/10 text-xs font-bold tabular-nums text-lime" aria-hidden>
-                {idx + 1}
-              </span>
-              <span className="min-w-0 flex-1 break-words text-[13px] font-semibold text-sand">{el.elemento}</span>
-              {isSys(el.elemento) && (
-                <input
-                  type="text"
-                  className={`${INPUT_CLS} !w-32 !py-1.5`}
-                  placeholder="SOM-…"
-                  aria-label={`SOM de ${el.elemento}`}
-                  value={el.som || ""}
-                  disabled={!editable}
-                  onChange={(e) => ordenOps.updSom(idx, e.target.value)}
-                />
-              )}
-              {editable && (
-                <span className="flex shrink-0 gap-0.5">
-                  <BtnIcon title="Subir" onClick={() => ordenOps.movePaso(idx, -1)} disabled={idx === 0}><IconUp size={15} /></BtnIcon>
-                  <BtnIcon title="Bajar" onClick={() => ordenOps.movePaso(idx, 1)} disabled={idx === tempOrden.length - 1}><IconDown size={15} /></BtnIcon>
-                  <BtnIcon title="Eliminar" danger onClick={() => ordenOps.removePaso(idx)}><IconTrash size={15} /></BtnIcon>
-                </span>
-              )}
-            </li>
+            <OrdenItem
+              key={el.uid ?? `${el.elemento}:${idx}`}
+              el={el}
+              idx={idx}
+              total={tempOrden.length}
+              editable={editable}
+              ordenOps={ordenOps}
+            />
           ))}
-        </ol>
+        </Reorder.Group>
       )}
 
       {editable && (

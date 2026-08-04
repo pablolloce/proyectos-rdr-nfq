@@ -144,6 +144,13 @@ export default function PasesRoute() {
   const cabTimer = useRef();
   const preTimer = useRef();
   const ordenTimer = useRef();
+  // Protección del orden local frente a revalidaciones SWR: mientras haya una
+  // edición sin guardar (dirty) o el guardado sea muy reciente (grace), una
+  // respuesta del servidor con el orden ANTIGUO no debe pisar tempOrden — era
+  // el bug de "reordeno y se vuelve hacia atrás".
+  const ordenDirtyRef = useRef(false);
+  const ordenGraceUntil = useRef(0);
+  const ordenUidSeq = useRef(0); // ids estables para drag & drop (keys de Reorder)
   const idTraspasoTimers = useRef(new Map());
   const draftsRef = useRef(new Map()); // fila → draft pendiente de autosave (beacon)
 
@@ -207,8 +214,13 @@ export default function PasesRoute() {
   const revalidar = useCallback(
     async (fecha) => {
       try {
-        const data = await call("obtenerDatosDashboard", { fecha }, { signal: abortRef.current?.signal });
+        let data = await call("obtenerDatosDashboard", { fecha }, { signal: abortRef.current?.signal });
         if (data && data.error) return;
+        // Si hay una edición del orden pendiente o recién guardada, la copia
+        // del servidor puede traer el orden viejo: conservamos el local.
+        if ((ordenDirtyRef.current || Date.now() < ordenGraceUntil.current) && ERef.current) {
+          data = { ...data, ordenPase: ERef.current.ordenPase };
+        }
         const h = dashHash(data);
         cacheSet(fecha, data);
         if (h !== hashRef.current) {
@@ -224,6 +236,12 @@ export default function PasesRoute() {
     async (fecha, force) => {
       if (abortRef.current) try { abortRef.current.abort(); } catch {}
       abortRef.current = new AbortController();
+
+      // Cambio de fecha / recarga explícita: el orden local deja de ser
+      // "protegido" (pertenece al pase anterior).
+      clearTimeout(ordenTimer.current);
+      ordenDirtyRef.current = false;
+      ordenGraceUntil.current = 0;
 
       const cached = !force && cacheGet(fecha);
       if (cached) {
@@ -296,12 +314,16 @@ export default function PasesRoute() {
   }, [E?.crq, E?.liderar, E?.aprender, E?.instTecnica, E?.fechaSeleccionada]);
 
   // Reconcilia tempOrden con el backend (primer render / cambio estructural).
+  // NUNCA mientras haya edición local pendiente o guardado reciente: es la
+  // otra mitad del arreglo del "orden que se vuelve hacia atrás".
   useEffect(() => {
     if (!E) return;
+    if (ordenDirtyRef.current || Date.now() < ordenGraceUntil.current) return;
     const backendOrden = (E.ordenPase || []).map((o) => ({ elemento: o.elemento, som: o.som || "" }));
     setTempOrden((prev) => {
       const same = prev.length === backendOrden.length && prev.every((t, i) => t.elemento === backendOrden[i].elemento);
-      return prev.length === 0 || !same ? backendOrden : prev;
+      // uid estable por item: clave de Reorder (drag & drop) — no usar índices.
+      return prev.length === 0 || !same ? backendOrden.map((o) => ({ ...o, uid: ++ordenUidSeq.current })) : prev;
     });
   }, [E]);
 
@@ -601,6 +623,7 @@ export default function PasesRoute() {
   // ── Orden del pase: manipulación local + autosave 700 ms ──
   const guardarOrdenLocal = useCallback(
     (next) => {
+      ordenDirtyRef.current = true; // protege tempOrden hasta confirmar el guardado
       setTempOrden(next);
       applyE((d) => {
         d.ordenPase = next.map((el, i) => ({ fila: i + 1, orden: i + 1, elemento: el.elemento, implantado: false, som: el.som }));
@@ -608,9 +631,16 @@ export default function PasesRoute() {
       clearTimeout(ordenTimer.current);
       ordenTimer.current = setTimeout(async () => {
         try {
-          await call("actualizarOrdenCompleto", { fechaStr: ERef.current.fechaSeleccionada, elementos: next });
+          // El uid es solo local (keys del drag & drop): no se envía al backend.
+          const elementos = next.map(({ elemento, som }) => ({ elemento, som }));
+          await call("actualizarOrdenCompleto", { fechaStr: ERef.current.fechaSeleccionada, elementos });
           cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+          // Guardado OK: ventana de gracia para ignorar revalidaciones que ya
+          // estaban en vuelo con el orden antiguo.
+          ordenDirtyRef.current = false;
+          ordenGraceUntil.current = Date.now() + 5000;
         } catch (e) {
+          // Guardado fallido: seguimos dirty → no se pierde el orden local.
           showToast("Error al guardar secuencia · " + e.message, "error");
         }
       }, 700);
@@ -620,7 +650,7 @@ export default function PasesRoute() {
 
   const ordenOps = useMemo(
     () => ({
-      addPaso: (str) => guardarOrdenLocal([...tempOrden, { elemento: str, som: "" }]),
+      addPaso: (str) => guardarOrdenLocal([...tempOrden, { elemento: str, som: "", uid: ++ordenUidSeq.current }]),
       removePaso: (idx) => guardarOrdenLocal(tempOrden.filter((_, i) => i !== idx)),
       movePaso: (idx, delta) => {
         const dst = idx + delta;
@@ -629,6 +659,8 @@ export default function PasesRoute() {
         [next[idx], next[dst]] = [next[dst], next[idx]];
         guardarOrdenLocal(next);
       },
+      // Drag & drop (Reorder.Group): recibe la lista ya reordenada.
+      reorder: (next) => guardarOrdenLocal(next),
       updSom: (idx, val) => {
         const next = tempOrden.map((o, i) => (i === idx ? { ...o, som: val } : o));
         guardarOrdenLocal(next);

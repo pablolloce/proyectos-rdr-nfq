@@ -41,3 +41,4 @@ export const IconLock = (p) => (<S {...p}><rect x="4" y="11" width="16" height="
 export const IconGitMerge = (p) => (<S {...p}><circle cx="18" cy="18" r="3" /><circle cx="6" cy="6" r="3" /><path d="M6 21V9a9 9 0 0 0 9 9" /></S>);
 export const IconClipboard = (p) => (<S {...p}><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="m9 14 2 2 4-4" /></S>);
 export const IconListOrdered = (p) => (<S {...p}><path d="M10 6h11M10 12h11M10 18h11" /><path d="M4 6h1v4M4 10h2" /><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" /></S>);
+export const IconGrip = (p) => (<S {...p} fill="currentColor"><circle cx="9" cy="5" r="1.2" /><circle cx="15" cy="5" r="1.2" /><circle cx="9" cy="12" r="1.2" /><circle cx="15" cy="12" r="1.2" /><circle cx="9" cy="19" r="1.2" /><circle cx="15" cy="19" r="1.2" /></S>);
