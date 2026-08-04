@@ -217,6 +217,47 @@ function CompRow({ c, E }) {
   );
 }
 
+/* ── Fila de componente en SOLO LECTURA (pase bloqueado) ──
+   Sin inputs: texto plano seleccionable para poder copiar con el ratón el
+   nombre, el código, las historias o el comentario de cualquier componente. */
+function CompRowLectura({ c }) {
+  const cell = "min-w-0 select-text";
+  const V = ({ mono, children }) =>
+    children ? (
+      <p className={`break-words text-[12.5px] leading-snug text-sand ${mono ? "font-mono text-[11.5px]" : ""}`}>{children}</p>
+    ) : (
+      <p aria-hidden className="text-[12.5px] text-sand/30">—</p>
+    );
+  const Chk = ({ on }) =>
+    on ? <IconCheck size={14} className="text-lime" aria-label="Sí" /> : <span aria-label="No" className="text-sand/30">—</span>;
+  return (
+    <div className="grid grid-cols-2 items-start gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-2.5 lg:grid-cols-[1.4fr_0.9fr_0.9fr_1fr_1.2fr_0.8fr_60px_64px_1.2fr_72px] lg:rounded-none lg:border-0 lg:border-t lg:bg-transparent lg:p-0 lg:py-2.5">
+      <div className={`${cell} col-span-2 lg:col-span-1`}>
+        <span className={`${LABEL_CLS} lg:hidden`}>Componente</span>
+        <V>{c.nombre}</V>
+      </div>
+      <div className={cell}><span className={`${LABEL_CLS} lg:hidden`}>Tipo</span><V>{c.tipo}</V></div>
+      <div className={cell}><span className={`${LABEL_CLS} lg:hidden`}>Subida</span><V>{c.subida}</V></div>
+      <div className={cell}><span className={`${LABEL_CLS} lg:hidden`}>Cód.</span><V mono>{c.codigo}</V></div>
+      <div className={cell}><span className={`${LABEL_CLS} lg:hidden`}>Historias usuario</span><V mono>{c.us}</V></div>
+      <div className={cell}><span className={`${LABEL_CLS} lg:hidden`}>Resp.</span><V>{(c.resp || "").split(" ")[0]}</V></div>
+      <div className="flex items-center gap-2 lg:justify-center">
+        <span className={`${LABEL_CLS} lg:hidden`}>tech-kytl</span>
+        <Chk on={isT(c.release)} />
+      </div>
+      <div className="flex items-center gap-2 lg:justify-center">
+        <span className={`${LABEL_CLS} lg:hidden`}>Probado</span>
+        <Chk on={isT(c.probado)} />
+      </div>
+      <div className={`${cell} col-span-2 lg:col-span-1`}>
+        <span className={`${LABEL_CLS} lg:hidden`}>Comentarios</span>
+        <V>{c.comentarios}</V>
+      </div>
+      <div aria-hidden />
+    </div>
+  );
+}
+
 /* ── Contenedor de un proyecto ── */
 function ProjectCard({ p, idx, E }) {
   const { actions, proyectosLocked } = usePases();
@@ -242,16 +283,20 @@ function ProjectCard({ p, idx, E }) {
           <span>Resp. BBVA: <strong className="text-sand">{p.cliente}</strong></span>
           <label className="flex items-center gap-1.5">
             <span className={LABEL_CLS}>ID Traspaso</span>
-            <input
-              type="text"
-              className={`${INPUT_CLS} !w-32 !py-1.5 ${idErr ? "!border-mandarin/70" : ""}`}
-              placeholder="YYYY-…"
-              value={idT}
-              title={idErr || undefined}
-              disabled={proyectosLocked}
-              onFocus={(e) => { if (!e.target.value.trim()) { const v = new Date().getFullYear() + "-"; setIdT(v); actions.programarSaveIdTraspaso(p.nombre, v); } }}
-              onChange={(e) => { setIdT(e.target.value); actions.programarSaveIdTraspaso(p.nombre, e.target.value); }}
-            />
+            {proyectosLocked ? (
+              // Bloqueado: texto seleccionable (los inputs disabled no dejan copiar bien).
+              <span className="select-text font-mono text-xs font-bold text-sand">{idT || "—"}</span>
+            ) : (
+              <input
+                type="text"
+                className={`${INPUT_CLS} !w-32 !py-1.5 ${idErr ? "!border-mandarin/70" : ""}`}
+                placeholder="YYYY-…"
+                value={idT}
+                title={idErr || undefined}
+                onFocus={(e) => { if (!e.target.value.trim()) { const v = new Date().getFullYear() + "-"; setIdT(v); actions.programarSaveIdTraspaso(p.nombre, v); } }}
+                onChange={(e) => { setIdT(e.target.value); actions.programarSaveIdTraspaso(p.nombre, e.target.value); }}
+              />
+            )}
           </label>
           <label className="flex cursor-pointer items-center gap-1.5 font-bold text-sand">
             <input type="checkbox" className="h-4 w-4 accent-[#88E783]" checked={isT(p.ok)} disabled={proyectosLocked} onChange={(e) => actions.updOkProy(p.nombre, e.target.checked)} />
@@ -272,7 +317,9 @@ function ProjectCard({ p, idx, E }) {
             ))}
           </div>
           <div className="space-y-2 lg:space-y-0 lg:divide-y lg:divide-white/[0.06]">
-            {(p.componentes || []).map((c) => <CompRow key={c.fila} c={c} E={E} />)}
+            {(p.componentes || []).map((c) =>
+              proyectosLocked ? <CompRowLectura key={c.fila} c={c} /> : <CompRow key={c.fila} c={c} E={E} />
+            )}
           </div>
         </div>
       </div>
@@ -357,30 +404,16 @@ function ValidadorBox() {
 }
 
 export default function Proyectos() {
-  const { E, fase, isCompletado, proyectosLocked, validador, actions, clip } = usePases();
-  const lockCls = proyectosLocked ? "pointer-events-none select-none opacity-60 grayscale-[30%]" : "";
-  const hayProyectos = (E.proyectos || []).length > 0;
+  const { E, fase, isCompletado, proyectosLocked, validador, actions } = usePases();
 
   return (
     <div className="space-y-4">
       <StatusBanner />
 
-      {/* Portapapeles de preparación: copia proyectos+componentes+orden de
-          este pase y pégalos en cualquier otro (localStorage compartido). */}
-      <div className="flex flex-wrap items-center gap-2 text-[11px] text-sand/50">
-        {hayProyectos && (
-          <button type="button" className={`${BTN.ghost} !px-3 !py-1.5 !text-xs`} onClick={actions.copiarPreparacion}>
-            📋 Copiar preparación
-          </button>
-        )}
-        {clip && !proyectosLocked && (
-          <button type="button" className={`${BTN.ghost} !px-3 !py-1.5 !text-xs`} onClick={actions.pegarPreparacion}>
-            📥 Pegar preparación del pase {clip.fecha} ({(clip.proyectos || []).length} proyectos)
-          </button>
-        )}
-      </div>
-
-      <div className={`space-y-4 ${lockCls}`} aria-disabled={proyectosLocked || undefined}>
+      {/* Con el pase bloqueado, las filas se pintan en SOLO LECTURA (texto
+          plano seleccionable): no se puede modificar nada, pero sí marcar
+          con el ratón y copiar componentes, códigos o comentarios. */}
+      <div className="space-y-4">
         {(E.proyectos || []).length === 0 && <Empty>Aún no hay proyectos en este pase.</Empty>}
         {(E.proyectos || []).map((p, idx) => <ProjectCard key={p.nombre} p={p} idx={idx} E={E} />)}
         {!proyectosLocked && <AddProyecto E={E} />}

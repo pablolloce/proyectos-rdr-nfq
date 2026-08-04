@@ -173,7 +173,6 @@ export default function PasesRoute() {
   const [validadorFlash, setValidadorFlash] = useState(0);
   const [edicion, setEdicion] = useState(false); // edición puntual con el pase ya cerrado
   const [resumenModal, setResumenModal] = useState(false); // revisión final al cerrar preparación
-  const [clip, setClip] = useState(null); // portapapeles de preparación (localStorage)
 
   const hashRef = useRef("");
   const abortRef = useRef(null);
@@ -371,15 +370,6 @@ export default function PasesRoute() {
     setEdicion(false); // el modo edición no sobrevive a cambios de fase/fecha
     setResumenModal(false);
   }, [fase, E?.fechaSeleccionada]);
-
-  // Portapapeles de preparación (compartido entre pases vía localStorage).
-  const CLIP_KEY = "rdr_pases_clipboard_v1";
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(CLIP_KEY);
-      if (raw) setClip(JSON.parse(raw));
-    } catch {}
-  }, []);
 
   /* ───────────── Acciones estructurales (esperan al backend) ───────────── */
   const procesarNuevoEstado = useCallback(
@@ -738,45 +728,6 @@ export default function PasesRoute() {
     [guardarOrdenLocal, tempOrden]
   );
 
-  // ── Copiar / pegar la preparación entre pases ──
-  const copiarPreparacion = useCallback(() => {
-    const d = ERef.current;
-    if (!d) return;
-    const datos = {
-      ts: Date.now(),
-      fecha: d.fechaSeleccionada,
-      proyectos: (d.proyectos || []).map((p) => ({
-        nombre: p.nombre,
-        feature: p.feature || "",
-        respBBVA: p.cliente || "",
-        componentes: (p.componentes || []).map((c) => ({
-          nom: c.nombre || "", tipo: c.tipo || "", subida: c.subida || "", resp: c.resp || "",
-          cod: c.codigo || "", us: c.us || "", release: isT(c.release), com: c.comentarios || "",
-        })),
-      })),
-      orden: (d.ordenPase || []).map((o) => ({ elemento: o.elemento, som: o.som || "" })),
-    };
-    try {
-      localStorage.setItem(CLIP_KEY, JSON.stringify(datos));
-      setClip(datos);
-      showToast(`Preparación copiada (${datos.proyectos.length} proyectos) · pégala en cualquier pase`, "success", 3200);
-    } catch (e) {
-      showToast("No se pudo copiar · " + e.message, "error");
-    }
-  }, [showToast]);
-
-  const pegarPreparacion = useCallback(() => {
-    if (!clip) return;
-    const n = (clip.proyectos || []).length;
-    if (!n) return showToast("El portapapeles de preparación está vacío", "error");
-    if (!confirm(`¿Pegar aquí la preparación copiada del pase ${clip.fecha} (${n} proyectos con sus componentes)? Se añadirán a los ya existentes.`)) return;
-    estructural(
-      "importarPreparacion",
-      { fechaStr: ERef.current.fechaSeleccionada, proyectos: clip.proyectos, orden: clip.orden || [] },
-      { loadingMsg: "Pegando preparación…", okMsg: "Preparación pegada" }
-    );
-  }, [clip, estructural, showToast]);
-
   // ── Notificación de modificación (modo edición con el pase cerrado) ──
   const notificarModificacion = useCallback(
     async (comentario) => {
@@ -874,7 +825,7 @@ export default function PasesRoute() {
 
   const ctx = {
     E, fase, isCompletado, proyectosLocked, isAdmin,
-    edicion: edicionActiva, setEdicion, clip,
+    edicion: edicionActiva, setEdicion,
     cab, setCab, scheduleCabSave,
     tempOrden, ordenOps,
     validador, validadorFlash,
@@ -888,7 +839,7 @@ export default function PasesRoute() {
       addProyecto, delProyecto, addCompVacio, delComp, saveComp,
       updOkProy, programarSaveIdTraspaso, updCorreoAns, setCheckPre,
       chkOrden, updSomEjecucion, chkMerge, chkProbado,
-      copiarPreparacion, pegarPreparacion, notificarModificacion,
+      notificarModificacion,
       validarYAvanzarPrep, validarYAvanzarPre, validarYCompletarImplantacion, validarYFinalizarPase,
     },
   };

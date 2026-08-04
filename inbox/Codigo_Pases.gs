@@ -185,11 +185,6 @@ function doPost(e) {
         invalidarDashboard(payload.fechaStr);
         resultado = obtenerDatosDashboard(ctx, payload.fechaStr);
         break;
-      case "importarPreparacion":
-        importarPreparacion(ctx, payload.fechaStr, payload.proyectos || [], payload.orden || []);
-        invalidarDashboard(payload.fechaStr);
-        resultado = obtenerDatosDashboard(ctx, payload.fechaStr);
-        break;
       case "notificarModificacion":
         resultado = notificarModificacion(ctx, payload.fila, payload.fechaStr, payload.comentario);
         break;
@@ -482,62 +477,6 @@ function guardarNuevoProyecto(ctx, fechaStr, nombre, feature, respBBVA) {
   // Cols: fecha, nombre, feature, cliente, ok, idTraspaso, correoAns
   sheet.getRange(sheet.getLastRow() + 1, 1, 1, 7).setValues([[d, nombre, feature, respBBVA, false, "", false]]);
   ctx.invalidar(CONSTANTES.HOJA_PROYECTOS);
-  return "OK";
-}
-
-/* ── Copiar/pegar preparación entre pases ──
-   Pega en `fechaStr` los proyectos + componentes (y el orden, si el pase de
-   destino aún no tiene) copiados de otro pase desde la web. Los proyectos
-   cuyo nombre ya exista en esta fecha se añaden con sufijo " (copia)". */
-function importarPreparacion(ctx, fechaStr, proyectos, orden) {
-  const d = parsearFechaEs(fechaStr);
-  const hProy = ctx.sheet(CONSTANTES.HOJA_PROYECTOS);
-  asegurarColumnasProyectos(hProy);
-  const hComp = ctx.sheet(CONSTANTES.HOJA_COMPONENTES);
-  asegurarColumnaFechaComponentes(hComp);
-  asegurarColumnaProbado(hComp);
-
-  // Nombres ya usados en esta fecha (para el sufijo " (copia)").
-  const dataProy = ctx.data(CONSTANTES.HOJA_PROYECTOS);
-  const existentes = {};
-  for (let i = 1; i < dataProy.length; i++) {
-    if (formatearFechaSegura(dataProy[i][0]) === fechaStr) existentes[dataProy[i][1]] = true;
-  }
-
-  const filasProy = [];
-  const filasComp = [];
-  (proyectos || []).forEach(p => {
-    let nombre = String(p.nombre || "").trim();
-    if (!nombre) return;
-    while (existentes[nombre]) nombre = nombre + " (copia)";
-    existentes[nombre] = true;
-    // Cols: fecha, nombre, feature, cliente, ok, idTraspaso, correoAns
-    filasProy.push([d, nombre, p.feature || "", p.respBBVA || "", false, "", false]);
-    (p.componentes || []).forEach(c => {
-      // Cols: nombreProy, nombre, tipo, subida, resp, codigo, us, release, mergeado, probado, comentarios, fechaPase
-      filasComp.push([nombre, c.nom || "", c.tipo || "", c.subida || "", c.resp || "",
-        c.cod || "", c.us || "", !!c.release, false, false, c.com || "", d]);
-    });
-  });
-  if (filasProy.length) hProy.getRange(hProy.getLastRow() + 1, 1, filasProy.length, 7).setValues(filasProy);
-  if (filasComp.length) hComp.getRange(hComp.getLastRow() + 1, 1, filasComp.length, 12).setValues(filasComp);
-  ctx.invalidar(CONSTANTES.HOJA_PROYECTOS);
-  ctx.invalidar(CONSTANTES.HOJA_COMPONENTES);
-
-  // El orden solo se pega si el pase de destino no tiene uno ya diseñado.
-  if (orden && orden.length) {
-    const dataOrden = ctx.data(CONSTANTES.HOJA_ORDEN);
-    let tiene = false;
-    for (let i = 1; i < dataOrden.length; i++) {
-      if (formatearFechaSegura(dataOrden[i][0]) === fechaStr) { tiene = true; break; }
-    }
-    if (!tiene) {
-      const hOrden = ctx.sheet(CONSTANTES.HOJA_ORDEN);
-      const filasOrden = orden.map((el, i) => [d, i + 1, el.elemento || "", false, el.som || ""]);
-      hOrden.getRange(hOrden.getLastRow() + 1, 1, filasOrden.length, 5).setValues(filasOrden);
-      ctx.invalidar(CONSTANTES.HOJA_ORDEN);
-    }
-  }
   return "OK";
 }
 
