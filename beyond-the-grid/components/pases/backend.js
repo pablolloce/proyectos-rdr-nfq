@@ -110,6 +110,7 @@ export function dashHash(d) {
       lid: d.liderar,
       apr: d.aprender,
       it: d.instTecnica,
+      md: d.modoDebug,
       cp: d.checksPre,
       p: (d.proyectos || []).map((p) => [
         p.fila,

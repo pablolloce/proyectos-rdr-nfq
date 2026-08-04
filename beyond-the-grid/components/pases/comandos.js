@@ -88,6 +88,10 @@ export const COMANDOS = {
     titulo: "Link JIRA ARQDAT",
     pasos: [{ txt: "", desc: "Abrir el JIRA para verificar el estado", esLink: true }],
   },
+  NOVA: {
+    titulo: "Plan NOVA",
+    pasos: [{ txt: "", desc: "Abrir el dashboard de NOVA y comprobar que el plan del despliegue está instalado en PRO", esLink: true }],
+  },
   // ─── Pasos del sistema (no dependen del componente) ───
   PARADA: {
     titulo: "PARADA DEL SISTEMA",
@@ -256,10 +260,11 @@ function resolverPlaceholders(bloque, vars) {
 }
 
 /* "Instalar Componente: DP-KYTL-1234" → ["DP-KYTL-1234"]
-   "DP-KYTL-A y DP-KYTL-B"             → ["DP-KYTL-A", "DP-KYTL-B"] */
+   "DP-KYTL-A y DP-KYTL-B"             → ["DP-KYTL-A", "DP-KYTL-B"]
+   "Instalar API (NOVA): /todotasks/56781926" → ["/todotasks/56781926"] */
 export function extraerCodigosDeElemento(elemento) {
   if (!elemento) return [];
-  const re = /(?:DP-KYTL-|SS-|ARQDAT-|REQ-)[A-Z0-9_-]+/gi;
+  const re = /(?:DP-KYTL-|SS-|ARQDAT-|REQ-)[A-Z0-9_-]+|\/todotasks\/[A-Z0-9_-]+/gi;
   return (elemento.match(re) || []).map((s) => s.trim());
 }
 
@@ -279,6 +284,7 @@ function etiquetaPorSubida(subidaLower, cod) {
   const s = subidaLower || "";
   if (s === "java") return "Instalar Javas: " + cod;
   if (s === "workstation") return "Instalar Workstation: " + cod;
+  if (s === "nova") return "Instalar API (NOVA): " + cod;
   if (s.startsWith("paquete")) return "Instalar Paquete Custom: " + cod;
   if (s.startsWith("aperiódico") || s.startsWith("aperiodico")) return "Aperiódico: " + cod;
   if (s === "bbdd") return "Modificación modelo BBDD: " + cod;
@@ -298,6 +304,7 @@ export function etiquetaPasoPorCod(E, cod) {
     if (u.startsWith("REQ-")) return "REMEDY: " + cod;
     if (u.startsWith("SS-")) return "Aperiódico: " + cod;
     if (u.startsWith("ARQDAT-")) return "Modificación modelo BBDD: " + cod;
+    if (u.startsWith("/TODOTASKS/")) return "Instalar API (NOVA): " + cod;
     return "Instalar Componente: " + cod;
   }
   const subida = (comps[0].subida || "").toLowerCase();
@@ -344,12 +351,20 @@ export function resolverBloquesComandos(elemento, E, tpls = {}) {
   });
 
   const bloques = [];
+  const emitidosUnaVez = new Set(); // bloques independientes del componente: solo 1 vez por drawer
   codigos.forEach((cod) => {
     // 1. Bloque de link según prefijo del Cod. (REQ- no tiene link asociado).
     const codUp = cod.toUpperCase();
     if (codUp.startsWith("DP-KYTL-")) bloques.push(resolverPlaceholders(conTpl(COMANDOS.DP_KYTL, tpls.enoa), { COD: cod }));
     else if (codUp.startsWith("SS-")) bloques.push(resolverPlaceholders(conTpl(COMANDOS.SS, tpls.jira), { COD: cod }));
     else if (codUp.startsWith("ARQDAT-")) bloques.push(resolverPlaceholders(conTpl(COMANDOS.ARQDAT, tpls.jira), { COD: cod }));
+    else if (codUp.startsWith("/TODOTASKS/")) {
+      // API con subida NOVA: comprobar en el dashboard de NOVA que el plan
+      // /todotasks/XXXX (informado en preparación) está instalado en PRO.
+      const id = cod.split("/").filter(Boolean).pop() || "";
+      const url = String(tpls.nova || "").replace(/\{ID\}/g, id);
+      if (url) bloques.push({ ...COMANDOS.NOVA, pasos: COMANDOS.NOVA.pasos.map((p) => ({ ...p, txt: url })) });
+    }
 
     // 2. Componentes que comparten este Cod. (paquete agrupado).
     const comps = buscarComponentesPorCod(E, cod);
@@ -369,6 +384,16 @@ export function resolverBloquesComandos(elemento, E, tpls = {}) {
     Object.keys(porBloque).forEach((bk) => {
       const plantilla = COMANDOS[bk];
       if (!plantilla) return;
+      // Bloques cuyos comandos NO dependen del componente (sin {NOMBRE}),
+      // como WORKSTATION (tail -f Workstation.log): se muestran UNA sola vez
+      // por drawer, aunque el paquete tenga varios componentes.
+      const dependeDelComponente = plantilla.pasos.some((p) => String(p.txt || "").includes("{NOMBRE}"));
+      if (!dependeDelComponente) {
+        if (emitidosUnaVez.has(bk)) return;
+        emitidosUnaVez.add(bk);
+        bloques.push(resolverPlaceholders(plantilla, { COD: cod }));
+        return;
+      }
       const lista = porBloque[bk];
       if (lista.length === 1) {
         bloques.push(resolverPlaceholders(plantilla, { NOMBRE: lista[0].nombre || "", COD: cod }));

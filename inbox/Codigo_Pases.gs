@@ -42,7 +42,7 @@
  */
 
 const CONSTANTES = {
-  MODO_DEBUG: false,
+  MODO_DEBUG: false, // fallback si ScriptProperties no está disponible — ver getModoDebug()
   BUZON_PRUEBAS_DEBUG: "pablo.llorentec.contractor@bbva.com",
   BUZON_DESARROLLOS: "desarrollos.nfq.rdr.group@bbva.com",
   HOJA_PASES:        "Pases_Calendados",
@@ -53,6 +53,24 @@ const CONSTANTES = {
   HOJA_ORDEN:        "Orden_Ejecucion",
   HOJA_CLIENTES:     "Clientes BBVA",
 };
+
+/* ── Modo debug conmutable desde la web (solo admins) ──
+   Con el modo debug activo, TODOS los correos (estados de fase y avisos
+   programados de Avisos_Pases.gs) van al buzón de pruebas en vez de al
+   equipo, con asunto [TEST]. Persistido en ScriptProperties para que lo
+   compartan ambos scripts y sobreviva a los redespliegues. */
+function getModoDebug() {
+  try {
+    const v = PropertiesService.getScriptProperties().getProperty("MODO_DEBUG");
+    if (v !== null) return v === "1";
+  } catch (_) {}
+  return CONSTANTES.MODO_DEBUG;
+}
+
+function setModoDebug(val) {
+  PropertiesService.getScriptProperties().setProperty("MODO_DEBUG", val ? "1" : "0");
+  return "OK";
+}
 
 /* ─────────────────────────────────────────────────────────
    Utilidades
@@ -202,6 +220,10 @@ function doPost(e) {
         break;
       case "actualizarProbadoComponente":
         resultado = actualizarProbadoComponente(ctx, payload.fila, payload.val);
+        break;
+      case "setModoDebug":
+        resultado = setModoDebug(!!payload.val);
+        if (payload.fechaStr) invalidarDashboard(payload.fechaStr);
         break;
       case "actualizarOrdenCompleto":
         resultado = actualizarOrdenCompleto(ctx, payload.fechaStr, payload.elementos);
@@ -429,6 +451,7 @@ function obtenerDatosDashboard(ctx, fechaRequerida) {
       equipo, clientes, tiposComp, tiposSubida, schemaPorSubida, listadoRules,
       proyectos: proyectosList,
       ordenPase: orden,
+      modoDebug: getModoDebug(),
     };
 
     // Cacheamos el resultado del dashboard 60 s
@@ -906,10 +929,18 @@ function avanzarFase(ctx, fila, fechaStr, faseActual) {
     };
     const cfg = configs[nuevaFase];
     if (cfg) {
+      // Al cerrar la preparación, el correo incluye el resumen de paquetes en
+      // orden con los componentes de cada uno (misma info que la pestaña
+      // "Resumen" de la web) para la comprobación final del equipo.
+      let extraHtml = "";
+      if (nuevaFase === "FASE_4_CERRADO") {
+        try { extraHtml = construirResumenPaquetesHtml(ctx, fechaStr); } catch (_) {}
+      }
       const html = htmlCorreoEstado({
         tono: cfg.tono,
         titulo: cfg.titulo,
         parrafos: cfg.parrafos,
+        extraHtml: extraHtml,
         fechaPase: fechaStr,
       });
       enviarCorreoSeguro(ctx, cfg.prefijo + " " + cfg.titulo, html, fechaStr, fila, false);
@@ -985,10 +1016,89 @@ function htmlCorreoEstado(opts) {
         '<h2 style="margin: 0 0 10px; font-size: 18px; color: ' + EMAIL_COLORS.electric + ';">' + opts.titulo + '</h2>' +
         parrafosHtml +
       '</div>' +
+      (opts.extraHtml || '') +
       '<p style="margin: 14px 0 0; font-size: 11px; color: ' + EMAIL_COLORS.gray + ';">' +
         'Pase ' + opts.fechaPase + ' · Notificación automática del RDR Hub.' +
       '</p>' +
     '</div>';
+}
+
+/* ── Resumen de paquetes del pase (correo de cierre de preparación) ──
+   Recorre el orden de ejecución y, para cada paso con código (paquete),
+   lista sus componentes con su tipo de subida, para que el equipo compruebe
+   que todo está listo antes de la implantación. */
+const RE_CODIGOS_PASO = /(?:DP-KYTL-|SS-|ARQDAT-|REQ-)[A-Z0-9_-]+|\/todotasks\/[A-Z0-9_-]+/gi;
+
+function construirResumenPaquetesHtml(ctx, fechaStr) {
+  // Orden de ejecución de esta fecha.
+  const allOrden = ctx.data(CONSTANTES.HOJA_ORDEN);
+  const orden = [];
+  for (let i = 1; i < allOrden.length; i++) {
+    if (formatearFechaSegura(allOrden[i][0]) === fechaStr) orden.push(String(allOrden[i][2] || ""));
+  }
+
+  // Componentes de esta fecha, indexados por código.
+  const allProys = ctx.data(CONSTANTES.HOJA_PROYECTOS);
+  const nombresProy = {};
+  for (let i = 1; i < allProys.length; i++) {
+    if (formatearFechaSegura(allProys[i][0]) === fechaStr) nombresProy[allProys[i][1]] = true;
+  }
+  const allComps = ctx.data(CONSTANTES.HOJA_COMPONENTES);
+  const porCodigo = {};
+  const sinColocar = [];
+  const codigosEnOrden = {};
+  orden.forEach(el => (String(el).match(RE_CODIGOS_PASO) || []).forEach(c => { codigosEnOrden[c.toUpperCase()] = true; }));
+  for (let i = 1; i < allComps.length; i++) {
+    const c = allComps[i];
+    if (!c[0]) continue;
+    const fechaComp = c[11] ? formatearFechaSegura(c[11]) : "";
+    if (fechaComp ? fechaComp !== fechaStr : !nombresProy[c[0]]) continue;
+    const comp = { proyecto: c[0], nombre: c[1] || "(sin nombre)", tipo: c[2] || "—", subida: c[3] || "—", resp: c[4] || "—", codigo: String(c[5] || "").trim() };
+    const codUp = comp.codigo.toUpperCase();
+    if (!comp.codigo || comp.codigo === "-") { sinColocar.push(comp); continue; }
+    (porCodigo[codUp] = porCodigo[codUp] || []).push(comp);
+    if (!codigosEnOrden[codUp]) sinColocar.push(comp);
+  }
+
+  const celda = 'padding:6px 10px;border-bottom:1px solid #E2E6EA;font-size:13px;color:' + EMAIL_COLORS.midnight + ';';
+  const cab = 'padding:7px 10px;background:' + EMAIL_COLORS.electric + ';color:#fff;font-size:12px;text-align:left;';
+
+  let html = '<div style="margin-top:16px;">' +
+    '<h3 style="margin:0 0 8px;font-size:15px;color:' + EMAIL_COLORS.electric + ';">Resumen del pase · paquetes en orden de ejecución</h3>';
+
+  if (!orden.length) {
+    html += '<p style="font-size:13px;color:' + EMAIL_COLORS.gray + ';">No hay orden de ejecución definido.</p></div>';
+    return html;
+  }
+
+  html += '<table style="width:100%;border-collapse:collapse;border:1px solid #E2E6EA;">' +
+    '<tr><th style="' + cab + '">#</th><th style="' + cab + '">Paso</th><th style="' + cab + '">Subida</th><th style="' + cab + '">Componentes</th></tr>';
+  orden.forEach((el, i) => {
+    const cods = String(el).match(RE_CODIGOS_PASO) || [];
+    let comps = [];
+    cods.forEach(cod => { comps = comps.concat(porCodigo[cod.toUpperCase()] || []); });
+    const subidas = {};
+    comps.forEach(c => { subidas[c.subida] = true; });
+    const subidaTxt = cods.length ? (Object.keys(subidas).join(", ") || "—") : "Sistema";
+    const compsTxt = comps.length
+      ? comps.map(c => '· ' + c.nombre + ' <span style="color:' + EMAIL_COLORS.gray + ';">(' + c.tipo + ' · ' + c.proyecto + ')</span>').join('<br>')
+      : (cods.length ? '<span style="color:' + EMAIL_COLORS.red + ';">sin componentes asociados</span>' : '—');
+    html += '<tr>' +
+      '<td style="' + celda + 'white-space:nowrap;">' + (i + 1) + '</td>' +
+      '<td style="' + celda + '">' + el + '</td>' +
+      '<td style="' + celda + 'white-space:nowrap;">' + subidaTxt + '</td>' +
+      '<td style="' + celda + '">' + compsTxt + '</td>' +
+    '</tr>';
+  });
+  html += '</table>';
+
+  if (sinColocar.length) {
+    html += '<p style="margin:10px 0 4px;font-size:13px;color:' + EMAIL_COLORS.red + ';font-weight:bold;">Componentes sin código o fuera del orden (revisar):</p>' +
+      '<p style="margin:0;font-size:13px;color:' + EMAIL_COLORS.gray + ';">' +
+      sinColocar.map(c => c.nombre + ' (' + c.proyecto + (c.codigo ? ' · ' + c.codigo : ' · sin código') + ')').join('<br>') +
+      '</p>';
+  }
+  return html + '</div>';
 }
 
 /* ─────────────────────────────────────────────────────────
@@ -997,9 +1107,10 @@ function htmlCorreoEstado(opts) {
 
 function enviarCorreoSeguro(ctx, asunto, cuerpo, fechaStr, fila, esInicio) {
   if (!fila || fila < 2) return;
-  const dest = CONSTANTES.MODO_DEBUG ? CONSTANTES.BUZON_PRUEBAS_DEBUG : CONSTANTES.BUZON_DESARROLLOS;
+  const debug = getModoDebug();
+  const dest = debug ? CONSTANTES.BUZON_PRUEBAS_DEBUG : CONSTANTES.BUZON_DESARROLLOS;
   let asuntoHilo = "[RDR Hub] Pase Calendado - " + fechaStr;
-  if (CONSTANTES.MODO_DEBUG) asuntoHilo = "[TEST] " + asuntoHilo;
+  if (debug) asuntoHilo = "[TEST] " + asuntoHilo;
 
   // Detectar si cuerpo ya viene como HTML (empieza con < tras posibles espacios).
   // Si es HTML lo respetamos; si es texto plano lo envolvemos en <p>.

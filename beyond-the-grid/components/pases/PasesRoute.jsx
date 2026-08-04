@@ -25,6 +25,8 @@ import {
   isT,
 } from "./backend";
 import { computeValidador } from "./validador";
+import { rolDe } from "./roles";
+import { useAuth } from "@/components/chrome/AuthGate";
 import { ACCENT, BTN, CARD_CLS, Field, SELECT_CLS, INPUT_CLS } from "./ui";
 import { IconRocket, IconSave, IconMoon, IconCheck, IconLock, IconRefresh, IconArrowLeft } from "./icons";
 import Proyectos from "./Proyectos";
@@ -32,6 +34,7 @@ import Secuencia from "./Secuencia";
 import PreChecks from "./PreChecks";
 import Ejecucion from "./Ejecucion";
 import Mergeos from "./Mergeos";
+import Resumen from "./Resumen";
 import CmdDrawer from "./CmdDrawer";
 import ArtBanner from "@/components/chrome/ArtBanner";
 import { ART } from "@/lib/art";
@@ -44,14 +47,16 @@ const PasesCtx = createContext(null);
 export const usePases = () => useContext(PasesCtx);
 
 // Fase → panel por defecto + pestañas habilitadas (portado de refrescarUI).
-const ALL_TABS = ["PROYECTOS", "SECUENCIA", "PRE", "ORDEN", "POST"];
+// RESUMEN no es una fase: es la vista de paquetes/componentes en orden,
+// disponible en cuanto hay preparación en marcha.
+const ALL_TABS = ["PROYECTOS", "SECUENCIA", "PRE", "ORDEN", "POST", "RESUMEN"];
 const FASE_CFG = {
   PENDIENTE: { panel: "PENDIENTE", tabs: [] },
   FASE_1_ENCUESTA: { panel: "ENCUESTA", tabs: ["PROYECTOS"] },
   FASE_0_DESCANSO: { panel: "DESCANSO", tabs: ["PROYECTOS"] },
-  FASE_2_3_PREPARACION: { panel: "PROYECTOS", tabs: ["PROYECTOS", "SECUENCIA"] },
-  FASE_4_CERRADO: { panel: "PRE", tabs: ["PROYECTOS", "SECUENCIA", "PRE"] },
-  FASE_6_IMPLANTACION: { panel: "ORDEN", tabs: ["PROYECTOS", "SECUENCIA", "PRE", "ORDEN"] },
+  FASE_2_3_PREPARACION: { panel: "PROYECTOS", tabs: ["PROYECTOS", "SECUENCIA", "RESUMEN"] },
+  FASE_4_CERRADO: { panel: "PRE", tabs: ["PROYECTOS", "SECUENCIA", "PRE", "RESUMEN"] },
+  FASE_6_IMPLANTACION: { panel: "ORDEN", tabs: ["PROYECTOS", "SECUENCIA", "PRE", "ORDEN", "RESUMEN"] },
   FASE_7_POST: { panel: "POST", tabs: ALL_TABS },
   COMPLETADO: { panel: "COMPLETADO", tabs: ALL_TABS },
 };
@@ -62,6 +67,7 @@ const TABS = [
   { id: "PRE", n: 3, t: "Pre-implant.", s: "Checks previos" },
   { id: "ORDEN", n: 4, t: "Implantación", s: "Ejecución" },
   { id: "POST", n: 5, t: "Post-implant.", s: "Mergeos" },
+  { id: "RESUMEN", n: "≡", t: "Resumen", s: "Paquetes del pase" },
 ];
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -73,6 +79,30 @@ function AmbientBackground() {
       <span className="rdr-blob right-[2%] top-[-10%] h-72 w-72" style={{ background: PALETTE.serene, animationDelay: "-4s" }} />
       <span className="rdr-blob bottom-[-14%] left-[22%] h-96 w-96" style={{ background: PALETTE.royal, animationDelay: "-8s" }} />
     </div>
+  );
+}
+
+/* Modo debug: conmutable por admins; badge informativo para el resto cuando
+   está activo (avisa de que los correos NO llegan al equipo). */
+function DebugPill({ on, isAdmin, onToggle }) {
+  if (!isAdmin && !on) return null;
+  const cls = on ? "border-canary/50 bg-canary/15 text-canary" : "border-white/12 bg-white/[0.05] text-sand/60";
+  if (!isAdmin)
+    return (
+      <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${cls}`} role="status">
+        <span aria-hidden>🐞</span> Modo debug · sin correos al equipo
+      </span>
+    );
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(!on)}
+      title={on ? "Desactivar modo debug (los correos volverán al equipo)" : "Activar modo debug (los correos irán al buzón de pruebas, no al equipo)"}
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold transition hover:brightness-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene ${cls}`}
+    >
+      <span aria-hidden>🐞</span>
+      {on ? "Debug ON · sin correos al equipo" : "Modo debug"}
+    </button>
   );
 }
 
@@ -118,11 +148,14 @@ export default function PasesRoute() {
   const links = useLinks();
   const reduce = useReducedMotion();
   const accent = useAccent(ACCENT); // lime temado para estilos inline (texto/borde legible en claro)
+  const { email } = useAuth();
+  const isAdmin = rolDe(email) === "admin"; // puede conmutar el modo debug
 
   // URLs desde links.json (fuente única) — misma resolución que el legacy.
   const apiUrl = links?.getUrl ? links.getUrl("pasesBackend") : null;
   const jiraTpl = links?.getUrl ? links.getUrl("jiraBrowse") : null;
   const enoaTpl = links?.getUrl ? links.getUrl("despliegueENOA") : null;
+  const novaTpl = links?.getUrl ? links.getUrl("novaPlan") : null;
   const apiUrlRef = useRef(null);
   apiUrlRef.current = apiUrl;
 
@@ -558,6 +591,28 @@ export default function PasesRoute() {
     [applyE, call, showToast]
   );
 
+  // Modo debug (solo admins): los correos del backend y de los avisos van al
+  // buzón de pruebas en vez de al equipo. Persistido en el Apps Script.
+  const setModoDebug = useCallback(
+    async (val) => {
+      const prev = !!ERef.current.modoDebug;
+      applyE((d) => { d.modoDebug = val; });
+      try {
+        await call("setModoDebug", { val, fechaStr: ERef.current.fechaSeleccionada });
+        cacheSet(ERef.current.fechaSeleccionada, ERef.current);
+        showToast(
+          val ? "Modo debug ACTIVADO · los correos van al buzón de pruebas" : "Modo debug desactivado · correos al equipo",
+          "success",
+          3200
+        );
+      } catch (e) {
+        applyE((d) => { d.modoDebug = prev; });
+        showToast("No se pudo cambiar el modo debug · " + e.message, "error");
+      }
+    },
+    [applyE, call, showToast]
+  );
+
   // Check "Probado" por componente (optimista, como chkMerge / updOkProy).
   const chkProbado = useCallback(
     async (fila, val) => {
@@ -730,11 +785,11 @@ export default function PasesRoute() {
   const proyectosLocked = fase !== "FASE_2_3_PREPARACION"; // bloque proyectos editable solo en preparación
 
   const ctx = {
-    E, fase, isCompletado, proyectosLocked,
+    E, fase, isCompletado, proyectosLocked, isAdmin,
     cab, setCab, scheduleCabSave,
     tempOrden, ordenOps,
     validador, validadorFlash,
-    tpls: { jira: jiraTpl, enoa: enoaTpl },
+    tpls: { jira: jiraTpl, enoa: enoaTpl, nova: novaTpl },
     showToast, removeToast,
     setActivePanel,
     abrirComandos: setDrawerElemento,
@@ -770,7 +825,10 @@ export default function PasesRoute() {
               </h2>
               <p className="mt-1.5 text-sm text-sand/65">Releases por entorno · ciclo completo del pase a producción</p>
             </div>
-            <NetDot inflight={inflight} error={netErr} />
+            <div className="flex flex-wrap items-center gap-2">
+              <DebugPill on={!!E?.modoDebug} isAdmin={isAdmin} onToggle={setModoDebug} />
+              <NetDot inflight={inflight} error={netErr} />
+            </div>
           </div>
 
           {boot === "loading" && <BootSkeleton msg={bootMsg} />}
@@ -839,6 +897,7 @@ export default function PasesRoute() {
                   {activePanel === "PRE" && <PreChecks />}
                   {activePanel === "ORDEN" && <Ejecucion />}
                   {activePanel === "POST" && <Mergeos />}
+                  {activePanel === "RESUMEN" && <Resumen />}
                 </motion.div>
               </AnimatePresence>
             </>
@@ -848,14 +907,16 @@ export default function PasesRoute() {
           {boot === "ready" && (
             <footer className="mt-14 flex items-center justify-between border-t border-white/10 pt-4 text-[11px] text-sand/40">
               <span>Pases Calendados RDR · BBVA × NFQ</span>
-              <button
-                type="button"
-                onClick={bombaNuclear}
-                title="DEBUG: vaciar el Excel"
-                className="rounded-md border border-white/15 px-2.5 py-1 opacity-50 transition hover:opacity-100 hover:text-mandarin focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-              >
-                DEBUG · Reset
-              </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={bombaNuclear}
+                  title="DEBUG: vaciar el Excel"
+                  className="rounded-md border border-white/15 px-2.5 py-1 opacity-50 transition hover:opacity-100 hover:text-mandarin focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+                >
+                  DEBUG · Reset
+                </button>
+              )}
             </footer>
           )}
         </div>
