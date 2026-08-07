@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "next-view-transitions";
 import { PALETTE } from "@/lib/palette";
 import { useSnapshot } from "./datos";
 import {
@@ -10,7 +9,7 @@ import {
   qsDisponibles, bloqueParaQ, colEjecucion, normQ,
 } from "./model";
 import { GLASS, FIELD, TEXT, Kpi, EmptyCard, PanelSkeleton, Bar } from "./ui";
-import { IconGauge, IconPlus, IconX, IconReload, IconBack, IconAlert } from "./icons";
+import { IconGauge, IconPlus, IconX, IconReload, IconAlert } from "./icons";
 
 /* Simulador de rentabilidad · Coordinación.
    Lee el estado ACTUAL del Excel (snapshot del backend) y a partir de ahí todo
@@ -256,12 +255,6 @@ export default function SimuladorRoute() {
             <h1 className="flex items-center gap-3 font-display text-4xl font-bold leading-none tracking-tight text-sand sm:text-5xl">
               <IconGauge size={34} className="text-lime" /> Simulador de rentabilidad
             </h1>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-4 py-2 text-xs font-bold uppercase tracking-wide text-sand/80 transition hover:bg-white/[0.1] hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-            >
-              <IconBack size={14} /> Inicio
-            </Link>
           </div>
           <p className="mt-3 max-w-2xl text-pretty text-sm text-sand/65">
             Juega con personas, dedicaciones, costes, proyectos y horas para ver la rentabilidad de cada Q.{" "}

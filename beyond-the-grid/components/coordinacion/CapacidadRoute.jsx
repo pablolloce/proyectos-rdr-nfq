@@ -1,13 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "next-view-transitions";
 import { PALETTE } from "@/lib/palette";
 import { useSnapshot } from "./datos";
 import { num, h, curQ, horasQPersona, qsDisponibles, bloqueParaQ, colEjecucion, normQ } from "./model";
 import { GLASS, FIELD, TEXT, Kpi, EmptyCard, PanelSkeleton, Bar } from "./ui";
 import { BarChart, Donut } from "./charts";
-import { IconUsers, IconPlus, IconX, IconBack, IconAlert } from "./icons";
+import { IconUsers, IconPlus, IconX, IconAlert } from "./icons";
 
 /* Capacidad del equipo · Coordinación.
    Sustituye a la pestaña "9) Capacidad" del Excel: lee del snapshot los
@@ -195,12 +194,6 @@ export default function CapacidadRoute() {
             <h1 className="flex items-center gap-3 font-display text-4xl font-bold leading-none tracking-tight text-sand sm:text-5xl">
               <IconUsers size={34} className="text-purple" /> Capacidad del equipo
             </h1>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.05] px-4 py-2 text-xs font-bold uppercase tracking-wide text-sand/80 transition hover:bg-white/[0.1] hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-            >
-              <IconBack size={14} /> Inicio
-            </Link>
           </div>
           <p className="mt-3 max-w-2xl text-pretty text-sm text-sand/65">
             Asigna personas a los proyectos del Q con su % de dedicación y comprueba coberturas y cargas.
