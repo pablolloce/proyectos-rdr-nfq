@@ -13,18 +13,34 @@ import { IconGauge, IconPlus, IconX, IconReload, IconBack, IconAlert } from "./i
 
 /* Simulador de rentabilidad · Coordinación.
    Lee el estado ACTUAL del Excel (snapshot del backend) y a partir de ahí todo
-   es simulación 100 % en cliente: personas (coste/h, % dedicación, ausencias,
-   altas/bajas), proyectos (horas por Q, altas/bajas) y tarifa. NUNCA escribe
-   en el Excel. Modelo:
-     horasQ persona = horas teóricas Q × dedicación − ausencias
-     costes = Σ horasQ × coste/h  ·  ingresos = Σ horas proyecto × tarifa
-     rentabilidad = (ingresos − costes) / ingresos, comparada con el objetivo
-     ponderado NFQ/NTER del Excel. */
+   es simulación 100 % en cliente: personas, proyectos, bolsas/adelantos,
+   gastos y tarifa. NUNCA escribe en el Excel.
+
+   MODELO (idéntico al del Excel / control legado, para que los números casen):
+     horasQ persona = horas IMPUTADAS reales del Q, escaladas por la dedicación
+       simulada (las "horas teóricas" están vacías en el Excel para casi
+       todos); las ausencias añadidas sobre las del Excel restan horas.
+     costes  = Σ horasQ × coste/h  +  gastos del Q (hoja 6) Gastos)
+     ingresos = (horas proyectos + horas consumidas de bolsas/adelantos) × tarifa
+     rentabilidad = (ingresos − costes) / ingresos, vs objetivo ponderado
+       NFQ/NTER del Excel. */
 
 let uidSeq = 0;
 const uid = () => ++uidSeq;
 
 const HORAS_TEO_DEFECTO = 480; // persona nueva sin histórico: ~3 meses × 160 h
+
+const impQDe = (p) => (p.horasImputadas || []).reduce((a, v) => a + num(v), 0);
+
+// Gastos del Q: suma de la hoja "6) Gastos" cuya fecha cae en los meses del bloque.
+function gastosDelQ(data, bloque) {
+  const ym = (d) => { const x = new Date(d); return isNaN(x) ? null : x.getFullYear() + "-" + (x.getMonth() + 1); };
+  const meses = (bloque?.meses || []).map(ym).filter(Boolean);
+  return (data.gastos || []).reduce((a, g) => {
+    const m = ym(g.data && g.data["Fecha"]);
+    return a + (m && meses.indexOf(m) >= 0 ? num(g.data["Importe"]) : 0);
+  }, 0);
+}
 
 function seedSim(data, q) {
   const bloque = (data.economico?.bloques || []).find((b) => b.q === q);
@@ -33,17 +49,40 @@ function seedSim(data, q) {
     nombre: p.nombre,
     equipo: p.equipo || "NFQ",
     costeHora: num(p.costeHora),
-    ded: Math.round(dedicacionMedia(p) * 100),
+    dedBase: dedicacionMedia(p) || 1, //   dedicación del Excel (la simulada escala sobre ella)
+    ded: Math.round((dedicacionMedia(p) || 1) * 100),
+    impQ: Math.round(impQDe(p)), //        horas imputadas reales del Q
+    ausBase: Math.round(ausenciasQ(p)), // ausencias ya reflejadas en el Excel
     aus: Math.round(ausenciasQ(p)),
     teoQ: Math.round(horasTeoricasQ(p)) || HORAS_TEO_DEFECTO,
+    nueva: false,
   }));
   const proyectos = (data.ejecucion?.records || [])
     .filter((r) => num(r.data?.[q]) > 0)
     .map((r) => ({ id: uid(), nombre: String(r.data.Proyecto || r.data.proyecto || "Proyecto"), horas: num(r.data[q]) }));
-  return { personas, proyectos, tarifa: num(pickTarifa(data, q)) };
+  // Bolsas y adelantos ABIERTOS: fuentes de horas que puedes simular consumir
+  // este Q (parten de 0 h para no duplicar lo ya contado en Ejecución Real).
+  const bolsas = [
+    ...(data.bolsa || []).map((b) => ({ tipo: "Bolsa", ...b })),
+    ...(data.adelantos || []).map((b) => ({ tipo: "Adelanto", ...b })),
+  ]
+    .filter((b) => num(b.restante) > 0)
+    .map((b) => ({
+      id: uid(), tipo: b.tipo, nombre: String(b.proyecto || b.responsable || "—"),
+      restante: num(b.restante), horas: 0,
+    }));
+  return { personas, proyectos, bolsas, gastos: Math.round(gastosDelQ(data, bloque)), tarifa: num(pickTarifa(data, q)) };
 }
 
-const horasQDe = (p) => Math.max(0, (p.teoQ * p.ded) / 100 - p.aus);
+/* Horas del Q de una persona en la simulación:
+   - existentes: imputadas × (dedicación simulada / dedicación del Excel),
+     menos las ausencias AÑADIDAS sobre las que ya recoge el Excel;
+   - nuevas: teóricas × dedicación − ausencias. */
+const horasQDe = (p) => {
+  if (p.nueva || !p.impQ) return Math.max(0, (p.teoQ * p.ded) / 100 - p.aus);
+  const factor = p.dedBase ? p.ded / 100 / p.dedBase : 1;
+  return Math.max(0, p.impQ * factor - Math.max(0, p.aus - p.ausBase));
+};
 
 /* Fila de persona: todo editable en línea (coste, dedicación, ausencias). */
 function PersonaRow({ p, onUpd, onDel }) {
@@ -166,14 +205,16 @@ export default function SimuladorRoute() {
       const c = hq * p.costeHora;
       if (p.equipo === "NFQ") costeNFQ += c; else costeNTER += c;
     });
-    const costes = costeNFQ + costeNTER;
+    const gastos = num(sim.gastos);
+    const costes = costeNFQ + costeNTER + gastos;
     const horasProyectos = sim.proyectos.reduce((a, p) => a + num(p.horas), 0);
-    const ingresos = horasProyectos * sim.tarifa;
+    const horasBolsa = sim.bolsas.reduce((a, b) => a + num(b.horas), 0);
+    const horasFacturables = horasProyectos + horasBolsa;
+    const ingresos = horasFacturables * sim.tarifa;
     const margen = ingresos - costes;
     const rent = ingresos > 0 ? margen / ingresos : 0;
     const objetivo = rentObjetivoTotal(costeNFQ, costeNTER, num(bloque.rentObjetivoNFQ) || 0.25, num(bloque.rentObjetivoNTER) || 0.2);
-    const bolsaRestante = [...(data.bolsa || []), ...(data.adelantos || [])].reduce((a, b) => a + num(b.restante), 0);
-    return { costeNFQ, costeNTER, costes, horasEquipo, horasProyectos, ingresos, margen, rent, objetivo, bolsaRestante };
+    return { costeNFQ, costeNTER, gastos, costes, horasEquipo, horasProyectos, horasBolsa, horasFacturables, ingresos, margen, rent, objetivo };
   }, [sim, data, q]);
 
   return (
@@ -294,7 +335,8 @@ export default function SimuladorRoute() {
                       upd({
                         personas: [...sim.personas, {
                           id: uid(), nombre: nuevaPersona.nombre.trim(), equipo: nuevaPersona.equipo,
-                          costeHora: nuevaPersona.coste, ded: 100, aus: 0, teoQ: HORAS_TEO_DEFECTO,
+                          costeHora: nuevaPersona.coste, ded: 100, dedBase: 1, aus: 0, ausBase: 0,
+                          impQ: 0, teoQ: HORAS_TEO_DEFECTO, nueva: true,
                         }],
                       });
                       setNuevaPersona({ nombre: "", equipo: "NFQ", coste: 30 });
@@ -362,16 +404,67 @@ export default function SimuladorRoute() {
                       <IconPlus size={13} /> Añadir
                     </button>
                   </div>
-                  {r.bolsaRestante > 0 && (
-                    <p className="mt-2 text-[11px] text-sand/50">
-                      💡 Hay <strong className={TEXT.serene}>{h(r.bolsaRestante)}</strong> disponibles entre bolsa y adelantos por si quieres simular consumirlas.
-                    </p>
-                  )}
                 </section>
+
+                {/* ── Bolsas y adelantos ── */}
+                {sim.bolsas.length > 0 && (
+                  <section className={`${GLASS} p-4`} aria-label="Bolsas y adelantos">
+                    <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+                      <h2 className="font-display text-lg font-bold text-sand">Bolsas y adelantos</h2>
+                      <span className="text-[11px] tabular-nums text-sand/55">
+                        {h(sim.bolsas.reduce((a, b) => a + b.restante, 0))} restantes en total
+                      </span>
+                    </div>
+                    <p className="mb-3 text-[11px] text-sand/50">
+                      Horas ya vendidas pendientes de ejecutar. Pon cuántas consumirías este Q: cuentan como ingreso a tarifa.
+                    </p>
+                    <ul className="space-y-1.5">
+                      {sim.bolsas.map((b) => (
+                        <li key={b.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2">
+                          <span
+                            className="shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase"
+                            style={b.tipo === "Bolsa"
+                              ? { color: "#001391", backgroundColor: PALETTE.serene }
+                              : { color: "#001391", backgroundColor: PALETTE.mandarin }}
+                          >
+                            {b.tipo}
+                          </span>
+                          <span className="min-w-0 flex-1 break-words text-[12.5px] font-semibold text-sand">{b.nombre}</span>
+                          <span className="text-[10.5px] tabular-nums text-sand/45">quedan {h(b.restante)}</span>
+                          <label className="flex items-center gap-1.5">
+                            <input
+                              type="number" min="0" step="10" value={b.horas}
+                              aria-label={`Horas a consumir de ${b.nombre}`}
+                              onChange={(e) =>
+                                upd({ bolsas: sim.bolsas.map((x) => (x.id === b.id ? { ...x, horas: num(e.target.value) } : x)) })
+                              }
+                              className={`${FIELD} w-24 !py-1 text-right tabular-nums ${num(b.horas) > b.restante ? "!border-mandarin/70" : ""}`}
+                            />
+                            <span className="text-[11px] text-sand/50">h</span>
+                          </label>
+                          {num(b.horas) > b.restante && (
+                            <span className="w-full text-right text-[10px] font-bold text-mandarin">supera lo restante</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
 
                 {/* ── Resultado ── */}
                 <section className={`${GLASS} p-4`} aria-label="Resultado de la simulación">
-                  <h2 className="mb-3 font-display text-lg font-bold text-sand">Resultado {q}</h2>
+                  <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                    <h2 className="font-display text-lg font-bold text-sand">Resultado {q}</h2>
+                    <label className="flex items-center gap-1.5 text-[11px] text-sand/55">
+                      Gastos del Q
+                      <input
+                        type="number" min="0" step="50" value={sim.gastos}
+                        onChange={(e) => upd({ gastos: num(e.target.value) })}
+                        className={`${FIELD} w-24 !py-1 text-right tabular-nums`}
+                      />
+                      €
+                    </label>
+                  </div>
                   <div className="space-y-3">
                     <Bar
                       label="Rentabilidad vs objetivo"
@@ -381,10 +474,18 @@ export default function SimuladorRoute() {
                     />
                     <Bar
                       label="Horas equipo vs horas a ejecutar"
-                      v={r.horasEquipo > 0 ? r.horasProyectos / r.horasEquipo : 0}
-                      col={r.horasProyectos <= r.horasEquipo ? "serene" : "mandarin"}
-                      fmt={`${h(r.horasProyectos)} / ${h(r.horasEquipo)}`}
+                      v={r.horasEquipo > 0 ? r.horasFacturables / r.horasEquipo : 0}
+                      col={r.horasFacturables <= r.horasEquipo ? "serene" : "mandarin"}
+                      fmt={`${h(r.horasFacturables)} / ${h(r.horasEquipo)}`}
                     />
+                    {r.horasBolsa > 0 && (
+                      <Bar
+                        label="De bolsas y adelantos"
+                        v={r.horasFacturables > 0 ? r.horasBolsa / r.horasFacturables : 0}
+                        col="serene"
+                        fmt={h(r.horasBolsa)}
+                      />
+                    )}
                     <Bar
                       label="Coste NFQ"
                       v={r.costes > 0 ? r.costeNFQ / r.costes : 0}
@@ -397,6 +498,14 @@ export default function SimuladorRoute() {
                       col="canary"
                       fmt={eur.format(r.costeNTER)}
                     />
+                    {r.gastos > 0 && (
+                      <Bar
+                        label="Gastos"
+                        v={r.costes > 0 ? r.gastos / r.costes : 0}
+                        col="mandarin"
+                        fmt={eur.format(r.gastos)}
+                      />
+                    )}
                   </div>
                   <p className={`mt-4 rounded-lg border-l-4 px-3 py-2 text-[12.5px] ${
                     r.rent >= r.objetivo
@@ -406,8 +515,8 @@ export default function SimuladorRoute() {
                     {r.rent >= r.objetivo
                       ? `Por encima del objetivo: ${pct(r.rent)} de rentabilidad (${eur.format(r.margen)} de margen).`
                       : `Por debajo del objetivo (${pct(r.objetivo)}): faltan ${eur.format(Math.max(0, r.ingresos * r.objetivo - r.margen))} de margen.`}
-                    {r.horasProyectos > r.horasEquipo &&
-                      ` ⚠️ Ojo: hay ${h(r.horasProyectos - r.horasEquipo)} más de trabajo que de capacidad.`}
+                    {r.horasFacturables > r.horasEquipo &&
+                      ` ⚠️ Ojo: hay ${h(r.horasFacturables - r.horasEquipo)} más de trabajo que de capacidad.`}
                   </p>
                 </section>
               </div>
