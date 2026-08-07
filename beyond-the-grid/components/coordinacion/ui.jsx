@@ -1,6 +1,6 @@
 "use client";
 
-// Primitivas visuales de la ruta /control: tarjetas glass, chips, inputs,
+// Primitivas visuales de Coordinación (/simulador, /capacidad): tarjetas glass, chips, inputs,
 // badges y tablas. Misma escala de esquinas (rounded-2xl) y glass que el hub.
 
 /* Clases dinámicas por acento: mapas explícitos para que Tailwind las compile

@@ -1,4 +1,4 @@
-// Iconos LOCALES de la ruta /control (misma familia que components/icons.jsx:
+// Iconos LOCALES de Coordinación (misma familia que components/icons.jsx:
 // estilo Lucide, trazo 1.8, currentColor). No se toca el set global.
 
 const S = ({ children, size = 22, fill = "none", ...p }) => (

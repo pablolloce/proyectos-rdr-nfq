@@ -56,7 +56,10 @@ const SECTIONS = [
 
 const COORD_SECTION = {
   id: "coord", n: "04", title: "Coordinación", color: PALETTE.purple,
-  items: [{ label: "Control RDR", desc: "Control económico", icon: IconShield, action: "route", target: "/control" }],
+  items: [
+    { label: "Simulador", desc: "Rentabilidad por Q", icon: IconShield, action: "route", target: "/simulador" },
+    { label: "Capacidad", desc: "Personas y proyectos", icon: IconShield, action: "route", target: "/capacidad" },
+  ],
 };
 
 const HintIcon = (action) => (action === "copy" ? IconCopy : action === "open" ? IconExternal : IconArrow);

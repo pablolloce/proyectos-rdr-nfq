@@ -716,6 +716,63 @@ function getAdelantos() {
       consFecha: 7, consDet: 9, consProy: 8, consHoras: 10 }, 13);
 }
 
+/* ===========================================================================
+ * 7b. CAPACIDAD WEB — asignaciones Persona-Proyecto-% gestionadas desde la
+ *     página /capacidad del hub. Viven en una hoja PROPIA ("Capacidad_Web",
+ *     oculta) para no tocar la pestaña legada "9) Capacidad" ni el resto del
+ *     Excel. Columnas: Q | Proyecto | Persona | Pct | Actualizado.
+ * =========================================================================== */
+var HOJA_CAPACIDAD_WEB = 'Capacidad_Web';
+
+function _sheetCapacidadWeb() {
+  var ss = CONFIG.SPREADSHEET_ID ? SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(HOJA_CAPACIDAD_WEB);
+  if (!sh) {
+    sh = ss.insertSheet(HOJA_CAPACIDAD_WEB);
+    sh.getRange(1, 1, 1, 5).setValues([['Q', 'Proyecto', 'Persona', 'Pct', 'Actualizado']]);
+    sh.hideSheet();
+  }
+  return sh;
+}
+
+/** Asignaciones de la web: todas, o solo las de un Q si se pasa p.q. */
+function getCapacidadWeb(q) {
+  var sh = _sheetCapacidadWeb();
+  var last = sh.getLastRow();
+  var out = [];
+  if (last >= 2) {
+    var vals = sh.getRange(2, 1, last - 1, 4).getValues();
+    for (var i = 0; i < vals.length; i++) {
+      var vq = String(vals[i][0] || '').trim();
+      if (!vq || (q && vq !== q)) continue;
+      out.push({ q: vq, proyecto: String(vals[i][1] || ''), persona: String(vals[i][2] || ''), pct: Number(vals[i][3]) || 0 });
+    }
+  }
+  return { asignaciones: out };
+}
+
+/** Reescribe TODAS las asignaciones de un Q (borrado + alta en bloque). */
+function guardarCapacidadWeb(q, asignaciones) {
+  if (!q) throw new Error('Falta el Q.');
+  var sh = _sheetCapacidadWeb();
+  var last = sh.getLastRow();
+  // Borra de abajo arriba las filas de este Q.
+  if (last >= 2) {
+    var vals = sh.getRange(2, 1, last - 1, 1).getValues();
+    for (var i = vals.length - 1; i >= 0; i--) {
+      if (String(vals[i][0] || '').trim() === q) sh.deleteRow(i + 2);
+    }
+  }
+  var rows = [];
+  var now = new Date();
+  (asignaciones || []).forEach(function (a) {
+    if (!a || !a.proyecto || !a.persona) return;
+    rows.push([q, String(a.proyecto), String(a.persona), Number(a.pct) || 0, now]);
+  });
+  if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, 5).setValues(rows);
+  return { q: q, n: rows.length };
+}
+
 /**
  * SNAPSHOT: TODO lo necesario para el frontend y las simulaciones en una sola
  * llamada (minimiza la latencia de Apps Script).
@@ -728,6 +785,7 @@ function getSnapshot() {
     ejecucion: getEjecucion(),
     economico: getControlEconomico(),
     capacidad: getCapacidad(),
+    capacidadWeb: getCapacidadWeb().asignaciones, // asignaciones de la página /capacidad
     gastos: getTable('6) Gastos', { maxRows: 1500 }).records,
     bolsa: getBolsa().entries,        // agrupado y sin cerradas (tachadas)
     adelantos: getAdelantos().entries,
@@ -748,7 +806,10 @@ function doPost(e) { return _serve(e); }
 var _READ_ACTIONS = {
   '': 1, ping: 1, help: 1, meta: 1, sheets: 1, read: 1, readCell: 1, modifiable: 1,
   table: 1, row: 1, search: 1, snapshot: 1, tarifas: 1, iniciativas: 1,
-  ejecucion: 1, economico: 1, capacidad: 1
+  ejecucion: 1, economico: 1, capacidad: 1, capacidadWeb: 1,
+  // guardarCapacidadWeb escribe SOLO en su hoja propia "Capacidad_Web" (nunca
+  // en los datos del Excel) -> se permite sin token, como los backends de la web.
+  guardarCapacidadWeb: 1
 };
 
 function _serve(e) {
@@ -813,6 +874,8 @@ function _route(action, p) {
     case 'ejecucion':   return getEjecucion();
     case 'economico':   return getControlEconomico();
     case 'capacidad':   return getCapacidad();
+    case 'capacidadWeb':        return getCapacidadWeb(p.q);
+    case 'guardarCapacidadWeb': return guardarCapacidadWeb(p.q, _obj(p.asignaciones));
     case 'bolsa':       return getBolsa();
     case 'adelantos':   return getAdelantos();
     default: throw new Error('Acción desconocida: "' + action + '". Llama action=help.');

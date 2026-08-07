@@ -1,5 +1,5 @@
-// Modelo del Control RDR — lógica y datos portados 1:1 de public/control.html
-// (fuente de verdad funcional). Todo es puro: sin React ni DOM.
+// Modelo de datos de Coordinación (simulador de rentabilidad y capacidad).
+// Cálculos puros: sin React ni DOM. DEMO = snapshot de respaldo sin backend.
 
 /* ---------- números y formato ---------- */
 export const num = (v) => {
@@ -39,6 +39,24 @@ export function pickTarifa(data, q) {
   const t = (data && data.tarifas) || {};
   return t[q] || t[String(q).slice(0, 4)] || t["2026"] || 51.22;
 }
+
+/* ---------- horas y coste de una persona en el Q ----------
+   Modelo compartido por el simulador y la capacidad:
+   horasQ = Σ_mes max(0, horasTeóricas·dedicación − ausencias)
+   costeQ = horasQ × coste/hora  */
+export const horasTeoricasQ = (p) => (p.horasTeoricas || []).reduce((a, v) => a + num(v), 0);
+export const ausenciasQ = (p) => (p.ausencias || []).reduce((a, v) => a + num(v), 0);
+export const dedicacionMedia = (p) => {
+  const d = (p.dedicacion || []).map(num);
+  return d.length ? d.reduce((a, v) => a + v, 0) / d.length : 1;
+};
+export const horasQPersona = (p) => {
+  const t = p.horasTeoricas || [];
+  return t.reduce((acc, _, m) => {
+    const disp = num(t[m]) * num((p.dedicacion || [])[m]) - num((p.ausencias || [])[m]);
+    return acc + Math.max(0, disp);
+  }, 0);
+};
 
 /* ---------- DEMO: snapshot de respaldo si no hay backend ---------- */
 export const DEMO = {
@@ -115,6 +133,11 @@ export const DEMO = {
   adelantos: [
     { responsable: "Alejandro García", proyecto: "SDATOOL-48154 OSI Gobierno Riesgo", horasAdelantadas: 310, restante: 0, importe: 0, consumos: [{ proyecto: "AFIIR Alta emisores", horas: 55 }, { proyecto: "CTM Colombia Q4", horas: 165 }, { proyecto: "BSI 2.0 Impact", horas: 90 }] },
     { responsable: "Pablo Rodríguez", proyecto: "SDATOOL-53765 Life Global", horasAdelantadas: 274, restante: 54, importe: 2851.2, consumos: [{ proyecto: "Desarrollos pendientes", horas: 220 }] },
+  ],
+  capacidadWeb: [
+    { q: "2026Q2", proyecto: "Maestro de Emisiones", persona: "Montero Nuñez, Ángela", pct: 20 },
+    { q: "2026Q2", proyecto: "Maestro de Emisiones", persona: "Bello Gonzalez, Luis", pct: 60 },
+    { q: "2026Q2", proyecto: "OTC Fase IV", persona: "Llorente Cerezuela, Pablo", pct: 45 },
   ],
   encuestasQ4: [
     { data: { "Código de proyecto/servicio": "SDATOOL-46848", "NOMBRE DEL PROYECTO/SERVICIO": "Institutional Clients: Onboarding", "SATISFACCIÓN ENTREGA": 10, "CONSIGUE RESULTADOS": 10, "CONOCIMIENTO TÉCNICO ADECUADO": 10, "CALIDAD TOTAL NUEVA": 10 } },
