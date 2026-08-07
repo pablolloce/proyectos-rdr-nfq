@@ -58,6 +58,38 @@ export const horasQPersona = (p) => {
   }, 0);
 };
 
+/* ---------- Qs disponibles (incluye Qs FUTUROS con actividad) ----------
+   Un Q aparece en los selectores si existe en Control Económico, o tiene
+   horas en Ejecución Real, o alguna iniciativa factura en él, o tiene bloque
+   en la pestaña de Capacidad. Normaliza "2026_Q3" → "2026Q3". */
+export const normQ = (s) => String(s || "").replace("_", "").trim().toUpperCase();
+
+export function qsDisponibles(data) {
+  const set = new Set();
+  (data?.economico?.bloques || []).forEach((b) => set.add(normQ(b.q)));
+  const ej = data?.ejecucion || {};
+  (ej.qColumns || []).forEach((qc) => {
+    if (num((ej.totalesHorasQ || {})[qc]) > 0) set.add(normQ(qc));
+  });
+  (data?.iniciativas || []).forEach((r) => {
+    const qf = normQ(r.data && r.data["Q facturación"]);
+    if (/^\d{4}Q[1-4]$/.test(qf)) set.add(qf);
+  });
+  (data?.capacidad?.bloques || []).forEach((b) => set.add(normQ(b.q)));
+  return [...set].filter((x) => /^\d{4}Q[1-4]$/.test(x)).sort();
+}
+
+/* Bloque de Control Económico para un Q: el exacto, o el último disponible
+   (para simular Qs futuros con el equipo actual). */
+export function bloqueParaQ(data, q) {
+  const bs = data?.economico?.bloques || [];
+  return bs.find((b) => normQ(b.q) === q) || bs[bs.length - 1] || null;
+}
+
+/* Columna real de Ejecución para un Q normalizado ("2026Q3" ↔ "2026_Q3"). */
+export const colEjecucion = (data, q) =>
+  (data?.ejecucion?.qColumns || []).find((c) => normQ(c) === q) || q;
+
 /* ---------- DEMO: snapshot de respaldo si no hay backend ---------- */
 export const DEMO = {
   tarifas: { "2026Q1": 52.8, 2026: 51.22, 2025: 51.87 },

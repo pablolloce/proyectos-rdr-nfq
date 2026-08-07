@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "next-view-transitions";
 import { PALETTE } from "@/lib/palette";
 import { useSnapshot } from "./datos";
-import { num, h, curQ, horasQPersona } from "./model";
+import { num, h, curQ, horasQPersona, qsDisponibles, bloqueParaQ, colEjecucion, normQ } from "./model";
 import { GLASS, FIELD, TEXT, Kpi, EmptyCard, PanelSkeleton, Bar } from "./ui";
 import { BarChart, Donut } from "./charts";
 import { IconUsers, IconPlus, IconX, IconBack, IconAlert } from "./icons";
@@ -35,12 +35,8 @@ export default function CapacidadRoute() {
   const { snap, post } = useSnapshot();
   const data = snap?.data;
 
-  /* ---------- Q ---------- */
-  const qs = useMemo(() => {
-    const deEco = (data?.economico?.bloques || []).map((b) => b.q);
-    const deEje = data?.ejecucion?.qColumns || [];
-    return deEco.filter((q) => deEje.includes(q)).length ? deEco.filter((q) => deEje.includes(q)) : deEco;
-  }, [data]);
+  /* ---------- Q (incluye FUTUROS con iniciativas/ejecución) ---------- */
+  const qs = useMemo(() => qsDisponibles(data), [data]);
   const [q, setQ] = useState(null);
   useEffect(() => {
     if (!qs.length || q) return;
@@ -60,7 +56,7 @@ export default function CapacidadRoute() {
      Se pueden añadir más a mano (quedan persistidas vía sus asignaciones). */
   const [extra, setExtra] = useState([]); // nombres añadidos a mano en esta sesión
   const personas = useMemo(() => {
-    const bloque = (data?.economico?.bloques || []).find((b) => b.q === q);
+    const bloque = bloqueParaQ(data, q);
     const base = (bloque?.personas || []).map((p) => {
       const imp = (p.horasImputadas || []).reduce((a, v) => a + num(v), 0);
       const teo = horasQPersona(p);
@@ -80,24 +76,59 @@ export default function CapacidadRoute() {
     return [...base, ...extras];
   }, [data, q, asigs, extra]);
 
-  const proyectos = useMemo(
-    () =>
-      (data?.ejecucion?.records || [])
-        .filter((r) => num(r.data?.[q]) > 0)
-        .map((r) => ({ nombre: String(r.data.Proyecto || r.data.proyecto || "Proyecto"), horas: num(r.data[q]) })),
-    [data, q]
-  );
+  /* Proyectos del Q: Ejecución Real + los de la pestaña "9) Capacidad" que
+     no estén ya (nombres normalizados), con sus horas. */
+  const proyectos = useMemo(() => {
+    const qc = colEjecucion(data, q);
+    const base = (data?.ejecucion?.records || [])
+      .filter((r) => num(r.data?.[qc]) > 0)
+      .map((r) => ({ nombre: String(r.data.Proyecto || r.data.proyecto || "Proyecto"), horas: num(r.data[qc]) }));
+    const vistos = new Set(base.map((p) => p.nombre.trim().toLowerCase()));
+    const capBloque = (data?.capacidad?.bloques || []).find((b) => normQ(b.q) === q);
+    (capBloque?.proyectos || []).forEach((pr) => {
+      const k = String(pr.nombre || "").trim().toLowerCase();
+      if (!k || vistos.has(k)) return;
+      vistos.add(k);
+      base.push({ nombre: String(pr.nombre), horas: num(pr.horas) });
+    });
+    return base;
+  }, [data, q]);
 
+  const [importado, setImportado] = useState(false);
   useEffect(() => {
     if (!data || !q || seededQ.current === q) return;
     seededQ.current = q;
-    setAsigs((data.capacidadWeb || []).filter((a) => a.q === q).map((a) => ({ proyecto: a.proyecto, persona: a.persona, pct: num(a.pct) })));
+    const web = (data.capacidadWeb || [])
+      .filter((a) => normQ(a.q) === q)
+      .map((a) => ({ proyecto: a.proyecto, persona: a.persona, pct: num(a.pct) }));
+    if (web.length) {
+      setAsigs(web);
+      setImportado(false);
+    } else {
+      // Sin datos web para este Q: IMPORTA las asignaciones de la pestaña
+      // antigua "9) Capacidad" (roles responsable/ejecutor/apoyo sumados por
+      // persona; % en fracción → %). Se persisten al primer cambio.
+      const capBloque = (data.capacidad?.bloques || []).find((b) => normQ(b.q) === q);
+      const imp = [];
+      (capBloque?.proyectos || []).forEach((pr) => {
+        (pr.asignaciones || []).forEach((a) => {
+          if (!a.persona) return;
+          const pct = Math.round(num(a.pct) * 100);
+          const ex = imp.find((x) => x.proyecto === pr.nombre && x.persona === String(a.persona));
+          if (ex) ex.pct += pct;
+          else imp.push({ proyecto: String(pr.nombre), persona: String(a.persona), pct });
+        });
+      });
+      setAsigs(imp);
+      setImportado(imp.length > 0);
+    }
     setSaveState(snap?.demo ? "demo" : "ok");
   }, [data, q, snap]);
 
   const persist = useCallback(
     (next) => {
       setAsigs(next);
+      setImportado(false);
       clearTimeout(saveTimer.current);
       if (snap?.demo) { setSaveState("demo"); return; }
       setSaveState("saving");
@@ -197,7 +228,9 @@ export default function CapacidadRoute() {
                   {qs.map((x) => <option key={x} value={x}>{x}</option>)}
                 </select>
               </label>
-              <span aria-live="polite" className={`ml-auto text-[11px] font-bold ${saveTxt[0]}`}>{saveTxt[1]}</span>
+              <span aria-live="polite" className={`ml-auto text-[11px] font-bold ${saveTxt[0]}`}>
+                {importado ? "Importado de la pestaña 9) Capacidad · se guardará con tu primer cambio" : saveTxt[1]}
+              </span>
             </div>
 
             {/* KPIs resumen */}

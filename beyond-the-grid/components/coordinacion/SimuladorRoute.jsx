@@ -7,6 +7,7 @@ import { useSnapshot } from "./datos";
 import {
   num, eur, h, pct, curQ, pickTarifa, rentObjetivoTotal,
   horasTeoricasQ, ausenciasQ, dedicacionMedia,
+  qsDisponibles, bloqueParaQ, colEjecucion, normQ,
 } from "./model";
 import { GLASS, FIELD, TEXT, Kpi, EmptyCard, PanelSkeleton, Bar } from "./ui";
 import { IconGauge, IconPlus, IconX, IconReload, IconBack, IconAlert } from "./icons";
@@ -43,23 +44,34 @@ function gastosDelQ(data, bloque) {
 }
 
 function seedSim(data, q) {
-  const bloque = (data.economico?.bloques || []).find((b) => b.q === q);
-  const personas = (bloque?.personas || []).map((p) => ({
-    id: uid(),
-    nombre: p.nombre,
-    equipo: p.equipo || "NFQ",
-    costeHora: num(p.costeHora),
-    dedBase: dedicacionMedia(p) || 1, //   dedicación del Excel (la simulada escala sobre ella)
-    ded: Math.round((dedicacionMedia(p) || 1) * 100),
-    impQ: Math.round(impQDe(p)), //        horas imputadas reales del Q
-    ausBase: Math.round(ausenciasQ(p)), // ausencias ya reflejadas en el Excel
-    aus: Math.round(ausenciasQ(p)),
-    teoQ: Math.round(horasTeoricasQ(p)) || HORAS_TEO_DEFECTO,
-    nueva: false,
-  }));
+  // Bloque del Q (o el último disponible para simular Qs futuros).
+  const bloque = bloqueParaQ(data, q);
+  const personas = (bloque?.personas || []).map((p) => {
+    const costeHora = num(p.costeHora);
+    // Horas base EXACTAS del Excel: su columna "Coste Q" ÷ coste/h (así el
+    // coste de partida coincide céntimo a céntimo con el Excel); si no está,
+    // su columna "Horas Q"; si tampoco, la suma de imputadas.
+    const horasBase = num(p.costeQ) > 0 && costeHora > 0
+      ? num(p.costeQ) / costeHora
+      : num(p.horasQ) || impQDe(p);
+    return {
+      id: uid(),
+      nombre: p.nombre,
+      equipo: p.equipo || "NFQ",
+      costeHora,
+      dedBase: dedicacionMedia(p) || 1, //   dedicación del Excel (la simulada escala sobre ella)
+      ded: Math.round((dedicacionMedia(p) || 1) * 100),
+      impQ: horasBase,
+      ausBase: Math.round(ausenciasQ(p)), // ausencias ya reflejadas en el Excel
+      aus: Math.round(ausenciasQ(p)),
+      teoQ: Math.round(horasTeoricasQ(p)) || HORAS_TEO_DEFECTO,
+      nueva: false,
+    };
+  });
+  const qc = colEjecucion(data, q);
   const proyectos = (data.ejecucion?.records || [])
-    .filter((r) => num(r.data?.[q]) > 0)
-    .map((r) => ({ id: uid(), nombre: String(r.data.Proyecto || r.data.proyecto || "Proyecto"), horas: num(r.data[q]) }));
+    .filter((r) => num(r.data?.[qc]) > 0)
+    .map((r) => ({ id: uid(), nombre: String(r.data.Proyecto || r.data.proyecto || "Proyecto"), horas: num(r.data[qc]) }));
   // Bolsas y adelantos ABIERTOS: fuentes de horas que puedes simular consumir
   // este Q (parten de 0 h para no duplicar lo ya contado en Ejecución Real).
   const bolsas = [
@@ -71,7 +83,19 @@ function seedSim(data, q) {
       id: uid(), tipo: b.tipo, nombre: String(b.proyecto || b.responsable || "—"),
       restante: num(b.restante), horas: 0,
     }));
-  return { personas, proyectos, bolsas, gastos: Math.round(gastosDelQ(data, bloque)), tarifa: num(pickTarifa(data, q)) };
+  const gastos = Math.round(gastosDelQ(data, bloque));
+  const tarifa = num(pickTarifa(data, q));
+  // Punto de partida según el Excel (antes de tocar nada): para comparar a
+  // simple vista con la rentabilidad que muestra el propio Excel.
+  const costesBase = personas.reduce((a, p) => a + p.impQ * p.costeHora, 0) + gastos;
+  const ingresosBase = proyectos.reduce((a, p) => a + p.horas, 0) * tarifa;
+  const base = {
+    ingresos: ingresosBase,
+    costes: costesBase,
+    rent: ingresosBase > 0 ? (ingresosBase - costesBase) / ingresosBase : 0,
+    aproximado: normQ(bloque?.q || "") !== q, // Q futuro sin bloque propio
+  };
+  return { personas, proyectos, bolsas, gastos, tarifa, base };
 }
 
 /* Horas del Q de una persona en la simulación:
@@ -173,7 +197,8 @@ export default function SimuladorRoute() {
   const { snap, reload } = useSnapshot();
   const data = snap?.data;
 
-  const qs = useMemo(() => (data?.economico?.bloques || []).map((b) => b.q), [data]);
+  // Todos los Qs con actividad, incluidos FUTUROS (iniciativas/ejecución).
+  const qs = useMemo(() => qsDisponibles(data), [data]);
   const [q, setQ] = useState(null);
   useEffect(() => {
     if (!qs.length || q) return;
@@ -273,6 +298,14 @@ export default function SimuladorRoute() {
                 <IconReload size={13} /> Restablecer al Excel
               </button>
             </div>
+
+            {/* Punto de partida del Excel (para contrastar con su rentabilidad) */}
+            <p className="mb-4 text-[11.5px] text-sand/55">
+              Partida leída del Excel{sim.base.aproximado ? " (Q sin bloque propio: equipo del último Q)" : ""}:{" "}
+              ingresos <strong className="tabular-nums text-sand/80">{eur.format(sim.base.ingresos)}</strong> · costes{" "}
+              <strong className="tabular-nums text-sand/80">{eur.format(sim.base.costes)}</strong> · rentabilidad{" "}
+              <strong className={`tabular-nums ${TEXT.lime}`}>{(sim.base.rent * 100).toFixed(2)}%</strong>
+            </p>
 
             {/* KPIs */}
             <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
