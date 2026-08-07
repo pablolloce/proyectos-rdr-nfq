@@ -8,7 +8,7 @@ import {
   num, eur, h, pct, curQ, pickTarifa, rentObjetivoTotal,
   horasTeoricasQ, ausenciasQ, dedicacionMedia,
 } from "./model";
-import { GLASS, FIELD, TEXT, Kpi, Chip, EmptyCard, PanelSkeleton, Bar } from "./ui";
+import { GLASS, FIELD, TEXT, Kpi, EmptyCard, PanelSkeleton, Bar } from "./ui";
 import { IconGauge, IconPlus, IconX, IconReload, IconBack, IconAlert } from "./icons";
 
 /* Simulador de rentabilidad · Coordinación.
@@ -254,10 +254,17 @@ export default function SimuladorRoute() {
         ) : (
           <>
             {/* Selector de Q + reset */}
-            <div className="mb-5 flex flex-wrap items-center gap-2">
-              {qs.map((x) => (
-                <Chip key={x} accent="lime" on={q === x} onClick={() => setQ(x)}>{x}</Chip>
-              ))}
+            <div className="mb-5 flex flex-wrap items-center gap-3">
+              <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-sand/60">
+                Trimestre
+                <select
+                  value={q || ""}
+                  onChange={(e) => setQ(e.target.value)}
+                  className={`${FIELD} !py-2 font-bold`}
+                >
+                  {qs.map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
+              </label>
               <button
                 type="button"
                 onClick={reset}

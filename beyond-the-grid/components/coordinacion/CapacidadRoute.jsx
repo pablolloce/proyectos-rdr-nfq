@@ -5,7 +5,8 @@ import { Link } from "next-view-transitions";
 import { PALETTE } from "@/lib/palette";
 import { useSnapshot } from "./datos";
 import { num, h, curQ, horasQPersona } from "./model";
-import { GLASS, FIELD, TEXT, Kpi, Chip, EmptyCard, PanelSkeleton, Bar } from "./ui";
+import { GLASS, FIELD, TEXT, Kpi, EmptyCard, PanelSkeleton, Bar } from "./ui";
+import { BarChart, Donut } from "./charts";
 import { IconUsers, IconPlus, IconX, IconBack, IconAlert } from "./icons";
 
 /* Capacidad del equipo · Coordinación.
@@ -19,11 +20,16 @@ import { IconUsers, IconPlus, IconX, IconBack, IconAlert } from "./icons";
    backend (acción guardarCapacidadWeb) — la pestaña antigua no se toca. */
 
 const SAVE_MS = 900;
+// Persona sin horas informadas en Control Económico: estimación de Q completo.
+const HORAS_Q_ESTIMADAS = 450;
 
 // Estado de una persona según su carga asignada (Σ % en proyectos).
 const cargaCol = (v) => (v > 100 ? "mandarin" : v >= 60 ? "lime" : "serene");
+const cargaHex = (v) => (v > 100 ? PALETTE.mandarin : v >= 60 ? PALETTE.lime : PALETTE.serene);
 // Cobertura de un proyecto.
 const cobCol = (v) => (v >= 0.95 && v <= 1.15 ? "lime" : v > 1.15 ? "serene" : "mandarin");
+// Nombre corto para las etiquetas de la gráfica ("Montero Nuñez, Ángela" → "Montero").
+const corto = (nombre) => String(nombre).split(",")[0].trim().split(" ")[0];
 
 export default function CapacidadRoute() {
   const { snap, post } = useSnapshot();
@@ -41,13 +47,38 @@ export default function CapacidadRoute() {
     setQ(qs.includes(curQ()) ? curQ() : qs[qs.length - 1]);
   }, [qs, q]);
 
-  /* ---------- personas y proyectos del Q (solo lectura del Excel) ---------- */
+  /* ---------- asignaciones (persistidas en Capacidad_Web) ---------- */
+  const [asigs, setAsigs] = useState(null); // [{proyecto, persona, pct}]
+  const [saveState, setSaveState] = useState("ok"); // ok | saving | error | demo
+  const saveTimer = useRef();
+  const seededQ = useRef(null);
+
+  /* ---------- personas del Q (solo lectura del Excel) ----------
+     TODAS las del bloque de Control Económico: horas del Q = imputadas
+     reales si las hay, si no teóricas×dedicación−ausencias, y si el Excel
+     no informa nada, una estimación de Q completo (marcada como estimada).
+     Se pueden añadir más a mano (quedan persistidas vía sus asignaciones). */
+  const [extra, setExtra] = useState([]); // nombres añadidos a mano en esta sesión
   const personas = useMemo(() => {
     const bloque = (data?.economico?.bloques || []).find((b) => b.q === q);
-    return (bloque?.personas || [])
-      .map((p) => ({ nombre: p.nombre, equipo: p.equipo, horasQ: Math.round(horasQPersona(p)) }))
-      .filter((p) => p.horasQ > 0);
-  }, [data, q]);
+    const base = (bloque?.personas || []).map((p) => {
+      const imp = (p.horasImputadas || []).reduce((a, v) => a + num(v), 0);
+      const teo = horasQPersona(p);
+      const horasQ = Math.round(imp > 0 ? imp : teo);
+      return {
+        nombre: p.nombre, equipo: p.equipo,
+        horasQ: horasQ > 0 ? horasQ : HORAS_Q_ESTIMADAS,
+        estimada: horasQ <= 0,
+      };
+    });
+    const vistos = new Set(base.map((p) => p.nombre));
+    // Personas con asignaciones guardadas o añadidas a mano que no están en
+    // el bloque del Excel: entran con horas estimadas.
+    const extras = [...new Set([...(asigs || []).map((a) => a.persona), ...extra])]
+      .filter((n) => n && !vistos.has(n))
+      .map((n) => ({ nombre: n, equipo: "", horasQ: HORAS_Q_ESTIMADAS, estimada: true }));
+    return [...base, ...extras];
+  }, [data, q, asigs, extra]);
 
   const proyectos = useMemo(
     () =>
@@ -56,12 +87,6 @@ export default function CapacidadRoute() {
         .map((r) => ({ nombre: String(r.data.Proyecto || r.data.proyecto || "Proyecto"), horas: num(r.data[q]) })),
     [data, q]
   );
-
-  /* ---------- asignaciones (persistidas en Capacidad_Web) ---------- */
-  const [asigs, setAsigs] = useState(null); // [{proyecto, persona, pct}]
-  const [saveState, setSaveState] = useState("ok"); // ok | saving | error | demo
-  const saveTimer = useRef();
-  const seededQ = useRef(null);
 
   useEffect(() => {
     if (!data || !q || seededQ.current === q) return;
@@ -161,10 +186,17 @@ export default function CapacidadRoute() {
           <PanelSkeleton />
         ) : (
           <>
-            <div className="mb-5 flex flex-wrap items-center gap-2">
-              {qs.map((x) => (
-                <Chip key={x} on={q === x} onClick={() => { seededQ.current = null; setQ(x); }}>{x}</Chip>
-              ))}
+            <div className="mb-5 flex flex-wrap items-center gap-3">
+              <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-sand/60">
+                Trimestre
+                <select
+                  value={q || ""}
+                  onChange={(e) => { seededQ.current = null; setQ(e.target.value); }}
+                  className={`${FIELD} !py-2 font-bold`}
+                >
+                  {qs.map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
+              </label>
               <span aria-live="polite" className={`ml-auto text-[11px] font-bold ${saveTxt[0]}`}>{saveTxt[1]}</span>
             </div>
 
@@ -174,6 +206,31 @@ export default function CapacidadRoute() {
               <Kpi label="Horas sin asignar" value={h(der.horasSinAsignar)} accent={der.horasSinAsignar > 0 ? "canary" : "lime"} />
               <Kpi label="Personas sobrecargadas" value={der.sobrecargadas.length} accent={der.sobrecargadas.length ? "mandarin" : "lime"} />
               <Kpi label="Personas por debajo del 60%" value={der.infra.length} accent={der.infra.length ? "canary" : "lime"} />
+            </div>
+
+            {/* Resumen gráfico: barras de capacidad por persona + donut de cobertura */}
+            <div className="mb-5 grid gap-4 lg:grid-cols-2">
+              <section className={`${GLASS} p-4`} aria-label="Gráfica de capacidad de personas">
+                <h2 className="mb-3 font-display text-base font-bold text-sand">Capacidad de personas</h2>
+                <BarChart
+                  items={der.pers.map((p) => ({
+                    label: p.nombre, short: corto(p.nombre), value: p.carga,
+                    hex: cargaHex(p.carga), title: `${p.nombre} · ${p.carga}% de ${h(p.horasQ)}`,
+                  }))}
+                />
+              </section>
+              <section className={`${GLASS} p-4`} aria-label="Gráfica de cobertura de proyectos">
+                <h2 className="mb-3 font-display text-base font-bold text-sand">Cobertura de proyectos</h2>
+                <Donut
+                  segments={[
+                    { label: "Cubiertos (≥95%)", value: der.proys.filter((p) => p.cobertura >= 0.95).length, hex: PALETTE.lime },
+                    { label: "A medias (60–95%)", value: der.proys.filter((p) => p.cobertura >= 0.6 && p.cobertura < 0.95).length, hex: PALETTE.canary },
+                    { label: "Sin cubrir (<60%)", value: der.proys.filter((p) => p.cobertura < 0.6).length, hex: PALETTE.mandarin },
+                  ]}
+                  centro={`${der.proys.filter((p) => p.cobertura >= 0.95).length}/${der.proys.length}`}
+                  sub="proyectos cubiertos"
+                />
+              </section>
             </div>
 
             <div className="grid items-start gap-4 xl:grid-cols-[1.35fr_1fr]">
@@ -262,7 +319,7 @@ export default function CapacidadRoute() {
                         <Bar
                           key={p.nombre}
                           label={p.nombre}
-                          extra={`· ${h(p.horasQ)}`}
+                          extra={`· ${h(p.horasQ)}${p.estimada ? " (estimadas)" : ""}`}
                           v={p.carga / 100}
                           col={cargaCol(p.carga)}
                           fmt={`${p.carga}%`}
@@ -270,6 +327,31 @@ export default function CapacidadRoute() {
                       ))}
                   </div>
                 )}
+                {/* Alta manual: para asignar a alguien que aún no aparece en el
+                    Control Económico de este Q (entra con horas estimadas). */}
+                <form
+                  className="mt-4 flex gap-2 border-t border-white/[0.08] pt-3"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const v = e.currentTarget.elements.nombre.value.trim();
+                    if (v && !personas.some((p) => p.nombre === v)) setExtra((x) => [...x, v]);
+                    e.currentTarget.reset();
+                  }}
+                >
+                  <input
+                    name="nombre"
+                    type="text"
+                    placeholder="Añadir persona (Apellidos, Nombre)…"
+                    aria-label="Añadir persona a la capacidad"
+                    className={`${FIELD} min-w-0 flex-1 text-xs`}
+                  />
+                  <button
+                    type="submit"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[#9694FF] px-3 py-1.5 text-xs font-bold text-[#001391] transition hover:brightness-95 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+                  >
+                    <IconPlus size={12} /> Añadir
+                  </button>
+                </form>
                 {(der.sobrecargadas.length > 0 || der.sinCubrir.length > 0) && (
                   <div className="mt-4 space-y-1.5 border-t border-white/[0.08] pt-3 text-[12px]">
                     {der.sobrecargadas.map((p) => (
