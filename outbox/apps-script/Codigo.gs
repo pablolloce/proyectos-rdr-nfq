@@ -834,7 +834,14 @@ function _params(e) {
 }
 
 function _auth(p) {
-  if (CONFIG.API_TOKEN && p.token !== CONFIG.API_TOKEN) throw new Error('Token inválido o ausente.');
+  // Las escrituras genéricas al Excel (write/writeRange/batch/append/updateRow)
+  // SOLO funcionan con un token real configurado. Con el token vacío o con el
+  // placeholder del repositorio quedan DESHABILITADAS por completo: así se
+  // garantiza que, desde la web, lo único que puede cambiar del Excel es la
+  // hoja propia "Capacidad_Web" (guardarCapacidadWeb, en _READ_ACTIONS).
+  if (!CONFIG.API_TOKEN || CONFIG.API_TOKEN === 'CAMBIA_ESTE_TOKEN_LARGO_Y_SECRETO')
+    throw new Error('Escrituras genéricas deshabilitadas: configura un API_TOKEN propio en CONFIG.');
+  if (p.token !== CONFIG.API_TOKEN) throw new Error('Token inválido o ausente.');
 }
 
 // Coerción de parámetros que pueden venir como string (GET) u objeto (POST).
