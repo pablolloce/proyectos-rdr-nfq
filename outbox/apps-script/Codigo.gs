@@ -281,7 +281,9 @@ function getTable(sheetName, opts) {
 
   var n = lastRow - dataStart + 1;
   var vals = sh.getRange(dataStart, 1, n, lastCol).getValues();
-  var fs   = sh.getRange(dataStart, 1, n, lastCol).getFormulas();
+  // soloValores: ahorra la lectura de fórmulas y los mapas formulas/editable
+  // por registro (el snapshot no los usa: reduce mucho tamaño y latencia).
+  var fs = opts.soloValores ? null : sh.getRange(dataStart, 1, n, lastCol).getFormulas();
   var where = opts.where || null;
   var records = [];
 
@@ -291,12 +293,16 @@ function getTable(sheetName, opts) {
       var col = cols[k], v = vals[r][col.index];
       if (v !== '' && v !== null) empty = false;
       data[col.name] = v;
-      formulas[col.name] = fs[r][col.index];
-      editable[col.name] = fs[r][col.index] === '';
+      if (fs) {
+        formulas[col.name] = fs[r][col.index];
+        editable[col.name] = fs[r][col.index] === '';
+      }
     }
     if (empty) continue;
     if (where && !_matchWhere(data, where)) continue;
-    records.push({ row: dataStart + r, data: data, formulas: formulas, editable: editable });
+    records.push(fs
+      ? { row: dataStart + r, data: data, formulas: formulas, editable: editable }
+      : { row: dataStart + r, data: data });
   }
   return { sheet: sh.getName(), headerRow: headerRow, dataStartRow: dataStart,
            columns: cols.map(function (c) { return c.name; }), count: records.length, records: records };
@@ -511,16 +517,16 @@ function getTarifas() {
 }
 
 /** Iniciativas como registros (incluye P/Q/R ya calculados). */
-function getIniciativas() {
-  return getTable('1) Iniciativas').records;
+function getIniciativas(opts) {
+  return getTable('1) Iniciativas', opts).records;
 }
 
 /**
  * Ejecución Real: registros + columnas de Q + el dato clave para economía:
  * el sumatorio de horas por cada Q (totalesHorasQ).
  */
-function getEjecucion() {
-  var t = getTable('2)Ejecución Real');
+function getEjecucion(opts) {
+  var t = getTable('2)Ejecución Real', opts);
   var qCols = t.columns.filter(function (c) { return /^\d{4}Q[1-4]$/.test(String(c)); });
   var totalesHorasQ = {};
   qCols.forEach(function (q) { totalesHorasQ[q] = 0; });
@@ -778,19 +784,21 @@ function guardarCapacidadWeb(q, asignaciones) {
  * llamada (minimiza la latencia de Apps Script).
  */
 function getSnapshot() {
+  // soloValores: el frontend de /simulador y /capacidad solo consume los
+  // VALORES (nunca formulas/editable) -> snapshot mucho más pequeño y rápido.
+  var lite = { soloValores: true };
   return {
     generadoEn: new Date().toISOString(),
     tarifas: getTarifas(),
-    iniciativas: getIniciativas(),
-    ejecucion: getEjecucion(),
+    iniciativas: getIniciativas(lite),
+    ejecucion: getEjecucion(lite),
     economico: getControlEconomico(),
     capacidad: getCapacidad(),
     capacidadWeb: getCapacidadWeb().asignaciones, // asignaciones de la página /capacidad
-    gastos: getTable('6) Gastos', { maxRows: 1500 }).records,
+    gastos: getTable('6) Gastos', { maxRows: 1500, soloValores: true }).records,
     bolsa: getBolsa().entries,        // agrupado y sin cerradas (tachadas)
-    adelantos: getAdelantos().entries,
-    encuestasQ4: getTable('10) Encuestas Q4').records,
-    encuestasQ1: getTable('11) Encuestas Q1').records
+    adelantos: getAdelantos().entries
+    // (las encuestas ya no van en el snapshot: ninguna página las usa)
   };
 }
 

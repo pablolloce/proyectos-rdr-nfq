@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PALETTE } from "@/lib/palette";
 import { useSnapshot } from "./datos";
 import {
@@ -8,7 +8,7 @@ import {
   horasTeoricasQ, ausenciasQ, dedicacionMedia,
   qsDisponibles, bloqueParaQ, colEjecucion, normQ,
 } from "./model";
-import { GLASS, FIELD, TEXT, Kpi, EmptyCard, PanelSkeleton, Bar } from "./ui";
+import { GLASS, FIELD, TEXT, Kpi, EmptyCard, PanelSkeleton, Bar, CargandoExcel } from "./ui";
 import { IconGauge, IconPlus, IconX, IconReload, IconAlert } from "./icons";
 
 /* Simulador de rentabilidad · Coordinación.
@@ -193,7 +193,7 @@ function ProyectoRow({ pr, tarifa, onUpd, onDel }) {
 }
 
 export default function SimuladorRoute() {
-  const { snap, reload } = useSnapshot();
+  const { snap, cargando } = useSnapshot();
   const data = snap?.data;
 
   // Todos los Qs con actividad, incluidos FUTUROS (iniciativas/ejecución).
@@ -205,16 +205,35 @@ export default function SimuladorRoute() {
   }, [qs, q]);
 
   const [sim, setSim] = useState(null);
+  const seededQ = useRef(null);
+  const touched = useRef(false); // el usuario ya ha tocado la simulación de este Q
   const reset = useCallback(() => {
-    if (data && q) setSim(seedSim(data, q));
+    if (!data || !q) return;
+    touched.current = false;
+    setSim(seedSim(data, q));
   }, [data, q]);
-  useEffect(() => { reset(); }, [reset]);
+  useEffect(() => {
+    if (!data || !q) return;
+    // Re-siembra al cambiar de Q y cuando el snapshot FRESCO sustituye al de
+    // la caché de sesión — pero sin pisar una simulación ya empezada.
+    const key = q + (snap?.cached ? "|cache" : "|fresh");
+    if (seededQ.current === key) return;
+    if (touched.current && String(seededQ.current || "").split("|")[0] === q) {
+      seededQ.current = key;
+      return;
+    }
+    seededQ.current = key;
+    setSim(seedSim(data, q));
+  }, [data, q, snap]);
 
   // Formularios de alta
   const [nuevaPersona, setNuevaPersona] = useState({ nombre: "", equipo: "NFQ", coste: 30 });
   const [nuevoProyecto, setNuevoProyecto] = useState({ nombre: "", horas: 100 });
 
-  const upd = (patch) => setSim((s) => ({ ...s, ...patch }));
+  const upd = (patch) => {
+    touched.current = true;
+    setSim((s) => ({ ...s, ...patch }));
+  };
   const updPersona = (id, patch) => upd({ personas: sim.personas.map((p) => (p.id === id ? { ...p, ...patch } : p)) });
   const updProyecto = (id, patch) => upd({ proyectos: sim.proyectos.map((p) => (p.id === id ? { ...p, ...patch } : p)) });
 
@@ -265,8 +284,14 @@ export default function SimuladorRoute() {
               <IconAlert size={13} /> Modo demo ({snap.error}) — datos de ejemplo.
             </p>
           )}
+          {snap && !snap.demo && snap.error && (
+            <p className="mt-3 inline-flex items-center gap-2 rounded-lg border border-canary/40 bg-canary/10 px-3 py-1.5 text-xs font-bold text-canary">
+              <IconAlert size={13} /> No se pudo actualizar desde el Excel ({snap.error}) — mostrando la última copia cargada.
+            </p>
+          )}
         </header>
 
+        {(cargando || !snap) && <CargandoExcel actualizando={!!r} />}
         {!snap || !sim || !r ? (
           <PanelSkeleton />
         ) : (
@@ -277,7 +302,7 @@ export default function SimuladorRoute() {
                 Trimestre
                 <select
                   value={q || ""}
-                  onChange={(e) => setQ(e.target.value)}
+                  onChange={(e) => { touched.current = false; setQ(e.target.value); }}
                   className={`${FIELD} !py-2 font-bold`}
                 >
                   {qs.map((x) => <option key={x} value={x}>{x}</option>)}

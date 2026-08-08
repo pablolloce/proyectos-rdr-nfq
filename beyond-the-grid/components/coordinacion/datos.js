@@ -7,14 +7,30 @@
 //   - Escritura: POST text/plain JSON.stringify({ action, ...params })
 //     (solo guardarCapacidadWeb: escribe en su hoja propia "Capacidad_Web",
 //      JAMÁS en los datos del Excel).
-// Sin backend accesible se sirve el snapshot DEMO (banner en las páginas).
+//
+// El snapshot de Apps Script tarda BASTANTES segundos (lee medio Excel), así
+// que se cachea en sessionStorage: las visitas siguientes pintan al instante
+// con lo cacheado (flag `cached`) mientras se revalida en segundo plano
+// (flag `cargando`). Sin backend accesible se sirve el snapshot DEMO.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLinks } from "@/lib/links";
 import { DEMO } from "./model";
 
+const CACHE_KEY = "rdr_coord_snap_v1";
+
+const leeCache = () => {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 export function useSnapshot() {
   const { getUrl, error: linksError } = useLinks();
-  const [snap, setSnap] = useState(null); // { data, demo, error }
+  const [snap, setSnap] = useState(null); // { data, demo, cached, error }
+  const [cargando, setCargando] = useState(true); // hay un fetch en vuelo
   const urlRef = useRef(null);
 
   const load = useCallback(async () => {
@@ -23,32 +39,47 @@ export function useSnapshot() {
     if (linksError) err = "no se pudo leer links.json";
     else url = getUrl("controlBackend");
     urlRef.current = url;
+    setCargando(true);
     if (url) {
       try {
         const u = url + (url.indexOf("?") < 0 ? "?" : "&") + "action=snapshot";
         // Timeout duro: sin él, un Apps Script colgado deja la página en el
         // esqueleto de carga para siempre (mejor caer a DEMO con aviso).
-        const res = await fetch(u, { signal: AbortSignal.timeout(45000) }).then((r) => r.json());
+        // no-store: sin él el navegador puede servir un snapshot viejo de su
+        // caché HTTP y la revalidación no sería real (la caché la ponemos
+        // nosotros en sessionStorage, controlada).
+        const res = await fetch(u, { cache: "no-store", signal: AbortSignal.timeout(90000) }).then((r) => r.json());
         if (res && res.ok && res.data) {
-          setSnap({ data: res.data, demo: false, error: "" });
+          setSnap({ data: res.data, demo: false, cached: false, error: "" });
+          setCargando(false);
+          try {
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify(res.data));
+          } catch {} // cuota llena: sin caché, sin drama
           return;
         }
         err = res && res.error ? "backend: " + res.error : "respuesta inesperada del backend";
       } catch (e) {
         err = e && e.name === "TimeoutError"
-          ? "el backend no respondió en 45 s (¿despliegue con acceso restringido o script colgado?)"
+          ? "el backend no respondió en 90 s"
           : "sin conexión con el backend (CORS/red)";
       }
     } else if (!err) {
       err = "falta controlBackend en links.json";
     }
-    setSnap({ data: DEMO, demo: true, error: err });
+    setCargando(false);
+    // Con caché previa nos quedamos con ella (datos reales, aunque no frescos);
+    // sin nada, snapshot DEMO con el motivo en el banner.
+    setSnap((prev) =>
+      prev && !prev.demo ? { ...prev, error: err } : { data: DEMO, demo: true, cached: false, error: err }
+    );
   }, [getUrl, linksError]);
 
-  // Arranque: espera a que links.json esté cargado (claves-centinela).
+  // Arranque: pinta la caché al instante y espera a links.json para revalidar.
   const booted = useRef(false);
   useEffect(() => {
     if (booted.current) return;
+    const cached = leeCache();
+    if (cached) setSnap((prev) => prev || { data: cached, demo: false, cached: true, error: "" });
     const ready = linksError || getUrl("controlBackend") != null || getUrl("_updated") != null || getUrl("_comment") != null;
     if (!ready) return;
     booted.current = true;
@@ -68,5 +99,5 @@ export function useSnapshot() {
     return res.data;
   }, []);
 
-  return { snap, reload: load, post };
+  return { snap, cargando, reload: load, post };
 }

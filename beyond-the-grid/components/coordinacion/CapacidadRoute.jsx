@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PALETTE } from "@/lib/palette";
 import { useSnapshot } from "./datos";
 import { num, h, curQ, horasQPersona, qsDisponibles, bloqueParaQ, colEjecucion, normQ } from "./model";
-import { GLASS, FIELD, TEXT, Kpi, EmptyCard, PanelSkeleton, Bar } from "./ui";
+import { GLASS, FIELD, TEXT, Kpi, EmptyCard, PanelSkeleton, Bar, CargandoExcel } from "./ui";
 import { BarChart, Donut } from "./charts";
 import { IconUsers, IconPlus, IconX, IconAlert } from "./icons";
 
@@ -51,7 +51,7 @@ const mismoProyecto = (a, b) => {
 };
 
 export default function CapacidadRoute() {
-  const { snap, post } = useSnapshot();
+  const { snap, cargando, post } = useSnapshot();
   const data = snap?.data;
 
   /* ---------- Q (incluye FUTUROS con iniciativas/ejecución) ---------- */
@@ -67,6 +67,7 @@ export default function CapacidadRoute() {
   const [saveState, setSaveState] = useState("ok"); // ok | saving | error | demo
   const saveTimer = useRef();
   const seededQ = useRef(null);
+  const touched = useRef(false); // el usuario ya ha editado asignaciones en este Q
 
   /* ---------- personas del Q (solo lectura del Excel) ----------
      TODAS las del bloque de Control Económico: horas del Q = imputadas
@@ -138,8 +139,16 @@ export default function CapacidadRoute() {
 
   const [importado, setImportado] = useState(false);
   useEffect(() => {
-    if (!data || !q || seededQ.current === q) return;
-    seededQ.current = q;
+    if (!data || !q) return;
+    // La siembra se repite cuando el snapshot FRESCO sustituye al cacheado
+    // (sessionStorage), pero nunca pisando cambios ya hechos por el usuario.
+    const key = q + (snap?.cached ? "|cache" : "|fresh");
+    if (seededQ.current === key) return;
+    if (touched.current && String(seededQ.current || "").split("|")[0] === q) {
+      seededQ.current = key;
+      return;
+    }
+    seededQ.current = key;
     const web = (data.capacidadWeb || [])
       .filter((a) => normQ(a.q) === q)
       .map((a) => ({ proyecto: a.proyecto, persona: a.persona, pct: num(a.pct) }));
@@ -169,6 +178,7 @@ export default function CapacidadRoute() {
 
   const persist = useCallback(
     (next) => {
+      touched.current = true;
       setAsigs(next);
       setImportado(false);
       clearTimeout(saveTimer.current);
@@ -256,8 +266,14 @@ export default function CapacidadRoute() {
               <IconAlert size={13} /> Modo demo ({snap.error}) — datos de ejemplo, sin guardado.
             </p>
           )}
+          {snap && !snap.demo && snap.error && (
+            <p className="mt-3 inline-flex items-center gap-2 rounded-lg border border-canary/40 bg-canary/10 px-3 py-1.5 text-xs font-bold text-canary">
+              <IconAlert size={13} /> No se pudo actualizar desde el Excel ({snap.error}) — mostrando la última copia cargada.
+            </p>
+          )}
         </header>
 
+        {(cargando || !snap) && <CargandoExcel actualizando={!!der} />}
         {!snap || !der ? (
           <PanelSkeleton />
         ) : (
@@ -267,7 +283,7 @@ export default function CapacidadRoute() {
                 Trimestre
                 <select
                   value={q || ""}
-                  onChange={(e) => { seededQ.current = null; setQ(e.target.value); }}
+                  onChange={(e) => { seededQ.current = null; touched.current = false; setQ(e.target.value); }}
                   className={`${FIELD} !py-2 font-bold`}
                 >
                   {qs.map((x) => <option key={x} value={x}>{x}</option>)}

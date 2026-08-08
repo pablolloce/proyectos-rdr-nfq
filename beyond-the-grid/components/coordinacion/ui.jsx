@@ -107,6 +107,24 @@ export function EmptyCard({ children }) {
   return <div className={`${GLASS} p-6 text-sm text-sand/60`}>{children}</div>;
 }
 
+/* ---------- indicador de carga del snapshot ----------
+   El Apps Script tarda bastantes segundos en leer el Excel: mientras no haya
+   datos hay que DECIRLO, no dejar solo el shimmer. */
+export function CargandoExcel({ actualizando = false }) {
+  return (
+    <p
+      role="status"
+      aria-live="polite"
+      className="mb-4 inline-flex items-center gap-2.5 rounded-lg border border-serene/30 bg-serene/[0.08] px-3 py-2 text-xs font-bold text-serene"
+    >
+      <span aria-hidden className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-serene/30 border-t-serene" />
+      {actualizando
+        ? "Actualizando datos desde el Excel…"
+        : "Cargando datos del Excel… la primera carga puede tardar hasta un minuto."}
+    </p>
+  );
+}
+
 /* ---------- skeleton de carga (shimmer .rdr-skel) ---------- */
 export function PanelSkeleton() {
   return (
