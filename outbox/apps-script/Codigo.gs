@@ -551,9 +551,22 @@ function getControlEconomico() {
   var out = [];
   blocks.forEach(function (b) {
     var n = b.end - b.row + 1;
-    var vals = sh.getRange(b.row, 1, n, LASTC).getValues(); // A..U
+    var vals = sh.getRange(b.row, 1, n, LASTC).getValues();   // A..U
+    var fmls = sh.getRange(b.row, 1, n, LASTC).getFormulas(); // fórmulas de las filas resumen
     var meses = (n > 1) ? [vals[1][4], vals[1][5], vals[1][6]] : []; // E,F,G de la fila cabecera
-    var team = null, personas = [], objetivos = {};
+    var team = null, personas = [], objetivos = {}, resumen = [];
+    // Fila resumen del bloque (Ingresos/Costes/Rentabilidad/Margen… tal y como
+    // los calcula el PROPIO Excel): etiqueta + celdas no vacías con su fórmula.
+    // Es la referencia para que el simulador cuadre céntimo a céntimo.
+    var addResumen = function (i, label) {
+      var celdas = {};
+      for (var cc = 3; cc < LASTC; cc++) {
+        var vv = vals[i][cc], ff = fmls[i][cc];
+        if ((vv !== '' && vv !== null) || ff !== '')
+          celdas[_colLetter(cc + 1)] = { v: vv, f: ff };
+      }
+      resumen.push({ row: b.row + i, label: label, celdas: celdas });
+    };
     for (var i = 0; i < n; i++) {
       var C = vals[i][2], D = vals[i][3];
       var cs = (C === null ? '' : String(C).trim());
@@ -562,6 +575,7 @@ function getControlEconomico() {
       if (low === 'nter') { team = 'NTER'; continue; }
       if (/^rentabilidad objetivo/i.test(cs)) {
         if (objetivos.NFQ === undefined) objetivos.NFQ = D; else objetivos.NTER = D;
+        addResumen(i, cs);
         continue;
       }
       // Persona: nombre "Apellido, Nombre" (lleva coma) y coste numérico en D.
@@ -577,7 +591,12 @@ function getControlEconomico() {
           costeMes:      [vals[i][17], vals[i][18], vals[i][19]],
           costeQ:        vals[i][20]
         });
+        continue;
       }
+      // Cualquier otra fila con etiqueta (en A, B o C): al resumen del bloque.
+      // Incluida la propia fila del Q, que suele llevar KPIs a su derecha.
+      var label = cs || String(vals[i][0] === null ? '' : vals[i][0]).trim() || String(vals[i][1] === null ? '' : vals[i][1]).trim();
+      if (label) addResumen(i, label);
     }
     var costeNFQ = 0, costeNTER = 0;
     personas.forEach(function (p) {
@@ -587,7 +606,8 @@ function getControlEconomico() {
     out.push({
       q: b.q, rowStart: b.row, rowEnd: b.end, meses: meses, personas: personas,
       costeNFQ: costeNFQ, costeNTER: costeNTER,
-      rentObjetivoNFQ: objetivos.NFQ, rentObjetivoNTER: objetivos.NTER
+      rentObjetivoNFQ: objetivos.NFQ, rentObjetivoNTER: objetivos.NTER,
+      resumen: resumen
     });
   });
   return { sheet: sh.getName(), bloques: out };

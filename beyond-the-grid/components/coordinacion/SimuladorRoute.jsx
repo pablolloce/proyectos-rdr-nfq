@@ -42,6 +42,20 @@ function gastosDelQ(data, bloque) {
   }, 0);
 }
 
+/* Rentabilidad que muestra el PROPIO Excel en las filas resumen del bloque
+   (backend >= ago-2026: bloque.resumen con etiqueta + celdas y fórmulas).
+   Es la referencia contra la que debe cuadrar la partida del simulador. */
+function rentSegunExcel(bloque) {
+  for (const r of bloque?.resumen || []) {
+    if (!/rentabilidad/i.test(r.label) || /objetivo/i.test(r.label)) continue;
+    for (const k of Object.keys(r.celdas || {})) {
+      const v = num(r.celdas[k].v);
+      if (v) return Math.abs(v) > 1 ? v / 100 : v; // 20,47 ó 0,2047
+    }
+  }
+  return null;
+}
+
 function seedSim(data, q) {
   // Bloque del Q (o el último disponible para simular Qs futuros).
   const bloque = bloqueParaQ(data, q);
@@ -92,6 +106,7 @@ function seedSim(data, q) {
     ingresos: ingresosBase,
     costes: costesBase,
     rent: ingresosBase > 0 ? (ingresosBase - costesBase) / ingresosBase : 0,
+    rentExcel: rentSegunExcel(bloque), // la que muestra el propio Excel (o null)
     aproximado: normQ(bloque?.q || "") !== q, // Q futuro sin bloque propio
   };
   return { personas, proyectos, bolsas, gastos, tarifa, base };
@@ -323,6 +338,15 @@ export default function SimuladorRoute() {
               ingresos <strong className="tabular-nums text-sand/80">{eur.format(sim.base.ingresos)}</strong> · costes{" "}
               <strong className="tabular-nums text-sand/80">{eur.format(sim.base.costes)}</strong> · rentabilidad{" "}
               <strong className={`tabular-nums ${TEXT.lime}`}>{(sim.base.rent * 100).toFixed(2)}%</strong>
+              {sim.base.rentExcel != null && (
+                <>
+                  {" · el Excel muestra "}
+                  <strong className={`tabular-nums ${Math.abs(sim.base.rentExcel - sim.base.rent) > 0.005 ? TEXT.mandarin : TEXT.lime}`}>
+                    {(sim.base.rentExcel * 100).toFixed(2)}%
+                  </strong>
+                  {Math.abs(sim.base.rentExcel - sim.base.rent) > 0.005 && " (no cuadra — revisar modelo)"}
+                </>
+              )}
             </p>
 
             {/* KPIs */}
