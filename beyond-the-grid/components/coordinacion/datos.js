@@ -26,14 +26,18 @@ export function useSnapshot() {
     if (url) {
       try {
         const u = url + (url.indexOf("?") < 0 ? "?" : "&") + "action=snapshot";
-        const res = await fetch(u).then((r) => r.json());
+        // Timeout duro: sin él, un Apps Script colgado deja la página en el
+        // esqueleto de carga para siempre (mejor caer a DEMO con aviso).
+        const res = await fetch(u, { signal: AbortSignal.timeout(45000) }).then((r) => r.json());
         if (res && res.ok && res.data) {
           setSnap({ data: res.data, demo: false, error: "" });
           return;
         }
         err = res && res.error ? "backend: " + res.error : "respuesta inesperada del backend";
-      } catch {
-        err = "sin conexión con el backend (CORS/red)";
+      } catch (e) {
+        err = e && e.name === "TimeoutError"
+          ? "el backend no respondió en 45 s (¿despliegue con acceso restringido o script colgado?)"
+          : "sin conexión con el backend (CORS/red)";
       }
     } else if (!err) {
       err = "falta controlBackend en links.json";
