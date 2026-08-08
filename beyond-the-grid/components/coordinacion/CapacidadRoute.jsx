@@ -30,6 +30,26 @@ const cobCol = (v) => (v >= 0.95 && v <= 1.15 ? "lime" : v > 1.15 ? "serene" : "
 // Nombre corto para las etiquetas de la gráfica ("Montero Nuñez, Ángela" → "Montero").
 const corto = (nombre) => String(nombre).split(",")[0].trim().split(" ")[0];
 
+/* ── Matching de nombres ──
+   PERSONAS: el Excel usa "Apellido, Nombre" y la web "Nombre Apellido";
+   se comparan por tokens sin tildes ("Stella, Laura" ≡ "Laura Stella").
+   PROYECTOS: varias OFERTAS pueden pertenecer al mismo proyecto real
+   ("Migración Midas 26Q3" ≡ "Migración Midas"); se comparan sin sufijos de Q
+   y por contención. */
+const fold = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const tokensDe = (s) => fold(s).split(/[^a-zñ]+/).filter((t) => t.length > 2);
+const mismaPersona = (a, b) => {
+  const A = tokensDe(a), B = tokensDe(b);
+  if (!A.length || !B.length) return false;
+  return A.every((t) => B.includes(t)) || B.every((t) => A.includes(t));
+};
+const foldProy = (s) =>
+  fold(s).replace(/\b(20)?\d{2}[_\s]?q[1-4]\b/g, "").replace(/[^a-z0-9ñ]+/g, " ").trim();
+const mismoProyecto = (a, b) => {
+  const A = foldProy(a), B = foldProy(b);
+  return !!A && !!B && (A === B || A.includes(B) || B.includes(A));
+};
+
 export default function CapacidadRoute() {
   const { snap, post } = useSnapshot();
   const data = snap?.data;
@@ -54,6 +74,16 @@ export default function CapacidadRoute() {
      no informa nada, una estimación de Q completo (marcada como estimada).
      Se pueden añadir más a mano (quedan persistidas vía sus asignaciones). */
   const [extra, setExtra] = useState([]); // nombres añadidos a mano en esta sesión
+  // Plantilla completa del equipo (equipo/equipo.json de la web): garantiza
+  // que TODOS salgan aunque no tengan fila en el Control Económico.
+  const [equipoWeb, setEquipoWeb] = useState([]);
+  useEffect(() => {
+    fetch("/team-hub/equipo/equipo.json")
+      .then((r) => r.json())
+      .then((d) => setEquipoWeb((d.team || []).map((p) => String(p.nombre || "")).filter(Boolean)))
+      .catch(() => {});
+  }, []);
+
   const personas = useMemo(() => {
     const bloque = bloqueParaQ(data, q);
     const base = (bloque?.personas || []).map((p) => {
@@ -66,31 +96,44 @@ export default function CapacidadRoute() {
         estimada: horasQ <= 0,
       };
     });
-    const vistos = new Set(base.map((p) => p.nombre));
-    // Personas con asignaciones guardadas o añadidas a mano que no están en
-    // el bloque del Excel: entran con horas estimadas.
-    const extras = [...new Set([...(asigs || []).map((a) => a.persona), ...extra])]
-      .filter((n) => n && !vistos.has(n))
-      .map((n) => ({ nombre: n, equipo: "", horasQ: HORAS_Q_ESTIMADAS, estimada: true }));
+    // Equipo web + asignaciones guardadas + altas a mano que no casen (por
+    // tokens de nombre) con nadie del Excel: entran con horas estimadas.
+    const candidatos = [...equipoWeb, ...(asigs || []).map((a) => a.persona), ...extra];
+    const extras = [];
+    candidatos.forEach((n) => {
+      if (!n) return;
+      if (base.some((p) => mismaPersona(p.nombre, n))) return;
+      if (extras.some((p) => mismaPersona(p.nombre, n))) return;
+      extras.push({ nombre: n, equipo: "", horasQ: HORAS_Q_ESTIMADAS, estimada: true });
+    });
     return [...base, ...extras];
-  }, [data, q, asigs, extra]);
+  }, [data, q, asigs, extra, equipoWeb]);
 
-  /* Proyectos del Q: Ejecución Real + los de la pestaña "9) Capacidad" que
-     no estén ya (nombres normalizados), con sus horas. */
+  /* Proyectos del Q, AGRUPADOS: varias ofertas de Ejecución Real pueden
+     pertenecer al mismo proyecto real (en capacidad se pone solo 1). Los
+     nombres de la pestaña "9) Capacidad" actúan de canónicos; cada oferta
+     se suma al grupo que case por nombre (sin sufijos de Q). */
   const proyectos = useMemo(() => {
-    const qc = colEjecucion(data, q);
-    const base = (data?.ejecucion?.records || [])
-      .filter((r) => num(r.data?.[qc]) > 0)
-      .map((r) => ({ nombre: String(r.data.Proyecto || r.data.proyecto || "Proyecto"), horas: num(r.data[qc]) }));
-    const vistos = new Set(base.map((p) => p.nombre.trim().toLowerCase()));
+    const grupos = [];
     const capBloque = (data?.capacidad?.bloques || []).find((b) => normQ(b.q) === q);
     (capBloque?.proyectos || []).forEach((pr) => {
-      const k = String(pr.nombre || "").trim().toLowerCase();
-      if (!k || vistos.has(k)) return;
-      vistos.add(k);
-      base.push({ nombre: String(pr.nombre), horas: num(pr.horas) });
+      const nombre = String(pr.nombre || "").trim();
+      if (nombre && !grupos.some((g) => mismoProyecto(g.nombre, nombre)))
+        grupos.push({ nombre, horas: 0, horasCap: num(pr.horas), ofertas: [] });
     });
-    return base;
+    const qc = colEjecucion(data, q);
+    (data?.ejecucion?.records || [])
+      .filter((r) => num(r.data?.[qc]) > 0)
+      .forEach((r) => {
+        const nombre = String(r.data.Proyecto || r.data.proyecto || "Proyecto");
+        const horas = num(r.data[qc]);
+        const g = grupos.find((x) => mismoProyecto(x.nombre, nombre));
+        if (g) { g.horas += horas; g.ofertas.push({ nombre, horas }); }
+        else grupos.push({ nombre, horas, horasCap: 0, ofertas: [{ nombre, horas }] });
+      });
+    // Grupo de capacidad sin ofertas casadas: valen sus horas de la pestaña.
+    grupos.forEach((g) => { if (!g.ofertas.length) g.horas = g.horasCap; });
+    return grupos.filter((g) => g.horas > 0);
   }, [data, q]);
 
   const [importado, setImportado] = useState(false);
@@ -151,15 +194,24 @@ export default function CapacidadRoute() {
   };
   const delAsig = (proyecto, persona) => persist(asigs.filter((a) => !(a.proyecto === proyecto && a.persona === persona)));
 
-  /* ---------- derivados ---------- */
+  /* ---------- derivados ----------
+     Los nombres guardados (persona/proyecto) se resuelven a su forma canónica
+     por matching, para que asignaciones antiguas o importadas sigan contando. */
   const der = useMemo(() => {
     if (!asigs) return null;
+    const canonPersona = (n) =>
+      (personas.find((p) => p.nombre === n) || personas.find((p) => mismaPersona(p.nombre, n)))?.nombre || n;
+    const canonProy = (n) =>
+      (proyectos.find((p) => p.nombre === n) || proyectos.find((p) => mismoProyecto(p.nombre, n)))?.nombre || n;
     const horasDe = Object.fromEntries(personas.map((p) => [p.nombre, p.horasQ]));
-    const carga = {}; // persona → Σ pct
-    asigs.forEach((a) => { carga[a.persona] = (carga[a.persona] || 0) + num(a.pct); });
+    const carga = {}; // persona (canónica) → Σ pct
+    asigs.forEach((a) => {
+      const cp = canonPersona(a.persona);
+      carga[cp] = (carga[cp] || 0) + num(a.pct);
+    });
     const proys = proyectos.map((pr) => {
-      const del = asigs.filter((a) => a.proyecto === pr.nombre);
-      const horasAsig = del.reduce((acc, a) => acc + ((horasDe[a.persona] || 0) * num(a.pct)) / 100, 0);
+      const del = asigs.filter((a) => canonProy(a.proyecto) === pr.nombre);
+      const horasAsig = del.reduce((acc, a) => acc + ((horasDe[canonPersona(a.persona)] || 0) * num(a.pct)) / 100, 0);
       return { ...pr, asigs: del, horasAsig, cobertura: pr.horas > 0 ? horasAsig / pr.horas : 0 };
     });
     const pers = personas.map((p) => ({ ...p, carga: carga[p.nombre] || 0 }));
@@ -269,15 +321,21 @@ export default function CapacidadRoute() {
                       <h3 className="min-w-0 break-words font-display text-base font-bold text-sand">{pr.nombre}</h3>
                       <span className="text-[11px] tabular-nums text-sand/55">{h(pr.horas)} a ejecutar</span>
                     </div>
-                    <Bar
+    <Bar
                       label="Cobertura"
                       v={pr.cobertura}
                       col={cobCol(pr.cobertura)}
                       fmt={`${h(pr.horasAsig)} (${Math.round(pr.cobertura * 100)}%)`}
                     />
+                    {/* Ofertas que componen el proyecto (agrupadas por nombre) */}
+                    {pr.ofertas.length > 1 && (
+                      <p className="mt-1.5 text-[10.5px] text-sand/45">
+                        {pr.ofertas.length} ofertas: {pr.ofertas.map((o) => `${o.nombre} (${h(o.horas)})`).join(" · ")}
+                      </p>
+                    )}
                     <ul className="mt-3 space-y-1.5">
                       {pr.asigs.map((a) => {
-                        const per = der.pers.find((p) => p.nombre === a.persona);
+                        const per = der.pers.find((p) => p.nombre === a.persona) || der.pers.find((p) => mismaPersona(p.nombre, a.persona));
                         const sobre = per && per.carga > 100;
                         return (
                           <li key={a.persona} className="flex flex-wrap items-center gap-2">
@@ -288,7 +346,7 @@ export default function CapacidadRoute() {
                             <input
                               type="range" min="0" max="100" step="5" value={a.pct}
                               aria-label={`% de ${a.persona} en ${pr.nombre}`}
-                              onChange={(e) => setPct(pr.nombre, a.persona, Number(e.target.value))}
+                              onChange={(e) => setPct(a.proyecto, a.persona, Number(e.target.value))}
                               className="w-28 accent-[#9694FF]"
                             />
                             <span className="w-14 text-right text-[12px] font-bold tabular-nums text-sand/80">
@@ -296,7 +354,7 @@ export default function CapacidadRoute() {
                             </span>
                             <button
                               type="button"
-                              onClick={() => delAsig(pr.nombre, a.persona)}
+                              onClick={() => delAsig(a.proyecto, a.persona)}
                               aria-label={`Quitar a ${a.persona} de ${pr.nombre}`}
                               className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-sand/40 transition hover:bg-white/10 hover:text-mandarin focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
                             >
