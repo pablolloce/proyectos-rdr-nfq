@@ -94,11 +94,16 @@ function seedSim(data, q) {
     ...(data.bolsa || []).map((b) => ({ tipo: "Bolsa", ...b })),
     ...(data.adelantos || []).map((b) => ({ tipo: "Adelanto", ...b })),
   ]
-    .map((b) => ({
-      id: uid(), tipo: b.tipo, nombre: String(b.proyecto || b.responsable || "—"),
-      restante: num(b.restante), horas: Math.round(consumosDelQ(b)),
-    }))
-    .filter((b) => b.restante > 0 || b.horas > 0);
+    .map((b) => {
+      const horas = Math.round(consumosDelQ(b));
+      // El "restante" del Excel YA descuenta los consumos de este Q: el tope
+      // simulable del Q es restante + lo ya consumido en él.
+      return {
+        id: uid(), tipo: b.tipo, nombre: String(b.proyecto || b.responsable || "—"),
+        disponible: num(b.restante) + horas, horas,
+      };
+    })
+    .filter((b) => b.disponible > 0);
   // Consumos del Q según la fórmula del Excel (incluye la hoja 'Bolsa BBVA
   // Cerrada', que no está en la lista de arriba): la diferencia entra como
   // partida fija "bolsas cerradas".
@@ -515,7 +520,7 @@ export default function SimuladorRoute() {
                     <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
                       <h2 className="font-display text-lg font-bold text-sand">Bolsas y adelantos</h2>
                       <span className="text-[11px] tabular-nums text-sand/55">
-                        {h(sim.bolsas.reduce((a, b) => a + b.restante, 0))} restantes en total
+                        {h(sim.bolsas.reduce((a, b) => a + Math.max(0, b.disponible - num(b.horas)), 0))} restantes en total
                       </span>
                     </div>
                     <p className="mb-3 text-[11px] text-sand/50">
@@ -533,7 +538,7 @@ export default function SimuladorRoute() {
                             {b.tipo}
                           </span>
                           <span className="min-w-0 flex-1 break-words text-[12.5px] font-semibold text-sand">{b.nombre}</span>
-                          <span className="text-[10.5px] tabular-nums text-sand/45">quedan {h(b.restante)}</span>
+                          <span className="text-[10.5px] tabular-nums text-sand/45">quedan {h(Math.max(0, b.disponible - num(b.horas)))}</span>
                           <label className="flex items-center gap-1.5">
                             <input
                               type="number" min="0" step="10" value={b.horas}
@@ -541,11 +546,11 @@ export default function SimuladorRoute() {
                               onChange={(e) =>
                                 upd({ bolsas: sim.bolsas.map((x) => (x.id === b.id ? { ...x, horas: num(e.target.value) } : x)) })
                               }
-                              className={`${FIELD} w-24 !py-1 text-right tabular-nums ${num(b.horas) > b.restante ? "!border-mandarin/70" : ""}`}
+                              className={`${FIELD} w-24 !py-1 text-right tabular-nums ${num(b.horas) > b.disponible ? "!border-mandarin/70" : ""}`}
                             />
                             <span className="text-[11px] text-sand/50">h</span>
                           </label>
-                          {num(b.horas) > b.restante && (
+                          {num(b.horas) > b.disponible && (
                             <span className="w-full text-right text-[10px] font-bold text-mandarin">supera lo restante</span>
                           )}
                         </li>
