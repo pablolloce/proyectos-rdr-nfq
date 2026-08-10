@@ -50,6 +50,22 @@ const mismoProyecto = (a, b) => {
   return !!A && !!B && (A === B || A.includes(B) || B.includes(A));
 };
 
+/* Asignaciones importadas de la pestaña "9) Capacidad": roles (responsable/
+   ejecutor/apoyo) sumados por persona y proyecto; % en fracción → %. */
+const importDesdePestana = (capBloque) => {
+  const imp = [];
+  (capBloque?.proyectos || []).forEach((pr) => {
+    (pr.asignaciones || []).forEach((a) => {
+      if (!a.persona) return;
+      const pct = Math.round(num(a.pct) * 100);
+      const ex = imp.find((x) => x.proyecto === pr.nombre && x.persona === String(a.persona));
+      if (ex) ex.pct += pct;
+      else imp.push({ proyecto: String(pr.nombre), persona: String(a.persona), pct });
+    });
+  });
+  return imp;
+};
+
 export default function CapacidadRoute() {
   const { snap, cargando, post } = useSnapshot();
   const data = snap?.data;
@@ -110,18 +126,30 @@ export default function CapacidadRoute() {
     return [...base, ...extras];
   }, [data, q, asigs, extra, equipoWeb]);
 
-  /* Proyectos del Q, AGRUPADOS: varias ofertas de Ejecución Real pueden
-     pertenecer al mismo proyecto real (en capacidad se pone solo 1). Los
-     nombres de la pestaña "9) Capacidad" actúan de canónicos; cada oferta
-     se suma al grupo que case por nombre (sin sufijos de Q). */
+  /* Bloque del Q en la pestaña "9) Capacidad" del Excel. Si EXISTE, ese Q es
+     "legado": la web debe REPRESENTAR FIELMENTE la pestaña (sus proyectos y
+     sus horas mandan, aunque no cuadren con Ejecución Real). */
+  const capBloque = useMemo(
+    () => (data?.capacidad?.bloques || []).find((b) => normQ(b.q) === q) || null,
+    [data, q]
+  );
+
+  /* Proyectos del Q.
+     · Q LEGADO (con bloque en la pestaña): los proyectos de la pestaña tal
+       cual, con sus horas y su cobertura calculadas por el propio Excel.
+     · Q FUTURO (sin bloque): se construyen desde Ejecución Real, AGRUPANDO las
+       ofertas que pertenecen al mismo proyecto real (sin sufijos de Q). */
   const proyectos = useMemo(() => {
+    if (capBloque) {
+      return (capBloque.proyectos || [])
+        .map((pr) => {
+          let cob = num(pr.cobertura);
+          if (cob > 3) cob /= 100; // por si la celda viene en % entero
+          return { nombre: String(pr.nombre || "").trim(), horas: num(pr.horas), coberturaExcel: cob, ofertas: [] };
+        })
+        .filter((g) => g.nombre && g.horas > 0);
+    }
     const grupos = [];
-    const capBloque = (data?.capacidad?.bloques || []).find((b) => normQ(b.q) === q);
-    (capBloque?.proyectos || []).forEach((pr) => {
-      const nombre = String(pr.nombre || "").trim();
-      if (nombre && !grupos.some((g) => mismoProyecto(g.nombre, nombre)))
-        grupos.push({ nombre, horas: 0, horasCap: num(pr.horas), ofertas: [] });
-    });
     const qc = colEjecucion(data, q);
     (data?.ejecucion?.records || [])
       .filter((r) => num(r.data?.[qc]) > 0)
@@ -130,12 +158,10 @@ export default function CapacidadRoute() {
         const horas = num(r.data[qc]);
         const g = grupos.find((x) => mismoProyecto(x.nombre, nombre));
         if (g) { g.horas += horas; g.ofertas.push({ nombre, horas }); }
-        else grupos.push({ nombre, horas, horasCap: 0, ofertas: [{ nombre, horas }] });
+        else grupos.push({ nombre, horas, ofertas: [{ nombre, horas }] });
       });
-    // Grupo de capacidad sin ofertas casadas: valen sus horas de la pestaña.
-    grupos.forEach((g) => { if (!g.ofertas.length) g.horas = g.horasCap; });
     return grupos.filter((g) => g.horas > 0);
-  }, [data, q]);
+  }, [data, q, capBloque]);
 
   const [importado, setImportado] = useState(false);
   useEffect(() => {
@@ -157,21 +183,12 @@ export default function CapacidadRoute() {
       setImportado(false);
     } else {
       // Sin datos web para este Q: IMPORTA las asignaciones de la pestaña
-      // antigua "9) Capacidad" (roles responsable/ejecutor/apoyo sumados por
-      // persona; % en fracción → %). Se persisten al primer cambio.
-      const capBloque = (data.capacidad?.bloques || []).find((b) => normQ(b.q) === q);
-      const imp = [];
-      (capBloque?.proyectos || []).forEach((pr) => {
-        (pr.asignaciones || []).forEach((a) => {
-          if (!a.persona) return;
-          const pct = Math.round(num(a.pct) * 100);
-          const ex = imp.find((x) => x.proyecto === pr.nombre && x.persona === String(a.persona));
-          if (ex) ex.pct += pct;
-          else imp.push({ proyecto: String(pr.nombre), persona: String(a.persona), pct });
-        });
-      });
-      setAsigs(imp);
-      setImportado(imp.length > 0);
+      // antigua "9) Capacidad". Se persisten al primer cambio.
+      const bloqueCap = (data.capacidad?.bloques || []).find((b) => normQ(b.q) === q);
+      setAsigs(importDesdePestana(bloqueCap));
+      // Q legado sin versión web: modo COPIA FIEL de la pestaña (aunque no
+      // haya asignaciones que importar).
+      setImportado(!!bloqueCap);
     }
     setSaveState(snap?.demo ? "demo" : "ok");
   }, [data, q, snap]);
@@ -196,6 +213,24 @@ export default function CapacidadRoute() {
     [post, q, snap]
   );
 
+  /* Vuelve a la copia fiel de la pestaña del Excel: descarta la versión web
+     guardada de este Q (borra sus filas de Capacidad_Web) y re-importa. */
+  const restaurar = async () => {
+    if (!capBloque) return;
+    clearTimeout(saveTimer.current);
+    touched.current = false;
+    setAsigs(importDesdePestana(capBloque));
+    setImportado(true);
+    if (snap?.demo) { setSaveState("demo"); return; }
+    try {
+      setSaveState("saving");
+      await post("guardarCapacidadWeb", { q, asignaciones: [] });
+      setSaveState("ok");
+    } catch {
+      setSaveState("error");
+    }
+  };
+
   const setPct = (proyecto, persona, pct) =>
     persist(asigs.map((a) => (a.proyecto === proyecto && a.persona === persona ? { ...a, pct } : a)));
   const addAsig = (proyecto, persona) => {
@@ -214,6 +249,19 @@ export default function CapacidadRoute() {
     const canonProy = (n) =>
       (proyectos.find((p) => p.nombre === n) || proyectos.find((p) => mismoProyecto(p.nombre, n)))?.nombre || n;
     const horasDe = Object.fromEntries(personas.map((p) => [p.nombre, p.horasQ]));
+    // COPIA FIEL: Q legado sin versión web guardada -> capacidad por persona y
+    // cobertura por proyecto son las que calcula el PROPIO Excel en la pestaña
+    // (aunque no cuadren con lo derivado de las asignaciones). Al primer
+    // cambio del usuario se pasa al cálculo propio de la web.
+    const fiel = !!capBloque && importado;
+    const capsExcel = fiel
+      ? (capBloque.capacidadPersona || []).map((cp) => {
+          let pct = num(cp.capacidad);
+          if (Math.abs(pct) <= 3) pct *= 100; // 1,01 -> 101 %
+          return { persona: String(cp.persona || ""), pct: Math.round(pct) };
+        })
+      : [];
+    const capExcelDe = (nombre) => capsExcel.find((c) => mismaPersona(c.persona, nombre))?.pct;
     const carga = {}; // persona (canónica) → Σ pct
     asigs.forEach((a) => {
       const cp = canonPersona(a.persona);
@@ -221,10 +269,18 @@ export default function CapacidadRoute() {
     });
     const proys = proyectos.map((pr) => {
       const del = asigs.filter((a) => canonProy(a.proyecto) === pr.nombre);
-      const horasAsig = del.reduce((acc, a) => acc + ((horasDe[canonPersona(a.persona)] || 0) * num(a.pct)) / 100, 0);
-      return { ...pr, asigs: del, horasAsig, cobertura: pr.horas > 0 ? horasAsig / pr.horas : 0 };
+      let horasAsig = del.reduce((acc, a) => acc + ((horasDe[canonPersona(a.persona)] || 0) * num(a.pct)) / 100, 0);
+      let cobertura = pr.horas > 0 ? horasAsig / pr.horas : 0;
+      if (fiel && pr.coberturaExcel != null && pr.coberturaExcel !== 0) {
+        cobertura = pr.coberturaExcel;
+        horasAsig = cobertura * pr.horas;
+      }
+      return { ...pr, asigs: del, horasAsig, cobertura };
     });
-    const pers = personas.map((p) => ({ ...p, carga: carga[p.nombre] || 0 }));
+    const pers = personas.map((p) => {
+      const excel = fiel ? capExcelDe(p.nombre) : undefined;
+      return { ...p, carga: excel != null ? excel : carga[p.nombre] || 0 };
+    });
     return {
       proys,
       pers,
@@ -233,7 +289,7 @@ export default function CapacidadRoute() {
       sinCubrir: proys.filter((p) => p.cobertura < 0.95),
       horasSinAsignar: proys.reduce((a, p) => a + Math.max(0, p.horas - p.horasAsig), 0),
     };
-  }, [asigs, personas, proyectos]);
+  }, [asigs, personas, proyectos, capBloque, importado]);
 
   const saveTxt = {
     ok: ["text-lime", "Guardado"],
@@ -300,8 +356,20 @@ export default function CapacidadRoute() {
                   {qs.map((x) => <option key={x} value={x}>{x}</option>)}
                 </select>
               </label>
+              {capBloque && !importado && (
+                <button
+                  type="button"
+                  onClick={restaurar}
+                  title="Descarta la versión web de este Q y vuelve a los números de la pestaña 9) Capacidad"
+                  className="rounded-full border border-white/15 bg-white/[0.055] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-sand/75 transition hover:border-white/30 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+                >
+                  Restaurar copia del Excel
+                </button>
+              )}
               <span aria-live="polite" className={`ml-auto text-[11px] font-bold ${saveTxt[0]}`}>
-                {importado ? "Importado de la pestaña 9) Capacidad · se guardará con tu primer cambio" : saveTxt[1]}
+                {importado
+                  ? "Copia fiel de la pestaña 9) Capacidad (números del Excel) · con tu primer cambio pasa a calcularse en la web"
+                  : saveTxt[1]}
               </span>
             </div>
 
