@@ -292,10 +292,15 @@ export default function OfertasRoute() {
             )}
             {estado.fase === "ok" && (
               <div className="space-y-1.5 rounded-lg border border-lime/40 bg-lime/[0.08] px-3 py-2.5 text-[12.5px]">
-                <p className={`font-bold ${TEXT.lime}`}>Oferta generada en la carpeta de Drive:</p>
+                <p className={`font-bold ${TEXT.lime}`}>
+                  Oferta generada{estado.ruta ? <> en <span className="font-normal text-sand/80">{estado.ruta}/</span></> : " en Drive"}:
+                </p>
                 <p><a className="inline-flex items-center gap-1.5 underline decoration-dotted underline-offset-2 text-sand hover:text-serene" href={estado.docUrl} target="_blank" rel="noreferrer"><IconExternal size={12} /> Documento (Doc)</a></p>
                 <p><a className="inline-flex items-center gap-1.5 underline decoration-dotted underline-offset-2 text-sand hover:text-serene" href={estado.sheetUrl} target="_blank" rel="noreferrer"><IconExternal size={12} /> Detalle (Sheet)</a></p>
-                <p><a className="inline-flex items-center gap-1.5 underline decoration-dotted underline-offset-2 text-sand/70 hover:text-serene" href={estado.carpetaUrl} target="_blank" rel="noreferrer"><IconExternal size={12} /> Carpeta de ofertas</a></p>
+                {estado.pdfUrl && (
+                  <p><a className="inline-flex items-center gap-1.5 underline decoration-dotted underline-offset-2 text-sand hover:text-serene" href={estado.pdfUrl} target="_blank" rel="noreferrer"><IconExternal size={12} /> PDF del documento</a></p>
+                )}
+                <p><a className="inline-flex items-center gap-1.5 underline decoration-dotted underline-offset-2 text-sand/70 hover:text-serene" href={estado.carpetaUrl} target="_blank" rel="noreferrer"><IconExternal size={12} /> Carpeta de la oferta</a></p>
               </div>
             )}
           </section>

@@ -33,7 +33,9 @@ var CONFIG = {
       sheet: '1o0EmAnxV8d9Lx40r2Mh1WsK__aD033AH'
     }
   },
-  CARPETA_ID: '14SheFmcOITLPPuo-t5FEKacIKzRQOgFl'
+  // Carpeta RAÍZ de ofertas. Cada oferta se genera en 20XX/QX/<Dato 11>/
+  // (año y Q de la oferta), creando las carpetas que no existan.
+  CARPETA_ID: '1YCuxgv5wdFniaBTAi5l6qU0Rxlwpbtj0'
 };
 
 /**
@@ -87,14 +89,14 @@ function _json(obj) {
  * .docx/.xlsx subidos a Drive y DocumentApp/SpreadsheetApp no pueden abrirlos
  * tal cual ("No se puede acceder al documento").
  */
-function _copiarComoNativo(fileId, nombre, mimeType) {
+function _copiarComoNativo(fileId, nombre, mimeType, carpetaId) {
   var res = UrlFetchApp.fetch(
     'https://www.googleapis.com/drive/v3/files/' + fileId + '/copy?supportsAllDrives=true',
     {
       method: 'post',
       contentType: 'application/json',
       headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
-      payload: JSON.stringify({ name: nombre, parents: [CONFIG.CARPETA_ID], mimeType: mimeType }),
+      payload: JSON.stringify({ name: nombre, parents: [carpetaId], mimeType: mimeType }),
       muteHttpExceptions: true
     }
   );
@@ -106,17 +108,35 @@ function _copiarComoNativo(fileId, nombre, mimeType) {
   return body.id;
 }
 
-/** Genera el Doc + Sheet de una oferta sustituyendo {{DATO1}}..{{DATO11}}. */
+/** Sub-carpeta por nombre, creándola si no existe. */
+function _subcarpeta(padre, nombre) {
+  var it = padre.getFoldersByName(nombre);
+  return it.hasNext() ? it.next() : padre.createFolder(nombre);
+}
+
+/**
+ * Genera el Doc + Sheet (+ PDF del Doc) de una oferta sustituyendo
+ * {{DATO1}}..{{DATO11}}, en la carpeta 20XX/QX/<Dato 11>/ bajo la raíz.
+ * Los tres ficheros se llaman igual (el Dato 11).
+ */
 function generarOferta(plantilla, datos) {
   var tpl = CONFIG.PLANTILLAS[plantilla || 'bbva-sa'];
   if (!tpl) throw new Error('Plantilla desconocida: ' + plantilla);
   if (!datos || !datos.dato1) throw new Error('Faltan los datos de la oferta.');
 
-  var carpeta = DriveApp.getFolderById(CONFIG.CARPETA_ID);
   var base = String(datos.dato11 || datos.dato1);
 
+  // Año y Q de la oferta (de la fecha de inicio, dato4 DD/MM/YYYY); si no
+  // viniera, los de hoy. Estructura: raíz / 2026 / Q3 / "RDR - ..." /
+  var m = /^\d{2}\/(\d{2})\/(\d{4})$/.exec(String(datos.dato4 || ''));
+  var hoy = new Date();
+  var anyo = m ? m[2] : String(hoy.getFullYear());
+  var qn = 'Q' + (m ? Math.floor((Number(m[1]) - 1) / 3) + 1 : Math.floor(hoy.getMonth() / 3) + 1);
+  var raiz = DriveApp.getFolderById(CONFIG.CARPETA_ID);
+  var carpeta = _subcarpeta(_subcarpeta(_subcarpeta(raiz, anyo), qn), base);
+
   // ── Google Doc (copia con conversión a Doc nativo) ──
-  var docId = _copiarComoNativo(tpl.doc, 'Oferta ' + base, 'application/vnd.google-apps.document');
+  var docId = _copiarComoNativo(tpl.doc, base, 'application/vnd.google-apps.document', carpeta.getId());
   var doc = DocumentApp.openById(docId);
   var partes = [doc.getBody(), doc.getHeader(), doc.getFooter()];
   for (var i = 1; i <= 11; i++) {
@@ -128,8 +148,11 @@ function generarOferta(plantilla, datos) {
   }
   doc.saveAndClose();
 
-  // ── Google Sheet (copia con conversión a Sheet nativo) ──
-  var sheetId = _copiarComoNativo(tpl.sheet, 'Oferta ' + base + ' (detalle)', 'application/vnd.google-apps.spreadsheet');
+  // ── PDF del Doc ya relleno (mismo nombre) ──
+  var pdf = carpeta.createFile(DriveApp.getFileById(docId).getAs('application/pdf')).setName(base + '.pdf');
+
+  // ── Google Sheet (copia con conversión a Sheet nativo, mismo nombre) ──
+  var sheetId = _copiarComoNativo(tpl.sheet, base, 'application/vnd.google-apps.spreadsheet', carpeta.getId());
   var ss = SpreadsheetApp.openById(sheetId);
   for (var j = 1; j <= 11; j++) {
     // TextFinder busca el LITERAL (sin regex): las llaves no molestan.
@@ -140,7 +163,9 @@ function generarOferta(plantilla, datos) {
   return {
     docUrl: 'https://docs.google.com/document/d/' + docId + '/edit',
     sheetUrl: 'https://docs.google.com/spreadsheets/d/' + sheetId + '/edit',
-    carpetaUrl: carpeta.getUrl()
+    pdfUrl: pdf.getUrl(),
+    carpetaUrl: carpeta.getUrl(),
+    ruta: anyo + '/' + qn + '/' + base
   };
 }
 
