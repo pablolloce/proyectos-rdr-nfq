@@ -65,6 +65,31 @@ function _json(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+/**
+ * Copia un fichero de Drive CONVIRTIÉNDOLO a formato nativo de Google
+ * (Doc/Sheet) en la carpeta de ofertas. Necesario porque las plantillas son
+ * .docx/.xlsx subidos a Drive y DocumentApp/SpreadsheetApp no pueden abrirlos
+ * tal cual ("No se puede acceder al documento").
+ */
+function _copiarComoNativo(fileId, nombre, mimeType) {
+  var res = UrlFetchApp.fetch(
+    'https://www.googleapis.com/drive/v3/files/' + fileId + '/copy?supportsAllDrives=true',
+    {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+      payload: JSON.stringify({ name: nombre, parents: [CONFIG.CARPETA_ID], mimeType: mimeType }),
+      muteHttpExceptions: true
+    }
+  );
+  var code = res.getResponseCode();
+  var body = {};
+  try { body = JSON.parse(res.getContentText() || '{}'); } catch (e) {}
+  if (code >= 300 || !body.id)
+    throw new Error('Drive (copia ' + code + '): ' + ((body.error && body.error.message) || res.getContentText().slice(0, 200)));
+  return body.id;
+}
+
 /** Genera el Doc + Sheet de una oferta sustituyendo {{DATO1}}..{{DATO11}}. */
 function generarOferta(plantilla, datos) {
   var tpl = CONFIG.PLANTILLAS[plantilla || 'bbva-sa'];
@@ -74,9 +99,9 @@ function generarOferta(plantilla, datos) {
   var carpeta = DriveApp.getFolderById(CONFIG.CARPETA_ID);
   var base = String(datos.dato11 || datos.dato1);
 
-  // ── Google Doc ──
-  var docCopia = DriveApp.getFileById(tpl.doc).makeCopy('Oferta ' + base, carpeta);
-  var doc = DocumentApp.openById(docCopia.getId());
+  // ── Google Doc (copia con conversión a Doc nativo) ──
+  var docId = _copiarComoNativo(tpl.doc, 'Oferta ' + base, 'application/vnd.google-apps.document');
+  var doc = DocumentApp.openById(docId);
   var partes = [doc.getBody(), doc.getHeader(), doc.getFooter()];
   for (var i = 1; i <= 11; i++) {
     var v = _valor(datos, i);
@@ -87,9 +112,9 @@ function generarOferta(plantilla, datos) {
   }
   doc.saveAndClose();
 
-  // ── Google Sheet ──
-  var sheetCopia = DriveApp.getFileById(tpl.sheet).makeCopy('Oferta ' + base + ' (detalle)', carpeta);
-  var ss = SpreadsheetApp.openById(sheetCopia.getId());
+  // ── Google Sheet (copia con conversión a Sheet nativo) ──
+  var sheetId = _copiarComoNativo(tpl.sheet, 'Oferta ' + base + ' (detalle)', 'application/vnd.google-apps.spreadsheet');
+  var ss = SpreadsheetApp.openById(sheetId);
   for (var j = 1; j <= 11; j++) {
     // TextFinder busca el LITERAL (sin regex): las llaves no molestan.
     ss.createTextFinder('{{DATO' + j + '}}').matchEntireCell(false).replaceAllWith(_valor(datos, j));
@@ -97,8 +122,8 @@ function generarOferta(plantilla, datos) {
   SpreadsheetApp.flush();
 
   return {
-    docUrl: 'https://docs.google.com/document/d/' + docCopia.getId() + '/edit',
-    sheetUrl: 'https://docs.google.com/spreadsheets/d/' + sheetCopia.getId() + '/edit',
+    docUrl: 'https://docs.google.com/document/d/' + docId + '/edit',
+    sheetUrl: 'https://docs.google.com/spreadsheets/d/' + sheetId + '/edit',
     carpetaUrl: carpeta.getUrl()
   };
 }
