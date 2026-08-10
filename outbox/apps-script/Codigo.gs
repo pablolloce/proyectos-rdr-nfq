@@ -802,6 +802,35 @@ function guardarCapacidadWeb(q, asignaciones) {
 }
 
 /**
+ * Horas de bolsa/adelantos CONSUMIDAS por Q, replicando la fórmula del total
+ * de horas ejecutadas del Excel:
+ *   SUMAR.SI.CONJUNTO('4) Bolsa BBVA'!J:J;      '4) Bolsa BBVA'!G:G;      <Q>)
+ * + SUMAR.SI.CONJUNTO('Bolsa BBVA Cerrada'!M:M; 'Bolsa BBVA Cerrada'!L:L; <Q>)
+ * + SUMAR.SI.CONJUNTO('5) Adelantos'!K:K;       '5) Adelantos'!H:H;       <Q>)
+ * Devuelve { '2026Q3': horas, ... } con el Q normalizado (sin espacios/_).
+ */
+function getHorasBolsaPorQ() {
+  var out = {};
+  var suma = function (sheetName, qCol, hCol) {
+    var sh = _ss().getSheetByName(sheetName);
+    if (!sh) return;
+    var last = Math.min(sh.getLastRow(), 5000);
+    if (last < 2) return;
+    var vals = sh.getRange(1, 1, last, Math.max(qCol, hCol)).getValues();
+    for (var i = 0; i < vals.length; i++) {
+      var q = String(vals[i][qCol - 1] === null ? '' : vals[i][qCol - 1]).replace(/[_\s]+/g, '').toUpperCase();
+      var h = Number(vals[i][hCol - 1]);
+      if (!/^\d{4}Q[1-4]$/.test(q) || isNaN(h) || !h) continue;
+      out[q] = (out[q] || 0) + h;
+    }
+  };
+  suma('4) Bolsa BBVA', 7, 10);       // G = Q del consumo, J = horas
+  suma('Bolsa BBVA Cerrada', 12, 13); // L = Q del consumo, M = horas
+  suma('5) Adelantos', 8, 11);        // H = Q del consumo, K = horas
+  return out;
+}
+
+/**
  * SNAPSHOT: TODO lo necesario para el frontend y las simulaciones en una sola
  * llamada (minimiza la latencia de Apps Script).
  */
@@ -823,6 +852,7 @@ function getSnapshot() {
     capacidadWeb: getCapacidadWeb().asignaciones, // asignaciones de la página /capacidad
     gastos: getTable('6) Gastos', { maxRows: 1500, soloValores: true }).records,
     bolsa: getBolsa().entries,        // agrupado y sin cerradas (tachadas)
+    bolsaHorasQ: getHorasBolsaPorQ(), // horas de bolsa consumidas por Q (incl. hoja Cerrada)
     adelantos: getAdelantos().entries
     // (las encuestas ya no van en el snapshot: ninguna página las usa)
   };

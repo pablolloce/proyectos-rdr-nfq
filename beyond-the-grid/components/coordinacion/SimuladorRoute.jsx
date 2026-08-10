@@ -85,23 +85,33 @@ function seedSim(data, q) {
   const proyectos = (data.ejecucion?.records || [])
     .filter((r) => num(r.data?.[qc]) > 0)
     .map((r) => ({ id: uid(), nombre: String(r.data.Proyecto || r.data.proyecto || "Proyecto"), horas: num(r.data[qc]) }));
-  // Bolsas y adelantos ABIERTOS: fuentes de horas que puedes simular consumir
-  // este Q (parten de 0 h para no duplicar lo ya contado en Ejecución Real).
+  // Bolsas y adelantos ABIERTOS. El Excel cuenta como horas ejecutadas del Q
+  // los CONSUMOS del Q (columna Q del consumo), así que cada entrada parte de
+  // sus consumos de este Q (editables para simular).
+  const consumosDelQ = (b) =>
+    (b.consumos || []).reduce((a, c) => a + (normQ(c.fecha) === q ? num(c.horas) : 0), 0);
   const bolsas = [
     ...(data.bolsa || []).map((b) => ({ tipo: "Bolsa", ...b })),
     ...(data.adelantos || []).map((b) => ({ tipo: "Adelanto", ...b })),
   ]
-    .filter((b) => num(b.restante) > 0)
     .map((b) => ({
       id: uid(), tipo: b.tipo, nombre: String(b.proyecto || b.responsable || "—"),
-      restante: num(b.restante), horas: 0,
-    }));
+      restante: num(b.restante), horas: Math.round(consumosDelQ(b)),
+    }))
+    .filter((b) => b.restante > 0 || b.horas > 0);
+  // Consumos del Q según la fórmula del Excel (incluye la hoja 'Bolsa BBVA
+  // Cerrada', que no está en la lista de arriba): la diferencia entra como
+  // partida fija "bolsas cerradas".
+  const horasSembradas = bolsas.reduce((a, b) => a + b.horas, 0);
+  const horasBolsaExcel = num(data.bolsaHorasQ?.[q]);
+  const bolsaCerrada = Math.max(0, Math.round(horasBolsaExcel - horasSembradas));
   const gastos = Math.round(gastosDelQ(data, bloque));
   const tarifa = num(pickTarifa(data, q));
   // Punto de partida según el Excel (antes de tocar nada): para comparar a
   // simple vista con la rentabilidad que muestra el propio Excel.
   const costesBase = personas.reduce((a, p) => a + p.impQ * p.costeHora, 0) + gastos;
-  const ingresosBase = proyectos.reduce((a, p) => a + p.horas, 0) * tarifa;
+  const ingresosBase =
+    (proyectos.reduce((a, p) => a + p.horas, 0) + horasSembradas + bolsaCerrada) * tarifa;
   const base = {
     ingresos: ingresosBase,
     costes: costesBase,
@@ -109,7 +119,7 @@ function seedSim(data, q) {
     rentExcel: rentSegunExcel(bloque), // la que muestra el propio Excel (o null)
     aproximado: normQ(bloque?.q || "") !== q, // Q futuro sin bloque propio
   };
-  return { personas, proyectos, bolsas, gastos, tarifa, base };
+  return { personas, proyectos, bolsas, bolsaCerrada, gastos, tarifa, base };
 }
 
 /* Horas del Q de una persona en la simulación:
@@ -266,7 +276,7 @@ export default function SimuladorRoute() {
     const gastos = num(sim.gastos);
     const costes = costeNFQ + costeNTER + gastos;
     const horasProyectos = sim.proyectos.reduce((a, p) => a + num(p.horas), 0);
-    const horasBolsa = sim.bolsas.reduce((a, b) => a + num(b.horas), 0);
+    const horasBolsa = sim.bolsas.reduce((a, b) => a + num(b.horas), 0) + num(sim.bolsaCerrada);
     const horasFacturables = horasProyectos + horasBolsa;
     const ingresos = horasFacturables * sim.tarifa;
     const margen = ingresos - costes;
@@ -500,7 +510,7 @@ export default function SimuladorRoute() {
                 </section>
 
                 {/* ── Bolsas y adelantos ── */}
-                {sim.bolsas.length > 0 && (
+                {(sim.bolsas.length > 0 || sim.bolsaCerrada > 0) && (
                   <section className={`${GLASS} p-4`} aria-label="Bolsas y adelantos">
                     <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
                       <h2 className="font-display text-lg font-bold text-sand">Bolsas y adelantos</h2>
@@ -541,6 +551,12 @@ export default function SimuladorRoute() {
                         </li>
                       ))}
                     </ul>
+                    {sim.bolsaCerrada > 0 && (
+                      <p className="mt-2 text-[11px] text-sand/50">
+                        + <strong className="tabular-nums text-sand/75">{h(sim.bolsaCerrada)}</strong>{" "}
+                        consumidas este Q en bolsas ya cerradas (hoja &quot;Bolsa BBVA Cerrada&quot;) — cuentan como ingreso.
+                      </p>
+                    )}
                   </section>
                 )}
 
