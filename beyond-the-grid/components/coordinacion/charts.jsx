@@ -6,44 +6,48 @@
 // utilidades temadas (text-sand) para ser legibles en claro y oscuro.
 import { rgba } from "@/lib/ui";
 
-/* Barras verticales. items: [{ label, short, value, hex, title }]
-   `linea` pinta una referencia discontinua (p.ej. 100 %). */
-export function BarChart({ items, max = 120, linea = 100, unidad = "%", alto = 150 }) {
+/* Barras horizontales compactas, en 2 columnas a partir de sm.
+   Con 20+ personas los nombres bajo barras verticales no se leen; aquí cada
+   fila lleva el nombre completo (truncado con tooltip), su barra con la marca
+   del 100 % y el valor. items: [{ label, value, hex, title }]. */
+export function BarList({ items, max = 120, linea = 100, unidad = "%" }) {
   if (!items || !items.length) return null;
   const M = Math.max(max, ...items.map((i) => i.value));
+  const marca = linea != null ? Math.min(100, (linea / M) * 100) : null;
   return (
     <div>
-      <div className="relative" style={{ height: alto }}>
-        {linea != null && (
-          <div
-            aria-hidden
-            className="absolute inset-x-0 border-t border-dashed border-white/30"
-            style={{ bottom: `${(linea / M) * 100}%` }}
-          >
-            <span className="absolute -top-2 right-0 text-[9px] tabular-nums text-sand/40">{linea}{unidad}</span>
-          </div>
-        )}
-        <div className="flex h-full items-end gap-1.5">
-          {items.map((it, i) => (
-            <div key={i} className="group flex h-full min-w-0 flex-1 flex-col items-center justify-end" title={it.title || it.label}>
-              <span className="mb-0.5 text-[9px] font-bold tabular-nums text-sand/70">{Math.round(it.value)}{unidad}</span>
+      <ul className="grid gap-x-7 gap-y-2 sm:grid-cols-2">
+        {items.map((it, i) => (
+          <li key={i} className="flex items-center gap-2.5" title={it.title || `${it.label}: ${Math.round(it.value)}${unidad}`}>
+            <span className="w-[124px] shrink-0 truncate text-[11.5px] leading-tight text-sand/80">{it.label}</span>
+            <div className="relative h-2.5 min-w-0 flex-1 rounded-full bg-white/10">
               <div
-                className="w-full max-w-[38px] rounded-t-md transition-all"
-                style={{ height: `${Math.max(2, (it.value / M) * 100)}%`, backgroundColor: it.hex, boxShadow: `0 0 0 1px ${rgba(it.hex, 0.4)}` }}
+                className="h-2.5 rounded-full"
+                style={{
+                  width: `${Math.max(1.5, Math.min(100, (it.value / M) * 100))}%`,
+                  backgroundColor: it.hex,
+                  boxShadow: `0 0 0 1px ${rgba(it.hex, 0.35)}`,
+                }}
                 role="img"
                 aria-label={`${it.label}: ${Math.round(it.value)}${unidad}`}
               />
+              {marca != null && (
+                <span
+                  aria-hidden
+                  className="absolute inset-y-[-2px] w-0 border-l border-dashed border-white/35"
+                  style={{ left: `${marca}%` }}
+                />
+              )}
             </div>
-          ))}
-        </div>
-      </div>
-      <div className="mt-1 flex gap-1.5">
-        {items.map((it, i) => (
-          <span key={i} className="min-w-0 flex-1 truncate text-center text-[9px] leading-tight text-sand/55" title={it.title || it.label}>
-            {it.short || it.label}
-          </span>
+            <span className="w-11 shrink-0 text-right text-[11px] font-bold tabular-nums text-sand/85">
+              {Math.round(it.value)}{unidad}
+            </span>
+          </li>
         ))}
-      </div>
+      </ul>
+      {linea != null && (
+        <p className="mt-2 text-right text-[9.5px] text-sand/40">┆ marca del {linea}{unidad}</p>
+      )}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { PALETTE } from "@/lib/palette";
 import { useSnapshot } from "./datos";
 import { num, h, curQ, horasQPersona, qsDisponibles, bloqueParaQ, colEjecucion, normQ } from "./model";
 import { GLASS, FIELD, TEXT, Kpi, EmptyCard, PanelSkeleton, Bar, CargandoExcel } from "./ui";
-import { BarChart, Donut } from "./charts";
+import { BarList, Donut } from "./charts";
 import { IconUsers, IconPlus, IconX, IconAlert } from "./icons";
 
 /* Capacidad del equipo · Coordinación.
@@ -27,8 +27,6 @@ const cargaCol = (v) => (v > 100 ? "mandarin" : v >= 60 ? "lime" : "serene");
 const cargaHex = (v) => (v > 100 ? PALETTE.mandarin : v >= 60 ? PALETTE.lime : PALETTE.serene);
 // Cobertura de un proyecto.
 const cobCol = (v) => (v >= 0.95 && v <= 1.15 ? "lime" : v > 1.15 ? "serene" : "mandarin");
-// Nombre corto para las etiquetas de la gráfica ("Montero Nuñez, Ángela" → "Montero").
-const corto = (nombre) => String(nombre).split(",")[0].trim().split(" ")[0];
 
 /* ── Matching de nombres ──
    PERSONAS: el Excel usa "Apellido, Nombre" y la web "Nombre Apellido";
@@ -385,11 +383,14 @@ export default function CapacidadRoute() {
             <div className="mb-5 grid gap-4 lg:grid-cols-2">
               <section className={`${GLASS} p-4`} aria-label="Gráfica de capacidad de personas">
                 <h2 className="mb-3 font-display text-base font-bold text-sand">Capacidad de personas</h2>
-                <BarChart
-                  items={der.pers.map((p) => ({
-                    label: p.nombre, short: corto(p.nombre), value: p.carga,
-                    hex: cargaHex(p.carga), title: `${p.nombre} · ${p.carga}% de ${h(p.horasQ)}`,
-                  }))}
+                <BarList
+                  items={der.pers
+                    .slice()
+                    .sort((a, b) => b.carga - a.carga)
+                    .map((p) => ({
+                      label: p.nombre, value: p.carga,
+                      hex: cargaHex(p.carga), title: `${p.nombre} · ${p.carga}% de ${h(p.horasQ)}`,
+                    }))}
                 />
               </section>
               <section className={`${GLASS} p-4`} aria-label="Gráfica de cobertura de proyectos">
