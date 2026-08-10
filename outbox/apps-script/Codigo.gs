@@ -850,7 +850,7 @@ function getSnapshot() {
     economico: getControlEconomico(),
     capacidad: getCapacidad(),
     capacidadWeb: getCapacidadWeb().asignaciones, // asignaciones de la página /capacidad
-    gastos: getTable('6) Gastos', { maxRows: 1500, soloValores: true }).records,
+    // (los gastos de la hoja 6 ya no van: la rentabilidad solo usa NFQ+NTER)
     bolsa: getBolsa().entries,        // agrupado y sin cerradas (tachadas)
     bolsaHorasQ: getHorasBolsaPorQ(), // horas de bolsa consumidas por Q (incl. hoja Cerrada)
     adelantos: getAdelantos().entries

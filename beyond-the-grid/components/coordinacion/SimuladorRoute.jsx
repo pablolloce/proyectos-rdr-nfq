@@ -13,15 +13,17 @@ import { IconGauge, IconPlus, IconX, IconReload, IconAlert } from "./icons";
 
 /* Simulador de rentabilidad · Coordinación.
    Lee el estado ACTUAL del Excel (snapshot del backend) y a partir de ahí todo
-   es simulación 100 % en cliente: personas, proyectos, bolsas/adelantos,
-   gastos y tarifa. NUNCA escribe en el Excel.
+   es simulación 100 % en cliente: personas, proyectos, bolsas/adelantos y
+   tarifa. NUNCA escribe en el Excel.
 
-   MODELO (idéntico al del Excel / control legado, para que los números casen):
+   MODELO (idéntico al del Excel, para que los números casen):
      horasQ persona = horas IMPUTADAS reales del Q, escaladas por la dedicación
        simulada (las "horas teóricas" están vacías en el Excel para casi
        todos); las ausencias añadidas sobre las del Excel restan horas.
-     costes  = Σ horasQ × coste/h  +  gastos del Q (hoja 6) Gastos)
-     ingresos = (horas proyectos + horas consumidas de bolsas/adelantos) × tarifa
+     costes  = Σ horasQ × coste/h de NFQ + NTER (los gastos de la hoja 6 NO
+       cuentan en la rentabilidad del Excel)
+     ingresos = (horas proyectos + horas consumidas de bolsas/adelantos,
+       incl. hoja "Bolsa BBVA Cerrada") × tarifa
      rentabilidad = (ingresos − costes) / ingresos, vs objetivo ponderado
        NFQ/NTER del Excel. */
 
@@ -31,16 +33,6 @@ const uid = () => ++uidSeq;
 const HORAS_TEO_DEFECTO = 480; // persona nueva sin histórico: ~3 meses × 160 h
 
 const impQDe = (p) => (p.horasImputadas || []).reduce((a, v) => a + num(v), 0);
-
-// Gastos del Q: suma de la hoja "6) Gastos" cuya fecha cae en los meses del bloque.
-function gastosDelQ(data, bloque) {
-  const ym = (d) => { const x = new Date(d); return isNaN(x) ? null : x.getFullYear() + "-" + (x.getMonth() + 1); };
-  const meses = (bloque?.meses || []).map(ym).filter(Boolean);
-  return (data.gastos || []).reduce((a, g) => {
-    const m = ym(g.data && g.data["Fecha"]);
-    return a + (m && meses.indexOf(m) >= 0 ? num(g.data["Importe"]) : 0);
-  }, 0);
-}
 
 /* Rentabilidad que muestra el PROPIO Excel en las filas resumen del bloque
    (backend >= ago-2026: bloque.resumen con etiqueta + celdas y fórmulas).
@@ -110,11 +102,11 @@ function seedSim(data, q) {
   const horasSembradas = bolsas.reduce((a, b) => a + b.horas, 0);
   const horasBolsaExcel = num(data.bolsaHorasQ?.[q]);
   const bolsaCerrada = Math.max(0, Math.round(horasBolsaExcel - horasSembradas));
-  const gastos = Math.round(gastosDelQ(data, bloque));
   const tarifa = num(pickTarifa(data, q));
   // Punto de partida según el Excel (antes de tocar nada): para comparar a
-  // simple vista con la rentabilidad que muestra el propio Excel.
-  const costesBase = personas.reduce((a, p) => a + p.impQ * p.costeHora, 0) + gastos;
+  // simple vista con la rentabilidad que muestra el propio Excel. Los GASTOS
+  // (hoja 6) NO cuentan: la rentabilidad del Excel solo usa costes NFQ+NTER.
+  const costesBase = personas.reduce((a, p) => a + p.impQ * p.costeHora, 0);
   const ingresosBase =
     (proyectos.reduce((a, p) => a + p.horas, 0) + horasSembradas + bolsaCerrada) * tarifa;
   const base = {
@@ -124,7 +116,7 @@ function seedSim(data, q) {
     rentExcel: rentSegunExcel(bloque), // la que muestra el propio Excel (o null)
     aproximado: normQ(bloque?.q || "") !== q, // Q futuro sin bloque propio
   };
-  return { personas, proyectos, bolsas, bolsaCerrada, gastos, tarifa, base };
+  return { personas, proyectos, bolsas, bolsaCerrada, tarifa, base };
 }
 
 /* Horas del Q de una persona en la simulación:
@@ -278,8 +270,7 @@ export default function SimuladorRoute() {
       const c = hq * p.costeHora;
       if (p.equipo === "NFQ") costeNFQ += c; else costeNTER += c;
     });
-    const gastos = num(sim.gastos);
-    const costes = costeNFQ + costeNTER + gastos;
+    const costes = costeNFQ + costeNTER; // sin gastos: como la rentabilidad del Excel
     const horasProyectos = sim.proyectos.reduce((a, p) => a + num(p.horas), 0);
     const horasBolsa = sim.bolsas.reduce((a, b) => a + num(b.horas), 0) + num(sim.bolsaCerrada);
     const horasFacturables = horasProyectos + horasBolsa;
@@ -287,7 +278,7 @@ export default function SimuladorRoute() {
     const margen = ingresos - costes;
     const rent = ingresos > 0 ? margen / ingresos : 0;
     const objetivo = rentObjetivoTotal(costeNFQ, costeNTER, num(bloque.rentObjetivoNFQ) || 0.25, num(bloque.rentObjetivoNTER) || 0.2);
-    return { costeNFQ, costeNTER, gastos, costes, horasEquipo, horasProyectos, horasBolsa, horasFacturables, ingresos, margen, rent, objetivo };
+    return { costeNFQ, costeNTER, costes, horasEquipo, horasProyectos, horasBolsa, horasFacturables, ingresos, margen, rent, objetivo };
   }, [sim, data, q]);
 
   return (
@@ -567,18 +558,7 @@ export default function SimuladorRoute() {
 
                 {/* ── Resultado ── */}
                 <section className={`${GLASS} p-4`} aria-label="Resultado de la simulación">
-                  <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-                    <h2 className="font-display text-lg font-bold text-sand">Resultado {q}</h2>
-                    <label className="flex items-center gap-1.5 text-[11px] text-sand/55">
-                      Gastos del Q
-                      <input
-                        type="number" min="0" step="50" value={sim.gastos}
-                        onChange={(e) => upd({ gastos: num(e.target.value) })}
-                        className={`${FIELD} w-24 !py-1 text-right tabular-nums`}
-                      />
-                      €
-                    </label>
-                  </div>
+                  <h2 className="mb-3 font-display text-lg font-bold text-sand">Resultado {q}</h2>
                   <div className="space-y-3">
                     <Bar
                       label="Rentabilidad vs objetivo"
@@ -612,14 +592,6 @@ export default function SimuladorRoute() {
                       col="canary"
                       fmt={eur.format(r.costeNTER)}
                     />
-                    {r.gastos > 0 && (
-                      <Bar
-                        label="Gastos"
-                        v={r.costes > 0 ? r.gastos / r.costes : 0}
-                        col="mandarin"
-                        fmt={eur.format(r.gastos)}
-                      />
-                    )}
                   </div>
                   <p className={`mt-4 rounded-lg border-l-4 px-3 py-2 text-[12.5px] ${
                     r.rent >= r.objetivo
