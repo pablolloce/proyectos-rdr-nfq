@@ -36,6 +36,22 @@ var CONFIG = {
   CARPETA_ID: '14SheFmcOITLPPuo-t5FEKacIKzRQOgFl'
 };
 
+/**
+ * EJECUTAR UNA VEZ A MANO tras pegar código nuevo: fuerza el diálogo de
+ * autorización con TODOS los permisos que usa el script (Drive, Docs, Sheets
+ * y llamadas a la API de Drive). Sin esto, la web da "No tienes permiso para
+ * llamar a UrlFetchApp.fetch". En el editor: seleccionar "autorizar" en el
+ * desplegable de funciones -> Ejecutar -> aceptar permisos.
+ */
+function autorizar() {
+  UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/about?fields=user', {
+    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+    muteHttpExceptions: true
+  });
+  DriveApp.getFolderById(CONFIG.CARPETA_ID).getName();
+  Logger.log('Permisos concedidos: todo listo.');
+}
+
 function doGet(e)  { return _serve(e); }
 function doPost(e) { return _serve(e); }
 
