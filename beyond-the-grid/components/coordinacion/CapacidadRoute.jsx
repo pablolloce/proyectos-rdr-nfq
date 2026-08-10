@@ -21,6 +21,10 @@ import { IconUsers, IconPlus, IconX, IconAlert } from "./icons";
 const SAVE_MS = 900;
 // Persona sin horas informadas en Control Económico: estimación de Q completo.
 const HORAS_Q_ESTIMADAS = 450;
+// Desde este Q, TODA la capacidad se gestiona en la web: la pestaña
+// "9) Capacidad" del Excel deja de ser referencia (aunque alguien la rellene).
+// Los Qs anteriores son copia fiel de la pestaña.
+const PRIMER_Q_WEB = "2026Q4";
 
 // Estado de una persona según su carga asignada (Σ % en proyectos).
 const cargaCol = (v) => (v > 100 ? "mandarin" : v >= 60 ? "lime" : "serene");
@@ -124,11 +128,16 @@ export default function CapacidadRoute() {
     return [...base, ...extras];
   }, [data, q, asigs, extra, equipoWeb]);
 
-  /* Bloque del Q en la pestaña "9) Capacidad" del Excel. Si EXISTE, ese Q es
-     "legado": la web debe REPRESENTAR FIELMENTE la pestaña (sus proyectos y
-     sus horas mandan, aunque no cuadren con Ejecución Real). */
+  /* Bloque del Q en la pestaña "9) Capacidad" del Excel. Solo cuenta para Qs
+     ANTERIORES a PRIMER_Q_WEB: esos son "legado" y la web los representa
+     fielmente (proyectos, horas y capacidades de la pestaña mandan, aunque no
+     cuadren con Ejecución Real). De PRIMER_Q_WEB en adelante la pestaña se
+     ignora y todo se construye/gestiona en la web. */
   const capBloque = useMemo(
-    () => (data?.capacidad?.bloques || []).find((b) => normQ(b.q) === q) || null,
+    () =>
+      q && q < PRIMER_Q_WEB
+        ? (data?.capacidad?.bloques || []).find((b) => normQ(b.q) === q) || null
+        : null,
     [data, q]
   );
 
@@ -180,12 +189,13 @@ export default function CapacidadRoute() {
       setAsigs(web);
       setImportado(false);
     } else {
-      // Sin datos web para este Q: IMPORTA las asignaciones de la pestaña
-      // antigua "9) Capacidad". Se persisten al primer cambio.
-      const bloqueCap = (data.capacidad?.bloques || []).find((b) => normQ(b.q) === q);
+      // Sin datos web para este Q: si es LEGADO (anterior a PRIMER_Q_WEB),
+      // importa las asignaciones de la pestaña "9) Capacidad" y entra en modo
+      // copia fiel; desde PRIMER_Q_WEB se empieza en blanco (solo web).
+      const bloqueCap = q < PRIMER_Q_WEB
+        ? (data.capacidad?.bloques || []).find((b) => normQ(b.q) === q)
+        : null;
       setAsigs(importDesdePestana(bloqueCap));
-      // Q legado sin versión web: modo COPIA FIEL de la pestaña (aunque no
-      // haya asignaciones que importar).
       setImportado(!!bloqueCap);
     }
     setSaveState(snap?.demo ? "demo" : "ok");

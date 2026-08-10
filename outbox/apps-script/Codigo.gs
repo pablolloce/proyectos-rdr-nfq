@@ -527,7 +527,9 @@ function getIniciativas(opts) {
  */
 function getEjecucion(opts) {
   var t = getTable('2)Ejecución Real', opts);
-  var qCols = t.columns.filter(function (c) { return /^\d{4}Q[1-4]$/.test(String(c)); });
+  // Acepta "2026Q4", "2026 Q4" y "2026_Q4": en cuanto la columna del Q tenga
+  // horas, el Q aparece en la web (el frontend normaliza el formato).
+  var qCols = t.columns.filter(function (c) { return /^\d{4}[ _]?Q[1-4]$/i.test(String(c).trim()); });
   var totalesHorasQ = {};
   qCols.forEach(function (q) { totalesHorasQ[q] = 0; });
   t.records.forEach(function (rec) {

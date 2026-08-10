@@ -62,7 +62,8 @@ export const horasQPersona = (p) => {
    Un Q aparece en los selectores si existe en Control Económico, o tiene
    horas en Ejecución Real, o alguna iniciativa factura en él, o tiene bloque
    en la pestaña de Capacidad. Normaliza "2026_Q3" → "2026Q3". */
-export const normQ = (s) => String(s || "").replace("_", "").trim().toUpperCase();
+// "2026_Q4", "2026 Q4" y "2026Q4" son el mismo Q.
+export const normQ = (s) => String(s || "").replace(/[_\s]+/g, "").trim().toUpperCase();
 
 export function qsDisponibles(data) {
   const set = new Set();
