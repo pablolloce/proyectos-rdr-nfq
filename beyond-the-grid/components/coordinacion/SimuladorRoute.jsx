@@ -32,7 +32,6 @@ const uid = () => ++uidSeq;
 
 const HORAS_TEO_DEFECTO = 480; // persona nueva sin histórico: ~3 meses × 160 h
 
-const impQDe = (p) => (p.horasImputadas || []).reduce((a, v) => a + num(v), 0);
 
 /* Rentabilidad que muestra el PROPIO Excel en las filas resumen del bloque
    (backend >= ago-2026: bloque.resumen con etiqueta + celdas y fórmulas).
@@ -53,12 +52,11 @@ function seedSim(data, q) {
   const bloque = bloqueParaQ(data, q);
   const personas = (bloque?.personas || []).map((p) => {
     const costeHora = num(p.costeHora);
-    // Horas base EXACTAS del Excel: su columna "Coste Q" ÷ coste/h (así el
-    // coste de partida coincide céntimo a céntimo con el Excel); si no está,
-    // su columna "Horas Q"; si tampoco, la suma de imputadas.
-    const horasBase = num(p.costeQ) > 0 && costeHora > 0
-      ? num(p.costeQ) / costeHora
-      : num(p.horasQ) || impQDe(p);
+    // Horas base EXACTAS del Excel: su columna "Coste Q" ÷ coste/h, de modo
+    // que Σ costes de partida = Σ columna "Coste Q" (lo que suma el Excel).
+    // Sin "Coste Q" informado, la persona parte de 0 h (el Excel tampoco la
+    // cuenta): nada de estimarle horas e inventar un coste que no existe.
+    const horasBase = num(p.costeQ) > 0 && costeHora > 0 ? num(p.costeQ) / costeHora : 0;
     return {
       id: uid(),
       nombre: p.nombre,
@@ -120,11 +118,12 @@ function seedSim(data, q) {
 }
 
 /* Horas del Q de una persona en la simulación:
-   - existentes: imputadas × (dedicación simulada / dedicación del Excel),
-     menos las ausencias AÑADIDAS sobre las que ya recoge el Excel;
-   - nuevas: teóricas × dedicación − ausencias. */
+   - existentes: horas base del Excel × (dedicación simulada / dedicación del
+     Excel), menos las ausencias AÑADIDAS sobre las que ya recoge el Excel
+     (una persona sin coste en el Excel parte de 0 h y 0 €, como en el Excel);
+   - nuevas (añadidas a mano): teóricas × dedicación − ausencias. */
 const horasQDe = (p) => {
-  if (p.nueva || !p.impQ) return Math.max(0, (p.teoQ * p.ded) / 100 - p.aus);
+  if (p.nueva) return Math.max(0, (p.teoQ * p.ded) / 100 - p.aus);
   const factor = p.dedBase ? p.ded / 100 / p.dedBase : 1;
   return Math.max(0, p.impQ * factor - Math.max(0, p.aus - p.ausBase));
 };
