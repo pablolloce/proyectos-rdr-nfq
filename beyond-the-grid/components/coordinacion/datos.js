@@ -16,12 +16,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLinks } from "@/lib/links";
 import { DEMO } from "./model";
 
-const CACHE_KEY = "rdr_coord_snap_v1";
+const CACHE_KEY = "rdr_coord_snap_v2"; // v2: la caché guarda también la URL
 
-const leeCache = () => {
+// La caché va LIGADA a la URL del backend: si cambia el despliegue en
+// links.json, la copia del anterior se descarta (no enseñar datos de otro
+// backend ni un segundo).
+const leeCache = (url) => {
   try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const c = JSON.parse(sessionStorage.getItem(CACHE_KEY) || "null");
+    return c && c.url === url && c.data ? c.data : null;
   } catch {
     return null;
   }
@@ -39,6 +42,11 @@ export function useSnapshot() {
     if (linksError) err = "no se pudo leer links.json";
     else url = getUrl("controlBackend");
     urlRef.current = url;
+    // Con la URL ya resuelta: pinta al instante la copia cacheada DE ESA URL.
+    if (url) {
+      const cached = leeCache(url);
+      if (cached) setSnap((prev) => prev || { data: cached, demo: false, cached: true, error: "" });
+    }
     setCargando(true);
     if (url) {
       try {
@@ -53,7 +61,7 @@ export function useSnapshot() {
           setSnap({ data: res.data, demo: false, cached: false, error: "" });
           setCargando(false);
           try {
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify(res.data));
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({ url, data: res.data }));
           } catch {} // cuota llena: sin caché, sin drama
           return;
         }
@@ -74,12 +82,11 @@ export function useSnapshot() {
     );
   }, [getUrl, linksError]);
 
-  // Arranque: pinta la caché al instante y espera a links.json para revalidar.
+  // Arranque: espera a links.json (la caché se pinta dentro de load(), ya con
+  // la URL real del backend resuelta).
   const booted = useRef(false);
   useEffect(() => {
     if (booted.current) return;
-    const cached = leeCache();
-    if (cached) setSnap((prev) => prev || { data: cached, demo: false, cached: true, error: "" });
     const ready = linksError || getUrl("controlBackend") != null || getUrl("_updated") != null || getUrl("_comment") != null;
     if (!ready) return;
     booted.current = true;

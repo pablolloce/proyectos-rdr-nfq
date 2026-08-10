@@ -807,8 +807,12 @@ function getSnapshot() {
   // soloValores: el frontend de /simulador y /capacidad solo consume los
   // VALORES (nunca formulas/editable) -> snapshot mucho más pequeño y rápido.
   var lite = { soloValores: true };
+  var ss = _ss();
   return {
     generadoEn: new Date().toISOString(),
+    // Identifica el LIBRO del que sale todo: el frontend lo muestra para que
+    // se vea a simple vista si el despliegue apunta al Excel equivocado.
+    libro: { id: ss.getId(), nombre: ss.getName(), url: ss.getUrl() },
     tarifas: getTarifas(),
     iniciativas: getIniciativas(lite),
     ejecucion: getEjecucion(lite),

@@ -271,6 +271,17 @@ export default function CapacidadRoute() {
               <IconAlert size={13} /> No se pudo actualizar desde el Excel ({snap.error}) — mostrando la última copia cargada.
             </p>
           )}
+          {snap && !snap.demo && data?.libro && (
+            <p className="mt-2 text-[11px] text-sand/45">
+              Datos de{" "}
+              <a href={data.libro.url} target="_blank" rel="noreferrer" className="underline decoration-dotted underline-offset-2 hover:text-sand/75">
+                {data.libro.nombre}
+              </a>
+              {data.generadoEn
+                ? ` · snapshot de las ${new Date(data.generadoEn).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`
+                : ""}
+            </p>
+          )}
         </header>
 
         {(cargando || !snap) && <CargandoExcel actualizando={!!der} />}
