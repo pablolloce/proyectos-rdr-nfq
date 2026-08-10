@@ -10,7 +10,7 @@ import { rgba } from "@/lib/ui";
    Con 20+ personas los nombres bajo barras verticales no se leen; aquí cada
    fila lleva el nombre completo (truncado con tooltip), su barra con la marca
    del 100 % y el valor. items: [{ label, value, hex, title }]. */
-export function BarList({ items, max = 120, linea = 100, unidad = "%" }) {
+export function BarList({ items, max = 120, linea = 100, unidad = "%", labelWidth = 124 }) {
   if (!items || !items.length) return null;
   const M = Math.max(max, ...items.map((i) => i.value));
   const marca = linea != null ? Math.min(100, (linea / M) * 100) : null;
@@ -19,7 +19,7 @@ export function BarList({ items, max = 120, linea = 100, unidad = "%" }) {
       <ul className="grid gap-x-7 gap-y-2 sm:grid-cols-2">
         {items.map((it, i) => (
           <li key={i} className="flex items-center gap-2.5" title={it.title || `${it.label}: ${Math.round(it.value)}${unidad}`}>
-            <span className="w-[124px] shrink-0 truncate text-[11.5px] leading-tight text-sand/80">{it.label}</span>
+            <span className="shrink-0 truncate text-[11.5px] leading-tight text-sand/80" style={{ width: labelWidth }}>{it.label}</span>
             <div className="relative h-2.5 min-w-0 flex-1 rounded-full bg-white/10">
               <div
                 className="h-2.5 rounded-full"

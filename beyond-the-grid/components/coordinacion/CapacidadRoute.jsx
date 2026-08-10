@@ -52,6 +52,27 @@ const mismoProyecto = (a, b) => {
   return !!A && !!B && (A === B || A.includes(B) || B.includes(A));
 };
 
+/* Etiquetas cortas para la gráfica: solo el NOMBRE de pila; si dos personas
+   comparten nombre, se añade la inicial del primer apellido ("Laura S.").
+   Formatos: "Apellidos, Nombre" (Excel) y "Nombre Apellidos" (equipo.json). */
+const partesNombre = (n) => {
+  const s = String(n || "").trim();
+  const coma = s.indexOf(",");
+  if (coma >= 0) return { pila: s.slice(coma + 1).trim(), apellido: s.slice(0, coma).trim() };
+  const t = s.split(/\s+/);
+  return { pila: t[0] || s, apellido: t.slice(1).join(" ") };
+};
+const etiquetasCortas = (nombres) => {
+  const partes = nombres.map(partesNombre);
+  const out = new Map();
+  nombres.forEach((n, i) => {
+    const { pila, apellido } = partes[i];
+    const repetido = partes.some((x, j) => j !== i && fold(x.pila) === fold(pila));
+    out.set(n, repetido && apellido ? `${pila} ${apellido[0].toUpperCase()}.` : pila);
+  });
+  return out;
+};
+
 /* Asignaciones importadas de la pestaña "9) Capacidad": roles (responsable/
    ejecutor/apoyo) sumados por persona y proyecto; % en fracción → %. */
 const importDesdePestana = (capBloque) => {
@@ -393,15 +414,21 @@ export default function CapacidadRoute() {
             <div className="mb-5 grid gap-4 lg:grid-cols-2">
               <section className={`${GLASS} p-4`} aria-label="Gráfica de capacidad de personas">
                 <h2 className="mb-3 font-display text-base font-bold text-sand">Capacidad de personas</h2>
-                <BarList
-                  items={der.pers
-                    .slice()
-                    .sort((a, b) => b.carga - a.carga)
-                    .map((p) => ({
-                      label: p.nombre, value: p.carga,
-                      hex: cargaHex(p.carga), title: `${p.nombre} · ${p.carga}% de ${h(p.horasQ)}`,
-                    }))}
-                />
+                {(() => {
+                  const cortas = etiquetasCortas(der.pers.map((p) => p.nombre));
+                  return (
+                    <BarList
+                      labelWidth={86}
+                      items={der.pers
+                        .slice()
+                        .sort((a, b) => b.carga - a.carga)
+                        .map((p) => ({
+                          label: cortas.get(p.nombre), value: p.carga,
+                          hex: cargaHex(p.carga), title: `${p.nombre} · ${p.carga}% de ${h(p.horasQ)}`,
+                        }))}
+                    />
+                  );
+                })()}
               </section>
               <section className={`${GLASS} p-4`} aria-label="Gráfica de cobertura de proyectos">
                 <h2 className="mb-3 font-display text-base font-bold text-sand">Cobertura de proyectos</h2>
