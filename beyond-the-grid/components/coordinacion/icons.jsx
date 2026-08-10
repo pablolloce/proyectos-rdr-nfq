@@ -30,4 +30,5 @@ export const IconPlus = (p) => (<S {...p}><path d="M12 5v14M5 12h14" /></S>);
 export const IconX = (p) => (<S {...p}><path d="M18 6 6 18M6 6l12 12" /></S>);
 export const IconBack = (p) => (<S {...p}><path d="M19 12H5M12 19l-7-7 7-7" /></S>);
 export const IconEye = (p) => (<S {...p}><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></S>);
+export const IconExternal = (p) => (<S {...p}><path d="M14 4h6v6" /><path d="M20 4 10 14" /><path d="M19 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h6" /></S>);
 export const IconAlert = (p) => (<S {...p}><path d="M12 3 2.5 20h19L12 3Z" /><path d="M12 10v4M12 17.5h.01" /></S>);

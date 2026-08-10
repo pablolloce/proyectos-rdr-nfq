@@ -54,6 +54,10 @@
     "url": "https://script.google.com/macros/s/AKfycbzMyQ98NgYaHwvvxhaPQBsQVrf2SuqQXMlo7xgPBNeg1o5TU-631ZD2l5cQ0tuKEr4AGQ/exec",
     "note": "Backend Apps Script de control.html (dominio nfq.es). Cambia en cada despliegue."
   },
+  "ofertasBackend": {
+    "url": "PEGAR_AQUI_URL_EXEC_DE_CODIGO_OFERTAS",
+    "note": "Backend Apps Script del generador de ofertas (/ofertas). Desplegar outbox/apps-script/Codigo_Ofertas.gs como aplicación web (Ejecutar como Yo, acceso Cualquier persona) y pegar aquí la URL /exec."
+  },
   "jiraBrowse": {
     "url": "https://cibproducts.grupobbva.com/JIRA/browse/{COD}",
     "note": "Plantilla de enlace a una incidencia de JIRA BBVA. {COD} se sustituye por el código (p.ej. CIBRDR-768)."

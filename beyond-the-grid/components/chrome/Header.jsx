@@ -23,6 +23,7 @@ export default function Header() {
     ["/retro", "Retrospectivas del equipo"],
     ["/simulador", "Simulador de rentabilidad · Coordinación"],
     ["/capacidad", "Capacidad del equipo · Coordinación"],
+    ["/ofertas", "Generación de ofertas · Coordinación"],
     ["/pases", "Pases calendados · Releases"],
     ["/recursos", "Recursos · Biblioteca RDR"],
     ["/que-es-rdr", "¿Qué es RDR? · Introducción"],
