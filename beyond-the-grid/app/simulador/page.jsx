@@ -1,4 +1,5 @@
 import SimuladorRoute from "@/components/coordinacion/SimuladorRoute";
+import SoloCoordinacion from "@/components/coordinacion/SoloCoordinacion";
 
 export const metadata = {
   title: "Simulador de rentabilidad · RDR",
@@ -8,5 +9,9 @@ export const metadata = {
 
 // Ruta fina: la lógica vive en components/coordinacion/. Chrome global en AppFrame.
 export default function SimuladorPage() {
-  return <SimuladorRoute />;
+  return (
+    <SoloCoordinacion>
+      <SimuladorRoute />
+    </SoloCoordinacion>
+  );
 }

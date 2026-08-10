@@ -1,4 +1,5 @@
 import OfertasRoute from "@/components/coordinacion/OfertasRoute";
+import SoloCoordinacion from "@/components/coordinacion/SoloCoordinacion";
 
 export const metadata = {
   title: "Generación de ofertas · RDR",
@@ -8,5 +9,9 @@ export const metadata = {
 
 // Ruta fina: la lógica vive en components/coordinacion/. Chrome global en AppFrame.
 export default function OfertasPage() {
-  return <OfertasRoute />;
+  return (
+    <SoloCoordinacion>
+      <OfertasRoute />
+    </SoloCoordinacion>
+  );
 }

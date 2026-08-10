@@ -1,4 +1,5 @@
 import CapacidadRoute from "@/components/coordinacion/CapacidadRoute";
+import SoloCoordinacion from "@/components/coordinacion/SoloCoordinacion";
 
 export const metadata = {
   title: "Capacidad del equipo · RDR",
@@ -8,5 +9,9 @@ export const metadata = {
 
 // Ruta fina: la lógica vive en components/coordinacion/. Chrome global en AppFrame.
 export default function CapacidadPage() {
-  return <CapacidadRoute />;
+  return (
+    <SoloCoordinacion>
+      <CapacidadRoute />
+    </SoloCoordinacion>
+  );
 }
