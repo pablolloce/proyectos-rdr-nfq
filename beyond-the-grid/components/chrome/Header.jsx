@@ -24,6 +24,7 @@ export default function Header() {
     ["/simulador", "Simulador de rentabilidad · Coordinación"],
     ["/capacidad", "Capacidad del equipo · Coordinación"],
     ["/ofertas", "Generación de ofertas · Coordinación"],
+    ["/equipo-gestion", "Gestión del equipo · Coordinación"],
     ["/pases", "Pases calendados · Releases"],
     ["/recursos", "Recursos · Biblioteca RDR"],
     ["/que-es-rdr", "¿Qué es RDR? · Introducción"],

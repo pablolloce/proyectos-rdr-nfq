@@ -60,6 +60,7 @@ const COORD_SECTION = {
     { label: "Simulador", desc: "Rentabilidad por Q", icon: IconShield, action: "route", target: "/simulador" },
     { label: "Capacidad", desc: "Personas y proyectos", icon: IconShield, action: "route", target: "/capacidad" },
     { label: "Ofertas", desc: "Generador de ofertas", icon: IconRocket, action: "route", target: "/ofertas" },
+    { label: "Gestión de equipo", desc: "Miembros, roles y tracks", icon: IconShield, action: "route", target: "/equipo-gestion" },
   ],
 };
 
