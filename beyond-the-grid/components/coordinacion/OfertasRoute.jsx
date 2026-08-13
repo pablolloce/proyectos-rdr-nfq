@@ -74,7 +74,10 @@ export default function OfertasRoute() {
   const [tarifa, setTarifa] = useState(TARIFA_DEFECTO);
   const [horasTxt, setHorasTxt] = useState("");
   const [ivaTxt, setIvaTxt] = useState(""); // texto libre mientras se escribe
-  const [estado, setEstado] = useState({ fase: "form" }); // form | enviando | ok | error
+  const [estado, setEstado] = useState({ fase: "form" }); // form | enviando | error
+  // Ofertas generadas en ESTA sesión (la última primero): cada una con su
+  // nombre y sus enlaces, para encadenar muchas sin perder ninguna.
+  const [historial, setHistorial] = useState([]);
 
   /* ── Calculadora: horas es la fuente de verdad ──
      Escribir horas -> sin IVA = horas × tarifa; con IVA = × 1,21.
@@ -113,8 +116,9 @@ export default function OfertasRoute() {
   const listo = !!(datos.dato1 && datos.dato2 && datos.dato6 && horas > 0);
 
   const generar = async () => {
-    if (!listo || !backendUrl) return;
+    if (!listo || !backendUrl || estado.fase === "enviando") return;
     setEstado({ fase: "enviando" });
+    const base = datos.dato11 || datos.dato1;
     try {
       const res = await fetch(backendUrl, {
         method: "POST",
@@ -122,10 +126,19 @@ export default function OfertasRoute() {
         body: JSON.stringify({ action: "generarOferta", plantilla, datos }),
       }).then((r) => r.json());
       if (!res || !res.ok) throw new Error((res && res.error) || "error del backend");
-      setEstado({ fase: "ok", ...res.data });
+      const hora = new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+      setHistorial((h) => [{ id: h.length + 1, base, hora, ...res.data }, ...h]);
+      setEstado({ fase: "form" });
     } catch (e) {
       setEstado({ fase: "error", error: String(e.message || e) });
     }
+  };
+
+  /* Deja el formulario listo para la siguiente oferta (conserva Q y tarifa). */
+  const limpiar = () => {
+    setNombre(""); setSdatool(""); setMmf(""); setDetalle("");
+    setHorasTxt(""); setIvaTxt("");
+    setEstado({ fase: "form" });
   };
 
   return (
@@ -269,38 +282,60 @@ export default function OfertasRoute() {
               )}
             </div>
 
-            <button
-              type="button"
-              disabled={!listo || !backendUrl || estado.fase === "enviando"}
-              onClick={generar}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#F5E33D] px-4 py-2.5 text-sm font-bold text-[#001391] transition hover:brightness-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
-            >
-              {estado.fase === "enviando" ? (
-                <><span aria-hidden className="h-4 w-4 animate-spin rounded-full border-2 border-[#001391]/30 border-t-[#001391]" /> Generando…</>
-              ) : (
-                <><IconPlus size={15} /> Generar oferta</>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={!listo || !backendUrl || estado.fase === "enviando"}
+                onClick={generar}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#F5E33D] px-4 py-2.5 text-sm font-bold text-[#001391] transition hover:brightness-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+              >
+                {estado.fase === "enviando" ? (
+                  <><span aria-hidden className="h-4 w-4 animate-spin rounded-full border-2 border-[#001391]/30 border-t-[#001391]" /> Generando…</>
+                ) : (
+                  <><IconPlus size={15} /> Generar oferta</>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={limpiar}
+                className="rounded-lg border border-white/15 bg-white/[0.055] px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-sand/75 transition hover:border-white/30 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+              >
+                Limpiar
+              </button>
+              {!listo && (
+                <p className="text-[11px] text-sand/45">Necesarios: nombre, SDATOOL, detalle y horas (o importe).</p>
               )}
-            </button>
-            {!listo && (
-              <p className="text-[11px] text-sand/45">Necesarios: nombre, SDATOOL, detalle y horas (o importe).</p>
-            )}
+            </div>
 
             {estado.fase === "error" && (
               <p className="rounded-lg border border-mandarin/50 bg-mandarin/10 px-3 py-2 text-xs font-bold text-mandarin">
                 No se pudo generar: {estado.error}
               </p>
             )}
-            {estado.fase === "ok" && (
-              <div className="space-y-1.5 rounded-lg border border-lime/40 bg-lime/[0.08] px-3 py-2.5 text-[12.5px]">
-                <p className={`font-bold ${TEXT.lime}`}>
-                  Oferta generada{estado.ruta ? <> en <span className="font-normal text-sand/80">{estado.ruta}/</span></> : " en Drive"}:
+
+            {/* Historial de la sesión: cada oferta con SUS enlaces, la última
+                arriba — se pueden encadenar tantas como haga falta sin que
+                los enlaces de una pisen los de otra. */}
+            {historial.length > 0 && (
+              <div className="space-y-2">
+                <p className={`text-[11px] font-bold uppercase tracking-wide ${TEXT.lime}`}>
+                  Ofertas generadas en esta sesión ({historial.length})
                 </p>
-                <p><a className="inline-flex items-center gap-1.5 underline decoration-dotted underline-offset-2 text-sand hover:text-serene" href={estado.docUrl} target="_blank" rel="noreferrer"><IconExternal size={12} /> Documento (Doc)</a></p>
-                <p><a className="inline-flex items-center gap-1.5 underline decoration-dotted underline-offset-2 text-sand hover:text-serene" href={estado.sheetUrl} target="_blank" rel="noreferrer"><IconExternal size={12} /> Detalle (Sheet)</a></p>
-                {estado.pdfUrl && (
-                  <p><a className="inline-flex items-center gap-1.5 underline decoration-dotted underline-offset-2 text-sand hover:text-serene" href={estado.pdfUrl} target="_blank" rel="noreferrer"><IconExternal size={12} /> PDF del documento</a></p>
-                )}
-                <p><a className="inline-flex items-center gap-1.5 underline decoration-dotted underline-offset-2 text-sand/70 hover:text-serene" href={estado.carpetaUrl} target="_blank" rel="noreferrer"><IconExternal size={12} /> Carpeta de la oferta</a></p>
+                <ul className="space-y-1.5">
+                  {historial.map((o, i) => (
+                    <li key={o.id} className={`rounded-lg border px-3 py-2 text-[12px] ${i === 0 ? "border-lime/40 bg-lime/[0.08]" : "border-white/[0.08] bg-white/[0.03]"}`}>
+                      <p className="font-bold text-sand">
+                        {o.base} <span className="font-normal text-sand/45">· {o.hora}{o.ruta ? ` · ${o.ruta.split("/").slice(0, 2).join("/")}` : ""}</span>
+                      </p>
+                      <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                        <a className="inline-flex items-center gap-1 underline decoration-dotted underline-offset-2 text-sand/85 hover:text-serene" href={o.docUrl} target="_blank" rel="noreferrer"><IconExternal size={11} /> Doc</a>
+                        <a className="inline-flex items-center gap-1 underline decoration-dotted underline-offset-2 text-sand/85 hover:text-serene" href={o.sheetUrl} target="_blank" rel="noreferrer"><IconExternal size={11} /> Sheet</a>
+                        {o.pdfUrl && <a className="inline-flex items-center gap-1 underline decoration-dotted underline-offset-2 text-sand/85 hover:text-serene" href={o.pdfUrl} target="_blank" rel="noreferrer"><IconExternal size={11} /> PDF</a>}
+                        <a className="inline-flex items-center gap-1 underline decoration-dotted underline-offset-2 text-sand/60 hover:text-serene" href={o.carpetaUrl} target="_blank" rel="noreferrer"><IconExternal size={11} /> Carpeta</a>
+                      </p>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </section>
