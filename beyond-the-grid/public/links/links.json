@@ -59,7 +59,7 @@
     "note": "Backend Apps Script del generador de ofertas (/ofertas). Desplegar outbox/apps-script/Codigo_Ofertas.gs como aplicación web (Ejecutar como Yo, acceso Cualquier persona) y pegar aquí la URL /exec."
   },
   "equipoBackend": {
-    "url": "PEGAR_AQUI_URL_EXEC_DE_CODIGO_EQUIPO",
+    "url": "https://script.google.com/macros/s/AKfycbwuMCo7nocD2bik28Yot-bTzepFuq1k8hy9PWmGTpos3BsTgb0-Llvbn6_lQVz5ptBDng/exec",
     "note": "Backend Apps Script de gestión del equipo (/equipo-gestion): commitea equipo.json a GitHub. Desplegar outbox/apps-script/Codigo_Equipo.gs (con GITHUB_TOKEN y CLAVE_EQUIPO en Propiedades del script) y pegar aquí la URL /exec."
   },
   "jiraBrowse": {
