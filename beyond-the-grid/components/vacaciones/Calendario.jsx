@@ -284,16 +284,21 @@ function MonthCard({ mes, anio, hoyStr, festivos, ausenciasPorDia, filtros, pers
 }
 
 /**
- * Calendario anual (12 meses). Semana empieza en lunes, festivos ES/MX/AMBOS,
- * hoy resaltado, alerta si quedan <10 disponibles en día laborable. El nº de
- * ausentes va centrado sobre un fondo de calor; con exactamente 1 persona
- * filtrada se activa el "modo persona" (sus días sólidos con su color).
+ * Calendario anual (12 meses agrupados por TRIMESTRE). Los trimestres ya
+ * pasados se pliegan en una barra clicable (con su nº de ausencias), de modo
+ * que el mes actual queda a la vista de un vistazo; el resto igual que
+ * siempre: semana empieza en lunes, festivos ES/MX/AMBOS, hoy resaltado,
+ * alerta si quedan <10 disponibles, mapa de calor y "modo persona" con
+ * exactamente 1 filtro.
  */
 export default function Calendario({ datos, filtros, totalActivos, onOpenDay }) {
   const canHover = useCanHover();
+  const mapAccent = useAccentMap();
   const [tip, setTip] = useState(null);
   const tipRef = useRef(null);
   tipRef.current = tip;
+  // Trimestres pasados que el usuario ha desplegado a mano.
+  const [abiertos, setAbiertos] = useState(() => new Set());
 
   // El tooltip es fijo (viewport): si el usuario hace scroll, se cierra.
   useEffect(() => {
@@ -304,6 +309,21 @@ export default function Calendario({ datos, filtros, totalActivos, onOpenDay }) 
 
   const anio = datos.year || new Date().getFullYear();
   const hoyStr = dateKey(new Date());
+  const hoy = new Date();
+  // Solo se pliegan trimestres PASADOS del año en curso (si el calendario
+  // publicado fuera de otro año, se muestra entero como siempre).
+  const qActual = Math.floor(hoy.getMonth() / 3);
+  const plegable = (q) => anio === hoy.getFullYear() && q < qActual;
+
+  // Nº de ausencias registradas por trimestre (para la barra plegada).
+  const ausenciasPorQ = useMemo(() => {
+    const tot = [0, 0, 0, 0];
+    Object.entries(datos.ausenciasPorDia || {}).forEach(([k, lista]) => {
+      const m = Number(k.slice(5, 7));
+      if (m >= 1 && m <= 12) tot[Math.floor((m - 1) / 3)] += (lista || []).length;
+    });
+    return tot;
+  }, [datos.ausenciasPorDia]);
 
   // Modo persona: exactamente UNA persona filtrada en el EquipoPanel.
   const { personaNombre, personaColor } = useMemo(() => {
@@ -313,27 +333,67 @@ export default function Calendario({ datos, filtros, totalActivos, onOpenDay }) 
     return { personaNombre: nombre, personaColor: emp?.color || PALETTE.mandarin };
   }, [filtros, datos.empleadosMap]);
 
+  const toggleQ = (q) =>
+    setAbiertos((prev) => {
+      const next = new Set(prev);
+      if (next.has(q)) next.delete(q);
+      else next.add(q);
+      return next;
+    });
+
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3" role="presentation">
-      {Array.from({ length: 12 }, (_, mes) => (
-        <MonthCard
-          key={mes}
-          mes={mes}
-          anio={anio}
-          hoyStr={hoyStr}
-          festivos={datos.festivos || {}}
-          ausenciasPorDia={datos.ausenciasPorDia || {}}
-          filtros={filtros}
-          personaNombre={personaNombre}
-          personaColor={personaColor}
-          totalActivos={totalActivos}
-          empleadosMap={datos.empleadosMap || {}}
-          canHover={canHover}
-          onOpenDay={onOpenDay}
-          onTip={setTip}
-          delay={mes * 30}
-        />
-      ))}
+    <div className="space-y-4" role="presentation">
+      {[0, 1, 2, 3].map((q) => {
+        const pliega = plegable(q);
+        const abierto = !pliega || abiertos.has(q);
+        return (
+          <div key={q}>
+            {pliega && (
+              <button
+                type="button"
+                onClick={() => toggleQ(q)}
+                aria-expanded={abierto}
+                className="mb-3 flex w-full items-center gap-2.5 rounded-xl border border-white/12 bg-white/[0.04] px-4 py-2.5 text-left backdrop-blur-md transition hover:border-white/25 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-serene"
+              >
+                <span aria-hidden className={`text-[11px] text-sand/50 transition-transform ${abierto ? "rotate-90" : ""}`}>▶</span>
+                <span className="text-[13px] font-bold text-sand">
+                  Q{q + 1} · {MESES[q * 3]} — {MESES[q * 3 + 2]}
+                </span>
+                <span className="text-[11px] text-sand/45">trimestre pasado</span>
+                <span className="ml-auto text-[11px] font-bold tabular-nums" style={{ color: mapAccent(ACCENT) }}>
+                  {ausenciasPorQ[q]} ausencia{ausenciasPorQ[q] === 1 ? "" : "s"}
+                </span>
+                <span className="text-[11px] font-bold uppercase tracking-wide text-sand/55">
+                  {abierto ? "Ocultar" : "Ver"}
+                </span>
+              </button>
+            )}
+            {abierto && (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                {[q * 3, q * 3 + 1, q * 3 + 2].map((mes, i) => (
+                  <MonthCard
+                    key={mes}
+                    mes={mes}
+                    anio={anio}
+                    hoyStr={hoyStr}
+                    festivos={datos.festivos || {}}
+                    ausenciasPorDia={datos.ausenciasPorDia || {}}
+                    filtros={filtros}
+                    personaNombre={personaNombre}
+                    personaColor={personaColor}
+                    totalActivos={totalActivos}
+                    empleadosMap={datos.empleadosMap || {}}
+                    canHover={canHover}
+                    onOpenDay={onOpenDay}
+                    onTip={setTip}
+                    delay={i * 30}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
       {canHover && <DayTooltip tip={tip} />}
     </div>
   );
