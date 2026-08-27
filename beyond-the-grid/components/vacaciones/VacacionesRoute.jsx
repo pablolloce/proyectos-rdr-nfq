@@ -22,6 +22,7 @@ const ACCENT = PALETTE.mandarin;
 
 // Conmutador de vista (mismo patrón segmented que las tabs de /comidas).
 const VISTAS = [
+  { id: "resumen", label: "Resumen", icon: IconSun },
   { id: "calendario", label: "Calendario", icon: IconCalendar },
   { id: "personas", label: "Personas", icon: IconUsers },
 ];
@@ -143,7 +144,7 @@ export default function VacacionesRoute() {
   const [reloadKey, setReloadKey] = useState(0);
   const [filtros, setFiltros] = useState(() => new Set());
   const [sheet, setSheet] = useState(null); // { dateStr, ausencias }
-  const [vista, setVista] = useState("calendario"); // "calendario" | "personas"
+  const [vista, setVista] = useState("resumen"); // "resumen" | "calendario" | "personas"
   // Fecha real del cliente, congelada al montar (evita rarezas si la sesión
   // cruza medianoche a mitad de interacción).
   const [hoy] = useState(() => new Date());
@@ -235,9 +236,6 @@ export default function VacacionesRoute() {
           <>
             <Hero actualizado={actualizado} />
 
-            {/* Resumen "Ahora": hoy + próximos 7 días (fecha real del cliente). */}
-            <AhoraPanel datos={datosVis} hoy={hoy} />
-
             {/* Conmutador de vista (segmented, como las tabs de /comidas). */}
             <div role="tablist" aria-label="Vistas de vacaciones" className="mb-6 inline-flex gap-1 rounded-full border border-white/12 bg-white/[0.055] p-1 backdrop-blur-md">
               {VISTAS.map(({ id, label, icon: Icon }) => {
@@ -268,7 +266,26 @@ export default function VacacionesRoute() {
             </div>
 
             <AnimatePresence mode="wait" initial={false}>
-              {vista === "calendario" ? (
+              {vista === "resumen" ? (
+                <motion.div
+                  key="resumen"
+                  role="tabpanel"
+                  id="vac-panel-resumen"
+                  aria-labelledby="vac-tab-resumen"
+                  initial={{ opacity: 0, y: reduce ? 0 : 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: reduce ? 0 : -8 }}
+                  transition={{ duration: reduce ? 0 : 0.2 }}
+                >
+                  <div className="space-y-6">
+                    <div className="max-w-3xl">
+                      <SolicitarCard formUrl={formUrl} />
+                    </div>
+                    {/* Resumen "Ahora": hoy + próximos 7 días (fecha real del cliente). */}
+                    <AhoraPanel datos={datosVis} hoy={hoy} />
+                  </div>
+                </motion.div>
+              ) : vista === "calendario" ? (
                 <motion.div
                   key="calendario"
                   role="tabpanel"
