@@ -107,12 +107,6 @@ export default function MiTimeReportRoute() {
           >
             <IconExternal size={13} /> Copiar enlace del TR de BBVA
           </button>
-          {getUrl("timeReportNFQ") && (
-            <a href={getUrl("timeReportNFQ")} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/[0.055] px-3 py-2 text-xs font-bold text-sand/85 transition hover:border-white/30 hover:bg-white/10">
-              <IconExternal size={13} /> Abrir TR de NFQ
-            </a>
-          )}
           <button
             type="button" onClick={copiarImputacion} disabled={!misFilas.length}
             className="inline-flex items-center gap-1.5 rounded-lg bg-[#FFB56B] px-3 py-2 text-xs font-bold text-[#001391] transition hover:brightness-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
