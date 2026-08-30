@@ -6,7 +6,7 @@ import { GLASS, FIELD, TEXT, Kpi, EmptyCard, PanelSkeleton } from "../coordinaci
 import { IconClock, IconAlert, IconPlus, IconX, IconReload } from "../coordinacion/icons";
 import { useTimeReport, useFestivos, useEquipo } from "./datos";
 import {
-  num, curQ, hoyISO, quincenasDeQ, quincenaDe, horasDe, horasProyecto,
+  num, curQ, hoyISO, quincenasDeQ, quincenaDe, horasDe, horasProyecto, esFinde,
   repartir, capacidadMaxima, NIVELES2, NIVEL2_ANALISIS, SOPORTE_ID,
 } from "./model";
 
@@ -38,6 +38,8 @@ export default function GestionRoute() {
   const [estado, setEstado] = useState(""); // "" | guardando | error:...
   const [verQuincenas, setVerQuincenas] = useState(false);
   const [confirmarBorrado, setConfirmarBorrado] = useState(null);
+  // Pestaña Imputación: quincena que se está viendo (por defecto la actual).
+  const [quincenaVista, setQuincenaVista] = useState(() => Math.min(6, Math.max(1, quincenaDe(curQ(), hoyISO()) || 1)));
 
   const personas = useMemo(() => (equipo || []).map((m) => m.nombre), [equipo]);
   const qs = quincenasDeQ(q);
@@ -227,7 +229,7 @@ export default function GestionRoute() {
             </select>
           </label>
           <div role="tablist" className="inline-flex gap-1 rounded-full border border-white/12 bg-white/[0.055] p-1">
-            {[["resumen", "Resumen"], ["proyectos", "Proyectos y reparto"]].map(([id, label]) => (
+            {[["resumen", "Resumen"], ["proyectos", "Proyectos y reparto"], ["imputacion", "Imputación"]].map(([id, label]) => (
               <button
                 key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
                 className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide transition ${
@@ -299,6 +301,80 @@ export default function GestionRoute() {
               </div>
             )}
           </>
+        ) : tab === "imputacion" ? (
+          /* ── Imputación de TODAS las personas en una quincena ── */
+          (() => {
+            const qn = qs.find((x) => x.n === quincenaVista);
+            const filasQ = reparto.filter((r) => r.quincena === quincenaVista);
+            const grupos = personas
+              .map((per) => ({
+                per,
+                filas: [...filasQ.filter((r) => r.persona === per)].sort((a, b) =>
+                  a.proyectoId === SOPORTE_ID ? 1 : b.proyectoId === SOPORTE_ID ? -1 : 0
+                ),
+              }))
+              .filter((g) => g.filas.length);
+            return (
+              <>
+                <div role="tablist" aria-label="Quincena" className="mb-4 inline-flex flex-wrap gap-1 rounded-full border border-white/12 bg-white/[0.055] p-1">
+                  {qs.map((x) => (
+                    <button
+                      key={x.n} role="tab" aria-selected={quincenaVista === x.n} onClick={() => setQuincenaVista(x.n)}
+                      className={`rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
+                        quincenaVista === x.n ? "bg-[#F5E33D] text-[#001391]" : "text-sand/70 hover:text-sand"
+                      }`}
+                    >
+                      {x.label}
+                    </button>
+                  ))}
+                </div>
+                {grupos.length === 0 ? (
+                  <EmptyCard>Sin imputación repartida en {qn?.label} de {q}.</EmptyCard>
+                ) : (
+                  <div className={`${GLASS} overflow-x-auto p-3`}>
+                    <table className="w-full min-w-[980px] border-collapse text-[12px]">
+                      <thead>
+                        <tr className="text-left text-[9.5px] uppercase tracking-wide text-sand/50">
+                          <th className="p-1.5">Persona</th>
+                          <th className="p-1.5">Proyecto</th>
+                          <th className="p-1.5 text-right">Total</th>
+                          {qn.dias.map((d) => (
+                            <th key={d} className={`p-1.5 text-center ${esFinde(d) ? "text-sand/25" : ""} ${d === hoy ? "text-serene" : ""}`}>
+                              {Number(d.slice(8))}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {grupos.map((g) => {
+                          const totalPer = g.filas.reduce((a, r) => a + horasDe(r.dias), 0);
+                          return g.filas.map((r, i) => (
+                            <tr key={g.per + i} className={i === 0 ? "border-t-2 border-white/[0.14]" : "border-t border-white/[0.05]"}>
+                              <td className="p-1.5 align-top">
+                                {i === 0 && (
+                                  <>
+                                    <span className="block font-bold text-sand">{g.per}{bloqueadas.has(g.per) ? " 🔒" : ""}</span>
+                                    <span className="block text-[10px] tabular-nums text-sand/50">{totalPer} h en la quincena</span>
+                                  </>
+                                )}
+                              </td>
+                              <td className="p-1.5 text-sand/80">{nombreProy(r.proyectoId)}</td>
+                              <td className="p-1.5 text-right font-bold tabular-nums text-sand/85">{horasDe(r.dias)}</td>
+                              {qn.dias.map((d) => (
+                                <td key={d} className={`p-1.5 text-center tabular-nums ${num(r.dias[d]) > 0 ? "font-bold text-sand" : "text-sand/15"}`}>
+                                  {num(r.dias[d]) > 0 ? num(r.dias[d]) : ""}
+                                </td>
+                              ))}
+                            </tr>
+                          ));
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            );
+          })()
         ) : (
           <div className="grid items-start gap-4 xl:grid-cols-[1.35fr_1fr]">
             <section className="space-y-4">
