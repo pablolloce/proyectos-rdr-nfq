@@ -59,7 +59,7 @@
     "note": "Backend Apps Script del generador de ofertas (/ofertas). Desplegar outbox/apps-script/Codigo_Ofertas.gs como aplicación web (Ejecutar como Yo, acceso Cualquier persona) y pegar aquí la URL /exec."
   },
   "timereportBackend": {
-    "url": "PEGAR_AQUI_URL_EXEC_DE_CODIGO_TIMEREPORT",
+    "url": "https://script.google.com/macros/s/AKfycbwb8bJedskF2tmsusz4PdXNhtNu1V9dUxhq0QOM9n3Hc3abjolN1UO7F3pydzzp-8sy/exec",
     "note": "Backend Apps Script del Time Report web (/timereport y /timereport-gestion). Desplegar outbox/apps-script/Codigo_TimeReport.gs como aplicación web (Ejecutar como Yo, Cualquier persona) y pegar aquí la URL /exec."
   },
   "equipoBackend": {
