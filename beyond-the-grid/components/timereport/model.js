@@ -117,7 +117,8 @@ function colocar(h, dias, usado) {
 
 /**
  * ALGORITMO DE REPARTO. Devuelve { reparto, avisos, notificar, sinHueco }.
- *  - proyectos: [{id, sdatool, nombre, feature, horas, estados}]
+ *  - proyectos: [{id, sdatool, nombre, feature, horas, estados, personas?}]
+ *    (personas: si el proyecto trae una lista, SOLO se reparte entre ellas)
  *  - repartoActual: [{quincena, persona, proyectoId, dias:{iso:h}}] (todo el Q)
  *  - personas: nombres del equipo; bloqueadas: Set/array de nombres congelados
  *  - festivos: {iso: "ES"|"MX"|"AMBOS"}; hoy: ISO (para la ventana)
@@ -154,14 +155,22 @@ export function repartir({ q, proyectos, repartoActual, personas, bloqueadas, fe
 
   for (const p of pendientes) {
     let resto = Math.round(p.pendiente);
+    // Si el proyecto tiene lista de personas, SOLO se reparte entre ellas
+    // (las bloqueadas quedan fuera igualmente).
+    const candidatas = p.personas && p.personas.length
+      ? libres.filter((x) => p.personas.includes(x))
+      : libres;
     while (resto > 0) {
-      // Persona libre con MÁS capacidad restante (menos personas por proyecto).
+      // Candidata con MÁS capacidad restante (menos personas por proyecto).
       let mejor = null, mejorCap = 0;
-      for (const per of libres) {
+      for (const per of candidatas) {
         const cap = diasProy.reduce((a, d) => a + (MAX_DIA - (usado[per][d] || 0)), 0);
         if (cap > mejorCap) { mejorCap = cap; mejor = per; }
       }
-      if (!mejor || mejorCap <= 0) { sinHueco.push({ proyecto: p.nombre, horas: resto }); break; }
+      if (!mejor || mejorCap <= 0) {
+        sinHueco.push({ proyecto: p.nombre, horas: resto, motivo: candidatas.length ? "sin capacidad" : "sin personas disponibles (todas bloqueadas o fuera del equipo)" });
+        break;
+      }
       const meter = Math.min(resto, mejorCap);
       const { asignado } = colocar(meter, diasProy, usado[mejor]);
       resto -= meter;

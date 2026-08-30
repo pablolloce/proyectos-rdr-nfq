@@ -24,7 +24,8 @@
  */
 
 var HOJAS = {
-  proyectos: ['TR_Proyectos', ['Q', 'Id', 'SDATOOL', 'Nombre', 'Feature', 'Horas', 'Estados', 'Actualizado']],
+  // 'Personas' va al FINAL para no romper hojas creadas con la versión previa.
+  proyectos: ['TR_Proyectos', ['Q', 'Id', 'SDATOOL', 'Nombre', 'Feature', 'Horas', 'Estados', 'Actualizado', 'Personas']],
   reparto: ['TR_Reparto', ['Q', 'Quincena', 'Persona', 'ProyectoId', 'Dias', 'Actualizado']],
   bloqueadas: ['TR_Bloqueadas', ['Q', 'Personas', 'Actualizado']]
 };
@@ -97,9 +98,10 @@ function getSnapshot(q) {
     var rq = _q(r[0]);
     if (rq) qsSet[rq] = 1;
     if (rq !== q) return;
-    var estados = {};
+    var estados = {}, personasProy = [];
     try { estados = JSON.parse(r[6] || '{}'); } catch (e2) {}
-    proyectos.push({ id: String(r[1]), sdatool: String(r[2] || ''), nombre: String(r[3] || ''), feature: String(r[4] || ''), horas: Number(r[5]) || 0, estados: estados });
+    try { personasProy = JSON.parse(r[8] || '[]'); } catch (e5) {}
+    proyectos.push({ id: String(r[1]), sdatool: String(r[2] || ''), nombre: String(r[3] || ''), feature: String(r[4] || ''), horas: Number(r[5]) || 0, estados: estados, personas: personasProy });
   });
   var reparto = [];
   _filas(_hoja('reparto')).forEach(function (r) {
@@ -140,9 +142,9 @@ function guardarProyectos(q, proyectos) {
   _borrarDelQ(sh, q);
   var now = new Date();
   var rows = (proyectos || []).map(function (p) {
-    return [q, String(p.id), String(p.sdatool || ''), String(p.nombre || ''), String(p.feature || ''), Number(p.horas) || 0, JSON.stringify(p.estados || {}), now];
+    return [q, String(p.id), String(p.sdatool || ''), String(p.nombre || ''), String(p.feature || ''), Number(p.horas) || 0, JSON.stringify(p.estados || {}), now, JSON.stringify(p.personas || [])];
   });
-  if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, 8).setValues(rows);
+  if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, 9).setValues(rows);
   return { n: rows.length };
 }
 

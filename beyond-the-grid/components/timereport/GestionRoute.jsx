@@ -33,6 +33,7 @@ export default function GestionRoute() {
   const equipo = useEquipo();
   const [tab, setTab] = useState("resumen"); // resumen | proyectos
   const [nuevo, setNuevo] = useState({ nombre: "", sdatool: "", feature: "", horas: "" });
+  const [editando, setEditando] = useState(null); // { id, nombre, sdatool, feature, horas }
   const [preview, setPreview] = useState(null); // resultado de repartir() sin guardar
   const [estado, setEstado] = useState(""); // "" | guardando | error:...
   const [verQuincenas, setVerQuincenas] = useState(false);
@@ -79,6 +80,11 @@ export default function GestionRoute() {
     catch (e) { setEstado("error:" + String(e.message || e)); }
   };
 
+  // Se puede pegar el código completo ("SDATOOL-49780" / "CIBRDR-1088"):
+  // se queda el código y el prefijo lo pone la web, sin cortar nada.
+  const limpiaSdatool = (v) => String(v).replace(/^\s*sdatool[\s-]*/i, "").trim();
+  const limpiaFeature = (v) => String(v).replace(/^\s*cibrdr[\s-]*/i, "").trim();
+
   const altaProyecto = () =>
     guarda(async () => {
       const id = "p" + Date.now();
@@ -87,14 +93,49 @@ export default function GestionRoute() {
       const p = {
         id,
         nombre: nuevo.nombre.trim(),
-        sdatool: "SDATOOL-" + nuevo.sdatool.trim().replace(/^\s*sdatool[\s-]*/i, ""),
-        feature: nuevo.feature.trim() ? "CIBRDR-" + nuevo.feature.trim().replace(/^\s*cibrdr[\s-]*/i, "") : "",
+        sdatool: "SDATOOL-" + limpiaSdatool(nuevo.sdatool),
+        feature: nuevo.feature.trim() ? "CIBRDR-" + limpiaFeature(nuevo.feature) : "",
         horas: Math.round(num(nuevo.horas)),
         estados,
+        personas: [],
       };
       await post("guardarProyectos", { q, proyectos: [...proyectos, p] });
       setNuevo({ nombre: "", sdatool: "", feature: "", horas: "" });
     });
+
+  const guardaEdicion = () =>
+    guarda(async () => {
+      const e = editando;
+      await post("guardarProyectos", {
+        q,
+        proyectos: proyectos.map((p) =>
+          p.id === e.id
+            ? {
+                ...p,
+                nombre: e.nombre.trim(),
+                sdatool: "SDATOOL-" + limpiaSdatool(e.sdatool),
+                feature: e.feature.trim() ? "CIBRDR-" + limpiaFeature(e.feature) : "",
+                horas: Math.round(num(e.horas)),
+              }
+            : p
+        ),
+      });
+      setEditando(null);
+    });
+
+  const togglePersonaProy = (id, nombre) =>
+    guarda(() =>
+      post("guardarProyectos", {
+        q,
+        proyectos: proyectos.map((p) => {
+          if (p.id !== id) return p;
+          const set = new Set(p.personas || []);
+          if (set.has(nombre)) set.delete(nombre);
+          else set.add(nombre);
+          return { ...p, personas: [...set] };
+        }),
+      })
+    );
 
   const cambiaEstado = (id, quincena, valor) =>
     guarda(() =>
@@ -240,16 +281,24 @@ export default function GestionRoute() {
               {/* Alta de proyecto */}
               <div className={`${GLASS} p-4`}>
                 <h2 className="mb-3 font-display text-base font-bold text-sand">Añadir proyecto</h2>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2.5">
                   <input type="text" placeholder="Nombre del proyecto" aria-label="Nombre del proyecto" value={nuevo.nombre}
                     onChange={(e) => setNuevo({ ...nuevo, nombre: e.target.value })} className={`${FIELD} w-full`} />
-                  <div className="grid grid-cols-3 gap-2">
-                    <input type="text" placeholder="SDATOOL" aria-label="Código SDATOOL" value={nuevo.sdatool}
-                      onChange={(e) => setNuevo({ ...nuevo, sdatool: e.target.value })} className={`${FIELD} w-full`} />
-                    <input type="text" placeholder="CIBRDR" aria-label="Feature CIBRDR" value={nuevo.feature}
-                      onChange={(e) => setNuevo({ ...nuevo, feature: e.target.value })} className={`${FIELD} w-full`} />
+                  <div className="flex flex-wrap gap-2">
+                    <div className={`${FIELD} flex min-w-[180px] flex-1 items-center gap-0 !py-0`}>
+                      <span className="shrink-0 py-2 text-sand/45">SDATOOL-</span>
+                      <input type="text" placeholder="49780 (o pégalo completo)" aria-label="Código SDATOOL" value={nuevo.sdatool}
+                        onChange={(e) => setNuevo({ ...nuevo, sdatool: limpiaSdatool(e.target.value) })}
+                        className="w-full bg-transparent py-2 focus:outline-none" />
+                    </div>
+                    <div className={`${FIELD} flex min-w-[160px] flex-1 items-center gap-0 !py-0`}>
+                      <span className="shrink-0 py-2 text-sand/45">CIBRDR-</span>
+                      <input type="text" placeholder="1088" aria-label="Feature CIBRDR" value={nuevo.feature}
+                        onChange={(e) => setNuevo({ ...nuevo, feature: limpiaFeature(e.target.value) })}
+                        className="w-full bg-transparent py-2 focus:outline-none" />
+                    </div>
                     <input type="number" min="1" step="1" placeholder="Horas" aria-label="Horas a incurrir" value={nuevo.horas}
-                      onChange={(e) => setNuevo({ ...nuevo, horas: e.target.value })} className={`${FIELD} w-full text-right tabular-nums`} />
+                      onChange={(e) => setNuevo({ ...nuevo, horas: e.target.value })} className={`${FIELD} w-28 text-right tabular-nums`} />
                   </div>
                 </div>
                 <button
@@ -265,41 +314,102 @@ export default function GestionRoute() {
               {proyectos.length === 0 && <EmptyCard>Sin proyectos en {q}.</EmptyCard>}
               {proyectos.map((p) => (
                 <article key={p.id} className={`${GLASS} p-4`}>
-                  <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                    <h3 className="min-w-0 break-words font-display text-base font-bold text-sand">{p.nombre}</h3>
-                    <span className="flex items-center gap-3 text-[11px] tabular-nums text-sand/55">
-                      {p.sdatool} · {p.feature || "sin feature"} · {num(p.horas)} h
-                      {confirmarBorrado === p.id ? (
-                        <span className="flex items-center gap-1.5">
-                          <span className="font-bold text-mandarin">¿Eliminar?</span>
-                          <button type="button" onClick={() => borraProyecto(p.id)} className="rounded bg-mandarin px-1.5 py-0.5 font-bold text-[#001391]">Sí</button>
-                          <button type="button" onClick={() => setConfirmarBorrado(null)} className="rounded border border-white/20 px-1.5 py-0.5 text-sand/70">No</button>
-                        </span>
-                      ) : (
-                        <button type="button" onClick={() => setConfirmarBorrado(p.id)} aria-label={`Eliminar ${p.nombre}`}
-                          className="grid h-6 w-6 place-items-center rounded-md text-sand/40 transition hover:bg-white/10 hover:text-mandarin">
-                          <IconX size={12} />
+                  {editando?.id === p.id ? (
+                    /* ── Edición de los datos del proyecto ── */
+                    <div className="mb-3 space-y-2.5">
+                      <input type="text" value={editando.nombre} aria-label="Editar nombre"
+                        onChange={(e) => setEditando({ ...editando, nombre: e.target.value })} className={`${FIELD} w-full`} />
+                      <div className="flex flex-wrap gap-2">
+                        <div className={`${FIELD} flex min-w-[180px] flex-1 items-center gap-0 !py-0`}>
+                          <span className="shrink-0 py-2 text-sand/45">SDATOOL-</span>
+                          <input type="text" value={editando.sdatool} aria-label="Editar SDATOOL"
+                            onChange={(e) => setEditando({ ...editando, sdatool: limpiaSdatool(e.target.value) })}
+                            className="w-full bg-transparent py-2 focus:outline-none" />
+                        </div>
+                        <div className={`${FIELD} flex min-w-[160px] flex-1 items-center gap-0 !py-0`}>
+                          <span className="shrink-0 py-2 text-sand/45">CIBRDR-</span>
+                          <input type="text" value={editando.feature} aria-label="Editar Feature"
+                            onChange={(e) => setEditando({ ...editando, feature: limpiaFeature(e.target.value) })}
+                            className="w-full bg-transparent py-2 focus:outline-none" />
+                        </div>
+                        <input type="number" min="1" step="1" value={editando.horas} aria-label="Editar horas"
+                          onChange={(e) => setEditando({ ...editando, horas: e.target.value })} className={`${FIELD} w-28 text-right tabular-nums`} />
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={guardaEdicion} disabled={!editando.nombre.trim() || !editando.sdatool.trim() || num(editando.horas) <= 0}
+                          className="rounded-lg bg-[#88E783] px-3 py-1.5 text-xs font-bold text-[#001391] transition hover:brightness-95 disabled:opacity-40">
+                          Guardar cambios
                         </button>
-                      )}
-                    </span>
-                  </div>
+                        <button type="button" onClick={() => setEditando(null)}
+                          className="rounded-lg border border-white/15 px-3 py-1.5 text-xs font-bold text-sand/70 transition hover:bg-white/10">
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                      <h3 className="min-w-0 break-words font-display text-base font-bold text-sand">{p.nombre}</h3>
+                      <span className="flex items-center gap-2 text-[11px] tabular-nums text-sand/55">
+                        {p.sdatool} · {p.feature || "sin feature"} · {num(p.horas)} h
+                        <button type="button"
+                          onClick={() => setEditando({ id: p.id, nombre: p.nombre, sdatool: limpiaSdatool(p.sdatool), feature: limpiaFeature(p.feature), horas: num(p.horas) })}
+                          aria-label={`Editar ${p.nombre}`}
+                          className="rounded-md border border-white/15 px-2 py-0.5 text-[10px] font-bold uppercase text-sand/70 transition hover:border-white/30 hover:bg-white/10">
+                          Editar
+                        </button>
+                        {confirmarBorrado === p.id ? (
+                          <span className="flex items-center gap-1.5">
+                            <span className="font-bold text-mandarin">¿Eliminar?</span>
+                            <button type="button" onClick={() => borraProyecto(p.id)} className="rounded bg-mandarin px-1.5 py-0.5 font-bold text-[#001391]">Sí</button>
+                            <button type="button" onClick={() => setConfirmarBorrado(null)} className="rounded border border-white/20 px-1.5 py-0.5 text-sand/70">No</button>
+                          </span>
+                        ) : (
+                          <button type="button" onClick={() => setConfirmarBorrado(p.id)} aria-label={`Eliminar ${p.nombre}`}
+                            className="grid h-6 w-6 place-items-center rounded-md text-sand/40 transition hover:bg-white/10 hover:text-mandarin">
+                            <IconX size={12} />
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                  )}
+
                   <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-sand/45">Estado (Nivel 2) por quincena</p>
-                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 xl:grid-cols-6">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {qs.map((x) => (
                       <label key={x.n} className="block">
-                        <span className="text-[9px] text-sand/45">{x.label}</span>
+                        <span className="text-[9.5px] text-sand/45">{x.label}</span>
                         <select
                           value={(p.estados || {})[x.n] || NIVEL2_ANALISIS}
                           onChange={(e) => cambiaEstado(p.id, x.n, e.target.value)}
                           aria-label={`Estado de ${p.nombre} en ${x.label}`}
-                          className={`${FIELD} block w-full !px-1.5 !py-1 text-[10.5px]`}
+                          className={`${FIELD} block w-full !py-1.5 text-[12px]`}
                         >
                           {NIVELES2.map((n2) => <option key={n2} value={n2}>{n2 === NIVEL2_ANALISIS ? "Análisis y diseño" : n2}</option>)}
                         </select>
                       </label>
                     ))}
                   </div>
-                  <p className="mt-2 text-[10.5px] text-sand/45">Repartidas {horasProyecto(reparto, p.id)} de {num(p.horas)} h</p>
+
+                  {/* Personas del proyecto: si se selecciona alguna, el reparto
+                      SOLO usa esas (menos las bloqueadas). Sin selección = todas. */}
+                  <p className="mb-1.5 mt-3 text-[10px] font-bold uppercase tracking-wide text-sand/45">
+                    Repartir solo entre… <span className="font-normal normal-case text-sand/40">(sin selección = todo el equipo)</span>
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {personas.map((n) => {
+                      const sel = (p.personas || []).includes(n);
+                      return (
+                        <button key={n} type="button" onClick={() => togglePersonaProy(p.id, n)} aria-pressed={sel}
+                          className={`rounded-full border px-2 py-0.5 text-[10.5px] font-bold transition ${
+                            sel ? "border-transparent bg-[#85C8FF] text-[#001391]" : "border-white/12 bg-white/[0.03] text-sand/55 hover:border-white/30"
+                          }`}>
+                          {n}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="mt-2.5 text-[10.5px] text-sand/45">Repartidas {horasProyecto(reparto, p.id)} de {num(p.horas)} h</p>
                 </article>
               ))}
             </section>
@@ -353,7 +463,7 @@ export default function GestionRoute() {
                     </p>
                     {preview.sinHueco.length > 0 && (
                       <p className="rounded-lg border border-mandarin/50 bg-mandarin/10 px-2.5 py-1.5 text-[11.5px] font-bold text-mandarin">
-                        ⚠ No caben: {preview.sinHueco.map((s) => `${s.proyecto} (${s.horas} h)`).join(" · ")}
+                        ⚠ No caben: {preview.sinHueco.map((s) => `${s.proyecto} (${s.horas} h${s.motivo ? " · " + s.motivo : ""})`).join(" · ")}
                       </p>
                     )}
                     {/* Resumen por persona */}
