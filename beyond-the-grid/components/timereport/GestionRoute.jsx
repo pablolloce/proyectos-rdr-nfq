@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PALETTE } from "@/lib/palette";
 import { GLASS, FIELD, TEXT, Kpi, EmptyCard, PanelSkeleton } from "../coordinacion/ui";
 import { IconClock, IconAlert, IconPlus, IconX, IconReload } from "../coordinacion/icons";
@@ -39,21 +39,35 @@ export default function GestionRoute() {
   const [verQuincenas, setVerQuincenas] = useState(false);
   const [confirmarBorrado, setConfirmarBorrado] = useState(null);
 
-  const data = snap?.data;
-  const cargando = !snap || festivos == null || equipo == null;
   const personas = useMemo(() => (equipo || []).map((m) => m.nombre), [equipo]);
   const qs = quincenasDeQ(q);
   const hoy = hoyISO();
   const qActualN = Math.min(6, Math.max(1, quincenaDe(q, hoy) || 1));
 
-  const proyectos = data?.proyectos || [];
-  const reparto = data?.reparto || [];
-  const bloqueadas = useMemo(() => new Set(data?.bloqueadas || []), [data]);
+  /* Estado LOCAL (optimista): los cambios se pintan al instante y el guardado
+     va en segundo plano — sin recargar el snapshot en cada edición (el
+     "refresco" molesto). Solo se resincroniza al cambiar de Q o si un
+     guardado falla. */
+  const [proyectos, setProyectos] = useState(null);
+  const [reparto, setReparto] = useState([]);
+  const [bloqueadas, setBloqueadas] = useState(() => new Set());
+  const seeded = useRef(null);
+  useEffect(() => {
+    if (!snap?.data) return;
+    const key = q + "|" + (snap.data.generadoEn || "");
+    if (seeded.current === key) return;
+    seeded.current = key;
+    setProyectos(snap.data.proyectos || []);
+    setReparto(snap.data.reparto || []);
+    setBloqueadas(new Set(snap.data.bloqueadas || []));
+  }, [snap, q]);
+
+  const cargando = !snap || festivos == null || equipo == null || proyectos == null;
 
   /* Resumen por proyecto: incurridas (días <= hoy), planificadas, pendientes,
      y desglose por quincena. */
   const resumen = useMemo(() => {
-    return proyectos.map((p) => {
+    return (proyectos || []).map((p) => {
       const filas = reparto.filter((r) => r.proyectoId === p.id);
       let incurridas = 0, plan = 0;
       const porQ = [0, 0, 0, 0, 0, 0];
@@ -74,10 +88,31 @@ export default function GestionRoute() {
     [q, personas, bloqueadas, festivos, hoy]
   );
 
-  const guarda = async (fn) => {
+  /* Guardado en SEGUNDO PLANO: no recarga nada; si falla, resincroniza. */
+  const pendientesRef = useRef(0);
+  const salva = (fn) => {
+    pendientesRef.current++;
     setEstado("guardando");
-    try { await fn(); await reload(); setEstado(""); }
-    catch (e) { setEstado("error:" + String(e.message || e)); }
+    Promise.resolve()
+      .then(fn)
+      .then(() => {
+        if (--pendientesRef.current === 0) {
+          setEstado("ok");
+          setTimeout(() => setEstado((e) => (e === "ok" ? "" : e)), 1800);
+        }
+      })
+      .catch((e) => {
+        pendientesRef.current = Math.max(0, pendientesRef.current - 1);
+        setEstado("error:" + String(e.message || e));
+        seeded.current = null; // resincronizar con lo guardado de verdad
+        reload();
+      });
+  };
+
+  /* Cambia los proyectos en pantalla YA y guarda por detrás. */
+  const aplicaProyectos = (next) => {
+    setProyectos(next);
+    salva(() => post("guardarProyectos", { q, proyectos: next }));
   };
 
   // Se puede pegar el código completo ("SDATOOL-49780" / "CIBRDR-1088"):
@@ -85,90 +120,78 @@ export default function GestionRoute() {
   const limpiaSdatool = (v) => String(v).replace(/^\s*sdatool[\s-]*/i, "").trim();
   const limpiaFeature = (v) => String(v).replace(/^\s*cibrdr[\s-]*/i, "").trim();
 
-  const altaProyecto = () =>
-    guarda(async () => {
-      const id = "p" + Date.now();
-      const estados = {};
-      for (let i = 1; i <= 6; i++) estados[i] = NIVEL2_ANALISIS;
-      const p = {
-        id,
-        nombre: nuevo.nombre.trim(),
-        sdatool: "SDATOOL-" + limpiaSdatool(nuevo.sdatool),
-        feature: nuevo.feature.trim() ? "CIBRDR-" + limpiaFeature(nuevo.feature) : "",
-        horas: Math.round(num(nuevo.horas)),
-        estados,
-        personas: [],
-      };
-      await post("guardarProyectos", { q, proyectos: [...proyectos, p] });
-      setNuevo({ nombre: "", sdatool: "", feature: "", horas: "" });
-    });
+  const altaProyecto = () => {
+    const estados = {};
+    for (let i = 1; i <= 6; i++) estados[i] = NIVEL2_ANALISIS;
+    const p = {
+      id: "p" + Date.now(),
+      nombre: nuevo.nombre.trim(),
+      sdatool: "SDATOOL-" + limpiaSdatool(nuevo.sdatool),
+      feature: nuevo.feature.trim() ? "CIBRDR-" + limpiaFeature(nuevo.feature) : "",
+      horas: Math.round(num(nuevo.horas)),
+      estados,
+      personas: [],
+    };
+    aplicaProyectos([...proyectos, p]);
+    setNuevo({ nombre: "", sdatool: "", feature: "", horas: "" });
+  };
 
-  const guardaEdicion = () =>
-    guarda(async () => {
-      const e = editando;
-      await post("guardarProyectos", {
-        q,
-        proyectos: proyectos.map((p) =>
-          p.id === e.id
-            ? {
-                ...p,
-                nombre: e.nombre.trim(),
-                sdatool: "SDATOOL-" + limpiaSdatool(e.sdatool),
-                feature: e.feature.trim() ? "CIBRDR-" + limpiaFeature(e.feature) : "",
-                horas: Math.round(num(e.horas)),
-              }
-            : p
-        ),
-      });
-      setEditando(null);
-    });
+  const guardaEdicion = () => {
+    const e = editando;
+    aplicaProyectos(
+      proyectos.map((p) =>
+        p.id === e.id
+          ? {
+              ...p,
+              nombre: e.nombre.trim(),
+              sdatool: "SDATOOL-" + limpiaSdatool(e.sdatool),
+              feature: e.feature.trim() ? "CIBRDR-" + limpiaFeature(e.feature) : "",
+              horas: Math.round(num(e.horas)),
+            }
+          : p
+      )
+    );
+    setEditando(null);
+  };
 
   const togglePersonaProy = (id, nombre) =>
-    guarda(() =>
-      post("guardarProyectos", {
-        q,
-        proyectos: proyectos.map((p) => {
-          if (p.id !== id) return p;
-          const set = new Set(p.personas || []);
-          if (set.has(nombre)) set.delete(nombre);
-          else set.add(nombre);
-          return { ...p, personas: [...set] };
-        }),
+    aplicaProyectos(
+      proyectos.map((p) => {
+        if (p.id !== id) return p;
+        const set = new Set(p.personas || []);
+        if (set.has(nombre)) set.delete(nombre);
+        else set.add(nombre);
+        return { ...p, personas: [...set] };
       })
     );
 
   const cambiaEstado = (id, quincena, valor) =>
-    guarda(() =>
-      post("guardarProyectos", {
-        q,
-        proyectos: proyectos.map((p) => (p.id === id ? { ...p, estados: { ...p.estados, [quincena]: valor } } : p)),
-      })
-    );
+    aplicaProyectos(proyectos.map((p) => (p.id === id ? { ...p, estados: { ...p.estados, [quincena]: valor } } : p)));
 
-  const borraProyecto = (id) =>
-    guarda(async () => {
-      await post("guardarProyectos", { q, proyectos: proyectos.filter((p) => p.id !== id) });
-      setConfirmarBorrado(null);
-    });
+  const borraProyecto = (id) => {
+    aplicaProyectos(proyectos.filter((p) => p.id !== id));
+    setConfirmarBorrado(null);
+  };
 
-  const toggleBloqueo = (nombre) =>
-    guarda(() => {
-      const next = new Set(bloqueadas);
-      if (next.has(nombre)) next.delete(nombre);
-      else next.add(nombre);
-      return post("guardarBloqueadas", { q, personas: [...next] });
-    });
+  const toggleBloqueo = (nombre) => {
+    const next = new Set(bloqueadas);
+    if (next.has(nombre)) next.delete(nombre);
+    else next.add(nombre);
+    setBloqueadas(next);
+    salva(() => post("guardarBloqueadas", { q, personas: [...next] }));
+  };
 
   const calcularReparto = () => {
     const r = repartir({ q, proyectos, repartoActual: reparto, personas, bloqueadas: [...bloqueadas], festivos: festivos || {}, hoy });
     setPreview(r);
   };
 
-  const confirmarReparto = () =>
-    guarda(async () => {
-      await post("guardarReparto", { q, desdeQuincena: preview.desde, filas: preview.reparto.filter((r) => r.quincena >= preview.desde) });
-      setPreview(null);
-    });
+  const confirmarReparto = () => {
+    const { desde } = preview;
+    setReparto(preview.reparto);
+    salva(() => post("guardarReparto", { q, desdeQuincena: desde, filas: preview.reparto.filter((r) => r.quincena >= desde) }));
+    setPreview(null);
+  };
 
   const nombreProy = (id) => (id === SOPORTE_ID ? "Soporte usuarios" : proyectos.find((p) => p.id === id)?.nombre || id);
 
@@ -199,8 +222,8 @@ export default function GestionRoute() {
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-sand/60">
             Trimestre
-            <select value={q} onChange={(e) => { setPreview(null); setQ(e.target.value); }} className={`${FIELD} !py-2 font-bold`}>
-              {qsSelector(data?.qs).map((x) => <option key={x} value={x}>{x}</option>)}
+            <select value={q} onChange={(e) => { setPreview(null); setProyectos(null); setQ(e.target.value); }} className={`${FIELD} !py-2 font-bold`}>
+              {qsSelector(snap?.data?.qs).map((x) => <option key={x} value={x}>{x}</option>)}
             </select>
           </label>
           <div role="tablist" className="inline-flex gap-1 rounded-full border border-white/12 bg-white/[0.055] p-1">
@@ -216,7 +239,8 @@ export default function GestionRoute() {
             ))}
           </div>
           {estado === "guardando" && <span className="text-[11px] font-bold text-canary">Guardando…</span>}
-          {estado.startsWith("error:") && <span className="text-[11px] font-bold text-mandarin">{estado.slice(6)}</span>}
+          {estado === "ok" && <span className="text-[11px] font-bold text-lime">Guardado ✓</span>}
+          {estado.startsWith("error:") && <span className="text-[11px] font-bold text-mandarin">No se pudo guardar ({estado.slice(6)}) — recargando datos</span>}
         </div>
 
         {cargando ? (
