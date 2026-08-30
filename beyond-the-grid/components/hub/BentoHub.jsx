@@ -34,10 +34,7 @@ const SECTIONS = [
       { label: "Comidas", desc: "Restaurante de los jueves", icon: IconUtensils, action: "route", target: "/comidas" },
       { label: "Vacaciones", desc: "Calendario y política", icon: IconCalendar, action: "route", target: "/vacaciones" },
       { label: "Retrospectiva", desc: "Retros y mejoras", icon: IconRefresh, action: "route", target: "/retro" },
-      { label: "Time Report", desc: "Imputación de horas", icon: IconClock, actions: [
-        { label: "NFQ", action: "open", target: "timeReportNFQ" },
-        { label: "BBVA", action: "copy", target: "timeReportBBVA" },
-      ] },
+      { label: "Time Report", desc: "Tu imputación de la quincena", icon: IconClock, action: "route", target: "/timereport" },
     ],
   },
   {
@@ -61,6 +58,7 @@ const COORD_SECTION = {
     { label: "Capacidad", desc: "Personas y proyectos", icon: IconShield, action: "route", target: "/capacidad" },
     { label: "Ofertas", desc: "Generador de ofertas", icon: IconRocket, action: "route", target: "/ofertas" },
     { label: "Gestión de equipo", desc: "Miembros, roles y tracks", icon: IconShield, action: "route", target: "/equipo-gestion" },
+    { label: "Time Report", desc: "Proyectos y reparto de horas", icon: IconClock, action: "route", target: "/timereport-gestion" },
   ],
 };
 

@@ -25,6 +25,8 @@ export default function Header() {
     ["/capacidad", "Capacidad del equipo · Coordinación"],
     ["/ofertas", "Generación de ofertas · Coordinación"],
     ["/equipo-gestion", "Gestión del equipo · Coordinación"],
+    ["/timereport-gestion", "Time Report · Coordinación"],
+    ["/timereport", "Mi Time Report · Equipo"],
     ["/pases", "Pases calendados · Releases"],
     ["/recursos", "Recursos · Biblioteca RDR"],
     ["/que-es-rdr", "¿Qué es RDR? · Introducción"],
