@@ -12,7 +12,7 @@
    Prueba: enviarRecordatorioPrueba() (envía a PRUEBA_TO).
    =========================================================================== */
 
-const WEB_URL   = 'https://rdr-nfq.github.io/team-hub/comidas.html'; // ← enlace para el botón del correo
+const WEB_URL   = 'https://rdr-nfq.github.io/team-hub/comidas/'; // ← enlace para el botón del correo (ruta nueva de la web)
 const REMITE    = 'Comidas RDR';
 const PRUEBA_TO = 'pablo.llorente@nfq.es';
 
@@ -20,7 +20,10 @@ const PRUEBA_TO = 'pablo.llorente@nfq.es';
 // sin redirecciones ni páginas HTML de error. NO usar la URL de GitHub Pages: puede
 // redirigir (307) o, en red corporativa, ser bloqueada por el proxy y devolver HTML,
 // lo que rompe el JSON.parse ("Unexpected token '<', <!doctype...").
-const EQUIPO_JSON_URL = 'https://raw.githubusercontent.com/rdr-nfq/team-hub/main/equipo/equipo.json'; // ← ajusta usuario/repo/rama si cambian
+// OJO: equipo.json se movió a beyond-the-grid/public/ con la migración de la
+// web; la ruta antigua (equipo/equipo.json) devuelve 404 y dejaba team=[]
+// -> el script no enviaba NINGÚN recordatorio, en silencio.
+const EQUIPO_JSON_URL = 'https://raw.githubusercontent.com/rdr-nfq/team-hub/main/beyond-the-grid/public/equipo/equipo.json'; // ← ajusta usuario/repo/rama si cambian
 
 // ── Disparadores (ejecutar una vez) ───────────────────────────────────────
 function crearTriggers() {
