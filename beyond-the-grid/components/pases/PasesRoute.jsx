@@ -29,7 +29,7 @@ import { computeMergeUnits } from "./mergeos";
 import { rolDe } from "./roles";
 import { useAuth } from "@/components/chrome/AuthGate";
 import { ACCENT, BTN, CARD_CLS, Field, SELECT_CLS, INPUT_CLS } from "./ui";
-import { IconRocket, IconSave, IconMoon, IconCheck, IconLock, IconRefresh, IconArrowLeft } from "./icons";
+import { IconRocket, IconSave, IconMoon, IconCheck, IconLock, IconRefresh, IconArrowLeft, IconExternal } from "./icons";
 import Proyectos from "./Proyectos";
 import Secuencia from "./Secuencia";
 import PreChecks from "./PreChecks";
@@ -896,6 +896,17 @@ export default function PasesRoute() {
               <p className="mt-1.5 text-sm text-sand/65">Releases por entorno · ciclo completo del pase a producción</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              {links?.getUrl && links.getUrl("pasesSheet") && (
+                <a
+                  href={links.getUrl("pasesSheet")}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={BTN.ghost}
+                  title="Abrir el Google Sheets de Pases Calendados"
+                >
+                  <IconExternal size={14} /> Abrir Sheets
+                </a>
+              )}
               <DebugPill on={!!E?.modoDebug} isAdmin={isAdmin} onToggle={setModoDebug} />
               <NetDot inflight={inflight} error={netErr} />
             </div>
