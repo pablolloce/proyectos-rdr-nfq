@@ -82,9 +82,14 @@ function formatearFechaSegura(fechaObj) {
 }
 
 function parsearFechaEs(fechaStr) {
-  // "dd/MM/yyyy" → Date
+  // "dd/MM/yyyy" → Date, a las 12:00 (mediodía) y NO a medianoche.
+  // A medianoche, si el huso horario del proyecto de Apps Script no coincide
+  // exactamente con el del propio Sheets, la fecha puede caer justo al otro
+  // lado de la frontera del día y guardarse el día ANTERIOR (p.ej. 11/09 en
+  // vez del 12/09 sábado). Al mediodía ese margen de error (siempre < 12 h
+  // entre husos horarios reales) nunca llega a cruzar la frontera del día.
   const p = String(fechaStr).split('/');
-  return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+  return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]), 12, 0, 0);
 }
 
 /* SheetCtx: cache de hojas y de getDataRange por petición.
