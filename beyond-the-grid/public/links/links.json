@@ -39,7 +39,7 @@
     "note": "Backend Apps Script de equipo-formaciones.html (progreso de formaciones por persona). Cambia en cada despliegue."
   },
   "pasesSheet": {
-    "url": "PEGAR_AQUI_URL_DEL_GOOGLE_SHEETS_DE_PASES",
+    "url": "https://docs.google.com/spreadsheets/d/1PWqHHorE8u_Xdyn9TeMWwf03CFv3FlPPuLeKAEpYr5Y/edit?gid=899065686#gid=899065686",
     "note": "Google Sheets que hay detrás de Pases Calendados (el libro al que está ligado Codigo_Pases.gs). Botón 'Abrir Sheets' de /pases."
   },
   "pasesBackend": {
