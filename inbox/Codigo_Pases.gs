@@ -1202,11 +1202,24 @@ function regularizarFechasPases(dryRun) {
   const tz = Session.getScriptTimeZone();
   const fmt = (d) => Utilities.formatDate(d, tz, "dd/MM/yyyy");
 
+  // La celda puede traer un Date real O texto "d/M/yyyy" (p.ej. si la columna
+  // está formateada como Texto plano: Sheets guarda entonces un string, no
+  // una Fecha, y por eso la 1ª versión de este script no encontraba NADA).
+  // Devuelve { d: Date a mediodía, esTexto } o null si no es reconocible.
+  function leerFecha(v) {
+    if (v instanceof Date) return { d: v, esTexto: false };
+    const s = String(v || "").trim();
+    const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);
+    if (!m) return null;
+    return { d: new Date(+m[3], +m[2] - 1, +m[1], 12, 0, 0), esTexto: true };
+  }
+
   // Fechas reales de pase (ancla): Pases_Calendados col A, escrita a mano.
   const hojaPases = ss.getSheetByName(CONSTANTES.HOJA_PASES);
   const anclas = new Set();
   hojaPases.getRange(1, 1, hojaPases.getLastRow(), 1).getValues().forEach((r) => {
-    if (r[0] instanceof Date) anclas.add(fmt(r[0]));
+    const f = leerFecha(r[0]);
+    if (f) anclas.add(fmt(f.d));
   });
   Logger.log("Fechas de pase (ancla), " + anclas.size + ": " + [...anclas].sort().join(", "));
 
@@ -1224,20 +1237,22 @@ function regularizarFechasPases(dryRun) {
     const last = sheet.getLastRow();
     if (last < 2) return;
     const vals = sheet.getRange(2, obj.col, last - 1, 1).getValues();
-    let corregidas = 0, revisar = 0;
+    let corregidas = 0, revisar = 0, vacias = 0, irreconocibles = 0;
     for (let i = 0; i < vals.length; i++) {
-      const v = vals[i][0];
-      if (!(v instanceof Date)) continue;
-      const actual = fmt(v);
+      const raw = vals[i][0];
+      if (raw === "" || raw === null) { vacias++; continue; }
+      const f = leerFecha(raw);
+      if (!f) { irreconocibles++; Logger.log("⚠ Valor irreconocible como fecha — " + obj.etiqueta + " fila " + (i + 2) + ": " + JSON.stringify(raw)); continue; }
+      const actual = fmt(f.d);
       if (anclas.has(actual)) continue; // ya es una fecha de pase real: no tocar.
-      const siguiente = new Date(v.getFullYear(), v.getMonth(), v.getDate() + 1, 12, 0, 0);
+      const siguiente = new Date(f.d.getFullYear(), f.d.getMonth(), f.d.getDate() + 1, 12, 0, 0);
       const strSiguiente = fmt(siguiente);
       if (anclas.has(strSiguiente)) {
         Logger.log(
           (dryRun ? "[PREVIEW] " : "[CORREGIDO] ") + obj.etiqueta + " fila " + (i + 2) +
-          ": " + actual + " → " + strSiguiente
+          ": " + actual + " → " + strSiguiente + (f.esTexto ? " (texto)" : " (fecha)")
         );
-        if (!dryRun) sheet.getRange(i + 2, obj.col).setValue(siguiente);
+        if (!dryRun) sheet.getRange(i + 2, obj.col).setValue(f.esTexto ? strSiguiente : siguiente);
         corregidas++;
       } else {
         Logger.log("⚠ REVISAR A MANO — " + obj.etiqueta + " fila " + (i + 2) + ": " + actual +
@@ -1245,7 +1260,10 @@ function regularizarFechasPases(dryRun) {
         revisar++;
       }
     }
-    Logger.log(obj.etiqueta + ": " + corregidas + " corregidas, " + revisar + " para revisar a mano.");
+    Logger.log(
+      obj.etiqueta + ": " + corregidas + " corregidas, " + revisar + " para revisar a mano, " +
+      vacias + " celdas vacías, " + irreconocibles + " valores irreconocibles."
+    );
     totalCorregidas += corregidas;
     totalRevisar += revisar;
   });
