@@ -464,9 +464,11 @@ function procesarSolicitud(idSolicitud, accion) {
       const meses = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
 
       // ============================================================
-      // 🚀 MOTOR A: "Vacaciones 2026"
+      // 🚀 MOTOR A: "Vacaciones <año de la solicitud>"
+      // (antes 'Vacaciones 2026' fijo: una solicitud de 2027 escribía,
+      // sin avisar, en la pestaña de 2026 en vez de en la de 2027)
       // ============================================================
-      const hojaVaca = ssPrincipal.getSheetByName('Vacaciones 2026');
+      const hojaVaca = ssPrincipal.getSheetByName(`Vacaciones ${yearReq}`);
       if (hojaVaca) {
         const dataV = hojaVaca.getRange(1, 1, hojaVaca.getLastRow(), Math.min(hojaVaca.getLastColumn(), 50)).getValues();
         let mapaV = {};
@@ -513,10 +515,12 @@ function procesarSolicitud(idSolicitud, accion) {
       }
 
       // ============================================================
-      // 🚀 MOTOR B: "2026_Calendario"
+      // 🚀 MOTOR B: "<año de la solicitud>_Calendario"
+      // (antes '2026_Calendario' fijo: mismo problema que el Motor A)
       // ============================================================
-      const hojaCal = ssPrincipal.getSheetByName('2026_Calendario');
-      if (!hojaCal) throw new Error("No existe la pestaña 2026_Calendario.");
+      const nombreHojaCal = `${yearReq}_Calendario`;
+      const hojaCal = ssPrincipal.getSheetByName(nombreHojaCal);
+      if (!hojaCal) throw new Error(`No existe la pestaña ${nombreHojaCal}.`);
 
       const dataCal = hojaCal.getRange(1, 1, hojaCal.getLastRow(), hojaCal.getLastColumn()).getValues();
       let filaEmp = -1; let colMapeadas = {};
@@ -528,7 +532,7 @@ function procesarSolicitud(idSolicitud, accion) {
         }
         if (filaEmp !== -1) break;
       }
-      if (filaEmp === -1) throw new Error(`El empleado ${nombre} no está en 2026_Calendario.`);
+      if (filaEmp === -1) throw new Error(`El empleado ${nombre} no está en ${nombreHojaCal}.`);
 
       // 2. Buscar fila de Meses y Días
       let filaMeses = -1; let filaDias = -1;
