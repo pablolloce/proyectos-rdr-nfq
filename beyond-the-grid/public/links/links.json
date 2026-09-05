@@ -64,7 +64,7 @@
   },
   "timereportBackend": {
     "url": "https://script.google.com/macros/s/AKfycbwb8bJedskF2tmsusz4PdXNhtNu1V9dUxhq0QOM9n3Hc3abjolN1UO7F3pydzzp-8sy/exec",
-    "note": "Backend Apps Script del Time Report web (/timereport y /timereport-gestion). Desplegar outbox/apps-script/Codigo_TimeReport.gs como aplicación web (Ejecutar como Yo, Cualquier persona) y pegar aquí la URL /exec."
+    "note": "Backend Apps Script del Time Report web (/timereport y /timereport-gestion): proyectos, reparto, imputación, evidencias en Drive y recordatorio por email. Desplegar outbox/apps-script/Codigo_TimeReport.gs como aplicación web (Ejecutar como Yo, Cualquier persona), con EVIDENCIAS_FOLDER_ID en Propiedades del script, ejecutar autorizar() y crearTriggerRecordatorioTR() una vez, y pegar aquí la URL /exec."
   },
   "equipoBackend": {
     "url": "https://script.google.com/macros/s/AKfycbwuMCo7nocD2bik28Yot-bTzepFuq1k8hy9PWmGTpos3BsTgb0-Llvbn6_lQVz5ptBDng/exec",

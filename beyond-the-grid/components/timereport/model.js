@@ -88,6 +88,24 @@ export function quincenaDe(q, iso) {
   return 7;
 }
 
+const MES_LARGO = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+/* Quincena "de mes" (1 = días 1-15, 2 = 16-fin) y nombre canónico de la
+   carpeta de evidencias: "2_Quincena_Junio2026". Misma convención que el
+   backend (Codigo_TimeReport.gs) y que el nombre de los ficheros
+   ("2_Quincena_Junio2026_PabloLlorente.pdf"). */
+export function etiquetaEvidencias(q, quincena) {
+  const qn = quincenasDeQ(q).find((x) => x.n === quincena);
+  if (!qn) return null;
+  const nMes = quincena % 2 === 1 ? 1 : 2;
+  const año = Number(String(q).slice(0, 4));
+  return { nMes, mes: MES_LARGO[qn.mes], año, carpeta: `${nMes}_Quincena_${MES_LARGO[qn.mes]}${año}` };
+}
+
+/* Nombre de fichero canónico de una persona: sin espacios ni acentos. */
+export const nombreFichero = (persona) =>
+  String(persona || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "");
+
 export const horasDe = (dias) => Object.values(dias || {}).reduce((a, v) => a + num(v), 0);
 
 /* Horas de un proyecto ya repartidas en `reparto` (todas las quincenas o un filtro). */
@@ -122,15 +140,26 @@ function colocar(h, dias, usado) {
  *  - repartoActual: [{quincena, persona, proyectoId, dias:{iso:h}}] (todo el Q)
  *  - personas: nombres del equipo; bloqueadas: Set/array de nombres congelados
  *  - festivos: {iso: "ES"|"MX"|"AMBOS"}; hoy: ISO (para la ventana)
+ *  - desdeMin (opcional): primera quincena a recalcular (>= la actual). Sirve
+ *    para, tras corregir a mano lo que alguien imputó de verdad en una
+ *    quincena, repartir lo que falta en las SIGUIENTES.
  */
-export function repartir({ q, proyectos, repartoActual, personas, bloqueadas, festivos, hoy }) {
+export function repartir({ q, proyectos, repartoActual, personas, bloqueadas, festivos, hoy, desdeMin }) {
   const qs = quincenasDeQ(q);
   if (!qs.length) return { error: "Q inválido" };
   const bloq = new Set(bloqueadas || []);
   const hoyQ = quincenaDe(q, hoy || hoyISO());
-  const desde = Math.max(1, Math.min(hoyQ === 0 ? 1 : hoyQ, 7));
+  let desde = Math.max(1, Math.min(hoyQ === 0 ? 1 : hoyQ, 7));
+  // desdeMin: recalcular SOLO a partir de esa quincena (p.ej. la siguiente a
+  // una que se ha corregido a mano). Nunca antes de la actual: lo pasado se
+  // respeta igual que siempre.
+  if (desdeMin != null) desde = Math.max(desde, Math.min(7, Math.round(num(desdeMin))));
   if (desde > 5)
-    return { error: "Ya ha pasado el 15 del último mes: no queda ventana de reparto de proyectos." };
+    return {
+      error: desdeMin != null && desdeMin > 5
+        ? "La siguiente quincena es la última del Q (solo Soporte): no queda nada de proyectos que recalcular."
+        : "Ya ha pasado el 15 del último mes: no queda ventana de reparto de proyectos.",
+    };
 
   // Se conserva: todo lo anterior a `desde` + TODO lo de personas bloqueadas.
   const fijas = (repartoActual || []).filter((r) => r.quincena < desde || bloq.has(r.persona));

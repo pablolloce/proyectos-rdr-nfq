@@ -9,14 +9,16 @@ import { IconClock, IconAlert, IconExternal } from "../coordinacion/icons";
 import { useTimeReport, useEquipo } from "./datos";
 import {
   num, curQ, hoyISO, quincenasDeQ, quincenaDe, horasDe,
-  filasTR, tsvTR, esFinde, SOPORTE_ID, NIVEL2_ANALISIS,
+  filasTR, tsvTR, esFinde, SOPORTE_ID, NIVEL2_ANALISIS, etiquetaEvidencias, nombreFichero,
 } from "./model";
 
 /* Mi Time Report · vista de MIEMBRO (todo el equipo).
    Enseña tu imputación de la quincena (proyectos y horas por día, según el
    reparto de coordinación), con selector de quincena y de trimestre, y dos
    copias al portapapeles: el enlace del TR de BBVA y la imputación en el
-   orden EXACTO de columnas del TR (para pegarla tal cual). */
+   orden EXACTO de columnas del TR (para pegarla tal cual). Además, el botón
+   "Subir evidencias" abre la carpeta de Drive de ESA quincena (el backend la
+   crea si no existe y renombra los ficheros al nombre canónico). */
 
 const ACCENT = PALETTE.mandarin;
 
@@ -32,7 +34,8 @@ export default function MiTimeReportRoute() {
   const { getUrl, copyLink, showToast } = useLinks();
   const equipo = useEquipo();
   const [q, setQ] = useState(curQ());
-  const { snap } = useTimeReport(q);
+  const { snap, post } = useTimeReport(q);
+  const [abriendo, setAbriendo] = useState(false);
   const qs = quincenasDeQ(q);
   const [quincena, setQuincena] = useState(() => Math.min(6, Math.max(1, quincenaDe(curQ(), hoyISO()) || 1)));
 
@@ -63,6 +66,25 @@ export default function MiTimeReportRoute() {
       showToast("No se pudo copiar al portapapeles");
     }
   };
+
+  /* Carpeta de evidencias de la quincena: se abre la pestaña YA (si no, el
+     navegador la bloquea) y se le pone la URL cuando responde el backend. */
+  const subirEvidencias = async () => {
+    const w = window.open("", "_blank");
+    setAbriendo(true);
+    try {
+      const d = await post("carpetaEvidencias", { q, quincena });
+      if (w) w.location = d.url;
+      else window.open(d.url, "_blank");
+      showToast(`Carpeta ${d.nombre} abierta: sube tu evidencia (se renombra sola)`);
+    } catch (e) {
+      if (w) w.close();
+      showToast("No se pudo abrir la carpeta: " + String(e.message || e));
+    } finally {
+      setAbriendo(false);
+    }
+  };
+  const evid = etiquetaEvidencias(q, quincena);
 
   const filaVista = (r) => {
     if (r.proyectoId === SOPORTE_ID)
@@ -113,7 +135,19 @@ export default function MiTimeReportRoute() {
           >
             Copiar mi imputación (pegar en el TR)
           </button>
+          <button
+            type="button" onClick={subirEvidencias} disabled={!snap?.data || abriendo}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#85C8FF] px-3 py-2 text-xs font-bold text-[#001391] transition hover:brightness-95 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <IconExternal size={13} /> {abriendo ? "Abriendo carpeta…" : "Subir evidencias (Drive)"}
+          </button>
         </div>
+        {evid && yo && (
+          <p className="-mt-3 mb-5 text-[11px] text-sand/50">
+            Carpeta de la quincena: <span className="font-bold text-sand/75">{evid.carpeta}</span> · tu fichero quedará como{" "}
+            <span className="font-bold tabular-nums text-sand/75">{evid.carpeta}_{nombreFichero(yo.nombre)}.pdf</span> (se renombra solo al subirlo).
+          </p>
+        )}
 
         {/* Selectores de Q y quincena */}
         <div className="mb-5 flex flex-wrap items-center gap-3">
