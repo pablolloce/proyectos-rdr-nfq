@@ -17,6 +17,10 @@
     "url": "https://drive.google.com/drive/folders/0AEkC6lvF0dGAUk9PVA",
     "note": "Drive con documentación compartida del proyecto RDR"
   },
+  "evidenciasDrive": {
+    "url": "https://drive.google.com/drive/folders/1FUz6m6Ek0BveGYeUp4nIVD0kO4oiNWDF",
+    "note": "Carpeta RAÍZ de las evidencias del Time Report. Codigo_TimeReport.gs la lee de aquí y crea dentro <Año>/<n>_Quincena_<Mes><Año>. Debe estar compartida (editor) con todo el equipo."
+  },
   "driveCertificados": {
     "url": "https://drive.google.com/drive/folders/1e5zysoDRyBIj30VrKtC6jLPhDzpRQDgl",
     "note": "Carpeta de Drive donde el equipo sube los PDF de certificados de formación. La monitoriza el Apps Script para sincronizar con equipo-formaciones.html"

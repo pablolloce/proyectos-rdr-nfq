@@ -22,9 +22,9 @@
  *
  *  DESPLIEGUE (proyecto Apps Script INDEPENDIENTE):
  *   1. script.google.com -> Nuevo proyecto -> pegar este fichero.
- *   2. Carpeta raíz de evidencias: TR_CONFIG.EVIDENCIAS_FOLDER_ID (o la
- *      propiedad del script EVIDENCIAS_FOLDER_ID, que tiene prioridad). Debe
- *      estar compartida con el equipo para que puedan subir sus ficheros.
+ *   2. La carpeta raíz de evidencias se lee de links.json ("evidenciasDrive"),
+ *      como el resto de enlaces del hub. Debe estar compartida (editor) con el
+ *      equipo para que puedan subir sus ficheros.
  *   3. Ejecutar una vez `autorizar` (Drive + Gmail + UrlFetch) y una vez
  *      `crearTriggerRecordatorioTR` (disparador diario a las 9:00).
  *   4. Implementar -> Aplicación web (Ejecutar como YO, Cualquier persona) ->
@@ -48,9 +48,9 @@ var TR_CONFIG = {
   TZ: 'Europe/Madrid',
   WEB_URL: 'https://rdr-nfq.github.io/team-hub/timereport/',
   REMITE: 'Time Report RDR',
-  // Carpeta raíz de evidencias en Drive (https://drive.google.com/drive/folders/<id>).
-  // Si existe la propiedad del script EVIDENCIAS_FOLDER_ID, manda ella.
-  EVIDENCIAS_FOLDER_ID: '1FUz6m6Ek0BveGYeUp4nIVD0kO4oiNWDF',
+  // La carpeta raíz de evidencias NO va aquí: se lee de links.json
+  // ("evidenciasDrive", fuente única de enlaces del hub). Solo como último
+  // recurso se mira la propiedad del script EVIDENCIAS_FOLDER_ID.
   // Fuentes de datos del hub (URLs "raw" de GitHub: devuelven JSON plano).
   EQUIPO_JSON_URL: 'https://raw.githubusercontent.com/rdr-nfq/team-hub/main/beyond-the-grid/public/equipo/equipo.json',
   LINKS_JSON_URL: 'https://raw.githubusercontent.com/rdr-nfq/team-hub/main/beyond-the-grid/public/links/links.json',
@@ -76,7 +76,7 @@ function autorizar() {
   DriveApp.getRootFolder().getName();
   GmailApp.getAliases();
   UrlFetchApp.fetch(TR_CONFIG.EQUIPO_JSON_URL, { muteHttpExceptions: true });
-  Logger.log('Permisos concedidos. Raíz de evidencias: ' + (_evidenciasRootId() || '(sin configurar: EVIDENCIAS_FOLDER_ID)'));
+  Logger.log('Permisos concedidos. Raíz de evidencias (links.json → evidenciasDrive): ' + (_evidenciasRootId() || '(sin configurar)'));
 }
 
 function _ss() {
@@ -272,8 +272,25 @@ function _equipo() {
 
 /* ────────────────────────────── Evidencias (Drive) ────────────────────────── */
 
+/* Id de la carpeta raíz: clave "evidenciasDrive" de links.json (acepta URL de
+   Drive o id pelado). Se cachea 10 min para no leer GitHub en cada llamada. */
 function _evidenciasRootId() {
-  return PropertiesService.getScriptProperties().getProperty('EVIDENCIAS_FOLDER_ID') || TR_CONFIG.EVIDENCIAS_FOLDER_ID || '';
+  var cache = CacheService.getScriptCache();
+  var hit = cache.get('evidenciasRootId');
+  if (hit) return hit;
+  var id = '';
+  try {
+    var links = JSON.parse(UrlFetchApp.fetch(TR_CONFIG.LINKS_JSON_URL, { muteHttpExceptions: true }).getContentText());
+    var e = links.evidenciasDrive;
+    var url = e ? (typeof e === 'string' ? e : e.url) : '';
+    if (url && url.indexOf('PEGAR_AQUI') < 0) {
+      var m = /\/folders\/([A-Za-z0-9_-]+)/.exec(url);
+      id = m ? m[1] : url.trim();
+    }
+  } catch (err) { Logger.log('links.json: ' + err); }
+  if (!id) id = PropertiesService.getScriptProperties().getProperty('EVIDENCIAS_FOLDER_ID') || '';
+  if (id) cache.put('evidenciasRootId', id, 600);
+  return id;
 }
 
 function _subcarpeta(padre, nombre) {
@@ -284,7 +301,7 @@ function _subcarpeta(padre, nombre) {
 /* Carpeta <raíz>/<Año>/<n>_Quincena_<Mes><Año>; se crea si no existe. */
 function _carpetaQuincena(info) {
   var rootId = _evidenciasRootId();
-  if (!rootId) throw new Error('Evidencias sin configurar: añade EVIDENCIAS_FOLDER_ID (carpeta raíz de Drive) en Propiedades del script.');
+  if (!rootId) throw new Error('Evidencias sin configurar: falta la clave "evidenciasDrive" (carpeta raíz de Drive) en links.json.');
   var root = DriveApp.getFolderById(rootId);
   return _subcarpeta(_subcarpeta(root, String(info.anio)), info.carpeta);
 }

@@ -84,7 +84,7 @@ function PreviewReparto({ preview, qs, nombreProy, onConfirm, onDiscard }) {
 }
 
 export default function GestionRoute() {
-  const { showToast } = useLinks();
+  const { showToast, getUrl } = useLinks();
   const [q, setQ] = useState(curQ());
   const { snap, reload, post } = useTimeReport(q);
   const festivos = useFestivos();
@@ -631,16 +631,15 @@ export default function GestionRoute() {
             const et = etiquetaEvidencias(q, quincenaVista);
             const d = evid.data;
             const total = d ? d.entregados.length + d.pendientes.length : 0;
-            const sinConfig = snap?.data?.evidenciasConfiguradas === false || /EVIDENCIAS_FOLDER_ID/.test(evid.error);
+            const sinConfig = !getUrl("evidenciasDrive") || snap?.data?.evidenciasConfiguradas === false || /sin configurar/.test(evid.error);
             return (
               <>
                 {selectorQuincena(false)}
                 {sinConfig ? (
                   <EmptyCard>
-                    Las evidencias aún no están configuradas: en el Apps Script del Time Report añade la propiedad{" "}
-                    <code className="text-sand">EVIDENCIAS_FOLDER_ID</code> con el id de la carpeta raíz de Drive (compartida con el equipo),
-                    ejecuta <code className="text-sand">autorizar</code> y publica una nueva versión. Las carpetas se crean solas como{" "}
-                    <span className="text-sand">{et?.año}/{et?.carpeta}</span>.
+                    Las evidencias aún no están configuradas: falta la clave <code className="text-sand">evidenciasDrive</code> en{" "}
+                    <code className="text-sand">links.json</code> con la URL de la carpeta raíz de Drive (compartida con el equipo). El backend
+                    crea dentro las carpetas <span className="text-sand">{et?.año}/{et?.carpeta}</span>.
                   </EmptyCard>
                 ) : (
                   <div className="grid items-start gap-4 xl:grid-cols-[1.35fr_1fr]">
