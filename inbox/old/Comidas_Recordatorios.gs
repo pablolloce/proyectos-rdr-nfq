@@ -5,15 +5,18 @@
      · Lun 12 y 17 · Mar 12 y 17
      · Mié 12 → aviso final: la reserva se hace en 30 min; quien no vote se
                 asume "No estoy" o "Taper / Glovo".
-   Envía desde tu cuenta (nombre visible "Comidas RDR"): un correo individual por
-   compañero, con su dirección en el PARA (sin CC, sin "Responder a" a noreply).
-   Las respuestas, si las hay, te llegan a ti.
+   Envía desde noreply@nfq.es (nombre visible "Comidas RDR"): un correo
+   individual por compañero, con su dirección en el PARA (sin CC).
+   Requiere que noreply@nfq.es esté dado de alta como alias "Enviar como" en
+   la cuenta que ejecuta el script; si no lo está, sale desde esa cuenta y
+   queda avisado en el registro (ver enviarMail_).
    Puesta en marcha: rellena WEB_URL y ejecuta crearTriggers() una vez.
    Prueba: enviarRecordatorioPrueba() (envía a PRUEBA_TO).
    =========================================================================== */
 
 const WEB_URL   = 'https://rdr-nfq.github.io/team-hub/comidas/'; // ← enlace para el botón del correo (ruta nueva de la web)
 const REMITE    = 'Comidas RDR';
+const REMITENTE = 'noreply@nfq.es'; // remitente de los recordatorios (ver enviarMail_)
 const PRUEBA_TO = 'pablo.llorente@nfq.es';
 
 // El JSON del equipo se lee SIEMPRE desde la URL "raw" de GitHub: devuelve text/plain
@@ -58,12 +61,31 @@ function enviarRecordatorio() {
   pendientes.forEach(p => p.email && enviarMail_(p.email, asunto, cuerpo_(p.nombre, fecha, esFinal, lider)));
 }
 
-// ── Envío: UN correo individual por compañero, desde tu cuenta (nombre visible
-//    "Comidas RDR"). Sin noReply → no hay "Responder a: noreply"; cada compañero
-//    va en el PARA (individual, sin CC). Las respuestas llegan a tu cuenta.
+// ── Envío: UN correo individual por compañero (en el PARA, sin CC), desde el
+//    alias noreply@nfq.es con nombre visible "Comidas RDR".
+//
+//    REQUISITO en Gmail: noreply@nfq.es tiene que estar dado de alta como
+//    ALIAS de la cuenta que ejecuta el script (Gmail → Configuración →
+//    Cuentas → "Enviar como"). Si no lo está, Gmail IGNORA el 'from' y manda
+//    igualmente desde la cuenta del script, sin avisar: por eso se comprueba
+//    antes y se deja constancia en el registro.
 function enviarMail_(to, subject, htmlBody) {
-  GmailApp.sendEmail(to, subject, 'Vota dónde comer el jueves: ' + WEB_URL,
-    { htmlBody: htmlBody, name: REMITE });
+  const opciones = { htmlBody: htmlBody, name: REMITE };
+  if (aliasDisponible_()) opciones.from = REMITENTE;
+  GmailApp.sendEmail(to, subject, 'Vota dónde comer el jueves: ' + WEB_URL, opciones);
+}
+
+// ¿Está noreply@nfq.es disponible como alias "Enviar como"? Se consulta una
+// sola vez por ejecución (getAliases es una llamada cara).
+let _aliasOk = null;
+function aliasDisponible_() {
+  if (_aliasOk !== null) return _aliasOk;
+  const alias = GmailApp.getAliases();
+  _aliasOk = alias.indexOf(REMITENTE) !== -1;
+  if (!_aliasOk)
+    Logger.log('⚠ ' + REMITENTE + ' no está configurado como alias "Enviar como" en esta cuenta: ' +
+      'el correo saldrá desde la cuenta del script. Alias disponibles: ' + (alias.join(', ') || 'ninguno'));
+  return _aliasOk;
 }
 
 // ── Datos ─────────────────────────────────────────────────────────────────
