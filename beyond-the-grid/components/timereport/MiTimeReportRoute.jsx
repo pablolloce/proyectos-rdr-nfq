@@ -73,7 +73,7 @@ export default function MiTimeReportRoute() {
     const w = window.open("", "_blank");
     setAbriendo(true);
     try {
-      const d = await post("carpetaEvidencias", { q, quincena });
+      const d = await post("carpetaEvidencias", { q, quincena, raiz: getUrl("evidenciasDrive") });
       if (w) w.location = d.url;
       else window.open(d.url, "_blank");
       showToast(`Carpeta ${d.nombre} abierta: sube tu evidencia (se renombra sola)`);

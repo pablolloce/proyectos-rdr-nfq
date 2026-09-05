@@ -332,21 +332,21 @@ export default function GestionRoute() {
     if (tab !== "evidencias" || !snap?.data) return;
     let vivo = true;
     setEvid({ estado: "cargando", data: null, error: "" });
-    post("estadoEvidencias", { q, quincena: quincenaVista })
+    post("estadoEvidencias", { q, quincena: quincenaVista, raiz: getUrl("evidenciasDrive") })
       .then((d) => vivo && setEvid({ estado: "ok", data: d, error: "" }))
       .catch((e) => vivo && setEvid({ estado: "error", data: null, error: String(e.message || e) }));
     return () => { vivo = false; };
-  }, [tab, q, quincenaVista, snap, post]);
+  }, [tab, q, quincenaVista, snap, post, getUrl]);
   const recargaEvidencias = () => {
     setEvid({ estado: "cargando", data: null, error: "" });
-    post("estadoEvidencias", { q, quincena: quincenaVista })
+    post("estadoEvidencias", { q, quincena: quincenaVista, raiz: getUrl("evidenciasDrive") })
       .then((d) => setEvid({ estado: "ok", data: d, error: "" }))
       .catch((e) => setEvid({ estado: "error", data: null, error: String(e.message || e) }));
   };
   const descargarZip = () => {
     const w = window.open("", "_blank"); // abrir YA para que no lo bloquee el navegador
     setZip("generando");
-    post("descargarEvidencias", { q, quincena: quincenaVista })
+    post("descargarEvidencias", { q, quincena: quincenaVista, raiz: getUrl("evidenciasDrive") })
       .then((d) => {
         if (w) w.location = d.url;
         setZip("");
@@ -638,8 +638,9 @@ export default function GestionRoute() {
                 {sinConfig ? (
                   <EmptyCard>
                     Las evidencias aún no están configuradas: falta la clave <code className="text-sand">evidenciasDrive</code> en{" "}
-                    <code className="text-sand">links.json</code> con la URL de la carpeta raíz de Drive (compartida con el equipo). El backend
-                    crea dentro las carpetas <span className="text-sand">{et?.año}/{et?.carpeta}</span>.
+                    <code className="text-sand">links.json</code> con la URL de la carpeta raíz de Drive (compartida con el equipo), o el
+                    navegador tiene una copia antigua de links.json (recarga la página). El backend crea dentro las carpetas{" "}
+                    <span className="text-sand">{et?.año}/{et?.carpeta}</span>.
                   </EmptyCard>
                 ) : (
                   <div className="grid items-start gap-4 xl:grid-cols-[1.35fr_1fr]">

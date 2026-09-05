@@ -41,6 +41,8 @@
  *   ?action=carpetaEvidencias&q=2026Q3&quincena=4   -> { id, url, nombre } (la crea si no existe)
  *   ?action=estadoEvidencias&q=2026Q3&quincena=4    -> { carpeta, entregados, pendientes, sinIdentificar, zip }
  *   POST { action:'descargarEvidencias', q, quincena } -> { url, verUrl, nombre, n } (ZIP en la carpeta)
+ *   (las tres admiten `raiz`: la URL de la carpeta raíz que la web ya tiene de
+ *    links.json; si no viene, el backend lee links.json de GitHub él mismo)
  * ============================================================================
  */
 
@@ -118,9 +120,9 @@ function _serve(e) {
       case 'guardarProyectos': data = guardarProyectos(p.q, p.proyectos); break;
       case 'guardarReparto': data = guardarReparto(p.q, p.desdeQuincena, p.filas); break;
       case 'guardarBloqueadas': data = guardarBloqueadas(p.q, p.personas); break;
-      case 'carpetaEvidencias': data = carpetaEvidencias(p.q, p.quincena); break;
-      case 'estadoEvidencias': data = estadoEvidencias(p.q, p.quincena); break;
-      case 'descargarEvidencias': data = descargarEvidencias(p.q, p.quincena); break;
+      case 'carpetaEvidencias': data = carpetaEvidencias(p.q, p.quincena, p.raiz); break;
+      case 'estadoEvidencias': data = estadoEvidencias(p.q, p.quincena, p.raiz); break;
+      case 'descargarEvidencias': data = descargarEvidencias(p.q, p.quincena, p.raiz); break;
       default: throw new Error('Acción desconocida: ' + action);
     }
     return _json({ ok: true, action: action, data: data });
@@ -272,25 +274,49 @@ function _equipo() {
 
 /* ────────────────────────────── Evidencias (Drive) ────────────────────────── */
 
-/* Id de la carpeta raíz: clave "evidenciasDrive" de links.json (acepta URL de
-   Drive o id pelado). Se cachea 10 min para no leer GitHub en cada llamada. */
-function _evidenciasRootId() {
+/* Id de la carpeta raíz. Fuente única: la clave "evidenciasDrive" de
+   links.json. La web la manda en cada llamada (`raiz`); si no viene (p.ej. el
+   recordatorio programado) se lee links.json de GitHub (caché 10 min). Último
+   recurso: propiedad del script EVIDENCIAS_FOLDER_ID. */
+function _idDeUrl(url) {
+  url = String(url || '').trim();
+  if (!url || url.indexOf('PEGAR_AQUI') >= 0) return '';
+  var m = /\/folders\/([A-Za-z0-9_-]+)/.exec(url);
+  return m ? m[1] : url;
+}
+function _evidenciasRootId(raiz) {
+  var directo = _idDeUrl(raiz);
+  if (directo) return directo;
   var cache = CacheService.getScriptCache();
   var hit = cache.get('evidenciasRootId');
   if (hit) return hit;
   var id = '';
   try {
-    var links = JSON.parse(UrlFetchApp.fetch(TR_CONFIG.LINKS_JSON_URL, { muteHttpExceptions: true }).getContentText());
+    var resp = UrlFetchApp.fetch(TR_CONFIG.LINKS_JSON_URL, { muteHttpExceptions: true });
+    if (resp.getResponseCode() !== 200) throw new Error('HTTP ' + resp.getResponseCode());
+    var links = JSON.parse(resp.getContentText());
     var e = links.evidenciasDrive;
-    var url = e ? (typeof e === 'string' ? e : e.url) : '';
-    if (url && url.indexOf('PEGAR_AQUI') < 0) {
-      var m = /\/folders\/([A-Za-z0-9_-]+)/.exec(url);
-      id = m ? m[1] : url.trim();
-    }
+    id = _idDeUrl(e ? (typeof e === 'string' ? e : e.url) : '');
   } catch (err) { Logger.log('links.json: ' + err); }
   if (!id) id = PropertiesService.getScriptProperties().getProperty('EVIDENCIAS_FOLDER_ID') || '';
   if (id) cache.put('evidenciasRootId', id, 600);
   return id;
+}
+
+/* Diagnóstico (ejecutar desde el editor): qué ve el script de links.json y
+   de la carpeta raíz. */
+function diagnosticarEvidencias() {
+  var resp = UrlFetchApp.fetch(TR_CONFIG.LINKS_JSON_URL, { muteHttpExceptions: true });
+  Logger.log('links.json HTTP ' + resp.getResponseCode() + ' (' + TR_CONFIG.LINKS_JSON_URL + ')');
+  var links = JSON.parse(resp.getContentText());
+  Logger.log('evidenciasDrive en links.json: ' + JSON.stringify(links.evidenciasDrive || null));
+  CacheService.getScriptCache().remove('evidenciasRootId');
+  var id = _evidenciasRootId();
+  Logger.log('Id de la raíz: ' + (id || '(ninguno)'));
+  if (id) {
+    var f = DriveApp.getFolderById(id);
+    Logger.log('Carpeta raíz: "' + f.getName() + '" ' + f.getUrl());
+  }
 }
 
 function _subcarpeta(padre, nombre) {
@@ -299,16 +325,16 @@ function _subcarpeta(padre, nombre) {
 }
 
 /* Carpeta <raíz>/<Año>/<n>_Quincena_<Mes><Año>; se crea si no existe. */
-function _carpetaQuincena(info) {
-  var rootId = _evidenciasRootId();
-  if (!rootId) throw new Error('Evidencias sin configurar: falta la clave "evidenciasDrive" (carpeta raíz de Drive) en links.json.');
+function _carpetaQuincena(info, raiz) {
+  var rootId = _evidenciasRootId(raiz);
+  if (!rootId) throw new Error('Evidencias sin configurar: falta la clave "evidenciasDrive" (carpeta raíz de Drive) en links.json (ejecuta diagnosticarEvidencias en el editor).');
   var root = DriveApp.getFolderById(rootId);
   return _subcarpeta(_subcarpeta(root, String(info.anio)), info.carpeta);
 }
 
-function carpetaEvidencias(q, quincena) {
+function carpetaEvidencias(q, quincena, raiz) {
   var info = _infoQuincena(q, quincena);
-  var f = _carpetaQuincena(info);
+  var f = _carpetaQuincena(info, raiz);
   return { id: f.getId(), url: f.getUrl(), nombre: info.carpeta, etiqueta: info.etiqueta };
 }
 
@@ -344,9 +370,9 @@ function _identificar(file, team) {
 
 /* Estado de la carpeta de una quincena: renombra al nombre canónico lo que
    haga falta y dice quién ha entregado y quién falta. */
-function estadoEvidencias(q, quincena) {
+function estadoEvidencias(q, quincena, raiz) {
   var info = _infoQuincena(q, quincena);
-  var folder = _carpetaQuincena(info);
+  var folder = _carpetaQuincena(info, raiz);
   var team = _equipo();
   var entregados = [], sinIdentificar = [], zip = null;
   var usados = {}; // nombre canónico ya asignado en esta carpeta -> nº de ficheros
@@ -381,9 +407,9 @@ function estadoEvidencias(q, quincena) {
 /* ZIP con todas las evidencias de la quincena (los Docs/Sheets nativos van
    exportados a PDF). Se deja en la propia carpeta (reemplazando el anterior) y
    se devuelve el enlace de descarga directa. */
-function descargarEvidencias(q, quincena) {
+function descargarEvidencias(q, quincena, raiz) {
   var info = _infoQuincena(q, quincena);
-  var folder = _carpetaQuincena(info);
+  var folder = _carpetaQuincena(info, raiz);
   var zipName = 'Evidencias_' + info.carpeta + '.zip';
   var blobs = [];
   var it = folder.getFiles();
