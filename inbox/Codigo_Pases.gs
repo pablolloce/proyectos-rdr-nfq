@@ -1176,3 +1176,84 @@ function quitarTagsHtml(s) {
 }
 
 // MÓDULO DE ALARMAS: deja aquí tu bloque actual sin cambios.
+
+/**
+ * ============================================================================
+ *  REGULARIZACIÓN ÚNICA · fechas guardadas 1 día antes (bug de medianoche
+ *  en parsearFechaEs, ya corregido para las escrituras nuevas).
+ * ============================================================================
+ *  Corrige, en las hojas Componentes / Proyectos / Orden_Ejecucion, las
+ *  filas cuya fecha NO coincide con ninguna fecha real de Pases_Calendados
+ *  (columna A, escrita siempre a mano — nunca por el script, así que es la
+ *  referencia fiable) pero SÍ coincide sumándole 1 día. Solo esas filas se
+ *  tocan: no se desplaza nada a ciegas.
+ *
+ *  USO (desde el editor de Apps Script, función a ejecutar en el desplegable):
+ *    1. regularizarFechasPases()        → SOLO PREVISUALIZA (no escribe nada).
+ *       Mira el registro de ejecución (Ver → Registros) para ver qué filas
+ *       cambiaría y a qué fecha.
+ *    2. regularizarFechasPases(false)   → aplica los cambios de verdad.
+ *  Es idempotente: una segunda ejecución no encuentra nada más que corregir.
+ * ============================================================================
+ */
+function regularizarFechasPases(dryRun) {
+  if (dryRun === undefined) dryRun = true;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tz = Session.getScriptTimeZone();
+  const fmt = (d) => Utilities.formatDate(d, tz, "dd/MM/yyyy");
+
+  // Fechas reales de pase (ancla): Pases_Calendados col A, escrita a mano.
+  const hojaPases = ss.getSheetByName(CONSTANTES.HOJA_PASES);
+  const anclas = new Set();
+  hojaPases.getRange(1, 1, hojaPases.getLastRow(), 1).getValues().forEach((r) => {
+    if (r[0] instanceof Date) anclas.add(fmt(r[0]));
+  });
+  Logger.log("Fechas de pase (ancla), " + anclas.size + ": " + [...anclas].sort().join(", "));
+
+  // Hoja + columna donde vive la fecha en cada una.
+  const objetivos = [
+    { hoja: CONSTANTES.HOJA_COMPONENTES, col: 12, etiqueta: "Componentes (col L, Fecha del Pase)" },
+    { hoja: CONSTANTES.HOJA_PROYECTOS, col: 1, etiqueta: "Proyectos (col A, Fecha)" },
+    { hoja: CONSTANTES.HOJA_ORDEN, col: 1, etiqueta: "Orden_Ejecucion (col A, Fecha)" },
+  ];
+
+  let totalCorregidas = 0, totalRevisar = 0;
+  objetivos.forEach((obj) => {
+    const sheet = ss.getSheetByName(obj.hoja);
+    if (!sheet) { Logger.log("⚠ No existe la hoja " + obj.hoja + " — se salta."); return; }
+    const last = sheet.getLastRow();
+    if (last < 2) return;
+    const vals = sheet.getRange(2, obj.col, last - 1, 1).getValues();
+    let corregidas = 0, revisar = 0;
+    for (let i = 0; i < vals.length; i++) {
+      const v = vals[i][0];
+      if (!(v instanceof Date)) continue;
+      const actual = fmt(v);
+      if (anclas.has(actual)) continue; // ya es una fecha de pase real: no tocar.
+      const siguiente = new Date(v.getFullYear(), v.getMonth(), v.getDate() + 1, 12, 0, 0);
+      const strSiguiente = fmt(siguiente);
+      if (anclas.has(strSiguiente)) {
+        Logger.log(
+          (dryRun ? "[PREVIEW] " : "[CORREGIDO] ") + obj.etiqueta + " fila " + (i + 2) +
+          ": " + actual + " → " + strSiguiente
+        );
+        if (!dryRun) sheet.getRange(i + 2, obj.col).setValue(siguiente);
+        corregidas++;
+      } else {
+        Logger.log("⚠ REVISAR A MANO — " + obj.etiqueta + " fila " + (i + 2) + ": " + actual +
+          " no coincide con ninguna fecha de pase (ni ella ni el día siguiente).");
+        revisar++;
+      }
+    }
+    Logger.log(obj.etiqueta + ": " + corregidas + " corregidas, " + revisar + " para revisar a mano.");
+    totalCorregidas += corregidas;
+    totalRevisar += revisar;
+  });
+
+  Logger.log(
+    (dryRun ? "PREVISUALIZACIÓN (nada escrito). " : "APLICADO. ") +
+    "Total: " + totalCorregidas + " fechas corregidas, " + totalRevisar + " para revisar a mano."
+  );
+  if (dryRun && totalCorregidas > 0)
+    Logger.log("Para aplicar de verdad: ejecuta regularizarFechasPases(false).");
+}
