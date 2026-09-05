@@ -1178,6 +1178,34 @@ function quitarTagsHtml(s) {
 // MÓDULO DE ALARMAS: deja aquí tu bloque actual sin cambios.
 
 /**
+ * DIAGNÓSTICO · vuelca cabecera + primeras filas de Componentes, Proyectos
+ * y Orden_Ejecucion para localizar EXACTAMENTE en qué columna vive la fecha
+ * en la hoja real (regularizarFechasPases dio 0/0/0/0 en las tres dos veces
+ * seguidas con supuestos distintos de columna — mejor mirar el dato real
+ * que seguir adivinando índices de columna a ciegas).
+ * Ejecutar y pegar el resultado del registro (Ver → Registros de ejecución).
+ */
+function inspeccionarFechasPases() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  [CONSTANTES.HOJA_COMPONENTES, CONSTANTES.HOJA_PROYECTOS, CONSTANTES.HOJA_ORDEN].forEach((nombreHoja) => {
+    const sheet = ss.getSheetByName(nombreHoja);
+    if (!sheet) { Logger.log("⚠ No existe la hoja " + nombreHoja); return; }
+    const lastRow = sheet.getLastRow();
+    const lastCol = Math.min(sheet.getLastColumn(), 16);
+    Logger.log("===== " + nombreHoja + " · " + lastRow + " filas x " + sheet.getLastColumn() + " cols (mostrando hasta col " + lastCol + ") =====");
+    const filas = sheet.getRange(1, 1, Math.min(lastRow, 8), lastCol).getValues();
+    filas.forEach((fila, i) => {
+      const repr = fila.map((v) => {
+        if (v instanceof Date) return "[Date]" + v.toISOString().slice(0, 10);
+        if (typeof v === "string" && v.length > 18) return v.slice(0, 18) + "…";
+        return String(v);
+      });
+      Logger.log((i === 0 ? "CABECERA: " : "fila " + (i + 1) + ": ") + repr.join(" | "));
+    });
+  });
+}
+
+/**
  * ============================================================================
  *  REGULARIZACIÓN ÚNICA · fechas guardadas 1 día antes (bug de medianoche
  *  en parsearFechaEs, ya corregido para las escrituras nuevas).
