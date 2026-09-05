@@ -1187,16 +1187,24 @@ function quitarTagsHtml(s) {
  */
 function inspeccionarFechasPases() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const tzScript = Session.getScriptTimeZone();
+  const tzSheet = ss.getSpreadsheetTimeZone();
+  Logger.log("Zona horaria del SCRIPT: " + tzScript + " · Zona horaria del SHEETS: " + tzSheet +
+    (tzScript === tzSheet ? " (coinciden)" : " ⚠ NO COINCIDEN: por eso el Sheets puede pintar el día anterior"));
   [CONSTANTES.HOJA_COMPONENTES, CONSTANTES.HOJA_PROYECTOS, CONSTANTES.HOJA_ORDEN].forEach((nombreHoja) => {
     const sheet = ss.getSheetByName(nombreHoja);
     if (!sheet) { Logger.log("⚠ No existe la hoja " + nombreHoja); return; }
     const lastRow = sheet.getLastRow();
     const lastCol = Math.min(sheet.getLastColumn(), 16);
-    Logger.log("===== " + nombreHoja + " · " + lastRow + " filas x " + sheet.getLastColumn() + " cols (mostrando hasta col " + lastCol + ") =====");
-    const filas = sheet.getRange(1, 1, Math.min(lastRow, 8), lastCol).getValues();
+    Logger.log("===== " + nombreHoja + " · " + lastRow + " filas x " + sheet.getLastColumn() + " cols =====");
+    const filas = sheet.getRange(1, 1, Math.min(lastRow, 5), lastCol).getValues();
     filas.forEach((fila, i) => {
       const repr = fila.map((v) => {
-        if (v instanceof Date) return "[Date]" + v.toISOString().slice(0, 10);
+        // Nunca toISOString aquí: convierte a UTC y enseña el día anterior
+        // (ese despiste hizo creer que había fechas mal guardadas).
+        if (v instanceof Date)
+          return "[Date script=" + Utilities.formatDate(v, tzScript, "dd/MM/yyyy HH:mm") +
+                 " | sheets=" + Utilities.formatDate(v, tzSheet, "dd/MM/yyyy HH:mm") + "]";
         if (typeof v === "string" && v.length > 18) return v.slice(0, 18) + "…";
         return String(v);
       });
@@ -1227,79 +1235,66 @@ function inspeccionarFechasPases() {
 function regularizarFechasPases(dryRun) {
   if (dryRun === undefined) dryRun = true;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const tz = Session.getScriptTimeZone();
-  const fmt = (d) => Utilities.formatDate(d, tz, "dd/MM/yyyy");
+  const tzScript = Session.getScriptTimeZone();
+  const tzSheet = ss.getSpreadsheetTimeZone();
+  const dia = (d, tz) => Utilities.formatDate(d, tz, "dd/MM/yyyy");
 
-  // La celda puede traer un Date real O texto "d/M/yyyy" (p.ej. si la columna
-  // está formateada como Texto plano: Sheets guarda entonces un string, no
-  // una Fecha, y por eso la 1ª versión de este script no encontraba NADA).
-  // Devuelve { d: Date a mediodía, esTexto } o null si no es reconocible.
-  function leerFecha(v) {
-    if (v instanceof Date) return { d: v, esTexto: false };
-    const s = String(v || "").trim();
-    const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s);
-    if (!m) return null;
-    return { d: new Date(+m[3], +m[2] - 1, +m[1], 12, 0, 0), esTexto: true };
-  }
+  Logger.log("Zona del SCRIPT: " + tzScript + " · Zona del SHEETS: " + tzSheet +
+    (tzScript === tzSheet ? " (coinciden)" : " \u26a0 NO COINCIDEN"));
 
-  // Fechas reales de pase (ancla): Pases_Calendados col A, escrita a mano.
-  const hojaPases = ss.getSheetByName(CONSTANTES.HOJA_PASES);
-  const anclas = new Set();
-  hojaPases.getRange(1, 1, hojaPases.getLastRow(), 1).getValues().forEach((r) => {
-    const f = leerFecha(r[0]);
-    if (f) anclas.add(fmt(f.d));
-  });
-  Logger.log("Fechas de pase (ancla), " + anclas.size + ": " + [...anclas].sort().join(", "));
-
-  // Hoja + columna donde vive la fecha en cada una.
+  // Hoja + columna de la fecha (confirmadas con inspeccionarFechasPases).
   const objetivos = [
     { hoja: CONSTANTES.HOJA_COMPONENTES, col: 12, etiqueta: "Componentes (col L, Fecha del Pase)" },
-    { hoja: CONSTANTES.HOJA_PROYECTOS, col: 1, etiqueta: "Proyectos (col A, Fecha)" },
-    { hoja: CONSTANTES.HOJA_ORDEN, col: 1, etiqueta: "Orden_Ejecucion (col A, Fecha)" },
+    { hoja: CONSTANTES.HOJA_PROYECTOS, col: 1, etiqueta: "Proyectos (col A, Fecha del Pase)" },
+    { hoja: CONSTANTES.HOJA_ORDEN, col: 1, etiqueta: "Orden_Ejecucion (col A, Fecha del Pase)" },
   ];
 
-  let totalCorregidas = 0, totalRevisar = 0;
+  let totalDesfase = 0, totalNormalizadas = 0;
   objetivos.forEach((obj) => {
     const sheet = ss.getSheetByName(obj.hoja);
-    if (!sheet) { Logger.log("⚠ No existe la hoja " + obj.hoja + " — se salta."); return; }
+    if (!sheet) { Logger.log("\u26a0 No existe la hoja " + obj.hoja); return; }
     const last = sheet.getLastRow();
-    if (last < 2) return;
-    const vals = sheet.getRange(2, obj.col, last - 1, 1).getValues();
-    let corregidas = 0, revisar = 0, vacias = 0, irreconocibles = 0;
+    if (last < 2) { Logger.log(obj.etiqueta + ": sin filas de datos."); return; }
+
+    const rango = sheet.getRange(2, obj.col, last - 1, 1);
+    const vals = rango.getValues();
+    let desfase = 0, normalizadas = 0, yaOk = 0, noFecha = 0;
+    const ejemplos = [];
+
     for (let i = 0; i < vals.length; i++) {
-      const raw = vals[i][0];
-      if (raw === "" || raw === null) { vacias++; continue; }
-      const f = leerFecha(raw);
-      if (!f) { irreconocibles++; Logger.log("⚠ Valor irreconocible como fecha — " + obj.etiqueta + " fila " + (i + 2) + ": " + JSON.stringify(raw)); continue; }
-      const actual = fmt(f.d);
-      if (anclas.has(actual)) continue; // ya es una fecha de pase real: no tocar.
-      const siguiente = new Date(f.d.getFullYear(), f.d.getMonth(), f.d.getDate() + 1, 12, 0, 0);
-      const strSiguiente = fmt(siguiente);
-      if (anclas.has(strSiguiente)) {
-        Logger.log(
-          (dryRun ? "[PREVIEW] " : "[CORREGIDO] ") + obj.etiqueta + " fila " + (i + 2) +
-          ": " + actual + " → " + strSiguiente + (f.esTexto ? " (texto)" : " (fecha)")
-        );
-        if (!dryRun) sheet.getRange(i + 2, obj.col).setValue(f.esTexto ? strSiguiente : siguiente);
-        corregidas++;
-      } else {
-        Logger.log("⚠ REVISAR A MANO — " + obj.etiqueta + " fila " + (i + 2) + ": " + actual +
-          " no coincide con ninguna fecha de pase (ni ella ni el día siguiente).");
-        revisar++;
-      }
+      const v = vals[i][0];
+      if (!(v instanceof Date)) { if (v !== "" && v !== null) noFecha++; continue; }
+
+      const diaScript = dia(v, tzScript);   // el día que el script quiso guardar
+      const diaSheets = dia(v, tzSheet);    // el día que PINTA la hoja
+      const hora = Number(Utilities.formatDate(v, tzScript, "H"));
+
+      if (diaScript !== diaSheets) desfase++;      // se ve un día distinto del real
+      else if (hora === 12) { yaOk++; continue; }  // ya normalizada: nada que hacer
+
+      // Reescribir el MISMO día (el intencionado, el del script) a mediodía:
+      // así ninguna zona horaria puede cruzar la frontera del día.
+      const p = diaScript.split("/");
+      const corregida = new Date(+p[2], +p[1] - 1, +p[0], 12, 0, 0);
+      if (ejemplos.length < 5)
+        ejemplos.push("fila " + (i + 2) + ": la hoja pintaba " + diaSheets + " \u2192 queda " + diaScript);
+      if (!dryRun) vals[i][0] = corregida;
+      normalizadas++;
     }
-    Logger.log(
-      obj.etiqueta + ": " + corregidas + " corregidas, " + revisar + " para revisar a mano, " +
-      vacias + " celdas vacías, " + irreconocibles + " valores irreconocibles."
-    );
-    totalCorregidas += corregidas;
-    totalRevisar += revisar;
+
+    if (!dryRun && normalizadas > 0) rango.setValues(vals); // una sola escritura
+
+    Logger.log(obj.etiqueta + ": " + normalizadas + (dryRun ? " a normalizar" : " normalizadas") +
+      " (de ellas " + desfase + " se pintaban con el día equivocado), " + yaOk + " ya correctas, " +
+      noFecha + " valores no-fecha.");
+    ejemplos.forEach((e) => Logger.log("   \u00b7 " + e));
+    totalDesfase += desfase;
+    totalNormalizadas += normalizadas;
   });
 
-  Logger.log(
-    (dryRun ? "PREVISUALIZACIÓN (nada escrito). " : "APLICADO. ") +
-    "Total: " + totalCorregidas + " fechas corregidas, " + totalRevisar + " para revisar a mano."
-  );
-  if (dryRun && totalCorregidas > 0)
+  Logger.log((dryRun ? "PREVISUALIZACIÓN (nada escrito). " : "APLICADO. ") +
+    "Total: " + totalNormalizadas + " fechas normalizadas a mediodía, " +
+    totalDesfase + " de ellas se veían con el día equivocado en la hoja.");
+  if (dryRun && totalNormalizadas > 0)
     Logger.log("Para aplicar de verdad: ejecuta regularizarFechasPases(false).");
 }
