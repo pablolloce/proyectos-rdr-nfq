@@ -22,9 +22,9 @@
  *
  *  DESPLIEGUE (proyecto Apps Script INDEPENDIENTE):
  *   1. script.google.com -> Nuevo proyecto -> pegar este fichero.
- *   2. Propiedades del script -> EVIDENCIAS_FOLDER_ID = id de la carpeta raíz
- *      de evidencias (una carpeta compartida con el equipo o de una unidad
- *      compartida). Sin ella, las funciones de evidencias devuelven error.
+ *   2. Carpeta raíz de evidencias: TR_CONFIG.EVIDENCIAS_FOLDER_ID (o la
+ *      propiedad del script EVIDENCIAS_FOLDER_ID, que tiene prioridad). Debe
+ *      estar compartida con el equipo para que puedan subir sus ficheros.
  *   3. Ejecutar una vez `autorizar` (Drive + Gmail + UrlFetch) y una vez
  *      `crearTriggerRecordatorioTR` (disparador diario a las 9:00).
  *   4. Implementar -> Aplicación web (Ejecutar como YO, Cualquier persona) ->
@@ -48,9 +48,9 @@ var TR_CONFIG = {
   TZ: 'Europe/Madrid',
   WEB_URL: 'https://rdr-nfq.github.io/team-hub/timereport/',
   REMITE: 'Time Report RDR',
-  // Raíz de evidencias: mejor en Propiedades del script (EVIDENCIAS_FOLDER_ID);
-  // esta constante es solo un respaldo si se prefiere dejarla en el código.
-  EVIDENCIAS_FOLDER_ID: '',
+  // Carpeta raíz de evidencias en Drive (https://drive.google.com/drive/folders/<id>).
+  // Si existe la propiedad del script EVIDENCIAS_FOLDER_ID, manda ella.
+  EVIDENCIAS_FOLDER_ID: '1FUz6m6Ek0BveGYeUp4nIVD0kO4oiNWDF',
   // Fuentes de datos del hub (URLs "raw" de GitHub: devuelven JSON plano).
   EQUIPO_JSON_URL: 'https://raw.githubusercontent.com/rdr-nfq/team-hub/main/beyond-the-grid/public/equipo/equipo.json',
   LINKS_JSON_URL: 'https://raw.githubusercontent.com/rdr-nfq/team-hub/main/beyond-the-grid/public/links/links.json',
